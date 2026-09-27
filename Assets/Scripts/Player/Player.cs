@@ -17,6 +17,13 @@ namespace Beep
         /// <summary>Every live player (offline: the local rig; online: all connected players).</summary>
         public static readonly List<Player> All = new List<Player>();
 
+        public const int MaxSlots = 4;
+
+        static readonly Color[] SlotColors =
+        {
+            new Color(1f, 0.55f, 0.1f), new Color(0.2f, 0.8f, 1f), new Color(0.6f, 1f, 0.3f), new Color(1f, 0.4f, 0.8f)
+        };
+
         [Header("Identity")]
         [SerializeField] int playerId;
         [SerializeField] string displayName = "Player";
@@ -81,12 +88,14 @@ namespace Beep
 
         void Start()
         {
-            // Every machine mirrors the bomb, so every machine binds to it.
+            // Every machine mirrors the bomb, so every machine binds to it. Each component unbinds itself
+            // in OnDestroy: players come and go online, the bomb stays.
             var bomb = BombController.Instance;
             if (bomb == null) return;
             Thrower.Bind(bomb, All);
             Catcher.Bind(bomb);
             Presentation.Bind(bomb);
+            if (Feel != null) Feel.Bind(bomb);
         }
 
         public void Configure(int id, string name, Color playerColor)
@@ -95,6 +104,13 @@ namespace Beep
             displayName = name;
             color = playerColor;
             if (Presentation != null) Presentation.ApplyColor();
+        }
+
+        /// <summary>Standard identity for a slot (name, colour, GameObject name), the same offline and online.</summary>
+        public void ConfigureSlot(int slot)
+        {
+            Configure(slot, "Player " + (slot + 1), SlotColors[Mathf.Abs(slot) % SlotColors.Length]);
+            gameObject.name = "Player_" + (slot + 1);
         }
 
         /// <summary>Authority only. Online this is replicated to the owning client.</summary>

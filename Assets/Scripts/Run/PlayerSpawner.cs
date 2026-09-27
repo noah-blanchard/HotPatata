@@ -10,11 +10,6 @@ namespace Beep
     [DefaultExecutionOrder(-200)]
     public class PlayerSpawner : MonoBehaviour
     {
-        static readonly Color[] Palette =
-        {
-            new Color(1f, 0.55f, 0.1f), new Color(0.2f, 0.8f, 1f), new Color(0.6f, 1f, 0.3f), new Color(1f, 0.4f, 0.8f)
-        };
-
         [SerializeField] GameObject playerPrefab;
         [SerializeField, Range(1, 4)] int offlinePlayers = 2;
         [SerializeField, Range(1, 4)] int maxPlayers = 4;
@@ -44,9 +39,8 @@ namespace Beep
         {
             for (int i = 0; i < offlinePlayers; i++)
             {
-                var go = Instantiate(playerPrefab, SpawnPoint(i), Quaternion.identity);
-                go.name = "Player_" + (i + 1);
-                go.GetComponent<Player>().Configure(i, "Player " + (i + 1), Palette[i]);
+                GetStartPose(i, out var position, out var rotation);
+                Instantiate(playerPrefab, position, rotation).GetComponent<Player>().ConfigureSlot(i);
             }
         }
 
@@ -65,15 +59,17 @@ namespace Beep
                 return;
             }
 
-            var go = Instantiate(playerPrefab, SpawnPoint(slot), Quaternion.identity);
+            GetStartPose(slot, out var position, out var rotation);
+            var go = Instantiate(playerPrefab, position, rotation);
             go.GetComponent<NetworkPlayer>().InitialSlot = slot;
             go.GetComponent<NetworkObject>().SpawnAsPlayerObject(clientId, destroyWithScene: true);
             BeepLog.Run($"Spawned player slot {slot} for client {clientId}");
         }
 
-        static int FirstFreeSlot()
+        int FirstFreeSlot()
         {
-            for (int slot = 0; slot < 4; slot++)
+            int slots = Mathf.Min(maxPlayers, Player.MaxSlots);
+            for (int slot = 0; slot < slots; slot++)
             {
                 bool used = false;
                 foreach (var p in Player.All)
@@ -83,11 +79,21 @@ namespace Beep
             return -1;
         }
 
-        static Vector3 SpawnPoint(int slot)
+        /// <summary>
+        /// The run's starting spawn for a slot: a <see cref="PlayerSpawn"/> that does not belong to a checkpoint
+        /// (checkpoint spawns are respawn points). RunManager teleports everyone there again when the run starts.
+        /// </summary>
+        static void GetStartPose(int slot, out Vector3 position, out Quaternion rotation)
         {
             foreach (var s in FindObjectsByType<PlayerSpawn>(FindObjectsSortMode.None))
-                if (s.Slot == slot && s.transform.parent != null && s.transform.parent.name == "SectionRoot") return s.transform.position;
-            return Vector3.zero;
+            {
+                if (s.Slot != slot || s.GetComponentInParent<Checkpoint>() != null) continue;
+                position = s.transform.position;
+                rotation = s.transform.rotation;
+                return;
+            }
+            position = Vector3.zero;
+            rotation = Quaternion.identity;
         }
     }
 }

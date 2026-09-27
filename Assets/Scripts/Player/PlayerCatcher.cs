@@ -12,6 +12,12 @@ namespace Beep
     [RequireComponent(typeof(Player))]
     public class PlayerCatcher : MonoBehaviour
     {
+        // Catch diagnostics only (they explain a miss, they never decide one).
+        const float HintDuration = 1.6f;
+        const float ReachSlack = 0.25f;           // metres beyond catchRadius that still count as "in reach now"
+        const float LateMin = 0.03f, LateMax = 0.8f;   // seconds since the bomb was in reach that read as "too late"
+        const float EarlyCheckDistance = 12f;     // metres: farther than this, a closed window is not "too early"
+
         Player player;
         BombController bomb;
         float windowEnd = -1f;
@@ -36,11 +42,22 @@ namespace Beep
 
         public void Bind(BombController bombController)
         {
+            Unbind();
             bomb = bombController;
-            bomb.BombCaught += receiver =>
-            {
-                if (receiver == player) Clear();   // a successful catch spends the window and frees the button
-            };
+            bomb.BombCaught += OnBombCaught;
+        }
+
+        void OnDestroy() => Unbind();
+
+        void Unbind()
+        {
+            if (bomb != null) bomb.BombCaught -= OnBombCaught;
+        }
+
+        // A successful catch spends the window and frees the button.
+        void OnBombCaught(Player receiver)
+        {
+            if (receiver == player) Clear();
         }
 
         void Update()
@@ -87,7 +104,7 @@ namespace Beep
         public void ReceiveHint(string text)
         {
             hint = text;
-            hintUntil = Time.time + 1.6f;
+            hintUntil = Time.time + HintDuration;
         }
 
         void SayHint(string text)
@@ -102,8 +119,8 @@ namespace Beep
         {
             if (bomb.State != BombState.Thrown || bomb.LastThrower == player) return;
             float since = Time.time - lastReachTime;
-            bool inReachNow = Vector3.Distance(bomb.transform.position, player.CatchVolume.CatchCenter) <= player.Tuning.catchRadius + 0.25f;
-            if (!inReachNow && since > 0.03f && since < 0.8f) SayHint($"Too late: it was in reach {since * 1000f:F0} ms ago");
+            bool inReachNow = Vector3.Distance(bomb.transform.position, player.CatchVolume.CatchCenter) <= player.Tuning.catchRadius + ReachSlack;
+            if (!inReachNow && since > LateMin && since < LateMax) SayHint($"Too late: it was in reach {since * 1000f:F0} ms ago");
         }
 
         // The window closed while the bomb was still coming: too early.
@@ -115,7 +132,7 @@ namespace Beep
             if (!justClosed || bomb == null || bomb.State != BombState.Thrown || bomb.LastThrower == player) return;
 
             Vector3 toMe = player.CatchVolume.CatchCenter - bomb.transform.position;
-            if (toMe.magnitude < 12f && Vector3.Dot(bomb.Body.Velocity, toMe) > 0f) SayHint("Too early: it was still on its way");
+            if (toMe.magnitude < EarlyCheckDistance && Vector3.Dot(bomb.Body.Velocity, toMe) > 0f) SayHint("Too early: it was still on its way");
         }
     }
 }

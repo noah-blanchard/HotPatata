@@ -10,6 +10,12 @@ namespace Beep
     [RequireComponent(typeof(Rigidbody), typeof(SphereCollider), typeof(BombController))]
     public class BombPhysics : MonoBehaviour
     {
+        // Shape of the homing curve (the strength itself is tuned in GameTuning).
+        const float HomingReferenceSpeed = 14f;   // m/s at which homingTurnRate applies as-is (see its tooltip)
+        const float MinTurnScale = 0.6f, MaxTurnScale = 2f;
+        const float MagnetTurnBoost = 4f;         // extra turn rate at magnetStrength = 1
+        const float MinSteerSpeed = 1f;
+
         [SerializeField] GameTuning tuning;
 
         Rigidbody body;
@@ -47,7 +53,7 @@ namespace Beep
 
             Vector3 v = body.linearVelocity;
             float speed = v.magnitude;
-            if (speed < 1f) return;
+            if (speed < MinSteerSpeed) return;
 
             Vector3 center = target.CatchVolume.CatchCenter;
             float distance = Vector3.Distance(body.position, center);
@@ -65,8 +71,8 @@ namespace Beep
             float timeToGo = to.magnitude / speed;
             Vector3 aim = to + Vector3.up * (0.5f * g * timeToGo * timeToGo);   // aim high enough to still get there after the drop
 
-            float turn = tuning.homingTurnRate * Mathf.Clamp(speed / 14f, 0.6f, 2f) * controller.HomingQuality;
-            if (magnet) turn *= 1f + 4f * tuning.magnetStrength;
+            float turn = tuning.homingTurnRate * Mathf.Clamp(speed / HomingReferenceSpeed, MinTurnScale, MaxTurnScale) * controller.HomingQuality;
+            if (magnet) turn *= 1f + MagnetTurnBoost * tuning.magnetStrength;
 
             Vector3 dir = Vector3.RotateTowards(v / speed, aim.normalized, turn * Mathf.Deg2Rad * Time.fixedDeltaTime, 0f);
             body.linearVelocity = dir * speed;

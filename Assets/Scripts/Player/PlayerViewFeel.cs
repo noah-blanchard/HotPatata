@@ -35,6 +35,7 @@ namespace Beep
 
         Player player;
         PlayerMotor motor;
+        BombController bomb;
         Spring dip, fovImpulse, pitchKick;
         float fovSmoothed, rollSmoothed, bobAmount, phase, lastYaw, fallSpeed;
         bool wasGrounded = true;
@@ -60,23 +61,37 @@ namespace Beep
             motor = GetComponent<PlayerMotor>();
         }
 
-        void Start()
+        /// <summary>Called by <see cref="Player"/> once the bomb exists.</summary>
+        public void Bind(BombController bombController)
         {
-            var bomb = BombController.Instance;
+            Unbind();
+            bomb = bombController;
+            bomb.BombThrown += OnBombThrown;
+            bomb.BombCaught += OnBombCaught;
+        }
+
+        void OnDestroy() => Unbind();
+
+        void Unbind()
+        {
             if (bomb == null) return;
-            bomb.BombThrown += thrower =>
-            {
-                if (thrower != player) return;
-                pitchKick.Kick(2.5f);      // a little follow-through as the potato leaves the hand
-                fovImpulse.Kick(3f);
-            };
-            bomb.BombCaught += receiver =>
-            {
-                if (receiver != player) return;
-                fovImpulse.Kick(2.5f);     // a satisfying thump when it lands in the hand
-                dip.Kick(-0.05f);
-                pitchKick.Kick(1.2f);
-            };
+            bomb.BombThrown -= OnBombThrown;
+            bomb.BombCaught -= OnBombCaught;
+        }
+
+        void OnBombThrown(Player thrower)
+        {
+            if (thrower != player) return;
+            pitchKick.Kick(2.5f);      // a little follow-through as the potato leaves the hand
+            fovImpulse.Kick(3f);
+        }
+
+        void OnBombCaught(Player receiver)
+        {
+            if (receiver != player) return;
+            fovImpulse.Kick(2.5f);     // a satisfying thump when it lands in the hand
+            dip.Kick(-0.05f);
+            pitchKick.Kick(1.2f);
         }
 
         void Update()
