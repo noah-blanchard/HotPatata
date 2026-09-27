@@ -22,7 +22,9 @@ namespace Beep.Tests
             Assert.AreEqual(1.0f, t.resetDelay, 1e-4f);
             Assert.AreEqual(0.1f, t.coyoteTime, 1e-4f);
             Assert.AreEqual(0.1f, t.jumpBuffer, 1e-4f);
-            Assert.That(t.catchRadius, Is.InRange(0.4f, 0.8f), "catch radius was tightened after playtest");
+            Assert.That(t.catchRadius, Is.InRange(0.7f, 1.0f), "catch zone was widened after the friend playtest");
+            Assert.That(t.homingStrength, Is.InRange(0.3f, 1f), "soft homing is on");
+            Assert.Greater(t.magnetRadius, 0f);
             Assert.Less(t.throwSpeedMin, t.throwSpeedMax);
             Assert.Greater(t.throwChargeTime, 0f);
             Assert.That(t.catchWindowDuration, Is.InRange(0.05f, 0.5f), "catch window must stay small");

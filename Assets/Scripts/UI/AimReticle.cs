@@ -25,8 +25,68 @@ namespace Beep
             float cx = Screen.width * 0.5f, cy = Screen.height * 0.5f;
             DrawCrosshair(cx, cy);
 
-            if (player.Thrower.HoldsBomb) DrawChargeBar(player, cx, cy);
-            else DrawCatchIndicator(player.Catcher, cx, cy);
+            if (player.Thrower.HoldsBomb)
+            {
+                DrawChargeBar(player, cx, cy);
+                DrawLockFrame(player);
+            }
+            else
+            {
+                DrawCatchIndicator(player.Catcher, cx, cy);
+                DrawIncoming(player);
+            }
+
+            string hint = player.Catcher.Hint;
+            if (hint != null)
+            {
+                label ??= new GUIStyle(GUI.skin.label) { alignment = TextAnchor.UpperCenter, fontSize = 14 };
+                label.normal.textColor = new Color(1f, 0.85f, 0.3f);
+                GUI.Label(new Rect(cx - 200, cy + 62, 400, 24), hint, label);
+            }
+        }
+
+        Camera ViewCamera => cam != null ? cam.GetComponent<Camera>() : null;
+
+        /// <summary>Corner brackets around the receiver a throw would be bent toward. Fainter = weaker lock.</summary>
+        void DrawLockFrame(Player player)
+        {
+            var target = player.Thrower.LockTarget;
+            var view = ViewCamera;
+            if (target == null || view == null) return;
+
+            Vector3 s = view.WorldToScreenPoint(target.CatchVolume.CatchCenter);
+            if (s.z <= 0f) return;
+
+            float q = Mathf.Clamp01(player.Thrower.LockQuality / Mathf.Max(0.01f, player.Tuning.homingStrength));
+            var c = Color.Lerp(new Color(1f, 1f, 1f, 0.35f), new Color(1f, 0.6f, 0.1f, 1f), q);
+            float size = Mathf.Clamp(900f / s.z, 30f, 90f);
+            Brackets(s.x, Screen.height - s.y, size, size * 0.35f, 3f, c);
+        }
+
+        /// <summary>A pulsing marker on the bomb while it is coming for you, so you know when to press catch.</summary>
+        void DrawIncoming(Player player)
+        {
+            var bomb = BombController.Instance;
+            var view = ViewCamera;
+            if (bomb == null || view == null || bomb.State != BombState.Thrown || bomb.HomingTarget != player) return;
+
+            Vector3 s = view.WorldToScreenPoint(bomb.transform.position);
+            float pulse = 0.5f + 0.5f * Mathf.Sin(Time.time * 18f);
+            var c = new Color(1f, 0.25f + 0.3f * pulse, 0.1f, 1f);
+            label ??= new GUIStyle(GUI.skin.label) { alignment = TextAnchor.UpperCenter, fontSize = 14 };
+            label.normal.textColor = c;
+
+            if (s.z > 0f)
+            {
+                float size = 34f + 14f * pulse;
+                float x = Mathf.Clamp(s.x, 30f, Screen.width - 30f), y = Mathf.Clamp(Screen.height - s.y, 30f, Screen.height - 30f);
+                Brackets(x, y, size, size * 0.4f, 3f, c);
+                GUI.Label(new Rect(x - 80, y + size + 4f, 160, 22), "CATCH!", label);
+            }
+            else
+            {
+                GUI.Label(new Rect(Screen.width * 0.5f - 120, Screen.height - 90f, 240, 24), "INCOMING - BEHIND YOU!", label);
+            }
         }
 
         void DrawCrosshair(float cx, float cy)

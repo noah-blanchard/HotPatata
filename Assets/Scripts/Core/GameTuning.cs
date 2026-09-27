@@ -85,11 +85,25 @@ namespace Beep
         [Tooltip("0 = no assist, 1 = fully corrected toward the receiver's catch point.")]
         [Range(0f, 1f)] public float aimAssistStrength = 0.5f;
 
+        [Header("Bomb - soft homing (visible, never perfect)")]
+        [Tooltip("0 = no homing, 1 = the lock is as strong as it can be. Fades toward the edge of the cone.")]
+        [Range(0f, 1f)] public float homingStrength = 0.7f;
+        [Tooltip("Half-angle of the cone (around your throw direction) in which a receiver can be locked.")]
+        [Range(5f, 60f)] public float homingConeDegrees = 28f;
+        [Min(0f)] public float homingRange = 25f;
+        [Tooltip("How fast the flight path can bend toward the target, degrees per second at 14 m/s (scales with speed, so hard throws bend too).")]
+        [Min(0f)] public float homingTurnRate = 200f;
+        [Tooltip("Random error on the aim point, in degrees, chosen per throw. This is what lets a homing throw still miss.")]
+        [Range(0f, 15f)] public float homingSpreadDegrees = 5f;
+        [Tooltip("Inside this distance from the target, with their catch window open, the bomb is pulled into their hands.")]
+        [Min(0f)] public float magnetRadius = 2f;
+        [Range(0f, 1f)] public float magnetStrength = 0.8f;
+
         [Header("Catch")]
         [Tooltip("Radius of the receiver's catch sphere.")]
-        [Min(0.1f)] public float catchRadius = 0.6f;
+        [Min(0.1f)] public float catchRadius = 0.9f;
         [Tooltip("Pressing catch opens a window this long; the bomb must reach the receiver inside it. Smaller = harder.")]
-        [Min(0.02f)] public float catchWindowDuration = 0.25f;
+        [Min(0.02f)] public float catchWindowDuration = 0.4f;
         [Tooltip("After a window closes, catch cannot be pressed again for this long (stops button mashing).")]
         [Min(0f)] public float catchCooldown = 0.5f;
         [Tooltip("How far in front of the receiver the catch sphere is pushed.")]

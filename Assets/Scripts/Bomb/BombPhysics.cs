@@ -29,8 +29,47 @@ namespace Beep
 
         void FixedUpdate()
         {
-            if (NetMode.IsAuthority && controller.State == BombState.Thrown)
-                body.AddForce(Physics.gravity * tuning.bombGravityScale, ForceMode.Acceleration);
+            if (!NetMode.IsAuthority || controller.State != BombState.Thrown) return;
+
+            body.AddForce(Physics.gravity * tuning.bombGravityScale, ForceMode.Acceleration);
+            Steer();
+        }
+
+        /// <summary>
+        /// Soft homing: bend the velocity toward the locked receiver at a limited turn rate. Fast throws bend too
+        /// (the rate scales with speed). It aims at where the receiver IS, not where they are going, and never bends
+        /// around geometry, so it can miss. Inside the magnet radius, with their catch window open, it pulls into their hands.
+        /// </summary>
+        void Steer()
+        {
+            var target = controller.HomingTarget;
+            if (target == null || target.CatchVolume == null) return;
+
+            Vector3 v = body.linearVelocity;
+            float speed = v.magnitude;
+            if (speed < 1f) return;
+
+            Vector3 center = target.CatchVolume.CatchCenter;
+            float distance = Vector3.Distance(body.position, center);
+            bool magnet = distance < tuning.magnetRadius && target.Catcher.WindowOpen;
+            Vector3 point = magnet ? center : center + controller.HomingOffset;
+
+            Vector3 to = point - body.position;
+            if (Vector3.Dot(v, to) <= 0f)
+            {
+                controller.ClearHoming();   // already past them: let it fly
+                return;
+            }
+
+            float g = -Physics.gravity.y * tuning.bombGravityScale;
+            float timeToGo = to.magnitude / speed;
+            Vector3 aim = to + Vector3.up * (0.5f * g * timeToGo * timeToGo);   // aim high enough to still get there after the drop
+
+            float turn = tuning.homingTurnRate * Mathf.Clamp(speed / 14f, 0.6f, 2f) * controller.HomingQuality;
+            if (magnet) turn *= 1f + 4f * tuning.magnetStrength;
+
+            Vector3 dir = Vector3.RotateTowards(v / speed, aim.normalized, turn * Mathf.Deg2Rad * Time.fixedDeltaTime, 0f);
+            body.linearVelocity = dir * speed;
         }
 
         public void SetTuning(GameTuning value) => tuning = value;

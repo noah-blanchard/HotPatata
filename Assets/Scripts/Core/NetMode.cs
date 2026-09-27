@@ -16,6 +16,27 @@ namespace Beep
 
         public static bool IsRemoteClient => IsNetworked && !NetworkManager.Singleton.IsServer;
 
+        /// <summary>
+        /// Round-trip time in ms: a client's own ping to the host; on the host, the worst ping among its clients.
+        /// 0 offline or when unknown.
+        /// </summary>
+        public static int RttMs
+        {
+            get
+            {
+                if (!IsNetworked) return 0;
+                var nm = NetworkManager.Singleton;
+                var transport = nm.NetworkConfig.NetworkTransport as Unity.Netcode.Transports.UTP.UnityTransport;
+                if (transport == null) return 0;
+                if (!nm.IsServer) return (int)transport.GetCurrentRtt(NetworkManager.ServerClientId);
+
+                ulong worst = 0;
+                foreach (ulong id in nm.ConnectedClientsIds)
+                    if (id != nm.LocalClientId) worst = System.Math.Max(worst, transport.GetCurrentRtt(id));
+                return (int)worst;
+            }
+        }
+
         /// <summary>Shared clock: the server's network time when online, local time offline.</summary>
         public static double ServerTime => IsNetworked ? NetworkManager.Singleton.ServerTime.Time : Time.timeAsDouble;
     }

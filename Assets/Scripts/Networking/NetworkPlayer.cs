@@ -98,6 +98,12 @@ namespace Beep
             if (IsOwner && netTransform != null) netTransform.Teleport(position, rotation, transform.localScale);
         }
 
+        /// <summary>Host only: tell this player why their catch failed.</summary>
+        public void SendHint(string text) => HintRpc(text);
+
+        [Rpc(SendTo.Owner)]
+        void HintRpc(string text) => player.Catcher.ReceiveHint(text);
+
         /// <summary>Host only: lock or unlock this player's controls.</summary>
         public void SetLocked(bool value)
         {

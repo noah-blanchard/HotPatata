@@ -46,9 +46,16 @@ MonoBehaviour:
   aimMaxDistance: 40
   aimAssistAngle: 8
   aimAssistDistance: 16
-  aimAssistStrength: 0.5
-  catchRadius: 0.6
-  catchWindowDuration: 0.25
+  aimAssistStrength: 0.35
+  homingStrength: 0.7
+  homingConeDegrees: 28
+  homingRange: 25
+  homingTurnRate: 200
+  homingSpreadDegrees: 5
+  magnetRadius: 2
+  magnetStrength: 0.8
+  catchRadius: 0.9
+  catchWindowDuration: 0.4
   catchCooldown: 0.5
   catchFrontBias: 0.25
   catchCenterHeight: 1.3

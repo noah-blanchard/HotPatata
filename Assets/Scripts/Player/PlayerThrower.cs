@@ -23,6 +23,10 @@ namespace Beep
 
         public bool Charging => chargeStartTime >= 0f;
 
+        /// <summary>Who the throw would be bent toward if released now (drives the on-screen lock frame).</summary>
+        public Player LockTarget { get; private set; }
+        public float LockQuality { get; private set; }
+
         /// <summary>True while this player is the bomb's carrier (drives the charge UI).</summary>
         public bool HoldsBomb => bomb != null && bomb.Carrier == player;
 
@@ -44,6 +48,7 @@ namespace Beep
         void Update()
         {
             if (!player.IsLocal) return;
+            UpdateLockPreview();
 
             // Always consume both edges so nothing queues up while we cannot throw.
             bool pressed = player.Input.ThrowPressed;
@@ -68,6 +73,21 @@ namespace Beep
         }
 
         public void CancelCharge() => chargeStartTime = -1f;
+
+        void UpdateLockPreview()
+        {
+            LockTarget = null;
+            LockQuality = 0f;
+            if (bomb == null || bomb.Carrier != player || allPlayers == null) return;
+
+            Vector3 origin = ThrowOriginNow();
+            Vector3 velocity = ComputeThrowVelocity(origin, 0f);   // direction is the same for every charge
+            if (HomingTargeting.TryPick(player.Tuning, origin, velocity, player, allPlayers, out var target, out _, out float quality))
+            {
+                LockTarget = target;
+                LockQuality = quality;
+            }
+        }
 
         public bool TryThrow(float charge01 = 0f)
         {

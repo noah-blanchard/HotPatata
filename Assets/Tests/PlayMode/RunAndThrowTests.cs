@@ -199,22 +199,32 @@ namespace Beep.Tests
         [UnityTest]
         public IEnumerator ChargedThrow_TravelsFartherThanATap()
         {
-            // Aim level over open floor (+X, the far wall is 23 m away) and compare where the bomb first touches down.
-            p1.Look.SetAim(90f, -5f);
-            bomb.BombExploded += (r, d) => { };
-            Drive.PressThrow();
-            yield return WaitUntil(() => bomb.State == BombState.Exploding, 3f, "tap never landed");
-            float tapDistance = bomb.transform.position.x - p1.transform.position.x;
+            // This is about charge only: switch homing off so the throws are not bent toward player 2.
+            float homing = tuning.homingStrength;
+            tuning.homingStrength = 0f;
+            try
+            {
+                // Aim level over open floor (+X, the far wall is 23 m away) and compare where the bomb first touches down.
+                p1.Look.SetAim(90f, -5f);
+                bomb.BombExploded += (r, d) => { };
+                Drive.PressThrow();
+                yield return WaitUntil(() => bomb.State == BombState.Exploding, 3f, "tap never landed");
+                float tapDistance = bomb.transform.position.x - p1.transform.position.x;
 
-            yield return WaitUntil(() => run.State == RunState.Playing, 3f, "reset");
-            p1.Look.SetAim(90f, -5f);
-            Drive.SetThrowHeld(true);
-            yield return WaitSeconds(tuning.throwChargeTime + 0.1f);
-            Drive.SetThrowHeld(false);
-            yield return WaitUntil(() => bomb.State == BombState.Exploding, 4f, "charged throw never landed");
-            float chargedDistance = bomb.transform.position.x - p1.transform.position.x;
+                yield return WaitUntil(() => run.State == RunState.Playing, 3f, "reset");
+                p1.Look.SetAim(90f, -5f);
+                Drive.SetThrowHeld(true);
+                yield return WaitSeconds(tuning.throwChargeTime + 0.1f);
+                Drive.SetThrowHeld(false);
+                yield return WaitUntil(() => bomb.State == BombState.Exploding, 4f, "charged throw never landed");
+                float chargedDistance = bomb.transform.position.x - p1.transform.position.x;
 
-            Assert.Greater(chargedDistance, tapDistance * 1.5f, $"charged {chargedDistance:F1} m vs tap {tapDistance:F1} m");
+                Assert.Greater(chargedDistance, tapDistance * 1.5f, $"charged {chargedDistance:F1} m vs tap {tapDistance:F1} m");
+            }
+            finally
+            {
+                tuning.homingStrength = homing;
+            }
         }
 
         // ------------------------------------------------------------------ natural motion

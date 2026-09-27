@@ -47,6 +47,10 @@ namespace Beep
         public Player Carrier { get; private set; }
         /// <summary>Who released the bomb most recently; cannot catch that same flight.</summary>
         public Player LastThrower { get; private set; }
+        /// <summary>The receiver a flying bomb is being bent toward (null = flying free).</summary>
+        public Player HomingTarget { get; private set; }
+        public float HomingQuality { get; private set; }
+        public Vector3 HomingOffset { get; private set; }
         /// <summary>Why the bomb last exploded (valid while Exploding).</summary>
         public BombFailReason LastFailReason { get; private set; }
 
@@ -104,6 +108,7 @@ namespace Beep
             }
 
             LastThrower = thrower;
+            PickHomingTarget(thrower, origin, velocity);
             SetCarrier(null);
             Transition(BombState.Thrown);
             bombPhysics.EnterThrown(origin, velocity);
@@ -117,6 +122,7 @@ namespace Beep
         {
             if (State != BombState.Thrown) return false;
 
+            HomingTarget = null;
             SetCarrier(receiver);
             bombPhysics.EnterHeld(receiver.HandAnchor);
             fuse.Refresh();
@@ -126,6 +132,23 @@ namespace Beep
             BombCaught?.Invoke(receiver);
             return true;
         }
+
+        void PickHomingTarget(Player thrower, Vector3 origin, Vector3 velocity)
+        {
+            HomingTarget = null;
+            if (!NetMode.IsAuthority) return;
+            if (!HomingTargeting.TryPick(tuning, origin, velocity, thrower, Player.All, out var target, out float angle, out float quality)) return;
+
+            HomingTarget = target;
+            HomingQuality = quality;
+            // A small random error on where the bomb aims: this is what lets a homing throw still miss.
+            float distance = Vector3.Distance(origin, target.CatchVolume.CatchCenter);
+            HomingOffset = UnityEngine.Random.insideUnitSphere * (Mathf.Tan(tuning.homingSpreadDegrees * Mathf.Deg2Rad) * distance);
+            BeepLog.Bomb($"Homing on {target} (off-aim {angle:F0} deg, strength {quality:F2})");
+        }
+
+        /// <summary>Stop bending the flight (the bomb has passed its target).</summary>
+        public void ClearHoming() => HomingTarget = null;
 
         // ------------------------------------------------------------------ failure
 
@@ -143,7 +166,10 @@ namespace Beep
             if (State != BombState.Thrown) return;
 
             if (other.TryGetComponent(out PlayerCatchVolume volume))
+            {
+                if (volume.Owner != null && volume.Owner != LastThrower) volume.Owner.Catcher.NoteBombInReach();
                 resolver.TryResolveCatch(volume);
+            }
             else if (other.TryGetComponent(out KillZone _))
                 Explode(BombFailReason.KillZone, $"object={other.name}");
             // Any other trigger is intentionally neutral: it must never count as lethal world contact.
@@ -161,6 +187,7 @@ namespace Beep
 
             var from = State;
             LastFailReason = reason;
+            HomingTarget = null;
             bombPhysics.EnterInert();
             Transition(BombState.Exploding);
             BeepLog.Bomb($"{from} -> Exploding reason={reason} {detail}");
@@ -174,6 +201,7 @@ namespace Beep
         {
             bombPhysics.EnterInert();
             transform.SetParent(null, true);
+            HomingTarget = null;
             LastThrower = null;
             SetCarrier(null);
             fuse.Refresh();
@@ -196,9 +224,10 @@ namespace Beep
         /// Remote clients only: adopt the host's state and raise the same events the host raised, so audio,
         /// visuals and UI react identically everywhere. Never called on the authority.
         /// </summary>
-        public void ApplyMirror(BombState newState, Player carrier, Player lastThrower, BombFailReason failReason)
+        public void ApplyMirror(BombState newState, Player carrier, Player lastThrower, BombFailReason failReason, Player homingTarget)
         {
             var old = State;
+            HomingTarget = homingTarget;
             LastThrower = lastThrower;
             LastFailReason = failReason;
             SetCarrier(carrier);

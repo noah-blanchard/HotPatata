@@ -16,6 +16,13 @@ namespace Beep
         BombController bomb;
         float windowEnd = -1f;
         float cooldownEnd = -1f;
+        float lastReachTime = -10f;
+        bool windowWasOpen;
+        string hint;
+        float hintUntil;
+
+        /// <summary>Why the last catch attempt failed ("too late", "too early"), for a moment; null otherwise.</summary>
+        public string Hint => Time.time < hintUntil ? hint : null;
 
         public bool WindowOpen => Time.time < windowEnd;
         public bool OnCooldown => !WindowOpen && Time.time < cooldownEnd;
@@ -38,6 +45,8 @@ namespace Beep
 
         void Update()
         {
+            if (NetMode.IsAuthority) CheckMissedEarly();   // the host judges timing, for every player
+
             if (!player.IsLocal) return;
 
             bool pressed = player.Input.CatchPressed;   // always consume the input
@@ -55,6 +64,8 @@ namespace Beep
             if (bomb.Carrier == player) return false;    // you cannot catch what you are already holding
             if (WindowOpen || Time.time < cooldownEnd) return false;
 
+            DiagnoseLatePress();
+
             var t = player.Tuning;
             windowEnd = Time.time + t.catchWindowDuration;
             cooldownEnd = windowEnd + t.catchCooldown;
@@ -66,6 +77,45 @@ namespace Beep
         {
             windowEnd = -1f;
             cooldownEnd = -1f;
+            windowWasOpen = false;
+        }
+
+        /// <summary>The bomb touched this player's catch volume (whether or not they were ready). Host only.</summary>
+        public void NoteBombInReach() => lastReachTime = Time.time;
+
+        /// <summary>A hint decided on the host, delivered to this player's own machine.</summary>
+        public void ReceiveHint(string text)
+        {
+            hint = text;
+            hintUntil = Time.time + 1.6f;
+        }
+
+        void SayHint(string text)
+        {
+            BeepLog.Bomb($"Catch hint for {player}: {text} (rtt {NetMode.RttMs} ms)");
+            if (player.Net != null && player.Net.IsSpawned && !player.Net.IsOwner) player.Net.SendHint(text);
+            else ReceiveHint(text);
+        }
+
+        // The press arrived after the bomb had already been in reach and left: too late.
+        void DiagnoseLatePress()
+        {
+            if (bomb.State != BombState.Thrown || bomb.LastThrower == player) return;
+            float since = Time.time - lastReachTime;
+            bool inReachNow = Vector3.Distance(bomb.transform.position, player.CatchVolume.CatchCenter) <= player.Tuning.catchRadius + 0.25f;
+            if (!inReachNow && since > 0.03f && since < 0.8f) SayHint($"Too late: it was in reach {since * 1000f:F0} ms ago");
+        }
+
+        // The window closed while the bomb was still coming: too early.
+        void CheckMissedEarly()
+        {
+            bool open = WindowOpen;
+            bool justClosed = windowWasOpen && !open;
+            windowWasOpen = open;
+            if (!justClosed || bomb == null || bomb.State != BombState.Thrown || bomb.LastThrower == player) return;
+
+            Vector3 toMe = player.CatchVolume.CatchCenter - bomb.transform.position;
+            if (toMe.magnitude < 12f && Vector3.Dot(bomb.Body.Velocity, toMe) > 0f) SayHint("Too early: it was still on its way");
         }
     }
 }

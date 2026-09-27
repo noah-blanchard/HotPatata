@@ -301,6 +301,26 @@ The throw is **chargeable**:
 - while charging, the carrier's fuse keeps burning: charging is a risk, not a pause;
 - charging is cancelled if control is locked, the bomb is lost or the section resets.
 
+### 8.3 Soft homing (decided after the first online playtest)
+
+A throw is bent toward the receiver nearest to where the thrower aims, like a soft aim-assist, but **visible and
+never perfect**:
+
+- **Lock:** at release, the host picks the other player closest to the throw direction inside a cone
+  (`homingConeDegrees`, 28 deg half-angle, `homingRange` 25 m). No one in the cone = no lock, an ordinary throw.
+- **Bending:** while flying, the velocity turns toward the locked receiver at a limited rate (`homingTurnRate`, scaled
+  with speed so hard throws bend as well). Strength (`homingStrength`, 0.7) fades toward the edge of the cone.
+- **It can miss:** a small random error on the aim point per throw (`homingSpreadDegrees`), it aims at where the
+  receiver IS (no lead), it never bends around geometry, and it lets go once it has passed the receiver.
+- **Magnet:** within `magnetRadius` (2 m) of the receiver, if their catch window is open, the bomb is pulled into
+  their hands.
+- **Feedback:** the thrower sees corner brackets on the receiver who would be locked (fainter = weaker); the
+  receiver sees a pulsing "CATCH!" marker on the incoming bomb (or a warning if it is behind them).
+- Homing runs on the host, so everyone sees the same flight. Catching itself stays timed (see section 9).
+
+This replaces the earlier "no hidden auto-catch" restriction: assistance is allowed as long as it is visible,
+bounded and imperfect.
+
 A **UI indicator** is required: a charge bar near the crosshair (only while holding the bomb) that fills
 as the charge builds, with the launch speed and an estimated level-ground range. No trajectory preview.
 
@@ -335,7 +355,10 @@ large green brackets = window open, small red brackets with a shrinking bar = co
 
 Starting catch radius (tightened after the first playtest, since timing now does the gatekeeping):
 
-- roughly **0.5–0.7 m** around upper torso / hands (starting value 0.6 m).
+- roughly **0.7–1.0 m** around upper torso / hands (starting value 0.9 m; it was 0.6 m, widened after the first online playtest).
+
+The catch window starts at **0.4 s** (it was 0.25 s). When a catch fails, the receiver is told why ("Too early" / "Too late by N ms")
+and the debug HUD shows their ping, so timing problems can be told apart from network latency.
 
 Prefer a front-biased catch region.
 
@@ -723,8 +746,11 @@ At minimum:
 | Throw speed (tap → full charge) | 10 → 24 m/s |
 | Throw charge time | 1.0 s |
 | Normal pass distance | 8–12 m (about half charge) |
-| Catch radius | 0.6 m |
-| Catch window | 0.25 s |
+| Catch radius | 0.9 m |
+| Catch window | 0.4 s |
+| Homing (strength / cone / turn rate) | 0.7 / 28 deg / 200 deg/s |
+| Homing aim error | 5 deg |
+| Catch magnet radius | 2 m |
 | Catch cooldown | 0.5 s |
 | Jump coyote time | 0.1 s |
 | Jump buffer | 0.1 s |
