@@ -121,10 +121,6 @@ namespace HotPatata
         [Min(0f)] public float explosionShake = 2.2f;
         [Tooltip("Accessibility (spec §19): 0 = full flashes, 1 = no bright flashes (explosion flash, light, glare).")]
         [Range(0f, 1f)] public float flashReduction = 0f;
-        [Tooltip("Wind volume at full speed (0..1).")]
-        [Range(0f, 1f)] public float windVolume = 0.3f;
-        [Tooltip("Footstep and landing sounds (0 = off).")]
-        [Range(0f, 1f)] public float footstepVolume = 0.2f;
 
         [Header("Bomb - fuse")]
         [Tooltip("Seconds a carrier may hold the bomb. Refreshed by every valid catch.")]

@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 namespace HotPatata
@@ -39,7 +38,6 @@ namespace HotPatata
         Spring dip, fovImpulse, pitchKick;
         float fovSmoothed, rollSmoothed, bobAmount, phase, lastYaw, fallSpeed, slideAmount, shake, shakeSeed;
         bool wasGrounded = true;
-        int lastStep;
 
         public float FovOffset { get; private set; }
         public float Roll { get; private set; }
@@ -49,11 +47,6 @@ namespace HotPatata
         public float SpeedFraction { get; private set; }
         /// <summary>Unclamped: run = 1, sprint = 2, slides beyond (<see cref="PlayerMotor.MotionFraction"/>).</summary>
         public float MotionFraction { get; private set; }
-
-        /// <summary>Raised on each footfall with the current speed fraction.</summary>
-        public event Action<float> Stepped;
-        /// <summary>Raised on landing with an impact strength (0..1).</summary>
-        public event Action<float> Landed;
 
         bool IsActive => FirstPersonCamera.Instance != null && FirstPersonCamera.Instance.Target == player && player.IsLocal;
 
@@ -150,7 +143,6 @@ namespace HotPatata
                 {
                     dip.Kick(-impact * t.landingDip * 1.3f);
                     fovImpulse.Kick(-impact * 3f);
-                    Landed?.Invoke(impact);
                 }
             }
             else if (!grounded && wasGrounded && v.y > 1f)
@@ -187,7 +179,7 @@ namespace HotPatata
             float shakePitch = (Mathf.PerlinNoise(shakeT, 0.3f) - 0.5f) * 2f * amplitude;
             float shakeRoll = (Mathf.PerlinNoise(0.7f, shakeT) - 0.5f) * 2f * amplitude;
 
-            // ---- foot-plant bob, in step with the footfalls (no bob while sliding)
+            // ---- foot-plant bob (no bob while sliding)
             bool moving = grounded && speed > 0.5f && !motor.IsSliding;
             bobAmount = Mathf.Lerp(bobAmount, moving ? 1f : 0f, 1f - Mathf.Exp(-10f * dt));
             if (moving)
@@ -195,12 +187,6 @@ namespace HotPatata
                 // Sprinting lengthens the stride, so the rhythm does not turn into a frantic patter.
                 float stride = t.stepLength * Mathf.Lerp(1f, 1.3f, Mathf.Clamp01(MotionFraction - 1f));
                 phase += speed / Mathf.Max(0.3f, stride) * Mathf.PI * dt;
-                int step = Mathf.FloorToInt(phase / Mathf.PI);
-                if (step != lastStep)
-                {
-                    lastStep = step;
-                    Stepped?.Invoke(SpeedFraction);
-                }
             }
             float bobScale = bobAmount * Mathf.Lerp(0.4f, 1f, SpeedFraction);
             // A quick dip as each foot lands (phase = k*pi), easing back up between steps; a small lateral sway.

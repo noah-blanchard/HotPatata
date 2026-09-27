@@ -438,7 +438,7 @@ Required characteristics:
 
 - first-person camera at eye height; the body always faces where the player looks, and the player's own body is hidden from their own view (other players still see it);
 - quick but **progressive** acceleration (a gentle start that builds to full speed in about a quarter of a second, so a run has momentum) and fast, slightly inertial braking;
-- a strong sense of speed in first person: the field of view widens with speed and narrows while charging a throw, the view leans into strafes, bobs with footsteps, dips on hard landings and punches on throws and catches; running adds a light vignette, chromatic aberration and wind (all tuned in `GameTuning`, starting run speed 8 m/s);
+- a strong sense of speed in first person: the field of view widens with speed and narrows while charging a throw, the view leans into strafes, bobs with footsteps, dips on hard landings and punches on throws and catches; above run speed, anime speed lines and wind streaks, and a light vignette in slides (all tuned in `GameTuning`, starting run speed 8 m/s); no movement sounds (no footsteps, landings or wind);
 - the run direction **carves** toward the stick at a speed-dependent turn rate instead of snapping; sharp reversals brake through zero;
 - **sprint** (hold, forward-ish only) raises the run speed from 8 to 11 m/s; speed above the target (letting go of sprint, after a slide) bleeds off gently instead of snapping;
 - **momentum slide**: crouch while moving at 7 m/s or more slides, with a boost (+3.5 m/s, at most up to sprint speed + boost, no new boost within 1 s), friction that ends it in about a second, faster downhill, a little steering; release crouch to stand. A landing with crouch held goes straight into a slide;

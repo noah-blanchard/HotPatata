@@ -66,8 +66,6 @@ MonoBehaviour:
   slideRollDegrees: 3.5
   explosionShake: 2.2
   flashReduction: 0
-  windVolume: 0.3
-  footstepVolume: 0.2
   holdFuseDuration: 6
   warningDuration: 2
   caughtGraceDuration: 0.35
