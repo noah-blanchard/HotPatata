@@ -108,7 +108,11 @@ namespace Beep
             switch (source)
             {
                 case InputSource.KeyboardMouse:
-                    actions.devices = new ReadOnlyArray<InputDevice>(new InputDevice[] { Keyboard.current, Mouse.current });
+                    // Either device can be missing (no keyboard detected, headless run); never hand the actions a null.
+                    var devices = new System.Collections.Generic.List<InputDevice>(2);
+                    if (Keyboard.current != null) devices.Add(Keyboard.current);
+                    if (Mouse.current != null) devices.Add(Mouse.current);
+                    actions.devices = new ReadOnlyArray<InputDevice>(devices.ToArray());
                     break;
                 case InputSource.Gamepad:
                     actions.devices = new ReadOnlyArray<InputDevice>(new InputDevice[] { Gamepad.all[padIndex] });
