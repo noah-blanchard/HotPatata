@@ -22,6 +22,8 @@ namespace HotPatata
         readonly NetworkVariable<bool> locked = new NetworkVariable<bool>(false);   // server-written
         readonly NetworkVariable<float> pitch = new NetworkVariable<float>(0f,
             NetworkVariableBase.DefaultReadPerm, NetworkVariableWritePermission.Owner);   // owner-written
+        readonly NetworkVariable<byte> moveState = new NetworkVariable<byte>((byte)MoveState.Ground,
+            NetworkVariableBase.DefaultReadPerm, NetworkVariableWritePermission.Owner);   // owner-written: PlayerMotor.PackedState
 
         Player player;
         Unity.Netcode.Components.NetworkTransform netTransform;
@@ -31,6 +33,8 @@ namespace HotPatata
 
         public bool Locked => locked.Value;
         public float RemotePitch => pitch.Value;
+        /// <summary>The owner's <see cref="PlayerMotor.PackedState"/> (slide/crouch/sprint), so every copy has the same posture.</summary>
+        public byte RemoteMoveState => moveState.Value;
 
         public override void OnNetworkSpawn()
         {
@@ -80,8 +84,10 @@ namespace HotPatata
 
         void LateUpdate()
         {
-            if (IsSpawned && IsOwner && Mathf.Abs(pitch.Value - player.Look.Pitch) > PitchSendThreshold)
-                pitch.Value = player.Look.Pitch;
+            if (!IsSpawned || !IsOwner) return;
+            if (Mathf.Abs(pitch.Value - player.Look.Pitch) > PitchSendThreshold) pitch.Value = player.Look.Pitch;
+            byte state = player.Motor.PackedState;
+            if (moveState.Value != state) moveState.Value = state;
         }
 
         // ------------------------------------------------------------------ host -> players
@@ -161,7 +167,7 @@ namespace HotPatata
             if (!IsFinite(origin) || !IsFinite(velocity)) return;   // NaN/Infinity would poison the host's physics
 
             var t = player.Tuning;
-            float max = (t.throwSpeedMax + t.throwInheritForward * t.moveSpeed) * ThrowSpeedTolerance;   // charge + kept run speed
+            float max = (t.throwSpeedMax + t.throwInheritForward * t.throwInheritMaxSpeed) * ThrowSpeedTolerance;   // charge + kept run speed
             if (velocity.magnitude > max) velocity = velocity.normalized * max;
 
             Vector3 eye = player.CameraTarget.position;

@@ -119,5 +119,69 @@ namespace HotPatata.Tests
             p1.TeleportTo(new Vector3(0f, 0.5f, 32f), Quaternion.identity);   // over the first gap
             yield return WaitUntil(() => run.ResetCount == 1, 6f, "falling into the pit should fail the section");
         }
+
+        // ------------------------------------------------------------------ M9.2: beats tuned for the new movement
+
+        [UnityTest]
+        public IEnumerator StairRelay_TopStepIsTooHighToJump_ButCanBeMantled()
+        {
+            // C2 top 2.4 m, C3 top 4.2 m (a 1.8 m step, above the 1.6 m jump), 2 m apart.
+            yield return Place(p1, new Vector3(0f, 2.45f, 64f));
+            Drive.Move = Vector2.up;
+            yield return WaitUntil(() => p1.transform.position.z > 68.4f, 2f, "never reached the edge of C2");
+            Drive.PressJump();
+
+            bool mantled = false;
+            float end = Time.time + 2f;
+            while (Time.time < end && !(mantled && p1.Motor.Grounded))
+            {
+                mantled |= p1.Motor.State == MoveState.Mantle;
+                yield return null;
+            }
+            Assert.IsTrue(mantled, "the run-and-jump should end in a mantle");
+            Assert.AreEqual(4.2f, p1.transform.position.y, 0.1f, "standing on C3");
+        }
+
+        [UnityTest]
+        public IEnumerator FinalSprint_EntryGap_ASprintJumpMakesIt() =>
+            JumpFromHighLandingEdge(sprint: true, shouldLand: true);
+
+        [UnityTest]
+        public IEnumerator FinalSprint_EntryGap_ARunJumpFallsShort() =>
+            JumpFromHighLandingEdge(sprint: false, shouldLand: false);
+
+        IEnumerator JumpFromHighLandingEdge(bool sprint, bool shouldLand)
+        {
+            // F2 (top 8.4) ends at z 204; G1_Narrow_1 starts 7.6 m further on: out of reach of a run jump even with a mantle.
+            yield return Place(p1, new Vector3(0f, 8.45f, 194f));
+            Drive.Move = Vector2.up;
+            Drive.Sprint = sprint;
+            yield return WaitUntil(() => p1.transform.position.z > 203.7f, 3f, "never reached the edge");
+            Drive.PressJump();
+            yield return WaitUntil(() => p1.transform.position.y > 8.9f, 1f, "did not jump");   // airborne for real, not a grounded flicker
+            yield return WaitUntil(() => p1.Motor.Grounded || p1.transform.position.y < 7.5f, 2f, "never came down");
+            bool landed = p1.Motor.Grounded && p1.transform.position.y > 8.3f;
+            Drive.Move = Vector2.zero;
+            Assert.AreEqual(shouldLand, landed, sprint ? "a sprint jump should clear the gap" : "a plain run jump should not");
+        }
+
+        [UnityTest]
+        public IEnumerator FinalSprint_LowBar_BlocksARun_ButASlidePassesUnder()
+        {
+            var bar = GameObject.Find("G_SlideBar").GetComponentInChildren<Collider>().bounds;
+            Vector3 start = new Vector3(0f, 8.45f, bar.min.z - 2.5f);
+
+            yield return Place(p1, start);
+            Drive.Move = Vector2.up;
+            yield return WaitSeconds(1f);
+            Assert.Less(p1.transform.position.z, bar.min.z, "standing up, the bar stops you");
+
+            yield return Place(p1, start);
+            Drive.Sprint = true;
+            yield return WaitUntil(() => p1.transform.position.z > start.z + 1f, 1f, "did not start running");
+            Drive.Crouch = true;
+            yield return WaitUntil(() => p1.transform.position.z > bar.max.z + 0.5f, 2f, "did not get under the bar");
+            Drive.Move = Vector2.zero;
+        }
     }
 }

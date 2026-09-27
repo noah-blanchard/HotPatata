@@ -21,21 +21,51 @@ MonoBehaviour:
   gravity: 28
   coyoteTime: 0.1
   jumpBuffer: 0.1
+  groundTurnRate: 900
+  sprintTurnRate: 460
+  reverseAngle: 140
+  overspeedDeceleration: 9
+  airTurnRate: 220
+  airDrag: 3
+  airOverspeedDrag: 2.5
+  sprintSpeed: 11
+  sprintAcceleration: 18
+  sprintForwardDot: 0.5
+  slideMinEntrySpeed: 7
+  slideBoost: 3.5
+  slideBoostCooldown: 1
+  slideFriction: 7
+  slideExitSpeed: 5
+  slideMaxSpeed: 18
+  slideSteerRate: 90
+  slideSlopeAcceleration: 1
+  crouchSpeed: 4
+  crouchHeight: 1
+  crouchTransitionRate: 14
+  mantleMaxHeight: 1.4
+  mantleMinHeight: 0.1
+  mantleReach: 0.45
+  mantleDuration: 0.28
   mouseSensitivity: 0.1
   stickLookSpeed: 180
   pitchMin: -80
   pitchMax: 80
   fieldOfView: 75
   viewEffectsStrength: 1
-  fovKickAtSpeed: 12
+  fovKickAtSpeed: 4
+  fovKickAtSprint: 9
+  fovKickMax: 13
   rollDegrees: 2.2
   bobAmplitude: 0.035
   stepLength: 1.15
   landingDip: 0.1
   chargeFovZoom: 2
-  speedVignette: 0.28
-  windVolume: 0.3
-  footstepVolume: 0.2
+  speedVignette: 0.22
+  speedLinesStrength: 0.8
+  windStreaksStrength: 1
+  slideRollDegrees: 3.5
+  explosionShake: 2.2
+  flashReduction: 0
   holdFuseDuration: 6
   warningDuration: 2
   caughtGraceDuration: 0.35
@@ -47,6 +77,7 @@ MonoBehaviour:
   throwUpAngle: 6
   bombGravityScale: 1.5
   throwInheritForward: 0.5
+  throwInheritMaxSpeed: 11
   aimMaxDistance: 40
   assistStrength: 0.6
   assistConeDegrees: 6
@@ -65,6 +96,7 @@ MonoBehaviour:
   catchCooldown: 0.35
   catchFrontBias: 0.25
   catchCenterHeight: 1.3
+  catchLagCompensation: 0.35
   beepIntervals:
   - 1
   - 0.55
@@ -75,7 +107,15 @@ MonoBehaviour:
   - 0.75
   - 0.9
   beepVolume: 0.6
-  tumbleDegreesPerSecond: 480
-  tumbleRandomness: 0.35
+  tumbleDegreesPerSecond: 1200
+  tumbleRandomness: 0.85
   handSwayDegrees: 3
+  trailTime: 0.22
+  trailWidth: 0.16
+  fuseSparkRates:
+  - 14
+  - 30
+  - 60
+  - 130
+  flightPuffsPerMetre: 1.6
   resetDelay: 1

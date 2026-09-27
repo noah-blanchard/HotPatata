@@ -6,6 +6,8 @@ namespace HotPatata
     /// Presentation-only bridge between the player simulation and the mannequin Animator.
     /// It also keeps the shared HandAnchor on the first-person camera for the viewed player,
     /// and between the animated hands for every third-person player.
+    /// Speed runs past 1 when sprinting (the blend tree plays the run faster); slides and crouch-walks are
+    /// procedural poses on the model root (the rig has no slide clip), driven by the replicated motor state.
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(Player))]
@@ -26,6 +28,14 @@ namespace HotPatata
         [SerializeField] Transform rightHand;
         [SerializeField] float speedDampTime = 0.1f;
         [SerializeField] float handForwardOffset = 0.05f;
+        [Header("Procedural poses")]
+        [Tooltip("Model root that is leaned and squashed (defaults to the Animator's transform).")]
+        [SerializeField] Transform poseRoot;
+        [SerializeField] float slideLeanDegrees = 62f;
+        [SerializeField] Vector3 slideOffset = new Vector3(0f, 0.05f, 0.55f);
+        [SerializeField] float crouchLeanDegrees = 18f;
+        [SerializeField] float crouchSquash = 0.7f;
+        [SerializeField] float poseBlendRate = 10f;
 
         Player player;
         BombController boundBomb;
@@ -35,12 +45,22 @@ namespace HotPatata
         int groundMask;
         float throwGuardUntil;
         ThrowPhase throwPhase;
+        Vector3 poseBasePosition, poseBaseScale;
+        Quaternion poseBaseRotation;
+        float slidePose, crouchPose;
 
         void Awake()
         {
             player = GetComponent<Player>();
             if (animator == null) animator = GetComponentInChildren<Animator>(true);
             if (animator != null) animator.applyRootMotion = false;
+            if (poseRoot == null && animator != null) poseRoot = animator.transform;
+            if (poseRoot != null)
+            {
+                poseBasePosition = poseRoot.localPosition;
+                poseBaseRotation = poseRoot.localRotation;
+                poseBaseScale = poseRoot.localScale;
+            }
 
             cameraHandPosition = player.HandAnchor.localPosition;
             cameraHandRotation = player.HandAnchor.localRotation;
@@ -71,17 +91,36 @@ namespace HotPatata
                 : (transform.position - lastPosition) / dt;
             lastPosition = transform.position;
 
-            float moveSpeed = Mathf.Max(0.01f, player.Tuning.moveSpeed);
             float horizontalSpeed = new Vector2(velocity.x, velocity.z).magnitude;
+            var motor = player.Motor;
             bool grounded = player.IsLocal
                 ? player.Motor.Grounded
                 : Physics.CheckSphere(transform.position + Vector3.up * 0.12f, 0.22f,
                     groundMask, QueryTriggerInteraction.Ignore);
 
-            animator.SetFloat(Speed, Mathf.Clamp01(horizontalSpeed / moveSpeed), speedDampTime, dt);
+            // Sliding holds a still pose (the legs do not run); otherwise run = 1, sprint = 2.
+            float speedParam = motor.IsSliding ? 0f : Mathf.Min(PlayerMotor.MotionFraction(player.Tuning, horizontalSpeed), 2f);
+            animator.SetFloat(Speed, speedParam, speedDampTime, dt);
             animator.SetFloat(VerticalSpeed, velocity.y);
-            animator.SetBool(Grounded, grounded);
+            animator.SetBool(Grounded, grounded || motor.IsSliding);
             UpdateThrowPose();
+            UpdateBodyPose(motor, dt);
+        }
+
+        void UpdateBodyPose(PlayerMotor motor, float dt)
+        {
+            if (poseRoot == null) return;
+            float step = poseBlendRate * dt;
+            slidePose = Mathf.MoveTowards(slidePose, motor.IsSliding ? 1f : 0f, step);
+            crouchPose = Mathf.MoveTowards(crouchPose, motor.Crouched && !motor.IsSliding ? 1f : 0f, step);
+
+            // Slide: lean back, feet first. Crouch-walk: lean in and squash (cartoon, no crouch clip).
+            float pitch = -slideLeanDegrees * slidePose + crouchLeanDegrees * crouchPose;
+            poseRoot.localRotation = poseBaseRotation * Quaternion.Euler(pitch, 0f, 0f);
+            poseRoot.localPosition = poseBasePosition + slideOffset * slidePose;
+            var scale = poseBaseScale;
+            scale.y *= Mathf.Lerp(1f, crouchSquash, crouchPose);
+            poseRoot.localScale = scale;
         }
 
         void LateUpdate()

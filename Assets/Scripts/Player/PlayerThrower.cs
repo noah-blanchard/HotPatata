@@ -163,7 +163,7 @@ namespace HotPatata
             var flatDir = new Vector3(direction.x, 0f, direction.z);
             if (t.throwInheritForward <= 0f || flatDir.sqrMagnitude < 1e-4f) return Vector3.zero;
             flatDir.Normalize();
-            float along = Vector3.Dot(new Vector3(playerVelocity.x, 0f, playerVelocity.z), flatDir);
+            float along = Mathf.Min(Vector3.Dot(new Vector3(playerVelocity.x, 0f, playerVelocity.z), flatDir), t.throwInheritMaxSpeed);
             return along > 0f ? flatDir * (along * t.throwInheritForward) : Vector3.zero;
         }
 

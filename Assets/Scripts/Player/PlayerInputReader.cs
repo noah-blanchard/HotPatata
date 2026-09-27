@@ -23,7 +23,7 @@ namespace HotPatata
         [SerializeField] int gamepadIndex;
 
         InputActionAsset actions;
-        InputAction move, look, jump, throwAction, catchAction;
+        InputAction move, look, jump, throwAction, catchAction, sprint, crouch;
 
         /// <summary>
         /// Programmatic input that completely replaces device input while assigned. Used by automated
@@ -34,6 +34,8 @@ namespace HotPatata
             public Vector2 Move;
             /// <summary>Look rate in "stick" units (-1..1), like a gamepad stick.</summary>
             public Vector2 Look;
+            /// <summary>Held buttons: set true to hold, false to release.</summary>
+            public bool Sprint, Crouch;
             public bool ThrowHeld { get; private set; }
             bool jumpQueued, throwPressQueued, throwReleaseQueued, catchQueued;
 
@@ -74,6 +76,8 @@ namespace HotPatata
         public bool ThrowPressed => Scripted != null ? Scripted.ConsumeThrowPress() : Source != InputSource.None && throwAction.WasPressedThisFrame();
         public bool ThrowReleased => Scripted != null ? Scripted.ConsumeThrowRelease() : Source != InputSource.None && throwAction.WasReleasedThisFrame();
         public bool CatchPressed => Scripted != null ? Scripted.ConsumeCatch() : Source != InputSource.None && catchAction.WasPressedThisFrame();
+        public bool SprintHeld => Scripted != null ? Scripted.Sprint : Source != InputSource.None && sprint.IsPressed();
+        public bool CrouchHeld => Scripted != null ? Scripted.Crouch : Source != InputSource.None && crouch.IsPressed();
 
         void Awake()
         {
@@ -84,6 +88,8 @@ namespace HotPatata
             jump = map.FindAction("Jump", true);
             throwAction = map.FindAction("Throw", true);
             catchAction = map.FindAction("Catch", true);
+            sprint = map.FindAction("Sprint", true);
+            crouch = map.FindAction("Crouch", true);
         }
 
         void OnEnable()
