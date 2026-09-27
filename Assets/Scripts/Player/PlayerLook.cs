@@ -12,6 +12,7 @@ namespace Beep
         Player player;
         float yaw;
         float pitch;
+        Vector3 baseEyePosition;
 
         public float Yaw => yaw;
         public float Pitch => pitch;
@@ -22,6 +23,7 @@ namespace Beep
         {
             player = GetComponent<Player>();
             yaw = transform.eulerAngles.y;
+            baseEyePosition = player.CameraTarget.localPosition;
         }
 
         void Update()
@@ -41,7 +43,17 @@ namespace Beep
         void LateUpdate()
         {
             float p = player.IsLocal ? pitch : player.Net.RemotePitch;   // remote players' pitch is replicated
-            player.CameraTarget.localRotation = Quaternion.Euler(p, 0f, 0f);
+            var feel = player.IsLocal ? player.Feel : null;
+            if (feel != null)
+            {
+                // Roll, recoil and bob are applied to the eye pivot, so the held bomb moves with the view.
+                player.CameraTarget.localRotation = Quaternion.Euler(p + feel.PitchKick, 0f, feel.Roll);
+                player.CameraTarget.localPosition = baseEyePosition + feel.EyeOffset;
+            }
+            else
+            {
+                player.CameraTarget.localRotation = Quaternion.Euler(p, 0f, 0f);
+            }
         }
 
         public void SetYaw(float degrees) => yaw = degrees;

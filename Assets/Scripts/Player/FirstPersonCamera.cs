@@ -8,6 +8,7 @@ namespace Beep
     /// thing they see of themselves is the bomb in their hand.
     /// </summary>
     [RequireComponent(typeof(Camera))]
+    [DefaultExecutionOrder(200)]   // after PlayerLook has placed the eye pivot
     public class FirstPersonCamera : MonoBehaviour
     {
         [SerializeField] Player target;
@@ -48,8 +49,9 @@ namespace Beep
         {
             if (target == null) return;
 
-            cam.fieldOfView = tuning.fieldOfView;
-            transform.SetPositionAndRotation(target.CameraTarget.position, target.Look.AimRotation);
+            float fovOffset = target.Feel != null ? target.Feel.FovOffset : 0f;
+            cam.fieldOfView = tuning.fieldOfView + fovOffset;
+            transform.SetPositionAndRotation(target.CameraTarget.position, target.CameraTarget.rotation);
         }
     }
 }

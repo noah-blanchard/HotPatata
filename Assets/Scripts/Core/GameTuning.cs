@@ -11,6 +11,8 @@ namespace Beep
     {
         [Header("Movement")]
         [Min(0f)] public float moveSpeed = 7f;
+        [Tooltip("Acceleration at the start of a run, as a fraction of Acceleration. It ramps to 1 by half speed, so a run builds up instead of snapping to speed.")]
+        [Range(0.1f, 1f)] public float startAccelerationMultiplier = 0.5f;
         [Tooltip("Units/s² while speeding up on the ground.")]
         [Min(0f)] public float acceleration = 55f;
         [Tooltip("Units/s² while slowing down on the ground.")]
@@ -33,6 +35,26 @@ namespace Beep
         [Tooltip("Most you can look down.")]
         public float pitchMax = 80f;
         [Range(40f, 110f)] public float fieldOfView = 75f;
+
+        [Header("View feel (first person)")]
+        [Tooltip("Master scale for every camera effect below (accessibility: 0 = a perfectly steady camera).")]
+        [Range(0f, 1f)] public float viewEffectsStrength = 1f;
+        [Tooltip("Extra field of view at full run speed, in degrees.")]
+        [Min(0f)] public float fovKickAtSpeed = 12f;
+        [Tooltip("Degrees the view leans when strafing at full speed.")]
+        [Min(0f)] public float rollDegrees = 2.2f;
+        [Tooltip("Height of the walking bob in metres at full speed.")]
+        [Min(0f)] public float bobAmplitude = 0.035f;
+        [Tooltip("Metres per footstep (drives the bob rhythm and footstep sounds).")]
+        [Min(0.3f)] public float stepLength = 1.15f;
+        [Tooltip("How far the view dips on a hard landing, in metres.")]
+        [Min(0f)] public float landingDip = 0.10f;
+        [Tooltip("Degrees the field of view narrows while charging a throw (focus).")]
+        [Min(0f)] public float chargeFovZoom = 6f;
+        [Tooltip("Vignette strength at full speed (0..1).")]
+        [Range(0f, 0.6f)] public float speedVignette = 0.28f;
+        [Tooltip("Wind volume at full speed (0..1).")]
+        [Range(0f, 1f)] public float windVolume = 0.3f;
 
         [Header("Bomb - fuse")]
         [Tooltip("Seconds a carrier may hold the bomb. Refreshed by every valid catch.")]

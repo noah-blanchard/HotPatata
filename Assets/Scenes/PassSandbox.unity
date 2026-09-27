@@ -2078,6 +2078,7 @@ GameObject:
   - component: {fileID: 1922516124}
   - component: {fileID: 1922516123}
   - component: {fileID: 1922516122}
+  - component: {fileID: 1922516126}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -2173,6 +2174,19 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1922516126
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1922516121}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8f1e9467702051e47864ee77b049044c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Beep::Beep.SpeedEffects
+  tuning: {fileID: 11400000, guid: 35604efc4188ead42afe90813d44683f, type: 2}
 --- !u!1 &1977614216
 GameObject:
   m_ObjectHideFlags: 0

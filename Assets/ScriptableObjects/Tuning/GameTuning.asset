@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e57c06f7999edf748b47bfa21b5a384b, type: 3}
   m_Name: GameTuning
   m_EditorClassIdentifier: Beep::Beep.GameTuning
-  moveSpeed: 7
-  acceleration: 55
-  braking: 70
+  moveSpeed: 8
+  startAccelerationMultiplier: 0.5
+  acceleration: 45
+  braking: 45
   airControl: 0.5
   jumpHeight: 1.6
   gravity: 28
@@ -25,6 +26,15 @@ MonoBehaviour:
   pitchMin: -80
   pitchMax: 80
   fieldOfView: 75
+  viewEffectsStrength: 1
+  fovKickAtSpeed: 12
+  rollDegrees: 2.2
+  bobAmplitude: 0.035
+  stepLength: 1.15
+  landingDip: 0.1
+  chargeFovZoom: 6
+  speedVignette: 0.28
+  windVolume: 0.3
   holdFuseDuration: 6
   warningDuration: 2
   caughtGraceDuration: 0.35
@@ -52,4 +62,7 @@ MonoBehaviour:
   - 0.75
   - 0.9
   beepVolume: 0.6
+  tumbleDegreesPerSecond: 480
+  tumbleRandomness: 0.35
+  handSwayDegrees: 3
   resetDelay: 1

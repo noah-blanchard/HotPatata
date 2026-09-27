@@ -47,7 +47,18 @@ namespace Beep
             Vector3 wish = player.Look.YawRotation * new Vector3(stick.x, 0f, stick.y);
             Vector3 target = wish * t.moveSpeed;
 
-            float rate = wish.sqrMagnitude > 0.0001f ? t.acceleration : t.braking;
+            float rate;
+            if (wish.sqrMagnitude > 0.0001f)
+            {
+                // Progressive start: gentler off the mark, full strength once we are moving.
+                float current = new Vector2(horizontalVelocity.x, horizontalVelocity.z).magnitude;
+                float build = Mathf.Clamp01(current / Mathf.Max(0.01f, t.moveSpeed * 0.5f));
+                rate = t.acceleration * Mathf.Lerp(t.startAccelerationMultiplier, 1f, build);
+            }
+            else
+            {
+                rate = t.braking;
+            }
             if (!Grounded) rate *= t.airControl;
             horizontalVelocity = Vector3.MoveTowards(horizontalVelocity, target, rate * dt);
 

@@ -395,8 +395,8 @@ Movement target:
 Required characteristics:
 
 - first-person camera at eye height; the body always faces where the player looks, and the player's own body is hidden from their own view (other players still see it);
-- fast acceleration;
-- fast braking;
+- quick but **progressive** acceleration (a gentle start that builds to full speed in about a quarter of a second, so a run has momentum) and fast, slightly inertial braking;
+- a strong sense of speed in first person: the field of view widens with speed and narrows while charging a throw, the view leans into strafes, bobs with footsteps, dips on hard landings and punches on throws and catches; running adds a light vignette, chromatic aberration and wind (all tuned in `GameTuning`, starting run speed 8 m/s);
 - moderate air control;
 - single jump;
 - coyote time around **0.1 s**;
@@ -706,7 +706,7 @@ At minimum:
 - beep urgency must also have visual feedback;
 - do not rely on red/green distinction alone;
 - use pulse speed / icon / shape / brightness;
-- expose camera shake setting before broader testing;
+- expose camera shake setting before broader testing (`viewEffectsStrength` in `GameTuning` scales every first-person camera effect, 0 = perfectly steady; to be surfaced in a settings menu);
 - expose flash reduction before broader testing;
 - use the Input System so rebinding remains possible.
 

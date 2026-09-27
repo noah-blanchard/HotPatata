@@ -70,6 +70,59 @@ namespace Beep
             return Make("throw", d);
         }
 
+        /// <summary>Two seconds of soft, low-passed wind that loops without a seam.</summary>
+        public static AudioClip Wind()
+        {
+            const float fade = 0.25f;
+            int length = SampleRate * 2;
+            int overlap = (int)(SampleRate * fade);
+            var raw = new float[length + overlap];
+            var rng = new System.Random(21);
+            float lp = 0f;
+            for (int i = 0; i < raw.Length; i++)
+            {
+                float noise = (float)(rng.NextDouble() * 2.0 - 1.0);
+                lp += (noise - lp) * 0.06f;
+                raw[i] = lp * 2.2f;
+            }
+            var d = new float[length];
+            for (int i = 0; i < length; i++)
+                d[i] = i < overlap ? Mathf.Lerp(raw[length + i], raw[i], i / (float)overlap) : raw[i];   // crossfade the seam
+            return Make("wind", d);
+        }
+
+        /// <summary>A soft footfall.</summary>
+        public static AudioClip Step()
+        {
+            int n = (int)(SampleRate * 0.09f);
+            var d = new float[n];
+            var rng = new System.Random(5);
+            float lp = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)SampleRate;
+                lp += ((float)(rng.NextDouble() * 2.0 - 1.0) - lp) * 0.25f;
+                d[i] = (lp * 0.6f + Mathf.Sin(2f * Mathf.PI * 95f * t) * 0.5f) * Mathf.Exp(-t * 55f);
+            }
+            return Make("step", d);
+        }
+
+        /// <summary>A heavier thud for landing.</summary>
+        public static AudioClip Land()
+        {
+            int n = (int)(SampleRate * 0.16f);
+            var d = new float[n];
+            var rng = new System.Random(9);
+            float lp = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)SampleRate;
+                lp += ((float)(rng.NextDouble() * 2.0 - 1.0) - lp) * 0.18f;
+                d[i] = (lp * 0.7f + Mathf.Sin(2f * Mathf.PI * (70f - 25f * t) * t) * 0.9f) * Mathf.Exp(-t * 28f);
+            }
+            return Make("land", d);
+        }
+
         /// <summary>Noise burst with a low thump.</summary>
         public static AudioClip Explosion()
         {
