@@ -723,10 +723,14 @@ Synchronize:
 
 ---
 
-### 13.1 As implemented in Milestone 3
+### 13.1 As implemented in Milestones 3 and 4
 
-Transport is Unity Transport with **direct IP connect** (port 7777); Relay / join codes arrive with the lobby
-milestone. One persistent `NetworkManager` prefab (`NetworkManager` + `UnityTransport` + `NetworkBootstrap`)
+Online games use **Unity Multiplayer Services** (`SessionService`): the host creates a Relay-backed session
+(`CreateSessionAsync(... .WithRelayNetwork())`, no port forwarding) and shares its 6-character code; others join with
+`JoinSessionByCodeAsync`. The SDK starts and stops the Netcode host/client itself, so never call
+`NetworkManager.Shutdown` while a session exists (use `SessionService.LeaveAsync`). The lobby is a UI state of the
+Bootstrap scene (code, player list with host marker, Start for the host); Start makes the host load the level and
+every client follows. Direct IP (port 7777) remains as a LAN / testing path. One persistent `NetworkManager` prefab (`NetworkManager` + `UnityTransport` + `NetworkBootstrap`)
 is created by the `Bootstrap` scene; `NetworkBootstrap` offers Host / Join / Play Local and handles
 disconnects. The host loads `PassSandbox` through NGO scene management; clients follow.
 
@@ -751,6 +755,9 @@ teleports (resets, respawns) are sent as teleports (`NetworkPlayer.SyncTeleport`
 interpolate the player across the level and sweep them through triggers.
 
 ## 14. Session flow
+
+As built: Bootstrap menu (Host Online / Join with code / Play Local / Direct IP) -> Lobby (host presses Start) ->
+level -> Leave returns to the menu, and a new game can be created again.
 
 Expected high-level flow:
 

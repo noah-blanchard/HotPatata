@@ -771,6 +771,8 @@ Host launches `PassSandbox` or `PrototypeCourse`.
 
 ---
 
+> **Status:** Milestone 4 is implemented and verified: online session with a shareable code (Relay), join by code with readable errors, lobby player list (updates on join/leave), host Start, repeated create/leave.
+
 # Milestone 5 — First complete greybox course
 
 **Milestone exit condition:** 2–4 players can complete a 3–5 minute course with checkpoints.
