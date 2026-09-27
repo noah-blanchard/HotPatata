@@ -13,10 +13,11 @@ namespace Beep
         public struct Approach
         {
             public bool Valid;
-            public float Distance;      // closest distance between the bomb and the catch centre
+            public float Distance;      // closest approach to the catch centre, in reach space (compare with ReachFor)
             public float Time;          // seconds after release
             public Vector3 BombPoint;   // where the bomb was then
             public Vector3 Center;      // where the catch centre was then
+            public Vector3 Travel;      // the bomb's step there (its direction decides the facing bonus)
             public bool WindowOpen;     // was their catch window open at that moment
         }
 
@@ -101,14 +102,15 @@ namespace Beep
             {
                 if (p == null || p == Thrower || p.CatchVolume == null || p.PlayerId < 0 || p.PlayerId >= Closest.Length) continue;
                 Vector3 center = p.CatchVolume.CatchCenter;
-                float d = ThrowBallistics.SegmentPointDistance(lastPosition, position, center);
+                float d = CatchResolver.ReachDistance(p.Tuning, lastPosition, position, center, out Vector3 point);
                 ref var c = ref Closest[p.PlayerId];
                 if (!c.Valid || d < c.Distance)
                 {
                     c.Valid = true;
                     c.Distance = d;
                     c.Time = Time.time - releaseTime;
-                    c.BombPoint = position;
+                    c.BombPoint = point;
+                    c.Travel = position - lastPosition;
                     c.Center = center;
                     c.WindowOpen = p.Catcher.WindowOpen;
                 }
@@ -159,7 +161,7 @@ namespace Beep
             if (receiver != null && receiver.PlayerId >= 0 && receiver.PlayerId < Closest.Length && Closest[receiver.PlayerId].Valid)
             {
                 var c = Closest[receiver.PlayerId];
-                approach = $" | closest to {receiver} {c.Distance:F2} m at {c.Time:F2}s (reach {receiver.Tuning.catchRadius:F2}, window {(c.WindowOpen ? "open" : "closed")})";
+                approach = $" | closest to {receiver} {c.Distance:F2} m at {c.Time:F2}s (reach {CatchResolver.ReachFor(receiver, c.Travel):F2}, window {(c.WindowOpen ? "open" : "closed")})";
             }
 
             LastSummary = $"{Thrower} -> {outcome} after {flight:F2}s | {shot}{approach}";

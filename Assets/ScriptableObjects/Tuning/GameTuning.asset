@@ -39,7 +39,7 @@ MonoBehaviour:
   holdFuseDuration: 6
   warningDuration: 2
   caughtGraceDuration: 0.35
-  throwSpeedMin: 16
+  throwSpeedMin: 14
   throwSpeedMax: 28
   throwChargeTime: 0.45
   throwAnimationHoldNormalized: 0.38
@@ -54,11 +54,15 @@ MonoBehaviour:
   assistFullStrengthDistance: 8
   assistFarStrength: 0.4
   assistMaxCorrectionDegrees: 3.5
-  assistMaxElevationDegrees: 1.5
+  assistMaxElevationDegrees: 1
   assistLeadFactor: 0.8
-  catchRadius: 0.9
+  catchRadius: 1
+  catchFacingBonus: 0.3
+  catchFacingAngle: 70
+  catchVerticalScale: 0.6
+  catchLateGrace: 0.06
   catchWindowDuration: 0.4
-  catchCooldown: 0.5
+  catchCooldown: 0.35
   catchFrontBias: 0.25
   catchCenterHeight: 1.3
   beepIntervals:

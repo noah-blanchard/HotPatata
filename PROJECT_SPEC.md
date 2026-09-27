@@ -295,9 +295,9 @@ The throw is **chargeable and immediate**:
 - the bomb leaves the hand **on the release frame**. The throw animation is a follow-through played after the
   launch, never a delay before it;
 - charge runs from 0 to 1 over `throwChargeTime` (0.45 s) and is capped at 1;
-- launch speed goes linearly from `throwSpeedMin` (tap) to `throwSpeedMax` (full charge): 16 to 28 m/s. Aimed at
-  the receiver's chest, a tap reaches about 4 m, a half charge about 7 m, a full charge about 11 m; aiming a little
-  higher carries further. A normal pass is in the air for about **0.25–0.5 s**;
+- launch speed goes linearly from `throwSpeedMin` (tap) to `throwSpeedMax` (full charge): 14 to 28 m/s. Aimed at
+  the receiver's chest, a tap is a short pass (about 4 m) and falls short at 8 m; a half charge covers about 8 m and a
+  full charge 12 m or more. Aiming a little higher carries further. A normal pass is in the air for about **0.25–0.5 s**;
 - pure ballistic flight from the hand/release anchor under the bomb's own gravity (`bombGravityScale` 1.5),
   pitched up slightly (`throwUpAngle` 6°). Nothing bends the flight after release;
 - the throw keeps a share of the thrower's run speed **along the aim direction only** (`throwInheritForward` 0.5):
@@ -314,12 +314,13 @@ release, on direction only**:
 
 - **Who:** another player in line of sight (no Environment/Hazard in between), within `assistMaxRange` (14 m),
   whose body is within `assistConeDegrees` (6°) of the raw aim (the body counts as a 0.4 m disc, so a close
-  receiver is not harder to hit than a far one). The smallest angle wins.
+  receiver is not harder to hit than a far one; aiming where a moving receiver is going counts too). The smallest
+  angle wins.
 - **What:** the launch direction is turned toward the low-arc solution that reaches that receiver **at the throw's own
   speed**, aimed a little ahead of a moving receiver (`assistLeadFactor` 0.8). Strength fades toward the edge of the
   cone and with distance (`assistStrength` 0.6).
 - **Caps:** at most `assistMaxCorrectionDegrees` (3.5°) in total, of which at most `assistMaxElevationDegrees`
-  (1.5°) upward, so the assist can add only a little range.
+  (1°) upward, so the assist can add only a little range (well under a metre for a tap).
 - **Never creates power:** if the throw is too weak to reach the receiver, only its heading is corrected and it falls
   short. The assist never changes speed and never touches the bomb in flight.
 - **Feedback:** the thrower sees corner brackets on the receiver the assist would help (brighter = stronger); the
@@ -363,6 +364,8 @@ Catch reach (forgiveness belongs to the receiver, not to the flight):
 - `catchRadius` **1.0 m** around upper torso / hands (it was 0.6 m, then 0.9 m);
 - plus `catchFacingBonus` **0.3 m** when the bomb arrives from within `catchFacingAngle` (70°) of where the receiver
   looks: facing the pass makes it easier;
+- the reach is shorter vertically (`catchVerticalScale` 0.6): arms reach out to the sides more than down to the
+  feet, so a pass arriving beside the shoulder is caught while one arriving at the knees is not;
 - the test is **swept**: the bomb's path between two physics steps is checked against the reach, so a fast bomb
   never slips through;
 - a press up to `catchLateGrace` (0.06 s) after the bomb was in reach still catches, as long as the bomb has not hit
@@ -757,13 +760,13 @@ At minimum:
 | Hold fuse | 6.0 s |
 | Warning phase | 2.0 s |
 | Catch grace | 0.35 s |
-| Throw speed (tap → full charge) | 16 → 28 m/s |
+| Throw speed (tap → full charge) | 14 → 28 m/s |
 | Throw charge time | 0.45 s |
 | Throw lift / bomb gravity scale | 6° / 1.5 |
 | Run speed kept by the throw (along the aim) | 50 % |
 | Normal pass distance | 8–12 m (0.25–0.5 s in the air) |
-| Aim assist (range / cone / max turn / max lift) | 14 m / 6° / 3.5° / 1.5° |
-| Catch radius (+ facing bonus) | 1.0 m (+0.3 m) |
+| Aim assist (range / cone / max turn / max lift) | 14 m / 6° / 3.5° / 1° |
+| Catch radius (+ facing bonus), vertical scale | 1.0 m (+0.3 m), 0.6 |
 | Late catch grace | 0.06 s |
 | Catch window | 0.4 s |
 | Catch cooldown | 0.35 s |

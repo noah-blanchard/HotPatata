@@ -99,6 +99,10 @@ namespace Beep
                 if (p == null || p.CatchVolume == null || (bomb != null && bomb.Carrier == p)) continue;
                 var color = p.Catcher.WindowOpen ? VolumeOpen : VolumeIdle;
                 WireSphere(p.CatchVolume.CatchCenter, p.Tuning.catchRadius, color);
+                // Facing bonus: the reach is larger for a bomb arriving from in front of their view.
+                Vector3 look = p.CameraTarget.forward;
+                Ring(p.CatchVolume.CatchCenter, Vector3.up, p.Tuning.catchRadius + p.Tuning.catchFacingBonus, color * new Color(1f, 1f, 1f, 0.5f));
+                Line(p.CatchVolume.CatchCenter, p.CatchVolume.CatchCenter + look * (p.Tuning.catchRadius + p.Tuning.catchFacingBonus), color);
             }
         }
 
@@ -113,7 +117,7 @@ namespace Beep
                 if (p == null || p.PlayerId < 0 || p.PlayerId >= telemetry.Closest.Length) continue;
                 var c = telemetry.Closest[p.PlayerId];
                 if (!c.Valid || c.Distance > 4f) continue;
-                Line(c.BombPoint, c.Center, c.Distance <= p.Tuning.catchRadius ? HitColor : MissColor);
+                Line(c.BombPoint, c.Center, c.Distance <= CatchResolver.ReachFor(p, c.Travel) ? HitColor : MissColor);
             }
         }
 

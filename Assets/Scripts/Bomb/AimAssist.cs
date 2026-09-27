@@ -39,6 +39,7 @@ namespace Beep
         public const float BodyRadius = 0.4f;
         const int LeadIterations = 3;
         const float MinDistance = 0.75f;
+        const float TypicalPassSpeed = 20f;   // m/s, only to guess where a moving receiver is being led to
 
         /// <summary>
         /// Picks the receiver the assist would help (null if none) and returns the assisted launch direction for a
@@ -74,7 +75,10 @@ namespace Beep
                 float flat = new Vector2(to.x, to.z).magnitude;
                 if (d < MinDistance || flat > t.assistMaxRange) continue;
 
-                float a = OffAimAngle(aimForward, to);
+                // Aiming where a moving receiver is going counts as aiming at them.
+                Vector3 v = p.Velocity;
+                Vector3 led = to + new Vector3(v.x, 0f, v.z) * (t.assistLeadFactor * d / TypicalPassSpeed);
+                float a = Mathf.Min(OffAimAngle(aimForward, to), OffAimAngle(aimForward, led));
                 if (a > t.assistConeDegrees || a >= bestAngle) continue;
                 if (Physics.Linecast(eye, center, blockMask, QueryTriggerInteraction.Ignore)) continue;   // no assist through walls
 

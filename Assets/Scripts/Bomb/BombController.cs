@@ -180,31 +180,28 @@ namespace Beep
                 $"object={other.name} layer={LayerMask.LayerToName(other.gameObject.layer)}");
         }
 
-        /// <summary>Trigger contact from <see cref="BombPhysics"/>: catch volumes and kill zones only.</summary>
+        /// <summary>
+        /// Trigger contact from <see cref="BombPhysics"/>: only kill zones matter. Catches are decided by
+        /// <see cref="CatchResolver"/>'s swept reach test, not by trigger events; every other trigger (catch volumes
+        /// included) is intentionally neutral and must never count as lethal world contact.
+        /// </summary>
         public void ReportTriggerContact(Collider other)
         {
             if (!NetMode.IsAuthority || State != BombState.Thrown) return;
-
-            if (other.TryGetComponent(out PlayerCatchVolume volume))
-            {
-                if (volume.Owner != null && volume.Owner != LastThrower) volume.Owner.Catcher.NoteBombInReach();
-                resolver.TryResolveCatch(volume);
-            }
-            else if (other.TryGetComponent(out KillZone _))
-                LethalContact(BombFailReason.KillZone, $"object={other.name}");
-            // Any other trigger is intentionally neutral: it must never count as lethal world contact.
+            if (other.TryGetComponent(out KillZone _)) LethalContact(BombFailReason.KillZone, $"object={other.name}");
         }
 
         /// <summary>
-        /// A flying bomb touched something lethal. It explodes now, unless it has just passed a remote receiver whose
-        /// catch may still be on its way over the network: then it stops dead where it hit and waits a moment
-        /// (<see cref="CatchResolver.ExplosionHoldFor"/>). Either the late catch wins or the explosion happens.
+        /// A flying bomb touched something lethal. It explodes now, unless a receiver it has just passed may still catch
+        /// it (late-press grace, or online a remote receiver's catch still on its way): then it stops dead where it hit
+        /// and waits a moment (<see cref="CatchResolver.ExplosionHoldFor"/>). Either the late catch wins or the explosion happens.
         /// </summary>
         void LethalContact(BombFailReason reason, string detail)
         {
             if (ExplosionPending) return;
 
-            float hold = resolver.ExplosionHoldFor();
+            float hold = resolver.ExplosionHoldFor();   // sweeps the last stretch of flight first: it may catch the bomb
+            if (State != BombState.Thrown) return;
             if (hold <= 0f)
             {
                 Explode(reason, detail);

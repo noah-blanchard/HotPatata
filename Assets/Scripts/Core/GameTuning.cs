@@ -68,7 +68,7 @@ namespace Beep
 
         [Header("Bomb - throw")]
         [Tooltip("Launch speed of a tap (no charge). Sets the shortest pass.")]
-        [Min(0f)] public float throwSpeedMin = 16f;
+        [Min(0f)] public float throwSpeedMin = 14f;
         [Tooltip("Launch speed at full charge. Longer, faster throws.")]
         [Min(0f)] public float throwSpeedMax = 28f;
         [Tooltip("Seconds of holding the throw button to reach full charge.")]
@@ -101,17 +101,26 @@ namespace Beep
         [Tooltip("Most the assist may turn a throw, in degrees.")]
         [Range(0f, 10f)] public float assistMaxCorrectionDegrees = 3.5f;
         [Tooltip("Most of that turn that may point UP, in degrees (upward turns add range; this keeps the assist from adding much).")]
-        [Range(0f, 5f)] public float assistMaxElevationDegrees = 1.5f;
+        [Range(0f, 5f)] public float assistMaxElevationDegrees = 1f;
         [Tooltip("How much the assist aims ahead of a moving receiver (0 = where they are, 1 = where they will be).")]
         [Range(0f, 1f)] public float assistLeadFactor = 0.8f;
 
         [Header("Catch")]
         [Tooltip("Radius of the receiver's catch sphere.")]
-        [Min(0.1f)] public float catchRadius = 0.9f;
+        [Min(0.1f)] public float catchRadius = 1.0f;
+        [Tooltip("Extra reach (metres) when the bomb arrives from in front of the receiver's view: facing the pass makes it easier.")]
+        [Min(0f)] public float catchFacingBonus = 0.3f;
+        [Tooltip("The bomb counts as 'in front' within this many degrees of where the receiver looks.")]
+        [Range(0f, 180f)] public float catchFacingAngle = 70f;
+        [Tooltip("Vertical reach as a fraction of the horizontal reach: arms reach out to the sides more than down to the feet, " +
+                 "so a throw arriving at the receiver's knees is a miss while one passing beside their shoulder is not.")]
+        [Range(0.3f, 1f)] public float catchVerticalScale = 0.6f;
+        [Tooltip("A catch press this long (seconds) after the bomb was in reach still catches, if it has not hit anything yet.")]
+        [Range(0f, 0.15f)] public float catchLateGrace = 0.06f;
         [Tooltip("Pressing catch opens a window this long; the bomb must reach the receiver inside it. Smaller = harder.")]
         [Min(0.02f)] public float catchWindowDuration = 0.4f;
         [Tooltip("After a window closes, catch cannot be pressed again for this long (stops button mashing).")]
-        [Min(0f)] public float catchCooldown = 0.5f;
+        [Min(0f)] public float catchCooldown = 0.35f;
         [Tooltip("How far in front of the receiver the catch sphere is pushed.")]
         [Min(0f)] public float catchFrontBias = 0.25f;
         [Tooltip("Height of the catch sphere centre above the player's feet (upper torso / hands).")]
