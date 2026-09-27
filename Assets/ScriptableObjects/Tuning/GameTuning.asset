@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Beep::Beep.GameTuning
   moveSpeed: 8
   startAccelerationMultiplier: 0.5
-  acceleration: 45
-  braking: 45
-  airControl: 0.5
+  acceleration: 55
+  braking: 60
+  airControl: 0.65
   jumpHeight: 1.6
   gravity: 28
   coyoteTime: 0.1

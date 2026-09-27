@@ -10,15 +10,15 @@ namespace Beep
     public class GameTuning : ScriptableObject
     {
         [Header("Movement")]
-        [Min(0f)] public float moveSpeed = 7f;
+        [Min(0f)] public float moveSpeed = 8f;
         [Tooltip("Acceleration at the start of a run, as a fraction of Acceleration. It ramps to 1 by half speed, so a run builds up instead of snapping to speed.")]
         [Range(0.1f, 1f)] public float startAccelerationMultiplier = 0.5f;
         [Tooltip("Units/s² while speeding up on the ground.")]
         [Min(0f)] public float acceleration = 55f;
         [Tooltip("Units/s² while slowing down on the ground.")]
-        [Min(0f)] public float braking = 70f;
+        [Min(0f)] public float braking = 60f;
         [Tooltip("Multiplier on acceleration/braking while airborne (1 = same as ground).")]
-        [Range(0f, 1f)] public float airControl = 0.5f;
+        [Range(0f, 1f)] public float airControl = 0.65f;
         [Min(0f)] public float jumpHeight = 1.6f;
         [Tooltip("Downward acceleration in units/s².")]
         [Min(0f)] public float gravity = 28f;
