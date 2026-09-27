@@ -5,7 +5,7 @@ using UnityEngine.TestTools;
 
 namespace HotPatata.Tests
 {
-    /// <summary>M5: the PrototypeCourse - structure, checkpoints, finish, rematch, the launch pad beat.</summary>
+    /// <summary>M5: the PrototypeCourse - structure, checkpoints, finish, rematch, the launch pad beat. Acts 2-3: FactoryCourseTests.</summary>
     public class CourseTests : SandboxTestBase
     {
         protected override string SceneName => "PrototypeCourse";
@@ -28,13 +28,20 @@ namespace HotPatata.Tests
         }
 
         [UnityTest]
-        public IEnumerator Course_HasEveryBeat_ThreeCheckpoints_AndAFinish()
+        public IEnumerator Course_HasEveryBeat_SevenCheckpoints_AndAFinish()
         {
             foreach (var n in new[] { "A_SafeCourt", "B_Landing", "C1", "C2", "C3", "D_Moving_1", "D_Moving_2", "E_Floor",
-                                      "F_LaunchPad", "F2_HighLanding", "G1_Narrow_1", "G2_Falling_1", "G3_Moving_1", "FinishZone" })
+                                      "F_LaunchPad", "F2_HighLanding", "G1_Narrow_1", "G2_Falling_1", "G3_Moving_1",
+                                      "H_Belt_C", "I_Piston_1", "J_Windmill", "J_Elevator_L", "K_Sweeper_1", "K_Crusher",
+                                      "L_Elevator_1", "L2_Sweeper", "M_Summit", "M_Lane_L", "M_Hoop_1", "N_Crusher", "N_Belt",
+                                      "N_Gate_1", "FinishZone" })
                 Assert.IsNotNull(GameObject.Find(n), "missing " + n);
 
-            Assert.AreEqual(3, Object.FindObjectsByType<Checkpoint>(FindObjectsSortMode.None).Length);
+            var checkpoints = Object.FindObjectsByType<Checkpoint>(FindObjectsSortMode.None);
+            Assert.AreEqual(7, checkpoints.Length);
+            CollectionAssert.AreEquivalent(new[] { 1, 2, 3, 4, 5, 6, 7 }, System.Array.ConvertAll(checkpoints, c => c.Id));
+            foreach (var cp in checkpoints)
+                Assert.Less(cp.transform.position.z, PosOf("FinishZone").z, $"checkpoint {cp.Id} comes before the finish");
             Assert.AreEqual(RunState.Playing, run.State);
             Assert.AreSame(p1, bomb.Carrier);
             Assert.AreEqual(-3f, p1.transform.position.x, 0.2f);
@@ -57,7 +64,21 @@ namespace HotPatata.Tests
 
             yield return StandTeamAt(PosOf("CP_03"));
             yield return WaitUntil(() => run.CurrentCheckpoint.Id == 3, 2f, "checkpoint 3");
-            Assert.AreEqual(4.5f, bomb.Fuse.Duration, 0.001f, "the final sprint uses the shorter fuse");
+            Assert.AreEqual(tuning.holdFuseDuration, bomb.Fuse.Duration, 0.001f, "Act 1 keeps the normal fuse");
+
+            yield return StandTeamAt(PosOf("CP_04"));
+            yield return WaitUntil(() => run.CurrentCheckpoint.Id == 4, 2f, "checkpoint 4");
+            yield return StandTeamAt(PosOf("CP_05"));
+            yield return WaitUntil(() => run.CurrentCheckpoint.Id == 5, 2f, "checkpoint 5");
+            Assert.AreEqual(tuning.holdFuseDuration, bomb.Fuse.Duration, 0.001f, "the factory keeps the normal fuse");
+
+            yield return StandTeamAt(PosOf("CP_06"));
+            yield return WaitUntil(() => run.CurrentCheckpoint.Id == 6, 2f, "checkpoint 6");
+            Assert.AreEqual(5f, bomb.Fuse.Duration, 0.001f, "the climb shortens the fuse");
+
+            yield return StandTeamAt(PosOf("CP_07"));
+            yield return WaitUntil(() => run.CurrentCheckpoint.Id == 7, 2f, "checkpoint 7");
+            Assert.AreEqual(4.5f, bomb.Fuse.Duration, 0.001f, "the drop and the finale use the shortest fuse");
 
             yield return StandTeamAt(PosOf("FinishZone"));
             yield return WaitUntil(() => run.State == RunState.Completed, 2f, "finish");

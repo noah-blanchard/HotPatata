@@ -42,7 +42,7 @@ namespace HotPatata
         float lastSlideBoostTime = Never;
         float lastMantleTime = Never;
         bool crouchWasHeld, wasGrounded;
-        MovingPlatform ridingPlatform;   // platform we stood on during the last Move
+        IPlatformCarrier ridingPlatform;   // carrier (moving platform, belt) we stood on during the last Move
         Vector3 groundNormal = Vector3.up;
 
         float standHeight;
@@ -186,8 +186,8 @@ namespace HotPatata
             }
 
             // --- Move ---------------------------------------------------------------------------
-            // Ride a moving platform: add the distance it moved this frame (it updates before us).
-            Vector3 carry = ridingPlatform != null ? ridingPlatform.FrameDelta : Vector3.zero;
+            // Ride a carrier (moving platform, belt): add the distance it moved this frame (it updates before us).
+            Vector3 carry = ridingPlatform is UnityEngine.Object c && c != null ? ridingPlatform.FrameDelta : Vector3.zero;
             ridingPlatform = null;   // OnControllerColliderHit sets it again if we are still on one
             var flags = controller.Move(Velocity * dt + carry);
             if ((flags & CollisionFlags.Above) != 0 && verticalVelocity > 0f) verticalVelocity = 0f;
@@ -414,8 +414,8 @@ namespace HotPatata
 
         void OnControllerColliderHit(ControllerColliderHit hit)
         {
-            if (hit.normal.y > 0.5f && hit.collider.GetComponentInParent<MovingPlatform>() is MovingPlatform mp)
-                ridingPlatform = mp;
+            if (hit.normal.y > 0.5f && hit.collider.GetComponentInParent<IPlatformCarrier>() is IPlatformCarrier carrier)
+                ridingPlatform = carrier;
         }
 
         /// <summary>Throws the player upward (launch pads). Overrides any current vertical motion.</summary>

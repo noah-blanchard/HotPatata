@@ -27,6 +27,7 @@ CBUFFER_START(UnityPerMaterial)
     half4 _PatternColor;
     half _PatternScale;
     half _PatternStrength;
+    float4 _PatternScroll;
     half _Cutoff;
 CBUFFER_END
 

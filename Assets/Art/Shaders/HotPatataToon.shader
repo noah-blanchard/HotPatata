@@ -35,6 +35,7 @@ Shader "HotPatata/Toon"
         _PatternColor ("Pattern Colour (stripes)", Color) = (0.1, 0.1, 0.1, 1)
         _PatternScale ("Pattern Size (m)", Float) = 1
         _PatternStrength ("Pattern Strength", Range(0, 1)) = 0.08
+        _PatternScroll ("Pattern Scroll (world m/s, conveyors)", Vector) = (0, 0, 0, 0)
 
         [Toggle(_VERTEX_COLOR)] _VertexColor ("Multiply By Vertex Colour (particles)", Float) = 0
         [HideInInspector] _Cutoff ("Alpha Cutoff", Range(0, 1)) = 0.5
@@ -127,6 +128,7 @@ Shader "HotPatata/Toon"
             half3 WorldPattern(half3 albedo, float3 positionWS, half3 normalWS)
             {
                 half3 n = abs(normalWS);
+                positionWS -= _PatternScroll.xyz * _Time.y;   // moving belts (cosmetic only)
                 float2 uv = n.y > 0.5 ? positionWS.xz : (n.x > n.z ? positionWS.zy : positionWS.xy);
                 uv /= max(0.01, _PatternScale);
                 if (_Pattern < 1.5)
