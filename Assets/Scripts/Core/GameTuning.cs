@@ -71,6 +71,12 @@ namespace Beep
         [Min(0f)] public float throwSpeedMax = 24f;
         [Tooltip("Seconds of holding the throw button to reach full charge.")]
         [Min(0.05f)] public float throwChargeTime = 1.0f;
+        [Tooltip("Normalized point in THROW where the arm waits while the button stays held.")]
+        [Range(0.05f, 0.9f)] public float throwAnimationHoldNormalized = 0.38f;
+        [Tooltip("Seconds between starting the THROW animation and releasing the potato from the hands.")]
+        [Min(0f)] public float throwAnimationReleaseDelay = 0.22f;
+        [Tooltip("Minimum time before the same throw wind-up can be triggered again on a player.")]
+        [Min(0f)] public float throwAnimationReplayGuard = 0.65f;
         [Tooltip("Degrees the throw is pitched up from the aim direction.")]
         [Range(0f, 45f)] public float throwUpAngle = 8f;
         [Tooltip("Multiplier on Physics.gravity for the thrown bomb (flatter arcs = easier passes).")]
