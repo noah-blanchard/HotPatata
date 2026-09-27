@@ -110,7 +110,7 @@ MonoBehaviour:
   - 0.9
   beepVolume: 0.6
   tumbleDegreesPerSecond: 1200
-  tumbleRandomness: 0.35
+  tumbleRandomness: 0.85
   handSwayDegrees: 3
   trailTime: 0.22
   trailWidth: 0.16

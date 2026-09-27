@@ -50,6 +50,9 @@ namespace HotPatata
 
         // natural motion
         Vector3 spin;                  // world-space angular velocity while flying, degrees per second
+        Vector3 spin2;                 // a second tumble on another random axis: the potato turns every which way
+        Vector3 wobbleAxis;            // the main spin axis itself drifts around this axis during the flight
+        float wobbleRate;              // degrees per second
         bool needSpinAxis;             // pick the tumble axis once the direction of travel is known
         Vector3 lastPosition;
         Vector3 kick;                  // decaying random jolt (euler degrees) added to the hand sway
@@ -194,12 +197,16 @@ namespace HotPatata
                     SetFlightFx(true);   // once the speed is known, so the trail width matches the throw
                 }
                 if (spin.sqrMagnitude > 0.01f)
-                    visual.rotation = Quaternion.AngleAxis(spin.magnitude * dt, spin.normalized) * visual.rotation;
+                {
+                    spin = Quaternion.AngleAxis(wobbleRate * dt, wobbleAxis) * spin;   // the axis wanders: no steady spin
+                    visual.rotation = Quaternion.AngleAxis(spin.magnitude * dt, spin.normalized) *
+                                      Quaternion.AngleAxis(spin2.magnitude * dt, spin2.normalized) * visual.rotation;
+                }
                 return;
             }
 
             // Not flying: settle into the hand. A slow, slightly irregular sway keeps it alive, plus the catch jolt.
-            spin = Vector3.zero;
+            spin = spin2 = Vector3.zero;
             kick *= Mathf.Exp(-10f * dt);
             float t = Time.time + swayPhase;
             float sway = tuning != null ? tuning.handSwayDegrees : 0f;
@@ -216,16 +223,19 @@ namespace HotPatata
             float randomness = tuning != null ? tuning.tumbleRandomness : 0.35f;
             float degrees = tuning != null ? tuning.tumbleDegreesPerSecond : 480f;
 
-            // A lobbed object tumbles mostly end-over-end: about the horizontal axis across its path,
-            // with some random tilt and a random secondary wobble.
+            // A lobbed potato tumbles chaotically: a main spin (end-over-end at low randomness, any axis at high
+            // randomness) plus a second spin on another random axis, and the main axis keeps wandering in flight.
             Vector3 across = Vector3.Cross(Vector3.up, direction);
             if (across.sqrMagnitude < 0.01f) across = Vector3.right;
-            Vector3 axis = (across.normalized + Random.onUnitSphere * randomness).normalized;
+            Vector3 axis = Vector3.Slerp(across.normalized, Random.onUnitSphere, randomness).normalized;
 
             float speedFactor = Mathf.Clamp01(speed / 24f);              // faster throws spin faster
             float rate = degrees * Mathf.Lerp(0.55f, 1.35f, speedFactor) * Random.Range(0.8f, 1.2f);
             if (Random.value < 0.25f) rate = -rate;                       // occasionally tumbles the other way
             spin = axis * rate;
+            spin2 = Random.onUnitSphere * (Mathf.Abs(rate) * Mathf.Lerp(0.15f, 0.8f, randomness));
+            wobbleAxis = Random.onUnitSphere;
+            wobbleRate = Mathf.Lerp(60f, 420f, randomness) * Random.Range(0.8f, 1.2f);
         }
 
         void OnThrown(Player thrower)
