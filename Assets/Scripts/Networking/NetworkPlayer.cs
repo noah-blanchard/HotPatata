@@ -166,7 +166,7 @@ namespace Beep
             Vector3 eye = player.CameraTarget.position;
             if ((origin - eye).sqrMagnitude > MaxReleaseDistance * MaxReleaseDistance) return;   // the release point must be near the thrower
 
-            player.Thrower.QueueNetworkThrow(origin, velocity);
+            player.Thrower.ThrowFromRequest(origin, velocity);
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]

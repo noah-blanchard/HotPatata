@@ -186,6 +186,16 @@ namespace Beep.Tests
         }
 
         [UnityTest]
+        public IEnumerator Release_LaunchesTheBombOnTheSameFrame()
+        {
+            p1.Look.SetAim(90f, 0f);
+            Assert.IsTrue(p1.Thrower.TryThrow(0.5f));
+            Assert.AreEqual(BombState.Thrown, bomb.State, "no animation wait: the bomb leaves on the release frame");
+            Assert.Greater(bomb.Body.Velocity.magnitude, 0f);
+            yield break;
+        }
+
+        [UnityTest]
         public IEnumerator HoldingCharges_AndReleaseThrowsFasterThanATap()
         {
             p1.Look.SetAim(90f, 0f);
