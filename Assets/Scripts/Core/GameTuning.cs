@@ -73,24 +73,17 @@ namespace Beep
         [Min(0f)] public float throwSpeedMax = 22f;
         [Tooltip("Seconds of holding the throw button to reach full charge.")]
         [Min(0.05f)] public float throwChargeTime = 1.0f;
-<<<<<<< HEAD
-        [Tooltip("Degrees the throw is pitched up from the aim direction (counters the drop on short passes).")]
-        [Range(0f, 45f)] public float throwUpAngle = 12f;
-        [Tooltip("Multiplier on Physics.gravity for the thrown bomb. Above 1 the potato feels heavy and drops quickly; " +
-                 "below 1 it floats (flatter, much longer lobs).")]
-        [Min(0f)] public float bombGravityScale = 1.25f;
-=======
         [Tooltip("Normalized point in THROW where the arm waits while the button stays held.")]
         [Range(0.05f, 0.9f)] public float throwAnimationHoldNormalized = 0.38f;
         [Tooltip("Seconds between starting the THROW animation and releasing the potato from the hands.")]
         [Min(0f)] public float throwAnimationReleaseDelay = 0.22f;
         [Tooltip("Minimum time before the same throw wind-up can be triggered again on a player.")]
         [Min(0f)] public float throwAnimationReplayGuard = 0.65f;
-        [Tooltip("Degrees the throw is pitched up from the aim direction.")]
-        [Range(0f, 45f)] public float throwUpAngle = 8f;
-        [Tooltip("Multiplier on Physics.gravity for the thrown bomb (flatter arcs = easier passes).")]
-        [Min(0f)] public float bombGravityScale = 0.6f;
->>>>>>> origin/main
+        [Tooltip("Degrees the throw is pitched up from the aim direction (counters the drop on short passes).")]
+        [Range(0f, 45f)] public float throwUpAngle = 12f;
+        [Tooltip("Multiplier on Physics.gravity for the thrown bomb. Above 1 the potato feels heavy and drops quickly; " +
+                 "below 1 it floats (flatter, much longer lobs).")]
+        [Min(0f)] public float bombGravityScale = 1.25f;
         [Tooltip("Max distance of the aim ray that decides where the throw is pointed.")]
         [Min(1f)] public float aimMaxDistance = 40f;
 

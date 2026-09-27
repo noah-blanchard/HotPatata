@@ -42,16 +42,11 @@ MonoBehaviour:
   throwSpeedMin: 10
   throwSpeedMax: 22
   throwChargeTime: 1
-<<<<<<< HEAD
-  throwUpAngle: 12
-  bombGravityScale: 1.25
-=======
   throwAnimationHoldNormalized: 0.38
   throwAnimationReleaseDelay: 0.22
   throwAnimationReplayGuard: 0.65
-  throwUpAngle: 8
-  bombGravityScale: 0.6
->>>>>>> origin/main
+  throwUpAngle: 12
+  bombGravityScale: 1.25
   aimMaxDistance: 40
   aimAssistAngle: 8
   aimAssistDistance: 16
