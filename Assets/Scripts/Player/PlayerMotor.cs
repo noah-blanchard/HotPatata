@@ -19,6 +19,7 @@ namespace Beep
         float verticalVelocity;
         float lastGroundedTime = Never;
         float lastJumpPressTime = Never;
+        MovingPlatform ridingPlatform;   // platform we stood on during the last Move
 
         public bool Grounded { get; private set; }
         public Vector3 Velocity => horizontalVelocity + Vector3.up * verticalVelocity;
@@ -66,11 +67,20 @@ namespace Beep
             else verticalVelocity -= t.gravity * dt;
 
             // --- Move ---------------------------------------------------------------------------
-            var flags = controller.Move(Velocity * dt);
+            // Ride a moving platform: add the distance it moved this frame (it updates before us).
+            Vector3 carry = ridingPlatform != null ? ridingPlatform.FrameDelta : Vector3.zero;
+            ridingPlatform = null;   // OnControllerColliderHit sets it again if we are still on one
+            var flags = controller.Move(Velocity * dt + carry);
             if ((flags & CollisionFlags.Above) != 0 && verticalVelocity > 0f) verticalVelocity = 0f;
 
             Grounded = controller.isGrounded;
             if (Grounded) lastGroundedTime = Time.time;
+        }
+
+        void OnControllerColliderHit(ControllerColliderHit hit)
+        {
+            if (hit.normal.y > 0.5f && hit.collider.GetComponentInParent<MovingPlatform>() is MovingPlatform mp)
+                ridingPlatform = mp;
         }
 
         public void ResetVelocity()
@@ -87,6 +97,7 @@ namespace Beep
             transform.SetPositionAndRotation(position, rotation);
             controller.enabled = true;
             ResetVelocity();
+            ridingPlatform = null;
             Grounded = false;
         }
     }

@@ -1,0 +1,62 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace Beep
+{
+    /// <summary>
+    /// Activates once ALL players are inside its trigger volume. After that, a section reset returns the
+    /// team to this checkpoint's spawn slots and hands the bomb to <see cref="CarrierSlot"/>.
+    /// </summary>
+    public class Checkpoint : MonoBehaviour
+    {
+        [SerializeField] int id;
+        [SerializeField] Collider trigger;
+        [SerializeField, Tooltip("Spawn_01..Spawn_04. Slot N is where player N respawns.")] PlayerSpawn[] spawns;
+        [SerializeField] Transform bombAnchor;
+        [SerializeField, Range(0, 3), Tooltip("Which player slot holds the bomb after a reset to this checkpoint.")] int carrierSlot;
+        [SerializeField] Renderer padRenderer;
+        [SerializeField] Color inactiveColor = new Color(0.55f, 0.6f, 0.55f);
+        [SerializeField] Color activeColor = new Color(0.25f, 0.9f, 0.35f);
+
+        static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
+
+        readonly HashSet<Player> inside = new HashSet<Player>();
+        MaterialPropertyBlock block;
+
+        public int Id => id;
+        public int CarrierSlot => carrierSlot;
+        public Transform BombAnchor => bombAnchor;
+        public bool Activated { get; private set; }
+
+        void Awake() => Paint(inactiveColor);
+
+        void FixedUpdate()
+        {
+            var run = RunManager.Instance;
+            if (Activated || run == null || run.State != RunState.Playing) return;
+
+            if (PlayerZone.Collect(trigger, inside) >= run.Players.Count)
+            {
+                Activated = true;
+                Paint(activeColor);
+                run.ActivateCheckpoint(this);
+            }
+        }
+
+        public PlayerSpawn FindSpawn(int slot)
+        {
+            foreach (var s in spawns)
+                if (s != null && s.Slot == slot) return s;
+            return null;
+        }
+
+        void Paint(Color c)
+        {
+            if (padRenderer == null) return;
+            block ??= new MaterialPropertyBlock();
+            padRenderer.GetPropertyBlock(block);
+            block.SetColor(BaseColor, c);
+            padRenderer.SetPropertyBlock(block);
+        }
+    }
+}
