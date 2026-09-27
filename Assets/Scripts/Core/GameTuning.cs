@@ -211,7 +211,7 @@ namespace HotPatata
 
         [Header("Bomb - natural motion (visual only)")]
         [Tooltip("Average tumble speed in flight, degrees per second. Faster throws spin faster.")]
-        [Min(0f)] public float tumbleDegreesPerSecond = 480f;
+        [Min(0f)] public float tumbleDegreesPerSecond = 1200f;
         [Tooltip("0 = a clean end-over-end spin, 1 = very wobbly and unpredictable.")]
         [Range(0f, 1f)] public float tumbleRandomness = 0.35f;
         [Tooltip("Gentle sway of the potato in the hand, in degrees.")]
