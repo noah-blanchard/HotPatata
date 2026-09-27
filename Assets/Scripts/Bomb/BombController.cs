@@ -33,6 +33,10 @@ namespace Beep
     {
         [SerializeField] GameTuning tuning;
 
+        [Header("Debug Tools")]
+        [Tooltip("When checked, the potato ignores the fuse, world impacts and kill zones without exploding.")]
+        [SerializeField] bool disableExplosion;
+
         [Header("Debug (read-only at runtime)")]
         [SerializeField] BombState debugState = BombState.Resetting;
         [SerializeField] string debugCarrier = "-";
@@ -201,6 +205,7 @@ namespace Beep
         /// </summary>
         void LethalContact(BombFailReason reason, string detail)
         {
+            if (disableExplosion) return;
             if (ExplosionPending) return;
 
             float hold = resolver.ExplosionHoldFor();
@@ -219,12 +224,18 @@ namespace Beep
 
         void OnFuseExpired()
         {
+            if (disableExplosion) return;
             if (State == BombState.Held)
                 Explode(BombFailReason.HoldFuseExpired, $"carrier={Carrier}");
         }
 
         public void Explode(BombFailReason reason, string detail)
         {
+            if (disableExplosion)
+            {
+                pendingExplosionAt = -1f;
+                return;
+            }
             if (State == BombState.Exploding || State == BombState.Resetting) return;
 
             var from = State;

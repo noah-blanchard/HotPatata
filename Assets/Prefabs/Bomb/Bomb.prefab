@@ -143,6 +143,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Beep::Beep.BombController
   tuning: {fileID: 11400000, guid: 35604efc4188ead42afe90813d44683f, type: 2}
+  disableExplosion: 0
   debugState: 4
   debugCarrier: '-'
   debugFuseRemaining: 0
