@@ -20,12 +20,14 @@ namespace Beep
         [SerializeField] GameTuning tuning;
 
         float remaining;
+        float durationOverride;
         bool expiredRaised;
 
         /// <summary>Raised exactly once per fuse cycle when the fuse reaches zero.</summary>
         public event Action Expired;
 
-        public float Duration => tuning.holdFuseDuration;
+        /// <summary>Hold time in seconds: the tuning value, unless the current checkpoint overrides it.</summary>
+        public float Duration => durationOverride > 0f ? durationOverride : tuning.holdFuseDuration;
         public float Remaining => remaining;
         /// <summary>0 = full fuse, 1 = about to explode.</summary>
         public float Consumed01 => Mathf.Clamp01(1f - remaining / Duration);
@@ -47,6 +49,13 @@ namespace Beep
 
         void Awake() => Refresh();
 
+        /// <summary>Overrides the hold time (0 = back to the tuning value) and refills the fuse.</summary>
+        public void SetDurationOverride(float seconds)
+        {
+            durationOverride = seconds;
+            Refresh();
+        }
+
         public void SetTuning(GameTuning value)
         {
             tuning = value;
@@ -55,7 +64,7 @@ namespace Beep
 
         public void Refresh()
         {
-            remaining = tuning != null ? tuning.holdFuseDuration : 0f;
+            remaining = tuning != null ? Duration : 0f;
             expiredRaised = false;
         }
 

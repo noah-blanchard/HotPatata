@@ -126,6 +126,24 @@ namespace Beep.Tests
             Assert.AreEqual(BombState.Held, bomb.State);
         }
 
+        // ------------------------------------------------------------------ LaunchPad
+
+        [UnityTest]
+        public IEnumerator LaunchPad_ThrowsAPlayerStandingOnItToTheConfiguredHeight()
+        {
+            Vector3 pad = GameObject.Find("LaunchPad_Demo").transform.position;
+            yield return Place(p1, pad + new Vector3(0f, 0.05f, 0f));
+            float y0 = p1.transform.position.y;
+            float apex = y0;
+            float end = Time.time + 2.5f;
+            while (Time.time < end)
+            {
+                apex = Mathf.Max(apex, p1.transform.position.y);
+                yield return null;
+            }
+            Assert.AreEqual(6f, apex - y0, 1.0f, "launch height");
+        }
+
         // ------------------------------------------------------------------ Checkpoint
 
         [UnityTest]

@@ -25,6 +25,7 @@ namespace Beep
             NetworkVariableBase.DefaultReadPerm, NetworkVariableWritePermission.Owner);   // owner-written
 
         Player player;
+        Unity.Netcode.Components.NetworkTransform netTransform;
 
         /// <summary>Set by the spawner on the server before the object is spawned.</summary>
         public int InitialSlot { get; set; } = -1;
@@ -35,6 +36,7 @@ namespace Beep
         public override void OnNetworkSpawn()
         {
             player = GetComponent<Player>();
+            netTransform = GetComponent<Unity.Netcode.Components.NetworkTransform>();
             if (IsServer) slot.Value = InitialSlot;
 
             slot.OnValueChanged += (_, s) => ApplySlot(s);
@@ -86,6 +88,15 @@ namespace Beep
         }
 
         // ------------------------------------------------------------------ host -> players
+
+        /// <summary>
+        /// Owner only: tell everyone this move is a teleport. Without it, other machines interpolate the player
+        /// across the whole level, which would sweep them through triggers (falling platforms, checkpoints).
+        /// </summary>
+        public void SyncTeleport(Vector3 position, Quaternion rotation)
+        {
+            if (IsOwner && netTransform != null) netTransform.Teleport(position, rotation, transform.localScale);
+        }
 
         /// <summary>Host only: lock or unlock this player's controls.</summary>
         public void SetLocked(bool value)

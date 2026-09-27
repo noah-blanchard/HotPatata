@@ -96,6 +96,15 @@ namespace Beep
                 ridingPlatform = mp;
         }
 
+        /// <summary>Throws the player upward (launch pads). Overrides any current vertical motion.</summary>
+        public void Launch(float upSpeed)
+        {
+            verticalVelocity = upSpeed;
+            Grounded = false;
+            lastGroundedTime = Never;
+            lastJumpPressTime = Never;
+        }
+
         public void ResetVelocity()
         {
             horizontalVelocity = Vector3.zero;

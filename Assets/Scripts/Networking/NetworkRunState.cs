@@ -17,6 +17,7 @@ namespace Beep
         readonly NetworkVariable<int> checkpointId = new NetworkVariable<int>(-1);
 
         float lastRunTimeSent = -1f;
+        int lastStateSent = -1;
 
         public RunState State => (RunState)state.Value;
         public int ResetCount => resetCount.Value;
@@ -32,7 +33,9 @@ namespace Beep
             resetCount.Value = resets;
             sectionStart.Value = sectionStartServerTime;
             checkpointId.Value = checkpoint;
-            if (Mathf.Abs(time - lastRunTimeSent) >= 0.25f)
+            bool stateChanged = (int)s != lastStateSent;
+            lastStateSent = (int)s;
+            if (stateChanged || Mathf.Abs(time - lastRunTimeSent) >= 0.25f)
             {
                 lastRunTimeSent = time;
                 runTime.Value = time;

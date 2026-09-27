@@ -14,6 +14,8 @@ namespace Beep
         [SerializeField, Tooltip("Spawn_01..Spawn_04. Slot N is where player N respawns.")] PlayerSpawn[] spawns;
         [SerializeField] Transform bombAnchor;
         [SerializeField, Range(0, 3), Tooltip("Which player slot holds the bomb after a reset to this checkpoint.")] int carrierSlot;
+        [SerializeField, Min(0f), Tooltip("Hold time for the bomb from this checkpoint onward (0 = normal). Used for the faster final sprint.")]
+        float holdFuseOverride;
         [SerializeField] Renderer padRenderer;
         [SerializeField] Color inactiveColor = new Color(0.55f, 0.6f, 0.55f);
         [SerializeField] Color activeColor = new Color(0.25f, 0.9f, 0.35f);
@@ -25,6 +27,7 @@ namespace Beep
 
         public int Id => id;
         public int CarrierSlot => carrierSlot;
+        public float HoldFuseOverride => holdFuseOverride;
         public Transform BombAnchor => bombAnchor;
         public bool Activated { get; private set; }
 
@@ -34,10 +37,15 @@ namespace Beep
         {
             // Remote clients just show what the host decided.
             var run = RunManager.Instance;
-            if (NetMode.IsRemoteClient && !Activated && run != null && run.CurrentCheckpoint != null && run.CurrentCheckpoint.Id >= id)
+            if (NetMode.IsRemoteClient && run != null)
             {
-                Activated = true;
-                Paint(activeColor);
+                bool shouldBeActive = run.CurrentCheckpoint != null && run.CurrentCheckpoint.Id >= id;
+                if (shouldBeActive != Activated)
+                {
+                    Activated = shouldBeActive;
+                    Paint(shouldBeActive ? activeColor : inactiveColor);
+                    BeepLog.Run($"(mirror) checkpoint {id} {(shouldBeActive ? "active" : "inactive")}");
+                }
             }
         }
 
@@ -52,6 +60,13 @@ namespace Beep
                 Paint(activeColor);
                 run.ActivateCheckpoint(this);
             }
+        }
+
+        /// <summary>Back to inactive (a new run).</summary>
+        public void Rearm()
+        {
+            Activated = false;
+            Paint(inactiveColor);
         }
 
         public PlayerSpawn FindSpawn(int slot)

@@ -165,7 +165,28 @@ PassSandbox
 └── Main Camera / player cameras as required
 ```
 
-### `PrototypeCourse`
+### `PrototypeCourse` (as built in Milestone 5)
+
+One straight course along +Z (~290 m, about 3-5 minutes), every piece a kit prefab, all parented under
+`SectionRoot/Course`; one large `KillZone` under everything. Players always start on the safe court, 6 m apart.
+
+| Beat | z (m) | What it asks |
+|---|---|---|
+| A Safe Court | 0-30 | flat and wide: learn charge, throw, timed catch at 6 m |
+| B First Gap | 30-48 | 4.5 m pit, broad landing: the pass is the challenge, not the jump |
+| C Stair Relay | 51-79 | three 1.2 m steps up, big recovery space: relay the bomb upward |
+| Checkpoint 1 | 87 | after the teaching beats |
+| D Moving Pair | 93-106 | two slow platforms that periodically line up: wait or risk it |
+| E Split Lanes | 118-154 | centre wall with two openings, a blocker in each lane: the bomb must cross between lanes |
+| Checkpoint 2 | 162 | |
+| F Vertical Catch | 170-204 | a `LaunchPad` throws the receiver 6 m up; catch the bomb near the top, land on the broad 8.4 m ledge |
+| Checkpoint 3 | 199 | shorter fuse (4.5 s) from here on (`holdFuseOverride`) |
+| G Final Sprint | 205-294 | narrow hops, three falling platforms, faster moving pair, then the `FinishZone` |
+
+The finish shows `RunResultsUI` (time, resets); the host presses R for a rematch (`RunManager.Restart`).
+Levels are chosen in the Bootstrap menu (`gameplayScenes` on `NetworkBootstrap`).
+
+(Original plan follows.)
 
 Purpose:
 
@@ -724,8 +745,10 @@ and on the host):
 
 Remote clients never simulate the bomb (kinematic, collider off) and never run zone / checkpoint / finish logic.
 `PlayerSpawner` builds the offline two-player rig, or on the host spawns one player per connection into the
-first free slot. Known gap: `FallingPlatform` state is not yet replicated (needs a host-timed trigger like the
-section clock); moving platforms and rotating bars already are, through `SectionClock`.
+first free slot. Level objects are kept in sync by deriving their state from shared time: moving platforms and rotating bars from
+`SectionClock`, falling platforms from one replicated trigger time (`NetworkFallingPlatform`). Moves that are
+teleports (resets, respawns) are sent as teleports (`NetworkPlayer.SyncTeleport`), otherwise other machines
+interpolate the player across the level and sweep them through triggers.
 
 ## 14. Session flow
 

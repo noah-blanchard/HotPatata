@@ -128,6 +128,7 @@ namespace Beep
             BeepLog.Run($"{this} teleported to {position:F1}");
             Motor.Teleport(position, rotation);
             Look.SetYaw(rotation.eulerAngles.y);
+            if (NetSpawned) Net.SyncTeleport(position, rotation);   // other machines jump, they do not glide through the level
             Thrower.CancelCharge();
             Catcher.Clear();
         }

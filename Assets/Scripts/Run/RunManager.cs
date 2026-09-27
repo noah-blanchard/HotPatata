@@ -77,9 +77,20 @@ namespace Beep
             if (Instance == this) Instance = null;
         }
 
+        RunState lastMirroredState = RunState.Initializing;
+
         void Update()
         {
-            if (!NetMode.IsAuthority) return;   // remote clients only mirror
+            if (!NetMode.IsAuthority)
+            {
+                // Remote clients only mirror; log what the host tells us (handy when comparing logs).
+                if (Mirror && State != lastMirroredState)
+                {
+                    lastMirroredState = State;
+                    BeepLog.Run($"(mirror) run state = {State} resets={ResetCount} time={RunTime:F1}s");
+                }
+                return;
+            }
 
             switch (state)
             {
@@ -156,8 +167,8 @@ namespace Beep
             if (!NetMode.IsAuthority || state != RunState.Playing) return;
 
             checkpoint = cp;
-            // Normalise the bomb for the new section: a fresh hold window for whoever has it.
-            if (bomb.State == BombState.Held || bomb.State == BombState.CaughtGrace) bomb.Fuse.Refresh();
+            // Normalise the bomb for the new section: this checkpoint's hold time, and a fresh window for whoever has it.
+            bomb.Fuse.SetDurationOverride(cp.HoldFuseOverride);
             BeepLog.Run($"Checkpoint {cp.Id} activated");
             CheckpointActivated?.Invoke(cp);
         }
@@ -173,6 +184,28 @@ namespace Beep
             Transition(RunState.Completed);
             BeepLog.Run($"Course complete time={runTime:F1}s resets={resetCount}");
             RunCompleted?.Invoke(runTime);
+        }
+
+        /// <summary>Starts the whole run again from the beginning (rematch). Authority only.</summary>
+        public void Restart()
+        {
+            if (!NetMode.IsAuthority || (state != RunState.Completed && state != RunState.Playing)) return;
+
+            checkpoint = null;
+            resetCount = 0;
+            foreach (var cp in FindObjectsByType<Checkpoint>(FindObjectsSortMode.None)) cp.Rearm();
+            foreach (var r in resettables) r.ResetState();
+            bomb.Fuse.SetDurationOverride(0f);
+            placed.Clear();
+            runStart = NetMode.ServerTime;
+            sectionStart = runStart;
+            runTime = 0f;
+            PlacePlayers();
+            bomb.BeginReset();
+            bomb.EndReset(CarrierForReset());
+            SetPlayersLocked(false);
+            Transition(RunState.Playing);
+            BeepLog.Run("Run restarted");
         }
 
         // ------------------------------------------------------------------ helpers

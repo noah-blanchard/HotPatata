@@ -23,7 +23,10 @@ namespace Beep
         public static NetworkBootstrap Instance { get; private set; }
 
         [SerializeField] string menuScene = "Bootstrap";
-        [SerializeField] string gameplayScene = "PassSandbox";
+        [SerializeField] string[] gameplayScenes = { "PrototypeCourse", "PassSandbox" };
+        int sceneIndex;
+
+        string gameplayScene => gameplayScenes[Mathf.Clamp(sceneIndex, 0, gameplayScenes.Length - 1)];
         [SerializeField] ushort port = 7777;
 
         NetworkManager nm;
@@ -62,6 +65,7 @@ namespace Beep
                 switch (args[i])
                 {
                     case "-beepBot": PlayerBot.Enabled = true; break;
+                    case "-beepScene" when i + 1 < args.Length: sceneIndex = Mathf.Max(0, System.Array.IndexOf(gameplayScenes, args[i + 1])); break;
                     case "-beepLatency" when i + 1 < args.Length && int.TryParse(args[i + 1], out int ms): SimulateLatency(ms); break;
                     case "-beepQuit" when i + 1 < args.Length && float.TryParse(args[i + 1], out float s): Invoke(nameof(Quit), s); break;
                 }
@@ -160,9 +164,12 @@ namespace Beep
             }
 
             const float w = 320f;
-            var box = new Rect((Screen.width - w) * 0.5f, Screen.height * 0.25f, w, 250f);
+            var box = new Rect((Screen.width - w) * 0.5f, Screen.height * 0.25f, w, 290f);
             GUI.Box(box, "BEEP!");
-            GUILayout.BeginArea(new Rect(box.x + 16, box.y + 32, w - 32, 210f));
+            GUILayout.BeginArea(new Rect(box.x + 16, box.y + 32, w - 32, 250f));
+            GUILayout.Label("Level");
+            sceneIndex = GUILayout.SelectionGrid(sceneIndex, gameplayScenes, gameplayScenes.Length, GUILayout.Height(26));
+            GUILayout.Space(8);
 
             if (GUILayout.Button("Play Local (2 players, one keyboard)", GUILayout.Height(30))) PlayLocal();
             GUILayout.Space(8);

@@ -9,6 +9,9 @@ EditorBuildSettings:
     path: Assets/Scenes/Bootstrap.unity
     guid: 66137be594491d44a80ffec8b73f5343
   - enabled: 1
+    path: Assets/Scenes/PrototypeCourse.unity
+    guid: 7d3e051790b64f94ab62bbfe0e8499b0
+  - enabled: 1
     path: Assets/Scenes/PassSandbox.unity
     guid: d8e6413f27b16634bb059f6e9c9ed9aa
   m_configObjects:

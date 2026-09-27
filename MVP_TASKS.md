@@ -914,6 +914,8 @@ Required:
 
 ---
 
+> **Status:** Milestone 5 is implemented (course beats A-G, three checkpoints, finish and rematch); the human playtest of the full course is still open.
+
 # Milestone 6 — UX and readability
 
 ---

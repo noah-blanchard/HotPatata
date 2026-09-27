@@ -24,6 +24,9 @@ namespace Beep.Tests
 
         bool previousRunInBackground;
 
+        /// <summary>The scene under test (name without folder/extension).</summary>
+        protected virtual string SceneName => "PassSandbox";
+
         [UnitySetUp]
         public IEnumerator LoadSandbox()
         {
@@ -33,7 +36,7 @@ namespace Beep.Tests
 
 #if UNITY_EDITOR
             yield return EditorSceneManager.LoadSceneAsyncInPlayMode(
-                "Assets/Scenes/PassSandbox.unity", new LoadSceneParameters(LoadSceneMode.Single));
+                "Assets/Scenes/" + SceneName + ".unity", new LoadSceneParameters(LoadSceneMode.Single));
             tuning = AssetDatabase.LoadAssetAtPath<GameTuning>("Assets/ScriptableObjects/Tuning/GameTuning.asset");
 #else
             Assert.Inconclusive("Sandbox tests run in the Editor only.");
