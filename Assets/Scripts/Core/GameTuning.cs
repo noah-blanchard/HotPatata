@@ -94,7 +94,11 @@ namespace HotPatata
         [Tooltip("Master scale for every camera effect below (accessibility: 0 = a perfectly steady camera).")]
         [Range(0f, 1f)] public float viewEffectsStrength = 1f;
         [Tooltip("Extra field of view at full run speed, in degrees.")]
-        [Min(0f)] public float fovKickAtSpeed = 12f;
+        [Min(0f)] public float fovKickAtSpeed = 4f;
+        [Tooltip("Extra field of view at sprint speed, in degrees (between run and sprint it blends).")]
+        [Min(0f)] public float fovKickAtSprint = 9f;
+        [Tooltip("Extra field of view at the fastest slides, in degrees (reached at 3x the run-to-sprint step).")]
+        [Min(0f)] public float fovKickMax = 13f;
         [Tooltip("Degrees the view leans when strafing at full speed.")]
         [Min(0f)] public float rollDegrees = 2.2f;
         [Tooltip("Height of the walking bob in metres at full speed.")]
@@ -105,12 +109,18 @@ namespace HotPatata
         [Min(0f)] public float landingDip = 0.10f;
         [Tooltip("Degrees the field of view narrows while charging a throw (focus).")]
         [Min(0f)] public float chargeFovZoom = 2f;
-        [Tooltip("Vignette strength at full speed (0..1).")]
-        [Range(0f, 0.6f)] public float speedVignette = 0.28f;
-        [Tooltip("Wind volume at full speed (0..1).")]
-        [Range(0f, 1f)] public float windVolume = 0.3f;
-        [Tooltip("Footstep and landing sounds (0 = off).")]
-        [Range(0f, 1f)] public float footstepVolume = 0.2f;
+        [Tooltip("Vignette strength while sliding (0..1). Running and sprinting stay clean.")]
+        [Range(0f, 0.6f)] public float speedVignette = 0.22f;
+        [Tooltip("Anime speed lines at the screen edges: 0 = off, 1 = full. They start above run speed.")]
+        [Range(0f, 1f)] public float speedLinesStrength = 0.8f;
+        [Tooltip("Wind streak particles flying past above run speed: 0 = off, 1 = full.")]
+        [Range(0f, 1f)] public float windStreaksStrength = 1f;
+        [Tooltip("Degrees the view rolls into a slide (toward the steering side).")]
+        [Min(0f)] public float slideRollDegrees = 3.5f;
+        [Tooltip("Camera shake from a nearby explosion, in degrees at point blank.")]
+        [Min(0f)] public float explosionShake = 2.2f;
+        [Tooltip("Accessibility (spec §19): 0 = full flashes, 1 = no bright flashes (explosion flash, light, glare).")]
+        [Range(0f, 1f)] public float flashReduction = 0f;
 
         [Header("Bomb - fuse")]
         [Tooltip("Seconds a carrier may hold the bomb. Refreshed by every valid catch.")]
@@ -197,11 +207,21 @@ namespace HotPatata
 
         [Header("Bomb - natural motion (visual only)")]
         [Tooltip("Average tumble speed in flight, degrees per second. Faster throws spin faster.")]
-        [Min(0f)] public float tumbleDegreesPerSecond = 480f;
-        [Tooltip("0 = a clean end-over-end spin, 1 = very wobbly and unpredictable.")]
-        [Range(0f, 1f)] public float tumbleRandomness = 0.35f;
+        [Min(0f)] public float tumbleDegreesPerSecond = 1200f;
+        [Tooltip("0 = a clean end-over-end spin, 1 = tumbles every which way (two spins on random axes, the main axis wandering in flight).")]
+        [Range(0f, 1f)] public float tumbleRandomness = 0.85f;
         [Tooltip("Gentle sway of the potato in the hand, in degrees.")]
         [Min(0f)] public float handSwayDegrees = 3f;
+
+        [Header("Bomb - VFX (visual only)")]
+        [Tooltip("Seconds the flight trail lingers behind a thrown potato.")]
+        [Min(0f)] public float trailTime = 0.22f;
+        [Tooltip("Trail width at the potato, in metres (at the fastest throw; slower throws are thinner).")]
+        [Min(0f)] public float trailWidth = 0.16f;
+        [Tooltip("Fuse sparks per second for the four fuse stages (calm .. critical).")]
+        public float[] fuseSparkRates = { 14f, 30f, 60f, 130f };
+        [Tooltip("Smoke puffs left per metre of flight.")]
+        [Min(0f)] public float flightPuffsPerMetre = 1.6f;
 
         [Header("Run")]
         [Tooltip("Seconds between an explosion and the section being playable again.")]

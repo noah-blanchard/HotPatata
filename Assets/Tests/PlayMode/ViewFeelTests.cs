@@ -49,19 +49,33 @@ namespace HotPatata.Tests
         }
 
         [UnityTest]
-        public IEnumerator Running_BuildsUpPostEffects_ThatFadeAgain()
+        public IEnumerator Running_StaysClean_SprintAddsSpeedLines_SlideAddsVignette()
         {
             var volume = Cam.GetComponentInChildren<Volume>();
             Assert.IsTrue(volume.sharedProfile.TryGet(out Vignette vignette));
+            float Lines() => Shader.GetGlobalFloat("_HotPatataSpeedLines");
 
-            Assert.Less(vignette.intensity.value, 0.02f, "clean when standing still");
+            yield return Place(p1, new Vector3(-15f, 0.05f, -17f));   // a long clear lane
             Drive.Move = Vector2.up;
-            yield return WaitSeconds(1.0f);
-            Assert.Greater(vignette.intensity.value, 0.12f, "vignette grows with speed");
+            yield return WaitSeconds(0.8f);
+            Assert.Less(vignette.intensity.value, 0.02f, "running stays clean");
+            Assert.Less(Lines(), 0.05f, "no speed lines at run speed");
 
+            Drive.Sprint = true;
+            yield return WaitSeconds(0.8f);
+            Assert.Greater(Lines(), 0.05f, "sprinting brings in speed lines");
+
+            Drive.Crouch = true;
+            yield return WaitSeconds(0.3f);
+            Assert.Greater(vignette.intensity.value, 0.05f, "a slide adds a light vignette");
+            Assert.Greater(Lines(), 0.2f, "and stronger lines");
+
+            Drive.Crouch = false;
+            Drive.Sprint = false;
             Drive.Move = Vector2.zero;
-            yield return WaitSeconds(1.0f);
-            Assert.Less(vignette.intensity.value, 0.05f);
+            yield return WaitSeconds(1.2f);
+            Assert.Less(vignette.intensity.value, 0.02f);
+            Assert.Less(Lines(), 0.05f, "everything fades once you stop");
         }
 
         [UnityTest]
@@ -91,6 +105,7 @@ namespace HotPatata.Tests
                 Assert.AreEqual(tuning.fieldOfView, Cam.fieldOfView, 0.01f, "no FOV effect");
                 Assert.AreEqual(0f, Mathf.DeltaAngle(Cam.transform.eulerAngles.z, 0f), 0.01f, "no roll");
                 Assert.AreEqual(0f, p1.Feel.EyeOffset.magnitude, 0.0001f, "no bob");
+                Assert.AreEqual(0f, Shader.GetGlobalFloat("_HotPatataSpeedLines"), 0.001f, "no speed lines");
             }
             finally
             {

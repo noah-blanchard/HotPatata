@@ -52,15 +52,20 @@ MonoBehaviour:
   pitchMax: 80
   fieldOfView: 75
   viewEffectsStrength: 1
-  fovKickAtSpeed: 12
+  fovKickAtSpeed: 4
+  fovKickAtSprint: 9
+  fovKickMax: 13
   rollDegrees: 2.2
   bobAmplitude: 0.035
   stepLength: 1.15
   landingDip: 0.1
   chargeFovZoom: 2
-  speedVignette: 0.28
-  windVolume: 0.3
-  footstepVolume: 0.2
+  speedVignette: 0.22
+  speedLinesStrength: 0.8
+  windStreaksStrength: 1
+  slideRollDegrees: 3.5
+  explosionShake: 2.2
+  flashReduction: 0
   holdFuseDuration: 6
   warningDuration: 2
   caughtGraceDuration: 0.35
@@ -102,7 +107,15 @@ MonoBehaviour:
   - 0.75
   - 0.9
   beepVolume: 0.6
-  tumbleDegreesPerSecond: 480
-  tumbleRandomness: 0.35
+  tumbleDegreesPerSecond: 1200
+  tumbleRandomness: 0.85
   handSwayDegrees: 3
+  trailTime: 0.22
+  trailWidth: 0.16
+  fuseSparkRates:
+  - 14
+  - 30
+  - 60
+  - 130
+  flightPuffsPerMetre: 1.6
   resetDelay: 1

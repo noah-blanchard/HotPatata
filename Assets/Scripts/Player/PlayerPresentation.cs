@@ -58,6 +58,7 @@ namespace HotPatata
             foreach (var r in GetComponentsInChildren<Renderer>(true))
             {
                 if (r.GetComponentInParent<BombController>() != null) continue;   // never hide the held bomb
+                if (r is ParticleSystemRenderer) continue;                         // your own dust stays visible
                 r.shadowCastingMode = mode;
             }
         }
