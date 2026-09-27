@@ -80,6 +80,25 @@ namespace Beep.Tests
             return new Vector2(v.x, v.z).magnitude;
         }
 
+        /// <summary>
+        /// Plays a receiver who presses catch as the thrown bomb gets close (default 1.8 m out, i.e. well inside
+        /// the catch window at any throw speed). Call after the throw has started.
+        /// </summary>
+        protected IEnumerator CatchWhenNear(Player receiver, float distance = 1.8f)
+        {
+            receiver.Input.Scripted ??= new PlayerInputReader.ScriptedInput();
+            float end = Time.realtimeSinceStartup + 3f;
+            while (bomb.State == BombState.Thrown && Time.realtimeSinceStartup < end)
+            {
+                if (Vector3.Distance(bomb.transform.position, receiver.CatchVolume.CatchCenter) <= distance)
+                {
+                    receiver.Input.Scripted.PressCatch();
+                    yield break;
+                }
+                yield return null;
+            }
+        }
+
         /// <summary>Place a player on flat ground facing +Z, ready to be driven.</summary>
         protected static IEnumerator Place(Player p, Vector3 position)
         {

@@ -23,7 +23,7 @@ namespace Beep
         [SerializeField] int gamepadIndex;
 
         InputActionAsset actions;
-        InputAction move, look, jump, throwAction;
+        InputAction move, look, jump, throwAction, catchAction;
 
         /// <summary>
         /// Programmatic input that completely replaces device input while assigned. Used by automated
@@ -34,13 +34,31 @@ namespace Beep
             public Vector2 Move;
             /// <summary>Look rate in "stick" units (-1..1), like a gamepad stick.</summary>
             public Vector2 Look;
-            bool jumpQueued, throwQueued;
+            public bool ThrowHeld { get; private set; }
+            bool jumpQueued, throwPressQueued, throwReleaseQueued, catchQueued;
 
             public void PressJump() => jumpQueued = true;
-            public void PressThrow() => throwQueued = true;
+            public void PressCatch() => catchQueued = true;
+
+            /// <summary>Hold or release the throw button (queues the matching press/release edge).</summary>
+            public void SetThrowHeld(bool held)
+            {
+                if (held && !ThrowHeld) throwPressQueued = true;
+                if (!held && ThrowHeld) throwReleaseQueued = true;
+                ThrowHeld = held;
+            }
+
+            /// <summary>A tap: press and release in the same frame (an uncharged throw).</summary>
+            public void PressThrow()
+            {
+                SetThrowHeld(true);
+                SetThrowHeld(false);
+            }
 
             internal bool ConsumeJump() { bool v = jumpQueued; jumpQueued = false; return v; }
-            internal bool ConsumeThrow() { bool v = throwQueued; throwQueued = false; return v; }
+            internal bool ConsumeThrowPress() { bool v = throwPressQueued; throwPressQueued = false; return v; }
+            internal bool ConsumeThrowRelease() { bool v = throwReleaseQueued; throwReleaseQueued = false; return v; }
+            internal bool ConsumeCatch() { bool v = catchQueued; catchQueued = false; return v; }
         }
 
         public ScriptedInput Scripted { get; set; }
@@ -53,7 +71,9 @@ namespace Beep
         /// <summary>Mouse look is a per-frame delta; stick look is a rate. Callers scale them differently.</summary>
         public bool LookIsMouse => Scripted == null && Source == InputSource.KeyboardMouse;
         public bool JumpPressed => Scripted != null ? Scripted.ConsumeJump() : Source != InputSource.None && jump.WasPressedThisFrame();
-        public bool ThrowPressed => Scripted != null ? Scripted.ConsumeThrow() : Source != InputSource.None && throwAction.WasPressedThisFrame();
+        public bool ThrowPressed => Scripted != null ? Scripted.ConsumeThrowPress() : Source != InputSource.None && throwAction.WasPressedThisFrame();
+        public bool ThrowReleased => Scripted != null ? Scripted.ConsumeThrowRelease() : Source != InputSource.None && throwAction.WasReleasedThisFrame();
+        public bool CatchPressed => Scripted != null ? Scripted.ConsumeCatch() : Source != InputSource.None && catchAction.WasPressedThisFrame();
 
         void Awake()
         {
@@ -63,6 +83,7 @@ namespace Beep
             look = map.FindAction("Look", true);
             jump = map.FindAction("Jump", true);
             throwAction = map.FindAction("Throw", true);
+            catchAction = map.FindAction("Catch", true);
         }
 
         void OnEnable()

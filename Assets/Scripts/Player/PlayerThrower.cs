@@ -4,12 +4,13 @@ using UnityEngine;
 namespace Beep
 {
     /// <summary>
-    /// Turns a throw input into a launch velocity and asks the bomb to release. It never changes
-    /// bomb ownership itself: <see cref="BombController.TryThrow"/> is the authority.
+    /// Turns throw input into a launch velocity and asks the bomb to release. Hold the throw button to
+    /// charge (a longer hold means a faster, farther throw), release to throw; a tap is the shortest pass.
+    /// It never changes bomb ownership itself: <see cref="BombController.TryThrow"/> is the authority.
     ///
-    /// Aim: a ray from the camera pivot along the look direction picks an aim point; the throw goes
-    /// from the ThrowOrigin toward it, pitched up slightly to counter drop. A small, capped assist
-    /// nudges the direction toward a receiver already close to where the player is aiming.
+    /// Aim: a ray from the eyes along the look direction picks an aim point; the throw goes from the
+    /// ThrowOrigin toward it, pitched up slightly to counter drop. A small, capped assist nudges the
+    /// direction toward a receiver already close to where the player is aiming.
     /// </summary>
     [RequireComponent(typeof(Player))]
     public class PlayerThrower : MonoBehaviour
@@ -18,6 +19,15 @@ namespace Beep
         BombController bomb;
         IReadOnlyList<Player> allPlayers;
         int aimMask;
+        float chargeStartTime = -1f;
+
+        public bool Charging => chargeStartTime >= 0f;
+
+        /// <summary>True while this player is the bomb's carrier (drives the charge UI).</summary>
+        public bool HoldsBomb => bomb != null && bomb.Carrier == player;
+
+        /// <summary>0 = tap, 1 = fully charged.</summary>
+        public float Charge01 => Charging ? Mathf.Clamp01((Time.time - chargeStartTime) / player.Tuning.throwChargeTime) : 0f;
 
         void Awake()
         {
@@ -33,26 +43,50 @@ namespace Beep
 
         void Update()
         {
-            if (bomb == null || player.ControlLocked) return;
-            if (player.Input.ThrowPressed) TryThrow();
+            // Always consume both edges so nothing queues up while we cannot throw.
+            bool pressed = player.Input.ThrowPressed;
+            bool released = player.Input.ThrowReleased;
+
+            bool mayThrow = bomb != null && !player.ControlLocked && bomb.Carrier == player
+                            && (bomb.State == BombState.Held || bomb.State == BombState.CaughtGrace);
+            if (!mayThrow)
+            {
+                CancelCharge();
+                return;
+            }
+
+            if (pressed) chargeStartTime = Time.time;
+
+            if (released && Charging)
+            {
+                float charge = Charge01;
+                CancelCharge();
+                TryThrow(charge);
+            }
         }
 
-        public bool TryThrow()
+        public void CancelCharge() => chargeStartTime = -1f;
+
+        public bool TryThrow(float charge01 = 0f)
         {
             if (bomb == null || bomb.State != BombState.Held || bomb.Carrier != player) return false;
 
             Vector3 origin = ThrowOriginNow();
-            return bomb.TryThrow(player, origin, ComputeThrowVelocity(origin));
+            return bomb.TryThrow(player, origin, ComputeThrowVelocity(origin, charge01));
         }
 
         /// <summary>Throw origin from the current aim (the anchor transform only updates in LateUpdate).</summary>
         public Vector3 ThrowOriginNow() =>
             player.CameraTarget.position + player.Look.AimRotation * player.ThrowOrigin.localPosition;
 
-        /// <summary>Deterministic: the same aim and tuning always give the same velocity.</summary>
-        public Vector3 ComputeThrowVelocity(Vector3 origin)
+        public static float SpeedFor(GameTuning t, float charge01) =>
+            Mathf.Lerp(t.throwSpeedMin, t.throwSpeedMax, Mathf.Clamp01(charge01));
+
+        /// <summary>Deterministic: the same aim, charge and tuning always give the same velocity.</summary>
+        public Vector3 ComputeThrowVelocity(Vector3 origin, float charge01)
         {
             var t = player.Tuning;
+            float speed = SpeedFor(t, charge01);
 
             // 1. Where is the player aiming?
             Vector3 pivot = player.CameraTarget.position;
@@ -70,12 +104,12 @@ namespace Beep
                 dir = Quaternion.AngleAxis(-t.throwUpAngle, right.normalized) * dir;
 
             // 3. Optional small assist toward a nearby receiver.
-            dir = ApplyAimAssist(origin, dir, t);
+            dir = ApplyAimAssist(origin, dir, speed, t);
 
-            return dir * t.throwSpeed;
+            return dir * speed;
         }
 
-        Vector3 ApplyAimAssist(Vector3 origin, Vector3 dir, GameTuning t)
+        Vector3 ApplyAimAssist(Vector3 origin, Vector3 dir, float speed, GameTuning t)
         {
             if (allPlayers == null || t.aimAssistStrength <= 0f) return dir;
 
@@ -89,7 +123,7 @@ namespace Beep
 
                 Vector3 to = other.CatchVolume.CatchCenter - origin;
                 if (to.magnitude > t.aimAssistDistance) continue;
-                if (!TrySolveBallistic(to, t.throwSpeed, g, out Vector3 solved)) continue;
+                if (!TrySolveBallistic(to, speed, g, out Vector3 solved)) continue;
 
                 float angle = Vector3.Angle(dir, solved);
                 if (angle <= bestAngle)

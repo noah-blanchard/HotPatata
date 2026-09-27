@@ -358,6 +358,7 @@ GameObject:
   - component: {fileID: 7028011039714512708}
   - component: {fileID: 8533199576086021940}
   - component: {fileID: 2280057609542735823}
+  - component: {fileID: 8688885949046218050}
   m_Layer: 8
   m_Name: Player
   m_TagString: Untagged
@@ -498,6 +499,18 @@ MonoBehaviour:
   bobHeight: 0.12
   bobSpeed: 4
   spinSpeed: 120
+--- !u!114 &8688885949046218050
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8153791677947162974}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7c7d4defcb93014a90426367442824e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Beep::Beep.PlayerCatcher
 --- !u!1 &8469958796228216096
 GameObject:
   m_ObjectHideFlags: 0

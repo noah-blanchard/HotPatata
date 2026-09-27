@@ -28,14 +28,18 @@ MonoBehaviour:
   holdFuseDuration: 6
   warningDuration: 2
   caughtGraceDuration: 0.35
-  throwSpeed: 14
+  throwSpeedMin: 10
+  throwSpeedMax: 24
+  throwChargeTime: 1
   throwUpAngle: 8
   bombGravityScale: 0.6
   aimMaxDistance: 40
   aimAssistAngle: 8
   aimAssistDistance: 16
   aimAssistStrength: 0.5
-  catchRadius: 0.9
+  catchRadius: 0.6
+  catchWindowDuration: 0.25
+  catchCooldown: 0.5
   catchFrontBias: 0.25
   catchCenterHeight: 1.3
   beepIntervals:

@@ -259,7 +259,8 @@ Required:
 - throw works while moving;
 - throw works while airborne.
 
-Start with fixed throw strength unless charge is trivial.
+Throw is chargeable (decided after the first playtest): hold to charge, release to throw, tap = shortest pass;
+speed runs from `throwSpeedMin` to `throwSpeedMax` over `throwChargeTime`. Show a charge bar UI indicator.
 
 **Acceptance criteria**
 
@@ -283,7 +284,9 @@ Required:
 
 Starting values:
 
-- catch radius roughly 0.7–1.0 m;
+- catch radius roughly 0.5–0.7 m (starting value 0.6 m);
+- catch is timed, not automatic: the receiver presses catch and the bomb must reach them inside the
+  `catchWindowDuration` (0.25 s) window; `catchCooldown` (0.5 s) stops button mashing;
 - caught grace 0.35 s.
 
 **Acceptance criteria**

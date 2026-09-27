@@ -40,6 +40,7 @@ namespace Beep
         public PlayerMotor Motor { get; private set; }
         public PlayerLook Look { get; private set; }
         public PlayerThrower Thrower { get; private set; }
+        public PlayerCatcher Catcher { get; private set; }
         public PlayerPresentation Presentation { get; private set; }
 
         /// <summary>True while the run system has taken control away (reset lockout).</summary>
@@ -51,6 +52,7 @@ namespace Beep
             Motor = GetComponent<PlayerMotor>();
             Look = GetComponent<PlayerLook>();
             Thrower = GetComponent<PlayerThrower>();
+            Catcher = GetComponent<PlayerCatcher>();
             Presentation = GetComponent<PlayerPresentation>();
         }
 
@@ -58,6 +60,7 @@ namespace Beep
         public void Bind(BombController bomb, System.Collections.Generic.IReadOnlyList<Player> allPlayers)
         {
             Thrower.Bind(bomb, allPlayers);
+            Catcher.Bind(bomb);
             Presentation.Bind(bomb);
         }
 
@@ -72,13 +75,20 @@ namespace Beep
         public void SetControlLocked(bool locked)
         {
             ControlLocked = locked;
-            if (locked) Motor.ResetVelocity();
+            if (locked)
+            {
+                Motor.ResetVelocity();
+                Thrower.CancelCharge();
+                Catcher.Clear();
+            }
         }
 
         /// <summary>Moves the player instantly and clears all motion. Safe for CharacterController.</summary>
         public void TeleportTo(Vector3 position, Quaternion rotation)
         {
             Motor.Teleport(position, rotation);
+            Thrower.CancelCharge();
+            Catcher.Clear();
             Look.SetYaw(rotation.eulerAngles.y);
         }
 

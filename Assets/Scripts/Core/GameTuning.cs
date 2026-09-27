@@ -43,7 +43,12 @@ namespace Beep
         [Min(0f)] public float caughtGraceDuration = 0.35f;
 
         [Header("Bomb - throw")]
-        [Min(0f)] public float throwSpeed = 14f;
+        [Tooltip("Launch speed of a tap (no charge). Sets the shortest pass.")]
+        [Min(0f)] public float throwSpeedMin = 10f;
+        [Tooltip("Launch speed at full charge. Longer, faster throws.")]
+        [Min(0f)] public float throwSpeedMax = 24f;
+        [Tooltip("Seconds of holding the throw button to reach full charge.")]
+        [Min(0.05f)] public float throwChargeTime = 1.0f;
         [Tooltip("Degrees the throw is pitched up from the aim direction.")]
         [Range(0f, 45f)] public float throwUpAngle = 8f;
         [Tooltip("Multiplier on Physics.gravity for the thrown bomb (flatter arcs = easier passes).")]
@@ -60,7 +65,11 @@ namespace Beep
 
         [Header("Catch")]
         [Tooltip("Radius of the receiver's catch sphere.")]
-        [Min(0.1f)] public float catchRadius = 0.9f;
+        [Min(0.1f)] public float catchRadius = 0.6f;
+        [Tooltip("Pressing catch opens a window this long; the bomb must reach the receiver inside it. Smaller = harder.")]
+        [Min(0.02f)] public float catchWindowDuration = 0.25f;
+        [Tooltip("After a window closes, catch cannot be pressed again for this long (stops button mashing).")]
+        [Min(0f)] public float catchCooldown = 0.5f;
         [Tooltip("How far in front of the receiver the catch sphere is pushed.")]
         [Min(0f)] public float catchFrontBias = 0.25f;
         [Tooltip("Height of the catch sphere centre above the player's feet (upper torso / hands).")]

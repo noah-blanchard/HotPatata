@@ -66,6 +66,7 @@ namespace Beep
             Color tint = Color.Lerp(baseEmission, criticalEmission, s / 3f);
             Color emission = tint * intensity;
 
+            block ??= new MaterialPropertyBlock();   // survives a script reload during Play Mode
             bodyRenderer.GetPropertyBlock(block);
             block.SetColor(EmissionColor, emission);
             bodyRenderer.SetPropertyBlock(block);

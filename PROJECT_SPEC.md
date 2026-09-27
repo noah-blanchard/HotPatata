@@ -287,41 +287,61 @@ Starting target:
 
 - comfortable normal pass distance: **8–12 m**
 
-### 8.2 Initial implementation preference
+### 8.2 Charged throw (decided after the first playtest)
 
-Start simple.
+The throw is **chargeable**:
 
-Preferred first implementation:
+- **hold** the throw button to charge, **release** to throw; a quick tap is the shortest, slowest pass;
+- charge runs from 0 to 1 over `throwChargeTime` (1.0 s) and is capped at 1;
+- launch speed goes linearly from `throwSpeedMin` (tap) to `throwSpeedMax` (full charge), so a longer
+  charge means a **faster and farther** throw. Starting values: 10 to 24 m/s, i.e. roughly 5 m to 27 m
+  on level ground;
+- forward-biased ballistic throw from the hand/release anchor, pitched up slightly (`throwUpAngle`);
+- optional subtle aim correction toward an eligible receiver (unchanged, aim assist felt fine);
+- while charging, the carrier's fuse keeps burning: charging is a risk, not a pause;
+- charging is cancelled if control is locked, the bomb is lost or the section resets.
 
-- fixed or lightly chargeable throw strength;
-- forward-biased ballistic throw from a hand/release anchor;
-- optional subtle aim correction toward an eligible receiver;
-- no complex trajectory preview in the first pass.
-
-Do not build a sophisticated throw-charge system until basic passing is fun.
+A **UI indicator** is required: a charge bar near the crosshair (only while holding the bomb) that fills
+as the charge builds, with the launch speed and an estimated level-ground range. No trajectory preview.
 
 ---
 
 ## 9. Catch system
 
-Catching must be forgiving enough for party-game play but still reward positioning and timing.
+Catching is a **timed action, never automatic** (decided after the first playtest). It should reward
+positioning and timing while staying fair.
 
 ### 9.1 Required behavior
 
-A catch is valid when:
+The receiver presses **catch** (right click / left trigger). That opens a short **catch window**
+(`catchWindowDuration`, starting value **0.25 s**, a tuning parameter). A catch is valid when:
 
 - bomb is in `Thrown`;
-- receiver is eligible;
-- bomb intersects the receiver's catch volume / catch rule;
+- receiver is eligible (not the player who just threw it, and not the current carrier);
+- the receiver's catch window is **open**;
+- bomb intersects the receiver's catch volume (either entering it during the window, or already inside it
+  when the window opens);
 - authoritative resolver accepts the catch.
 
-Starting catch radius:
+A bomb that reaches a receiver who did not press catch in time is **not** caught: it flies through and the
+normal world-contact rule applies. Pressing too early (the window closes before the bomb arrives) misses too.
 
-- roughly **0.7–1.0 m** around upper torso / hands.
+After a window closes there is a **cooldown** (`catchCooldown`, starting value 0.5 s) before catch can be
+pressed again, so the button cannot be mashed. A successful catch spends the window and clears the cooldown.
+A carrier cannot open a catch window.
+
+The catch state is shown to the local player by a UI indicator around the crosshair: faint brackets = ready,
+large green brackets = window open, small red brackets with a shrinking bar = cooldown.
+
+Starting catch radius (tightened after the first playtest, since timing now does the gatekeeping):
+
+- roughly **0.5–0.7 m** around upper torso / hands (starting value 0.6 m).
 
 Prefer a front-biased catch region.
 
 ### 9.2 Catch assistance
+
+Assistance may widen tolerance but must **never** replace the catch input.
 
 Allowed:
 
@@ -358,13 +378,11 @@ Initial controls:
 | Move | WASD | Left stick | Required |
 | Look | Mouse | Right stick | Required |
 | Jump | Space | South button | Required |
-| Throw | Left click | Right trigger | Required |
-| Catch-ready | Right click | Left trigger | Optional / prototype |
+| Throw | Left click (hold to charge, release to throw) | Right trigger | Required |
+| Catch | Right click (timed, see §9) | Left trigger | Required |
 | Ping / “throw to me” | Q | Bumper | Later MVP if needed |
 
-The catch-ready action is an open tuning decision.
-
-Do not make the system depend on it until playtesting proves it improves clarity.
+Catch is required to receive the bomb; there is no automatic catch.
 
 ---
 
@@ -702,8 +720,12 @@ At minimum:
 | Hold fuse | 6.0 s |
 | Warning phase | 2.0 s |
 | Catch grace | 0.35 s |
-| Normal throw target | 8–12 m |
-| Catch radius | 0.7–1.0 m |
+| Throw speed (tap → full charge) | 10 → 24 m/s |
+| Throw charge time | 1.0 s |
+| Normal pass distance | 8–12 m (about half charge) |
+| Catch radius | 0.6 m |
+| Catch window | 0.25 s |
+| Catch cooldown | 0.5 s |
 | Jump coyote time | 0.1 s |
 | Jump buffer | 0.1 s |
 | Reset delay | ~1.0 s |
@@ -720,8 +742,8 @@ These are **starting values**, not final design decisions.
 The coding agent must expose these cleanly for playtesting rather than hard-code assumptions everywhere:
 
 - exact fuse duration;
-- fixed vs charged throw;
-- catch-ready input vs automatic catch;
+- charge time and the min / max throw speed (charged throw and timed catch are decided, see §8.2 and §9.1);
+- catch window duration and cooldown;
 - catch radius;
 - aim assist strength;
 - bomb speed;

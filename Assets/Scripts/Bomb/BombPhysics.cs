@@ -76,5 +76,8 @@ namespace Beep
         void OnCollisionEnter(Collision collision) => controller.ReportWorldContact(collision.collider);
 
         void OnTriggerEnter(Collider other) => controller.ReportTriggerContact(other);
+
+        // A catch window can open while the bomb is already inside the volume.
+        void OnTriggerStay(Collider other) => controller.ReportTriggerContact(other);
     }
 }

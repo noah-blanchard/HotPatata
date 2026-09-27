@@ -70,6 +70,7 @@ namespace Beep
         public void ApplyColor()
         {
             if (bodyRenderer == null) return;
+            block ??= new MaterialPropertyBlock();
             bodyRenderer.GetPropertyBlock(block);
             block.SetColor(BaseColor, player != null ? player.Color : Color.white);
             bodyRenderer.SetPropertyBlock(block);

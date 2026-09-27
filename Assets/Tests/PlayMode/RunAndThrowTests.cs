@@ -38,6 +38,7 @@ namespace Beep.Tests
             Drive.PressThrow();
             yield return null;
             Assert.AreEqual(BombState.Thrown, bomb.State, "throw input should release the bomb");
+            yield return CatchWhenNear(p2);
 
             yield return WaitUntil(() => catches > 0 || bomb.State == BombState.Exploding, 2f, "flight never ended");
             Assert.AreEqual(1, catches, "a level throw at a player 6 m away should be caught");
@@ -49,10 +50,11 @@ namespace Beep.Tests
         {
             p1.Look.SetAim(90f, 0f);
             Vector3 origin = p1.ThrowOrigin.position;
-            Vector3 a = p1.Thrower.ComputeThrowVelocity(origin);
-            Vector3 b = p1.Thrower.ComputeThrowVelocity(origin);
+            Vector3 a = p1.Thrower.ComputeThrowVelocity(origin, 0f);
+            Vector3 b = p1.Thrower.ComputeThrowVelocity(origin, 0f);
             Assert.AreEqual(0f, Vector3.Distance(a, b), 1e-5f);
-            Assert.AreEqual(tuning.throwSpeed, a.magnitude, 0.01f);
+            Assert.AreEqual(tuning.throwSpeedMin, a.magnitude, 0.01f, "no charge = minimum speed");
+            Assert.AreEqual(tuning.throwSpeedMax, p1.Thrower.ComputeThrowVelocity(origin, 1f).magnitude, 0.01f, "full charge = maximum speed");
             yield break;
         }
 
@@ -137,14 +139,82 @@ namespace Beep.Tests
 
                 // Aim level at the other player (p1 is at -X, p2 at +X) and throw with the real input path.
                 from.Look.SetAim(from == p1 ? 90f : 270f, 0f);
-                from.Input.Scripted.PressThrow();
                 int before = catches;
+                from.Input.Scripted.PressThrow();
+                yield return null;
+                yield return CatchWhenNear(to);
                 yield return WaitUntil(() => catches > before || explosions > 0, 2f, "pass " + pass + " never landed");
                 Assert.AreEqual(0, explosions, "pass " + pass + " failed the section");
                 Assert.AreSame(to, bomb.Carrier, "pass " + pass);
             }
             Assert.AreEqual(20, catches);
             Assert.AreEqual(0, run.ResetCount);
+        }
+
+        // ------------------------------------------------------------------ charged throw
+
+        [UnityTest]
+        public IEnumerator Tap_ThrowsAtTheMinimumSpeed()
+        {
+            p1.Look.SetAim(90f, 0f);
+            Drive.PressThrow();
+            yield return null;
+            Assert.AreEqual(BombState.Thrown, bomb.State);
+            Assert.AreEqual(tuning.throwSpeedMin, bomb.Body.Velocity.magnitude, 1.0f);
+        }
+
+        [UnityTest]
+        public IEnumerator HoldingCharges_AndReleaseThrowsFasterThanATap()
+        {
+            p1.Look.SetAim(90f, 0f);
+            Drive.SetThrowHeld(true);
+            yield return WaitSeconds(tuning.throwChargeTime * 0.5f);
+            Assert.IsTrue(p1.Thrower.Charging);
+            Assert.AreEqual(0.5f, p1.Thrower.Charge01, 0.2f);
+            Assert.AreEqual(BombState.Held, bomb.State, "still charging, not thrown yet");
+
+            Drive.SetThrowHeld(false);
+            yield return null;
+
+            Assert.AreEqual(BombState.Thrown, bomb.State);
+            float expected = Mathf.Lerp(tuning.throwSpeedMin, tuning.throwSpeedMax, 0.5f);
+            Assert.AreEqual(expected, bomb.Body.Velocity.magnitude, 2.5f);
+            Assert.Greater(bomb.Body.Velocity.magnitude, tuning.throwSpeedMin + 2f, "a half charge must be clearly faster than a tap");
+            Assert.IsFalse(p1.Thrower.Charging);
+        }
+
+        [UnityTest]
+        public IEnumerator FullCharge_IsCapped_AtTheMaximumSpeed()
+        {
+            p1.Look.SetAim(90f, 0f);
+            Drive.SetThrowHeld(true);
+            yield return WaitSeconds(tuning.throwChargeTime + 0.4f);
+            Assert.AreEqual(1f, p1.Thrower.Charge01, 1e-4f);
+
+            Drive.SetThrowHeld(false);
+            yield return null;
+            Assert.AreEqual(tuning.throwSpeedMax, bomb.Body.Velocity.magnitude, 1.0f);
+        }
+
+        [UnityTest]
+        public IEnumerator ChargedThrow_TravelsFartherThanATap()
+        {
+            // Aim level over open floor (+X, the far wall is 23 m away) and compare where the bomb first touches down.
+            p1.Look.SetAim(90f, -5f);
+            bomb.BombExploded += (r, d) => { };
+            Drive.PressThrow();
+            yield return WaitUntil(() => bomb.State == BombState.Exploding, 3f, "tap never landed");
+            float tapDistance = bomb.transform.position.x - p1.transform.position.x;
+
+            yield return WaitUntil(() => run.State == RunState.Playing, 3f, "reset");
+            p1.Look.SetAim(90f, -5f);
+            Drive.SetThrowHeld(true);
+            yield return WaitSeconds(tuning.throwChargeTime + 0.1f);
+            Drive.SetThrowHeld(false);
+            yield return WaitUntil(() => bomb.State == BombState.Exploding, 4f, "charged throw never landed");
+            float chargedDistance = bomb.transform.position.x - p1.transform.position.x;
+
+            Assert.Greater(chargedDistance, tapDistance * 1.5f, $"charged {chargedDistance:F1} m vs tap {tapDistance:F1} m");
         }
 
         // ------------------------------------------------------------------ first person

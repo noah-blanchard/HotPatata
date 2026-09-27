@@ -22,11 +22,10 @@ namespace Beep
             if (receiver == null) return false;
 
             // A pass is hand -> flight -> ANOTHER player's catch.
-            if (receiver == bomb.LastThrower)
-            {
-                BeepLog.Bomb($"Catch rejected {receiver} (thrower cannot catch their own throw)");
-                return false;
-            }
+            if (receiver == bomb.LastThrower) return false;
+
+            // Catching is never automatic: the receiver must have pressed catch just before / as the bomb arrives.
+            if (!receiver.Catcher.WindowOpen) return false;
 
             BeepLog.Bomb($"Catch accepted {receiver}");
             return bomb.AcceptCatch(receiver);

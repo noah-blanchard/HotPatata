@@ -311,7 +311,8 @@ Network replication of camera is unnecessary.
 Responsibilities:
 
 - determine whether local player may throw;
-- aim/release direction;
+- track the throw charge (hold to charge, release to throw; expose `Charging` / `Charge01` for the UI);
+- aim/release direction and launch speed from the charge (`throwSpeedMin` to `throwSpeedMax`);
 - send throw request to authoritative bomb system;
 - expose release anchor.
 
@@ -323,10 +324,21 @@ Responsibilities:
 
 - describe catchable region;
 - expose receiver eligibility;
-- optional catch-ready modifier;
 - provide hand/catch anchor.
 
 The authoritative catch resolver uses this information.
+
+### 7.4b `PlayerCatcher`
+
+Catching is a timed action (PROJECT_SPEC §9). Responsibilities:
+
+- read the catch input and open a short catch window (`catchWindowDuration`);
+- enforce the cooldown after a window closes (`catchCooldown`);
+- refuse to open a window while the player holds the bomb or control is locked;
+- expose `WindowOpen`, `OnCooldown` and remaining fractions for the resolver and the UI.
+
+It never touches the bomb; the resolver only reads `WindowOpen`. On a networked build the window is a
+request to the host, which checks it when resolving the catch.
 
 ### 7.5 `PlayerPresentation`
 
@@ -400,7 +412,7 @@ While thrown:
 
 Responsibilities:
 
-- decide whether incoming bomb contact is a valid catch;
+- decide whether incoming bomb contact is a valid catch (thrower excluded, receiver's catch window open);
 - reject ineligible receiver;
 - resolve simultaneous/near-simultaneous catch claims;
 - change authoritative carrier exactly once;
@@ -920,8 +932,6 @@ Before moving from one milestone to the next:
 Do not prematurely lock:
 
 - custom character motor vs CharacterController-based motor;
-- automatic catch vs catch-ready input;
-- fixed throw vs charged throw;
 - exact network transform strategy;
 - advanced client prediction;
 - lag compensation details;

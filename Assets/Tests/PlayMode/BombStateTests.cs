@@ -189,6 +189,7 @@ namespace Beep.Tests
             Give(p1);
             yield return null;
             ThrowAt(p1, p2);
+            yield return CatchWhenNear(p2);
 
             yield return WaitUntil(() => catches > 0, 2f, "pass was never caught");
 
@@ -204,6 +205,7 @@ namespace Beep.Tests
             Give(p1);
             yield return null;
             ThrowAt(p1, p2);
+            yield return CatchWhenNear(p2);
             yield return WaitUntil(() => catches > 0, 2f, "pass was never caught");
             Assert.AreEqual(BombState.CaughtGrace, bomb.State);
 
@@ -220,6 +222,7 @@ namespace Beep.Tests
             Give(p1);
             yield return null;
             ThrowAt(p1, p2);
+            yield return CatchWhenNear(p2);
             yield return WaitUntil(() => catches > 0, 2f, "pass was never caught");
             yield return WaitSeconds(0.5f);
             Assert.AreEqual(1, catches);
@@ -246,6 +249,7 @@ namespace Beep.Tests
             Assert.Less(bomb.Fuse.Remaining, 2f, "fuse should have been burning while held");
 
             ThrowAt(p1, p2);
+            yield return CatchWhenNear(p2);
             yield return WaitUntil(() => catches > 0, 2f, "pass was never caught");
 
             Assert.AreEqual(3f, bomb.Fuse.Remaining, 0.1f, "catch must restore the full hold window");
@@ -261,10 +265,89 @@ namespace Beep.Tests
 
             // A slow, high lob so the flight lasts a while but ends in a catch.
             ThrowAt(p1, p2, 0.9f);
+            yield return CatchWhenNear(p2);
             yield return WaitUntil(() => bomb.State != BombState.Thrown, 3f, "flight never ended");
 
             Assert.AreEqual(BombState.CaughtGrace, bomb.State);
             Assert.GreaterOrEqual(bomb.Fuse.Remaining, before - 0.15f);
+        }
+
+        // ------------------------------------------------------------------ timed catch (never automatic)
+
+        [UnityTest]
+        public IEnumerator Catch_IsNeverAutomatic_WithoutPressing_TheBombFliesThrough()
+        {
+            Give(p1);
+            yield return null;
+            ThrowAt(p1, p2);   // perfectly on target, but p2 never presses catch
+
+            yield return WaitUntil(() => explosions > 0, 3f, "the missed bomb should end up hitting the world");
+            Assert.AreEqual(0, catches);
+            Assert.AreEqual(BombFailReason.WorldContact, lastFailReason);
+        }
+
+        [UnityTest]
+        public IEnumerator Catch_PressedTooEarly_MissesTheWindow()
+        {
+            Give(p1);
+            yield return null;
+            ThrowAt(p1, p2, 0.7f);
+            p2.Input.Scripted = new PlayerInputReader.ScriptedInput();
+            p2.Input.Scripted.PressCatch();   // window (0.25 s) is long over before the bomb arrives at ~0.7 s
+
+            yield return WaitUntil(() => explosions > 0, 3f, "the missed bomb should end up hitting the world");
+            Assert.AreEqual(0, catches);
+        }
+
+        [UnityTest]
+        public IEnumerator Catch_PressedWhileBombIsAlreadyInsideTheVolume_StillCatches()
+        {
+            Give(p1);
+            yield return null;
+            // Park a slow-falling thrown bomb right inside p2's catch volume, then press catch a moment later.
+            Assert.IsTrue(bomb.TryThrow(p1, p2.CatchVolume.CatchCenter + Vector3.up * 0.2f, Vector3.zero));
+            yield return WaitSeconds(0.08f);
+            p2.Input.Scripted = new PlayerInputReader.ScriptedInput();
+            p2.Input.Scripted.PressCatch();
+
+            yield return WaitUntil(() => catches > 0 || explosions > 0, 1f, "nothing happened");
+            Assert.AreEqual(1, catches);
+            Assert.AreSame(p2, bomb.Carrier);
+        }
+
+        [UnityTest]
+        public IEnumerator CatchButton_OpensAWindow_ThenCoolsDown_AndCannotBeSpammed()
+        {
+            p2.Input.Scripted = new PlayerInputReader.ScriptedInput();
+            Give(p1);
+            yield return null;
+
+            p2.Input.Scripted.PressCatch();
+            yield return null;
+            Assert.IsTrue(p2.Catcher.WindowOpen, "pressing catch opens the window");
+
+            yield return WaitSeconds(tuning.catchWindowDuration + 0.05f);
+            Assert.IsFalse(p2.Catcher.WindowOpen, "the window is short");
+            Assert.IsTrue(p2.Catcher.OnCooldown);
+
+            p2.Input.Scripted.PressCatch();   // mashing during the cooldown does nothing
+            yield return null;
+            Assert.IsFalse(p2.Catcher.WindowOpen);
+
+            yield return WaitSeconds(tuning.catchCooldown + 0.05f);
+            p2.Input.Scripted.PressCatch();
+            yield return null;
+            Assert.IsTrue(p2.Catcher.WindowOpen, "available again after the cooldown");
+        }
+
+        [UnityTest]
+        public IEnumerator Carrier_CannotOpenACatchWindow()
+        {
+            Give(p1);
+            yield return null;
+            p1.Input.Scripted.PressCatch();
+            yield return null;
+            Assert.IsFalse(p1.Catcher.WindowOpen);
         }
 
         // ------------------------------------------------------------------ M1.8 fuse

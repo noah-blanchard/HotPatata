@@ -22,7 +22,11 @@ namespace Beep.Tests
             Assert.AreEqual(1.0f, t.resetDelay, 1e-4f);
             Assert.AreEqual(0.1f, t.coyoteTime, 1e-4f);
             Assert.AreEqual(0.1f, t.jumpBuffer, 1e-4f);
-            Assert.That(t.catchRadius, Is.InRange(0.7f, 1.0f));
+            Assert.That(t.catchRadius, Is.InRange(0.4f, 0.8f), "catch radius was tightened after playtest");
+            Assert.Less(t.throwSpeedMin, t.throwSpeedMax);
+            Assert.Greater(t.throwChargeTime, 0f);
+            Assert.That(t.catchWindowDuration, Is.InRange(0.05f, 0.5f), "catch window must stay small");
+            Assert.Greater(t.catchCooldown, 0f);
         }
 
         [Test]
@@ -66,13 +70,13 @@ namespace Beep.Tests
         }
 
         [Test]
-        public void InputActions_HaveTheFourGameplayActions()
+        public void InputActions_HaveTheGameplayActions()
         {
             var asset = AssetDatabase.LoadAssetAtPath<UnityEngine.InputSystem.InputActionAsset>("Assets/BeepControls.inputactions");
             Assert.IsNotNull(asset);
             var map = asset.FindActionMap("Player");
             Assert.IsNotNull(map);
-            foreach (var a in new[] { "Move", "Look", "Jump", "Throw" })
+            foreach (var a in new[] { "Move", "Look", "Jump", "Throw", "Catch" })
                 Assert.IsNotNull(map.FindAction(a), "missing action " + a);
         }
     }

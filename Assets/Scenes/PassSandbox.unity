@@ -1832,9 +1832,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bed5bdc3b08764e489d7b3b7ddd581cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Beep::Beep.AimReticle
-  color: {r: 1, g: 1, b: 1, a: 0.9}
-  length: 14
-  thickness: 2
+  cam: {fileID: 1922516122}
+  crosshairColor: {r: 1, g: 1, b: 1, a: 0.9}
 --- !u!114 &2051546672
 MonoBehaviour:
   m_ObjectHideFlags: 0
