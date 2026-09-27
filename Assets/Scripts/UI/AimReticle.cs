@@ -47,18 +47,24 @@ namespace HotPatata
 
         Camera ViewCamera => cam != null ? cam.GetComponent<Camera>() : null;
 
-        /// <summary>Corner brackets around the receiver a throw would be bent toward. Fainter = weaker lock.</summary>
+        /// <summary>
+        /// Corner brackets around the receiver the aim assist would help if you released now. Fainter = weaker help;
+        /// red = your current charge is too weak to reach them (the assist will not add range).
+        /// </summary>
         void DrawLockFrame(Player player)
         {
-            var target = player.Thrower.LockTarget;
+            var shot = player.Thrower.Preview;
+            var target = shot.AssistTarget;
             var view = ViewCamera;
             if (target == null || view == null) return;
 
             Vector3 s = view.WorldToScreenPoint(target.CatchVolume.CatchCenter);
             if (s.z <= 0f) return;
 
-            float q = Mathf.Clamp01(player.Thrower.LockQuality / Mathf.Max(0.01f, player.Tuning.homingStrength));
-            var c = Color.Lerp(new Color(1f, 1f, 1f, 0.35f), new Color(1f, 0.6f, 0.1f, 1f), q);
+            float q = Mathf.Clamp01(shot.AssistStrength / Mathf.Max(0.01f, player.Tuning.assistStrength));
+            var c = shot.AssistYawOnly
+                ? new Color(1f, 0.25f, 0.2f, 0.9f)
+                : Color.Lerp(new Color(1f, 1f, 1f, 0.35f), new Color(1f, 0.6f, 0.1f, 1f), q);
             float size = Mathf.Clamp(900f / s.z, 30f, 90f);
             Brackets(s.x, Screen.height - s.y, size, size * 0.35f, 3f, c);
         }
@@ -68,7 +74,7 @@ namespace HotPatata
         {
             var bomb = BombController.Instance;
             var view = ViewCamera;
-            if (bomb == null || view == null || bomb.State != BombState.Thrown || bomb.HomingTarget != player) return;
+            if (bomb == null || view == null || bomb.State != BombState.Thrown || bomb.IntendedReceiver != player) return;
 
             Vector3 s = view.WorldToScreenPoint(bomb.transform.position);
             float pulse = 0.5f + 0.5f * Mathf.Sin(Time.time * 18f);

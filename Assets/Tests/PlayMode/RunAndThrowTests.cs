@@ -186,6 +186,16 @@ namespace HotPatata.Tests
         }
 
         [UnityTest]
+        public IEnumerator Release_LaunchesTheBombOnTheSameFrame()
+        {
+            p1.Look.SetAim(90f, 0f);
+            Assert.IsTrue(p1.Thrower.TryThrow(0.5f));
+            Assert.AreEqual(BombState.Thrown, bomb.State, "no animation wait: the bomb leaves on the release frame");
+            Assert.Greater(bomb.Body.Velocity.magnitude, 0f);
+            yield break;
+        }
+
+        [UnityTest]
         public IEnumerator HoldingCharges_AndReleaseThrowsFasterThanATap()
         {
             p1.Look.SetAim(90f, 0f);
@@ -221,9 +231,9 @@ namespace HotPatata.Tests
         [UnityTest]
         public IEnumerator ChargedThrow_TravelsFartherThanATap()
         {
-            // This is about charge only: switch homing off so the throws are not bent toward player 2.
-            float homing = tuning.homingStrength;
-            tuning.homingStrength = 0f;
+            // This is about charge only: switch the aim assist off so the throws are not turned toward player 2.
+            float assist = tuning.assistStrength;
+            tuning.assistStrength = 0f;
             try
             {
                 // Aim level over open floor (+X, the far wall is 23 m away) and compare where the bomb first touches down.
@@ -245,7 +255,7 @@ namespace HotPatata.Tests
             }
             finally
             {
-                tuning.homingStrength = homing;
+                tuning.assistStrength = assist;
             }
         }
 

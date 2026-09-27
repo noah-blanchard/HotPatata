@@ -333,7 +333,10 @@ Responsibilities:
 
 - determine whether local player may throw;
 - track the throw charge (hold to charge, release to throw; expose `Charging` / `Charge01` for the UI);
-- aim/release direction and launch speed from the charge (`throwSpeedMin` to `throwSpeedMax`);
+- aim/release direction (the rendered view) and launch speed from the charge (`throwSpeedMin` to `throwSpeedMax`),
+  plus a share of the thrower's forward run speed;
+- the release-time aim assist (`AimAssist.TryAssist`, pure, direction only, capped; PROJECT_SPEC §8.3);
+- launch on the release frame (the animation is a follow-through, never a delay);
 - send throw request to authoritative bomb system;
 - expose release anchor.
 
@@ -417,7 +420,8 @@ Presentation may read replicated normalized fuse data or warning stage.
 Responsibilities:
 
 - Rigidbody configuration;
-- thrown movement;
+- thrown movement: plain ballistic flight under the bomb's own gravity, nothing steers it after release
+  (the arc maths is shared in `ThrowBallistics`);
 - environment collision reporting;
 - transition between attached and thrown physics modes.
 
@@ -434,6 +438,8 @@ While thrown:
 Responsibilities:
 
 - decide whether incoming bomb contact is a valid catch (thrower excluded, receiver's catch window open);
+- own the catch geometry: a swept test of the bomb's path between physics steps against each receiver's reach
+  (`ReachFor`: `catchRadius` plus a facing bonus), and a short grace for a slightly late press;
 - reject ineligible receiver;
 - resolve simultaneous/near-simultaneous catch claims;
 - change authoritative carrier exactly once;

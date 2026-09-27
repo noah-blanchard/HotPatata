@@ -19,20 +19,20 @@ namespace HotPatata
         BombController bomb;
         IReadOnlyList<Player> allPlayers;
         int aimMask;
+        int sightMask;   // what blocks the assist's line of sight to a receiver
+        const float RequestTimeout = 1f;   // seconds a remote client waits for the host to act on its throw request
+
         float chargeStartTime = -1f;
-        bool throwQueued;
-        bool releaseOnThisMachine;
-        float queuedReleaseTime;
-        Vector3 queuedOrigin;
-        Vector3 queuedPlayerPosition;
-        Vector3 queuedVelocity;
+        float requestPendingUntil = -1f;   // remote client: a throw request is on its way to the host
         float bufferedCharge = -1f;   // a release during CaughtGrace, thrown as soon as the bomb is Held
 
         public bool Charging => chargeStartTime >= 0f;
 
-        /// <summary>Who the throw would be bent toward if released now (drives the on-screen lock frame).</summary>
-        public Player LockTarget { get; private set; }
-        public float LockQuality { get; private set; }
+        /// <summary>The throw you would make if you released now (local carrier only; Valid = false otherwise).
+        /// Its assist target drives the on-screen lock brackets.</summary>
+        public ThrowShot Preview { get; private set; }
+        /// <summary>The most recent throw this player released (on the machine that computed it).</summary>
+        public ThrowShot LastShot { get; private set; }
 
         /// <summary>True while this player is the bomb's carrier (drives the charge UI).</summary>
         public bool HoldsBomb => bomb != null && bomb.Carrier == player;
@@ -44,6 +44,7 @@ namespace HotPatata
         {
             player = GetComponent<Player>();
             aimMask = LayerMask.GetMask("Environment", "Hazard", "Player");
+            sightMask = LayerMask.GetMask("Environment", "Hazard");
         }
 
         public void Bind(BombController bombController, IReadOnlyList<Player> players)
@@ -52,28 +53,13 @@ namespace HotPatata
             allPlayers = players;
         }
 
+        bool RequestPending => requestPendingUntil >= 0f && Time.time < requestPendingUntil &&
+                               bomb != null && bomb.Carrier == player && bomb.State == BombState.Held;
+
         void Update()
         {
-            if (throwQueued)
-            {
-                bool stillValid = bomb != null && !player.ControlLocked && bomb.Carrier == player &&
-                                  bomb.State == BombState.Held;
-                if (!stillValid)
-                {
-                    throwQueued = false;
-                    player.Animator?.CancelThrowCharge();
-                }
-                else if (releaseOnThisMachine && Time.time >= queuedReleaseTime)
-                {
-                    throwQueued = false;
-                    Vector3 releaseOrigin = queuedOrigin + (transform.position - queuedPlayerPosition);
-                    bomb.TryThrow(player, releaseOrigin, queuedVelocity);
-                }
-                return;
-            }
-
-            // A host also advances the queued release of a remote-owned player above.
             if (!player.IsLocal) return;
+            if (!RequestPending) requestPendingUntil = -1f;
             UpdateLockPreview();
 
             // Always consume both edges so nothing queues up while we cannot throw.
@@ -84,7 +70,7 @@ namespace HotPatata
                             && (bomb.State == BombState.Held || bomb.State == BombState.CaughtGrace);
             if (!mayThrow)
             {
-                if (Charging || throwQueued) CancelCharge();
+                if (Charging || bufferedCharge >= 0f) CancelCharge();
                 return;
             }
 
@@ -117,85 +103,87 @@ namespace HotPatata
         public void CancelCharge()
         {
             chargeStartTime = -1f;
-            throwQueued = false;
+            requestPendingUntil = -1f;
             player.Animator?.CancelThrowCharge();
             bufferedCharge = -1f;
         }
 
         void UpdateLockPreview()
         {
-            LockTarget = null;
-            LockQuality = 0f;
+            Preview = default;
             if (bomb == null || bomb.Carrier != player || allPlayers == null) return;
-
-            Vector3 origin = ThrowOriginNow();
-            Vector3 velocity = ComputeThrowVelocity(origin, 0f);   // direction is the same for every charge
-            if (HomingTargeting.TryPick(player.Tuning, origin, velocity, player, allPlayers, out var target, out _, out float quality))
-            {
-                LockTarget = target;
-                LockQuality = quality;
-            }
+            Preview = ComputeShot(ThrowOriginNow(), Charge01);
         }
 
+        /// <summary>Throws now (offline / host), or asks the host to (remote client). The bomb leaves this frame.</summary>
         public bool TryThrow(float charge01 = 0f)
         {
-            if (throwQueued || bomb == null || bomb.State != BombState.Held || bomb.Carrier != player) return false;
+            if (RequestPending || bomb == null || bomb.State != BombState.Held || bomb.Carrier != player) return false;
 
             Vector3 origin = ThrowOriginNow();
-            Vector3 velocity = ComputeThrowVelocity(origin, charge01);
-
-            player.Animator?.ReleaseThrow();
-            throwQueued = true;
-            releaseOnThisMachine = !NetMode.IsRemoteClient;
-            queuedReleaseTime = Time.time + (player.Animator != null ? player.Animator.ThrowReleaseDelay : 0f);
-            queuedOrigin = origin;
-            queuedPlayerPosition = transform.position;
-            queuedVelocity = velocity;
+            var shot = ComputeShot(origin, charge01);
+            LastShot = shot;
+            player.Animator?.ReleaseThrow();   // follow-through only
 
             if (NetMode.IsRemoteClient)
             {
-                // The owner begins the wind-up immediately. The host mirrors it to the other
-                // machines, waits for the hand-release frame, then performs the real throw.
-                player.Net.RequestThrow(origin, velocity);
+                requestPendingUntil = Time.time + RequestTimeout;
+                player.Net.RequestThrow(origin, shot.Velocity);
+                // Draw the throw now; the host's confirmation arrives a round trip later.
+                if (bomb.TryGetComponent(out NetworkBomb netBomb)) netBomb.PredictLocalThrow(player, origin, shot.Velocity);
                 return true;
             }
 
+            if (!bomb.TryThrow(player, origin, shot.Velocity)) return false;
             if (player.Net != null && player.Net.IsSpawned) player.Net.BroadcastThrowRelease();
             return true;
         }
 
-        /// <summary>Host only: validate first, then queue the authoritative release on the animation frame.</summary>
-        public bool QueueNetworkThrow(Vector3 origin, Vector3 velocity)
+        /// <summary>Host only: a remote owner's validated throw request, released immediately.</summary>
+        public bool ThrowFromRequest(Vector3 origin, Vector3 velocity)
         {
-            if (throwQueued || bomb == null || bomb.State != BombState.Held || bomb.Carrier != player) return false;
+            if (bomb == null || bomb.State != BombState.Held || bomb.Carrier != player) return false;
 
             player.Animator?.ReleaseThrow();
-            throwQueued = true;
-            releaseOnThisMachine = true;
-            queuedReleaseTime = Time.time + (player.Animator != null ? player.Animator.ThrowReleaseDelay : 0f);
-            queuedOrigin = origin;
-            queuedPlayerPosition = transform.position;
-            queuedVelocity = velocity;
+            if (!bomb.TryThrow(player, origin, velocity)) return false;
             player.Net.BroadcastThrowRelease();
             return true;
         }
 
         /// <summary>Throw origin from the current aim (the anchor transform only updates in LateUpdate).</summary>
         public Vector3 ThrowOriginNow() =>
-            player.CameraTarget.position + player.Look.AimRotation * player.ThrowOrigin.localPosition;
+            player.CameraTarget.position + player.Look.ViewRotation * player.ThrowOrigin.localPosition;
+
+        /// <summary>
+        /// The share of the thrower's own motion a throw along <paramref name="direction"/> keeps: horizontal, along the
+        /// aim, never backwards, never sideways, never vertical (so strafing and jumping do not bend your aim).
+        /// </summary>
+        public static Vector3 InheritedVelocity(GameTuning t, Vector3 playerVelocity, Vector3 direction)
+        {
+            var flatDir = new Vector3(direction.x, 0f, direction.z);
+            if (t.throwInheritForward <= 0f || flatDir.sqrMagnitude < 1e-4f) return Vector3.zero;
+            flatDir.Normalize();
+            float along = Vector3.Dot(new Vector3(playerVelocity.x, 0f, playerVelocity.z), flatDir);
+            return along > 0f ? flatDir * (along * t.throwInheritForward) : Vector3.zero;
+        }
 
         public static float SpeedFor(GameTuning t, float charge01) =>
             Mathf.Lerp(t.throwSpeedMin, t.throwSpeedMax, Mathf.Clamp01(charge01));
 
         /// <summary>Deterministic: the same aim, charge and tuning always give the same velocity.</summary>
-        public Vector3 ComputeThrowVelocity(Vector3 origin, float charge01)
+        public Vector3 ComputeThrowVelocity(Vector3 origin, float charge01) => ComputeShot(origin, charge01).Velocity;
+
+        /// <summary>The full throw for this aim and charge: raw velocity, assisted velocity and the assist's reasons.</summary>
+        public ThrowShot ComputeShot(Vector3 origin, float charge01)
         {
             var t = player.Tuning;
             float speed = SpeedFor(t, charge01);
+            var shot = new ThrowShot { Valid = true, Charge01 = charge01, Speed = speed, Origin = origin };
 
             // 1. Where is the player aiming?
             Vector3 pivot = player.CameraTarget.position;
-            Vector3 forward = player.Look.AimRotation * Vector3.forward;
+            Vector3 forward = player.Look.ViewRotation * Vector3.forward;   // what the crosshair shows
+            shot.AimForward = forward;
             Vector3 aimPoint = Physics.Raycast(pivot, forward, out var hit, t.aimMaxDistance, aimMask, QueryTriggerInteraction.Ignore)
                 ? hit.point
                 : pivot + forward * t.aimMaxDistance;
@@ -207,55 +195,19 @@ namespace HotPatata
             Vector3 right = Vector3.Cross(Vector3.up, dir);
             if (right.sqrMagnitude > 1e-4f)
                 dir = Quaternion.AngleAxis(-t.throwUpAngle, right.normalized) * dir;
+            // 3. Keep a share of the run speed along the aim (never sideways or vertical).
+            Vector3 inherited = InheritedVelocity(t, player.Velocity, dir);
+            shot.RawVelocity = dir * speed + inherited;
 
-            // 3. Optional small assist toward a nearby receiver.
-            dir = ApplyAimAssist(origin, dir, speed, t);
-
-            return dir * speed;
-        }
-
-        Vector3 ApplyAimAssist(Vector3 origin, Vector3 dir, float speed, GameTuning t)
-        {
-            if (allPlayers == null || t.aimAssistStrength <= 0f) return dir;
-
-            float g = -Physics.gravity.y * t.bombGravityScale;
-            Vector3? best = null;
-            float bestAngle = t.aimAssistAngle;
-
-            foreach (var other in allPlayers)
-            {
-                if (other == null || other == player || other.CatchVolume == null) continue;
-
-                Vector3 to = other.CatchVolume.CatchCenter - origin;
-                if (to.magnitude > t.aimAssistDistance) continue;
-                if (!TrySolveBallistic(to, speed, g, out Vector3 solved)) continue;
-
-                float angle = Vector3.Angle(dir, solved);
-                if (angle <= bestAngle)
-                {
-                    bestAngle = angle;
-                    best = solved;
-                }
-            }
-
-            return best.HasValue ? Vector3.Slerp(dir, best.Value, t.aimAssistStrength).normalized : dir;
-        }
-
-        /// <summary>Low-arc launch direction that reaches <paramref name="to"/> at the given speed.</summary>
-        static bool TrySolveBallistic(Vector3 to, float speed, float gravity, out Vector3 direction)
-        {
-            direction = default;
-            var flat = new Vector3(to.x, 0f, to.z);
-            float d = flat.magnitude;
-            if (d < 0.5f || gravity <= 0f) return false;
-
-            float v2 = speed * speed;
-            float disc = v2 * v2 - gravity * (gravity * d * d + 2f * to.y * v2);
-            if (disc < 0f) return false;
-
-            float tanTheta = (v2 - Mathf.Sqrt(disc)) / (gravity * d);
-            direction = (flat.normalized + Vector3.up * tanTheta).normalized;
-            return true;
+            // 4. Small release-time assist toward a receiver near the aim: direction only, never speed.
+            var assist = AimAssist.Apply(t, pivot, forward, origin, dir, speed, inherited, player, allPlayers, sightMask);
+            shot.AssistTarget = assist.Target;
+            shot.AssistAngle = assist.Angle;
+            shot.AssistStrength = assist.Strength;
+            shot.AssistCorrection = assist.Correction;
+            shot.AssistYawOnly = assist.Target != null && !assist.Reachable;
+            shot.Velocity = assist.Direction * speed + inherited;
+            return shot;
         }
     }
 }

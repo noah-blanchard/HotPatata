@@ -16,6 +16,13 @@ namespace HotPatata
             if (Enabled) UnityEngine.Debug.Log("[Bomb] " + message);
         }
 
+        /// <summary>One summary line per throw (aim, assist, speed, closest approach, outcome) for tuning the pass feel.</summary>
+        [Conditional("UNITY_EDITOR"), Conditional("DEVELOPMENT_BUILD")]
+        public static void Throw(string message)
+        {
+            if (Enabled) UnityEngine.Debug.Log("[Throw] " + message);
+        }
+
         [Conditional("UNITY_EDITOR"), Conditional("DEVELOPMENT_BUILD")]
         public static void Run(string message)
         {

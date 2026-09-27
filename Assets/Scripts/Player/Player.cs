@@ -40,8 +40,16 @@ namespace HotPatata
         [SerializeField] PlayerCatchVolume catchVolume;
 
         bool localLocked;
+        Vector3 lastFixedPosition;
+        Vector3 observedVelocity;
 
         public int PlayerId => playerId;
+
+        /// <summary>
+        /// World velocity on every machine: the motor's own on the owning machine, otherwise estimated from how the
+        /// replicated transform moves (smoothed over a few physics steps). Used to lead moving receivers.
+        /// </summary>
+        public Vector3 Velocity => IsLocal && Motor != null ? Motor.Velocity : observedVelocity;
         public string DisplayName => displayName;
         public Color Color => color;
         public GameTuning Tuning => tuning;
@@ -83,8 +91,23 @@ namespace HotPatata
             Net = GetComponent<NetworkPlayer>();
         }
 
-        void OnEnable() => All.Add(this);
+        void OnEnable()
+        {
+            All.Add(this);
+            lastFixedPosition = transform.position;
+            observedVelocity = Vector3.zero;
+        }
+
         void OnDisable() => All.Remove(this);
+
+        void FixedUpdate()
+        {
+            Vector3 position = transform.position;
+            Vector3 step = (position - lastFixedPosition) / Time.fixedDeltaTime;
+            lastFixedPosition = position;
+            if (step.sqrMagnitude > 50f * 50f) step = Vector3.zero;   // a teleport, not a velocity
+            observedVelocity = Vector3.Lerp(observedVelocity, step, 0.5f);
+        }
 
         void Start()
         {

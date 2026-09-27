@@ -41,12 +41,19 @@ namespace HotPatata
         Vector3 kick;                  // decaying random jolt (euler degrees) added to the hand sway
         float swayPhase;
 
+        // catch snap: the visual starts where the bomb was caught and slides into the hands (presentation only)
+        const float SnapDuration = 0.07f, MaxSnapDistance = 2.5f;
+        Vector3 visualBaseLocal;
+        Vector3 snapFrom;              // world offset from the hand at the moment of the catch
+        float snapUntil = -1f;
+
         void Awake()
         {
             bomb = GetComponent<BombController>();
             bombAudio = GetComponent<BombAudio>();
             block = new MaterialPropertyBlock();
             baseScale = visual.localScale;
+            visualBaseLocal = visual.localPosition;
             swayPhase = Random.value * 10f;
             lastPosition = transform.position;
         }
@@ -87,6 +94,21 @@ namespace HotPatata
             visual.localScale = baseScale * (1f + pulse * PopScale[s] + catchPop * 0.35f);
 
             UpdateNaturalMotion();
+            UpdateCatchSnap();
+        }
+
+        void UpdateCatchSnap()
+        {
+            if (snapUntil < 0f) return;
+            float k = Mathf.Clamp01(1f - (snapUntil - Time.time) / SnapDuration);
+            if (k >= 1f)
+            {
+                snapUntil = -1f;
+                visual.localPosition = visualBaseLocal;
+                return;
+            }
+            float ease = 1f - (1f - k) * (1f - k);
+            visual.position = transform.TransformPoint(visualBaseLocal) + snapFrom * (1f - ease);
         }
 
         void UpdateNaturalMotion()
@@ -145,6 +167,9 @@ namespace HotPatata
 
         void OnCaught(Player receiver)
         {
+            // Where it was last drawn, relative to the hand it just snapped to: slide in from there.
+            snapFrom = Vector3.ClampMagnitude(lastPosition - transform.position, MaxSnapDistance);
+            snapUntil = Time.time + SnapDuration;
             catchPop = 1f;
             kick = Random.insideUnitSphere * 14f;   // a small jolt as it lands in the hand
         }
@@ -160,6 +185,8 @@ namespace HotPatata
             {
                 visual.gameObject.SetActive(true);
                 visual.localRotation = Quaternion.identity;
+                visual.localPosition = visualBaseLocal;
+                snapUntil = -1f;
                 spin = Vector3.zero;
                 pulse = 0f;
                 catchPop = 0f;

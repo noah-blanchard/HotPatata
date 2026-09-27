@@ -31,6 +31,9 @@ namespace HotPatata
     [RequireComponent(typeof(BombFuse), typeof(BombPhysics), typeof(CatchResolver))]
     public class BombController : MonoBehaviour
     {
+        const float IntendedReceiverReach = 2.5f;     // metres: an arc passing farther than this from everyone is not a pass
+        const float IntendedReceiverHorizon = 2.5f;   // seconds of flight considered
+
         [SerializeField] GameTuning tuning;
 
         [Header("Debug (read-only at runtime)")]
@@ -52,10 +55,11 @@ namespace HotPatata
         public Player Carrier { get; private set; }
         /// <summary>Who released the bomb most recently; cannot catch that same flight.</summary>
         public Player LastThrower { get; private set; }
-        /// <summary>The receiver a flying bomb is being bent toward (null = flying free).</summary>
-        public Player HomingTarget { get; private set; }
-        public float HomingQuality { get; private set; }
-        public Vector3 HomingOffset { get; private set; }
+        /// <summary>
+        /// Who a flying bomb is heading for: the player its arc passes closest to, if close enough to be a pass.
+        /// Feedback only (the receiver's "CATCH!" marker); nothing steers the bomb.
+        /// </summary>
+        public Player IntendedReceiver { get; private set; }
         /// <summary>Why the bomb last exploded (valid while Exploding).</summary>
         public BombFailReason LastFailReason { get; private set; }
         /// <summary>Host only: the bomb has hit something lethal and will explode unless a late catch arrives first.</summary>
@@ -71,8 +75,6 @@ namespace HotPatata
         public event Action<Player> BombThrown;              // thrower
         public event Action<Player> BombCaught;              // receiver
         public event Action<BombFailReason, string> BombExploded;
-        /// <summary>The flight stopped homing mid-air (it passed its target). Host only; replicated by NetworkBomb.</summary>
-        public event Action HomingCleared;
 
         void Awake()
         {
@@ -120,7 +122,7 @@ namespace HotPatata
             }
 
             LastThrower = thrower;
-            PickHomingTarget(thrower, origin, velocity);
+            IntendedReceiver = PickIntendedReceiver(thrower, origin, velocity);
             SetCarrier(null);
             Transition(BombState.Thrown);
             bombPhysics.EnterThrown(origin, velocity);
@@ -136,7 +138,7 @@ namespace HotPatata
 
             if (ExplosionPending) PatataLog.Bomb($"Held lethal contact cancelled by a late catch ({pendingReason})");
             pendingExplosionAt = -1f;
-            HomingTarget = null;
+            IntendedReceiver = null;
             SetCarrier(receiver);
             bombPhysics.EnterHeld(receiver.HandAnchor);
             fuse.Refresh();
@@ -147,26 +149,25 @@ namespace HotPatata
             return true;
         }
 
-        void PickHomingTarget(Player thrower, Vector3 origin, Vector3 velocity)
+        /// <summary>The player the (pure ballistic) arc passes closest to, within <see cref="IntendedReceiverReach"/>.</summary>
+        Player PickIntendedReceiver(Player thrower, Vector3 origin, Vector3 velocity)
         {
-            HomingTarget = null;
-            if (!NetMode.IsAuthority) return;
-            if (!HomingTargeting.TryPick(tuning, origin, velocity, thrower, Player.All, out var target, out float angle, out float quality)) return;
+            if (!NetMode.IsAuthority) return null;
 
-            HomingTarget = target;
-            HomingQuality = quality;
-            // A small random error on where the bomb aims: this is what lets a homing throw still miss.
-            float distance = Vector3.Distance(origin, target.CatchVolume.CatchCenter);
-            HomingOffset = UnityEngine.Random.insideUnitSphere * (Mathf.Tan(tuning.homingSpreadDegrees * Mathf.Deg2Rad) * distance);
-            PatataLog.Bomb($"Homing on {target} (off-aim {angle:F0} deg, strength {quality:F2})");
-        }
-
-        /// <summary>Stop bending the flight (the bomb has passed its target).</summary>
-        public void ClearHoming()
-        {
-            if (HomingTarget == null) return;
-            HomingTarget = null;
-            HomingCleared?.Invoke();
+            float g = ThrowBallistics.Gravity(tuning);
+            Player best = null;
+            float bestDistance = IntendedReceiverReach;
+            foreach (var p in Player.All)
+            {
+                if (p == null || p == thrower || p.CatchVolume == null) continue;
+                float d = ThrowBallistics.ClosestApproach(origin, velocity, g, p.CatchVolume.CatchCenter, IntendedReceiverHorizon, out _, 0.02f);
+                if (d < bestDistance)
+                {
+                    bestDistance = d;
+                    best = p;
+                }
+            }
+            return best;
         }
 
         // ------------------------------------------------------------------ failure
@@ -179,31 +180,28 @@ namespace HotPatata
                 $"object={other.name} layer={LayerMask.LayerToName(other.gameObject.layer)}");
         }
 
-        /// <summary>Trigger contact from <see cref="BombPhysics"/>: catch volumes and kill zones only.</summary>
+        /// <summary>
+        /// Trigger contact from <see cref="BombPhysics"/>: only kill zones matter. Catches are decided by
+        /// <see cref="CatchResolver"/>'s swept reach test, not by trigger events; every other trigger (catch volumes
+        /// included) is intentionally neutral and must never count as lethal world contact.
+        /// </summary>
         public void ReportTriggerContact(Collider other)
         {
             if (!NetMode.IsAuthority || State != BombState.Thrown) return;
-
-            if (other.TryGetComponent(out PlayerCatchVolume volume))
-            {
-                if (volume.Owner != null && volume.Owner != LastThrower) volume.Owner.Catcher.NoteBombInReach();
-                resolver.TryResolveCatch(volume);
-            }
-            else if (other.TryGetComponent(out KillZone _))
-                LethalContact(BombFailReason.KillZone, $"object={other.name}");
-            // Any other trigger is intentionally neutral: it must never count as lethal world contact.
+            if (other.TryGetComponent(out KillZone _)) LethalContact(BombFailReason.KillZone, $"object={other.name}");
         }
 
         /// <summary>
-        /// A flying bomb touched something lethal. It explodes now, unless it has just passed a remote receiver whose
-        /// catch may still be on its way over the network: then it stops dead where it hit and waits a moment
-        /// (<see cref="CatchResolver.ExplosionHoldFor"/>). Either the late catch wins or the explosion happens.
+        /// A flying bomb touched something lethal. It explodes now, unless a receiver it has just passed may still catch
+        /// it (late-press grace, or online a remote receiver's catch still on its way): then it stops dead where it hit
+        /// and waits a moment (<see cref="CatchResolver.ExplosionHoldFor"/>). Either the late catch wins or the explosion happens.
         /// </summary>
         void LethalContact(BombFailReason reason, string detail)
         {
             if (ExplosionPending) return;
 
-            float hold = resolver.ExplosionHoldFor();
+            float hold = resolver.ExplosionHoldFor();   // sweeps the last stretch of flight first: it may catch the bomb
+            if (State != BombState.Thrown) return;
             if (hold <= 0f)
             {
                 Explode(reason, detail);
@@ -230,7 +228,7 @@ namespace HotPatata
             var from = State;
             pendingExplosionAt = -1f;
             LastFailReason = reason;
-            HomingTarget = null;
+            IntendedReceiver = null;
             bombPhysics.EnterInert();
             Transition(BombState.Exploding);
             PatataLog.Bomb($"{from} -> Exploding reason={reason} {detail}");
@@ -245,7 +243,7 @@ namespace HotPatata
             bombPhysics.EnterInert();
             transform.SetParent(null, true);
             pendingExplosionAt = -1f;
-            HomingTarget = null;
+            IntendedReceiver = null;
             LastThrower = null;
             SetCarrier(null);
             fuse.Refresh();
@@ -268,10 +266,10 @@ namespace HotPatata
         /// Remote clients only: adopt the host's state and raise the same events the host raised, so audio,
         /// visuals and UI react identically everywhere. Never called on the authority.
         /// </summary>
-        public void ApplyMirror(BombState newState, Player carrier, Player lastThrower, BombFailReason failReason, Player homingTarget)
+        public void ApplyMirror(BombState newState, Player carrier, Player lastThrower, BombFailReason failReason, Player receiver)
         {
             var old = State;
-            HomingTarget = homingTarget;
+            IntendedReceiver = receiver;
             LastThrower = lastThrower;
             LastFailReason = failReason;
             SetCarrier(carrier);

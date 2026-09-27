@@ -17,8 +17,8 @@ namespace HotPatata
     {
         // Catch diagnostics only (they explain a miss, they never decide one).
         const float HintDuration = 1.6f;
-        const float ReachSlack = 0.25f;           // metres beyond catchRadius that still count as "in reach now"
-        const float LateMin = 0.03f, LateMax = 0.8f;   // seconds since the bomb was in reach that read as "too late"
+        const float ReachSlack = 0.25f;           // metres beyond the reach that still count as "in reach now"
+        const float LateMax = 0.8f;               // seconds since the bomb was in reach that still read as "too late"
         const float EarlyCheckDistance = 12f;     // metres: farther than this, a closed window is not "too early"
 
         Player player;
@@ -28,6 +28,9 @@ namespace HotPatata
         float lastReachTime = -10f;
         bool windowWasOpen;
         bool claimSent;
+        Vector3 lastSeen;              // remote client: where the bomb was drawn last frame
+        bool seenValid;
+        float seenInReachAt = -10f;
         string hint;
         float hintUntil;
         string deferredHint;   // host: a miss explanation held back while a lag-compensated catch may still arrive
@@ -85,11 +88,24 @@ namespace HotPatata
         }
 
         // What this machine sees is the bomb as it was a moment ago on the host: claim the catch we saw.
+        // Same swept reach and late grace as the host's CatchResolver, applied to the flight as this machine renders it.
         void ClaimIfInReach()
         {
-            if (claimSent || !WindowOpen || bomb == null || bomb.State != BombState.Thrown || bomb.LastThrower == player) return;
-            if (Vector3.Distance(bomb.transform.position, player.CatchVolume.CatchCenter) > player.Tuning.catchRadius) return;
+            if (bomb == null || bomb.State != BombState.Thrown || bomb.LastThrower == player)
+            {
+                seenValid = false;
+                return;
+            }
 
+            Vector3 seen = bomb.transform.position;
+            Vector3 from = seenValid ? lastSeen : seen;
+            lastSeen = seen;
+            seenValid = true;
+
+            float d = CatchResolver.ReachDistance(player.Tuning, from, seen, player.CatchVolume.CatchCenter, out Vector3 closest);
+            if (d <= CatchResolver.ReachFor(player, seen - from)) seenInReachAt = Time.time;
+
+            if (claimSent || !WindowOpen || Time.time - seenInReachAt > player.Tuning.catchLateGrace) return;
             claimSent = true;
             player.Net.ClaimCatch();
         }
@@ -164,8 +180,10 @@ namespace HotPatata
         {
             if (bomb.State != BombState.Thrown || bomb.LastThrower == player) return;
             float since = Time.time - lastReachTime;
-            bool inReachNow = Vector3.Distance(bomb.transform.position, player.CatchVolume.CatchCenter) <= player.Tuning.catchRadius + ReachSlack;
-            if (!inReachNow && since > LateMin && since < LateMax) SayHint($"Too late: it was in reach {since * 1000f:F0} ms ago");
+            Vector3 at = bomb.transform.position;
+            bool inReachNow = Vector3.Distance(at, player.CatchVolume.CatchCenter) <= CatchResolver.ReachFor(player, bomb.Body.Velocity) + ReachSlack;
+            // Within the late grace the press still catches (CatchResolver), so only later presses are "too late".
+            if (!inReachNow && since > player.Tuning.catchLateGrace && since < LateMax) SayHint($"Too late: it was in reach {since * 1000f:F0} ms ago");
         }
 
         // The window closed while the bomb was still coming: too early.

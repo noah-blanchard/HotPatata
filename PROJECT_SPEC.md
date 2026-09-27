@@ -287,39 +287,45 @@ Starting target:
 
 - comfortable normal pass distance: **8–12 m**
 
-### 8.2 Charged throw (decided after the first playtest)
+### 8.2 Charged throw (decided after the first playtest, reworked after the pass-feel review)
 
-The throw is **chargeable**:
+The throw is **chargeable and immediate**:
 
-- **hold** the throw button to charge, **release** to throw; a quick tap is the shortest, slowest pass;
-- charge runs from 0 to 1 over `throwChargeTime` (1.0 s) and is capped at 1;
-- launch speed goes linearly from `throwSpeedMin` (tap) to `throwSpeedMax` (full charge), so a longer
-  charge means a **faster and farther** throw. Starting values: 10 to 24 m/s, i.e. roughly 5 m to 27 m
-  on level ground;
-- forward-biased ballistic throw from the hand/release anchor, pitched up slightly (`throwUpAngle`);
-- optional subtle aim correction toward an eligible receiver (unchanged, aim assist felt fine);
+- **hold** the throw button to charge, **release** to throw; a quick tap is the shortest pass;
+- the bomb leaves the hand **on the release frame**. The throw animation is a follow-through played after the
+  launch, never a delay before it;
+- charge runs from 0 to 1 over `throwChargeTime` (0.45 s) and is capped at 1;
+- launch speed goes linearly from `throwSpeedMin` (tap) to `throwSpeedMax` (full charge): 14 to 28 m/s. Aimed at
+  the receiver's chest, a tap is a short pass (about 4 m) and falls short at 8 m; a half charge covers about 8 m and a
+  full charge 12 m or more. Aiming a little higher carries further. A normal pass is in the air for about **0.25–0.5 s**;
+- pure ballistic flight from the hand/release anchor under the bomb's own gravity (`bombGravityScale` 1.5),
+  pitched up slightly (`throwUpAngle` 6°). Nothing bends the flight after release;
+- the throw keeps a share of the thrower's run speed **along the aim direction only** (`throwInheritForward` 0.5):
+  running forward throws harder, strafing or jumping never pushes the throw off your aim;
+- the throw goes where the camera shows: the aim is the rendered view direction, view kicks included;
 - while charging, the carrier's fuse keeps burning: charging is a risk, not a pause;
 - charging is cancelled if control is locked, the bomb is lost or the section resets.
 
-### 8.3 Soft homing (decided after the first online playtest)
+### 8.3 Release-time aim assist (replaces soft homing)
 
-A throw is bent toward the receiver nearest to where the thrower aims, like a soft aim-assist, but **visible and
-never perfect**:
+Soft homing (the flight bending toward a locked receiver, plus an in-flight magnet) was **removed**: it delivered
+weak, badly aimed throws to distant players and made passing feel automatic. The assist now acts **once, at
+release, on direction only**:
 
-- **Lock:** at release, the host picks the other player closest to the throw direction inside a cone
-  (`homingConeDegrees`, 28 deg half-angle, `homingRange` 25 m). No one in the cone = no lock, an ordinary throw.
-- **Bending:** while flying, the velocity turns toward the locked receiver at a limited rate (`homingTurnRate`, scaled
-  with speed so hard throws bend as well). Strength (`homingStrength`, 0.7) fades toward the edge of the cone.
-- **It can miss:** a small random error on the aim point per throw (`homingSpreadDegrees`), it aims at where the
-  receiver IS (no lead), it never bends around geometry, and it lets go once it has passed the receiver.
-- **Magnet:** within `magnetRadius` (2 m) of the receiver, if their catch window is open, the bomb is pulled into
-  their hands.
-- **Feedback:** the thrower sees corner brackets on the receiver who would be locked (fainter = weaker); the
-  receiver sees a pulsing "CATCH!" marker on the incoming bomb (or a warning if it is behind them).
-- Homing runs on the host, so everyone sees the same flight. Catching itself stays timed (see section 9).
-
-This replaces the earlier "no hidden auto-catch" restriction: assistance is allowed as long as it is visible,
-bounded and imperfect.
+- **Who:** another player in line of sight (no Environment/Hazard in between), within `assistMaxRange` (14 m),
+  whose body is within `assistConeDegrees` (6°) of the raw aim (the body counts as a 0.4 m disc, so a close
+  receiver is not harder to hit than a far one; aiming where a moving receiver is going counts too). The smallest
+  angle wins.
+- **What:** the launch direction is turned toward the low-arc solution that reaches that receiver **at the throw's own
+  speed**, aimed a little ahead of a moving receiver (`assistLeadFactor` 0.8). Strength fades toward the edge of the
+  cone and with distance (`assistStrength` 0.6).
+- **Caps:** at most `assistMaxCorrectionDegrees` (3.5°) in total, of which at most `assistMaxElevationDegrees`
+  (1°) upward, so the assist can add only a little range (well under a metre for a tap).
+- **Never creates power:** if the throw is too weak to reach the receiver, only its heading is corrected and it falls
+  short. The assist never changes speed and never touches the bomb in flight.
+- **Feedback:** the thrower sees corner brackets on the receiver the assist would help (brighter = stronger); the
+  brackets turn red when the current charge is too weak to reach them. The receiver sees a pulsing "CATCH!" marker
+  on a bomb heading for them (the assist target, or the player the arc passes close to).
 
 A **UI indicator** is required: a charge bar near the crosshair (only while holding the bomb) that fills
 as the charge builds, with the launch speed and an estimated level-ground range. No trajectory preview.
@@ -346,18 +352,27 @@ The receiver presses **catch** (right click / left trigger). That opens a short 
 A bomb that reaches a receiver who did not press catch in time is **not** caught: it flies through and the
 normal world-contact rule applies. Pressing too early (the window closes before the bomb arrives) misses too.
 
-After a window closes there is a **cooldown** (`catchCooldown`, starting value 0.5 s) before catch can be
+After a window closes there is a **cooldown** (`catchCooldown`, starting value 0.35 s) before catch can be
 pressed again, so the button cannot be mashed. A successful catch spends the window and clears the cooldown.
 A carrier cannot open a catch window.
 
 The catch state is shown to the local player by a UI indicator around the crosshair: faint brackets = ready,
 large green brackets = window open, small red brackets with a shrinking bar = cooldown.
 
-Starting catch radius (tightened after the first playtest, since timing now does the gatekeeping):
+Catch reach (forgiveness belongs to the receiver, not to the flight):
 
-- roughly **0.7–1.0 m** around upper torso / hands (starting value 0.9 m; it was 0.6 m, widened after the first online playtest).
+- `catchRadius` **1.0 m** around upper torso / hands (it was 0.6 m, then 0.9 m);
+- plus `catchFacingBonus` **0.3 m** when the bomb arrives from within `catchFacingAngle` (70°) of where the receiver
+  looks: facing the pass makes it easier;
+- the reach is shorter vertically (`catchVerticalScale` 0.6): arms reach out to the sides more than down to the
+  feet, so a pass arriving beside the shoulder is caught while one arriving at the knees is not;
+- the test is **swept**: the bomb's path between two physics steps is checked against the reach, so a fast bomb
+  never slips through;
+- a press up to `catchLateGrace` (0.06 s) after the bomb was in reach still catches, as long as the bomb has not hit
+  anything yet;
+- a caught bomb snaps visually into the hands (presentation only).
 
-The catch window starts at **0.4 s** (it was 0.25 s). When a catch fails, the receiver is told why ("Too early" / "Too late by N ms")
+The catch window is **0.4 s** (it was 0.25 s), the cooldown **0.35 s**. When a catch fails, the receiver is told why ("Too early" / "Too late by N ms")
 and the debug HUD shows their ping, so timing problems can be told apart from network latency.
 
 Prefer a front-biased catch region.
@@ -368,10 +383,12 @@ Assistance may widen tolerance but must **never** replace the catch input.
 
 Allowed:
 
-- slightly oversized catch volume;
-- small angular correction;
-- short final-trajectory magnetism;
+- slightly oversized catch volume (1.0 m, swept);
+- small angular correction at release (§8.3);
+- a few tens of milliseconds of grace on a late press;
 - clearer assistance while receiver is facing the bomb.
+
+Not used any more: in-flight homing and trajectory magnetism.
 
 Not allowed:
 
@@ -743,15 +760,16 @@ At minimum:
 | Hold fuse | 6.0 s |
 | Warning phase | 2.0 s |
 | Catch grace | 0.35 s |
-| Throw speed (tap → full charge) | 10 → 24 m/s |
-| Throw charge time | 1.0 s |
-| Normal pass distance | 8–12 m (about half charge) |
-| Catch radius | 0.9 m |
+| Throw speed (tap → full charge) | 14 → 28 m/s |
+| Throw charge time | 0.45 s |
+| Throw lift / bomb gravity scale | 6° / 1.5 |
+| Run speed kept by the throw (along the aim) | 50 % |
+| Normal pass distance | 8–12 m (0.25–0.5 s in the air) |
+| Aim assist (range / cone / max turn / max lift) | 14 m / 6° / 3.5° / 1° |
+| Catch radius (+ facing bonus), vertical scale | 1.0 m (+0.3 m), 0.6 |
+| Late catch grace | 0.06 s |
 | Catch window | 0.4 s |
-| Homing (strength / cone / turn rate) | 0.7 / 28 deg / 200 deg/s |
-| Homing aim error | 5 deg |
-| Catch magnet radius | 2 m |
-| Catch cooldown | 0.5 s |
+| Catch cooldown | 0.35 s |
 | Jump coyote time | 0.1 s |
 | Jump buffer | 0.1 s |
 | Reset delay | ~1.0 s |

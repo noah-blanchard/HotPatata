@@ -17,6 +17,7 @@ namespace HotPatata
         static readonly int Throw = Animator.StringToHash("Throw");
         static readonly int ThrowSpeed = Animator.StringToHash("ThrowSpeed");
         const int ThrowLayer = 1;
+        const float FollowThroughSpeed = 1.6f;   // the arm catches up with a throw that has already left
 
         enum ThrowPhase { Idle, Charging, Holding, Releasing }
 
@@ -34,9 +35,6 @@ namespace HotPatata
         int groundMask;
         float throwGuardUntil;
         ThrowPhase throwPhase;
-
-        /// <summary>Delay between the visible wind-up and the moment the potato leaves the hands.</summary>
-        public float ThrowReleaseDelay => player != null ? player.Tuning.throwAnimationReleaseDelay : 0f;
 
         void Awake()
         {
@@ -137,11 +135,12 @@ namespace HotPatata
             throwGuardUntil = Time.time + player.Tuning.throwAnimationReplayGuard;
         }
 
+        /// <summary>The potato has already left the hands: play the rest of the throw quickly as a follow-through.</summary>
         public void ReleaseThrow()
         {
             if (animator == null) return;
             if (throwPhase == ThrowPhase.Idle) BeginThrowCharge();
-            animator.SetFloat(ThrowSpeed, 1f);
+            animator.SetFloat(ThrowSpeed, FollowThroughSpeed);
             throwPhase = ThrowPhase.Releasing;
         }
 
