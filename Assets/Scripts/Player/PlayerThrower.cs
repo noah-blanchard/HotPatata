@@ -129,6 +129,8 @@ namespace Beep
             {
                 requestPendingUntil = Time.time + RequestTimeout;
                 player.Net.RequestThrow(origin, shot.Velocity);
+                // Draw the throw now; the host's confirmation arrives a round trip later.
+                if (bomb.TryGetComponent(out NetworkBomb netBomb)) netBomb.PredictLocalThrow(player, origin, shot.Velocity);
                 return true;
             }
 
