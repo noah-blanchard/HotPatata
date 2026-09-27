@@ -73,11 +73,24 @@ namespace Beep
         [Min(0f)] public float throwSpeedMax = 22f;
         [Tooltip("Seconds of holding the throw button to reach full charge.")]
         [Min(0.05f)] public float throwChargeTime = 1.0f;
+<<<<<<< HEAD
         [Tooltip("Degrees the throw is pitched up from the aim direction (counters the drop on short passes).")]
         [Range(0f, 45f)] public float throwUpAngle = 12f;
         [Tooltip("Multiplier on Physics.gravity for the thrown bomb. Above 1 the potato feels heavy and drops quickly; " +
                  "below 1 it floats (flatter, much longer lobs).")]
         [Min(0f)] public float bombGravityScale = 1.25f;
+=======
+        [Tooltip("Normalized point in THROW where the arm waits while the button stays held.")]
+        [Range(0.05f, 0.9f)] public float throwAnimationHoldNormalized = 0.38f;
+        [Tooltip("Seconds between starting the THROW animation and releasing the potato from the hands.")]
+        [Min(0f)] public float throwAnimationReleaseDelay = 0.22f;
+        [Tooltip("Minimum time before the same throw wind-up can be triggered again on a player.")]
+        [Min(0f)] public float throwAnimationReplayGuard = 0.65f;
+        [Tooltip("Degrees the throw is pitched up from the aim direction.")]
+        [Range(0f, 45f)] public float throwUpAngle = 8f;
+        [Tooltip("Multiplier on Physics.gravity for the thrown bomb (flatter arcs = easier passes).")]
+        [Min(0f)] public float bombGravityScale = 0.6f;
+>>>>>>> origin/main
         [Tooltip("Max distance of the aim ray that decides where the throw is pointed.")]
         [Min(1f)] public float aimMaxDistance = 40f;
 
@@ -113,6 +126,12 @@ namespace Beep
         [Min(0f)] public float catchFrontBias = 0.25f;
         [Tooltip("Height of the catch sphere centre above the player's feet (upper torso / hands).")]
         [Min(0f)] public float catchCenterHeight = 1.3f;
+
+        [Header("Network - catch lag compensation")]
+        [Tooltip("Online only. How far back (seconds) the host accepts a remote player's catch that they saw happen on their screen, " +
+                 "and how long it may hold a lethal contact right after the bomb passed near a remote receiver. 0 = off. " +
+                 "Also the cap against abuse: the lag it can hide is about this value minus ~0.1 s.")]
+        [Range(0f, 0.5f)] public float catchLagCompensation = 0.35f;
 
         [Header("Bomb - feedback")]
         [Tooltip("Seconds between beeps for the four fuse stages: calm, medium, urgent, critical.")]

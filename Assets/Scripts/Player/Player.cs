@@ -58,6 +58,7 @@ namespace Beep
         public PlayerThrower Thrower { get; private set; }
         public PlayerCatcher Catcher { get; private set; }
         public PlayerPresentation Presentation { get; private set; }
+        public PlayerAnimator Animator { get; private set; }
         public PlayerViewFeel Feel { get; private set; }
         public NetworkPlayer Net { get; private set; }
 
@@ -77,6 +78,7 @@ namespace Beep
             Thrower = GetComponent<PlayerThrower>();
             Catcher = GetComponent<PlayerCatcher>();
             Presentation = GetComponent<PlayerPresentation>();
+            Animator = GetComponent<PlayerAnimator>();
             Feel = GetComponent<PlayerViewFeel>();
             Net = GetComponent<NetworkPlayer>();
         }

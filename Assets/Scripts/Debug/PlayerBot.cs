@@ -3,7 +3,7 @@ using UnityEngine;
 namespace Beep
 {
     /// <summary>
-    /// A simple teammate bot for automated multiplayer runs: when it holds the bomb it aims at the other player
+    /// A simple teammate bot for automated multiplayer runs: when it holds the bomb it aims at the next player
     /// and passes it after a short hold; when a bomb is flying toward it, it presses catch as it gets close.
     /// It plays through the same input path (and therefore the same network rules) as a human.
     /// Enabled with the -beepBot command-line flag.
@@ -27,9 +27,7 @@ namespace Beep
             var input = player.Input.Scripted;
             if (bomb == null || input == null || player.ControlLocked) return;
 
-            Player other = null;
-            foreach (var p in Player.All)
-                if (p != player) { other = p; break; }
+            Player other = NextTeammate();
             if (other == null) return;
 
             // Holding it: aim at the teammate and pass.
@@ -54,6 +52,19 @@ namespace Beep
             {
                 input.PressCatch();
             }
+        }
+
+        /// <summary>The player in the next slot (wrapping), so with 3+ players passes also go client to client.</summary>
+        Player NextTeammate()
+        {
+            Player next = null, lowest = null;
+            foreach (var p in Player.All)
+            {
+                if (p == null || p == player) continue;
+                if (lowest == null || p.PlayerId < lowest.PlayerId) lowest = p;
+                if (p.PlayerId > player.PlayerId && (next == null || p.PlayerId < next.PlayerId)) next = p;
+            }
+            return next != null ? next : lowest;
         }
 
         void AimAt(Vector3 target)
