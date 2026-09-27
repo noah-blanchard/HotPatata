@@ -69,6 +69,28 @@ namespace Beep.Tests
         }
 
         [UnityTest]
+        public IEnumerator ThrowReleasedDuringCatchGrace_IsThrownOnceHeld_NotLost()
+        {
+            int catches = 0;
+            bomb.BombCaught += r => catches++;
+            p1.Look.SetAim(90f, 0f);
+            Drive.PressThrow();
+            yield return null;
+            yield return CatchWhenNear(p2);
+            yield return WaitUntil(() => catches > 0, 2f, "pass was never caught");
+            Assert.AreEqual(BombState.CaughtGrace, bomb.State);
+
+            // The receiver taps throw straight away, inside the grace.
+            p2.Look.SetAim(270f, 0f);
+            p2.Input.Scripted.PressThrow();
+            yield return null;
+            Assert.AreEqual(BombState.CaughtGrace, bomb.State, "a throw never leaves from CaughtGrace (spec §5)");
+
+            yield return WaitUntil(() => bomb.State == BombState.Thrown, tuning.caughtGraceDuration + 0.5f, "the throw released during the grace was lost");
+            Assert.AreSame(p2, bomb.LastThrower);
+        }
+
+        [UnityTest]
         public IEnumerator Explosion_ResetsTheSection_QuicklyAndCleanly()
         {
             // Scatter the players and fire the bomb into the floor.

@@ -50,16 +50,30 @@ namespace Beep
 
             if (IsServer)
             {
-                bomb.StateChanged += (a, b) => Publish();
-                bomb.CarrierChanged += c => Publish();
+                bomb.StateChanged += OnStateChanged;
+                bomb.CarrierChanged += OnCarrierChanged;
+                bomb.HomingCleared += Publish;
                 Publish();
             }
             else
             {
-                snapshot.OnValueChanged += (_, s) => Apply(s);
+                snapshot.OnValueChanged += OnSnapshotChanged;
                 Apply(snapshot.Value);
             }
         }
+
+        public override void OnNetworkDespawn()
+        {
+            if (bomb == null) return;
+            bomb.StateChanged -= OnStateChanged;
+            bomb.CarrierChanged -= OnCarrierChanged;
+            bomb.HomingCleared -= Publish;
+            snapshot.OnValueChanged -= OnSnapshotChanged;
+        }
+
+        void OnStateChanged(BombState from, BombState to) => Publish();
+        void OnCarrierChanged(Player carrier) => Publish();
+        void OnSnapshotChanged(Snapshot previous, Snapshot current) => Apply(current);
 
         void Publish()
         {

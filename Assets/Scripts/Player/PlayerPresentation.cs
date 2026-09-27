@@ -19,6 +19,7 @@ namespace Beep
         [SerializeField] float spinSpeed = 120f;
 
         Player player;
+        BombController bomb;
         MaterialPropertyBlock block;
         Vector3 indicatorBase;
         float indicatorBaseScale;
@@ -61,10 +62,30 @@ namespace Beep
             }
         }
 
-        public void Bind(BombController bomb)
+        public void Bind(BombController bombController)
         {
-            bomb.CarrierChanged += carrier => SetCarrier(carrier == player);
-            bomb.BombCaught += receiver => { if (receiver == player) PulseCatch(); };
+            Unbind();
+            bomb = bombController;
+            bomb.CarrierChanged += OnCarrierChanged;
+            bomb.BombCaught += OnBombCaught;
+            // The carrier may have been set before we bound (a player who joins mid-run).
+            SetCarrier(bomb.Carrier == player);
+        }
+
+        void OnDestroy() => Unbind();
+
+        void Unbind()
+        {
+            if (bomb == null) return;
+            bomb.CarrierChanged -= OnCarrierChanged;
+            bomb.BombCaught -= OnBombCaught;
+        }
+
+        void OnCarrierChanged(Player carrier) => SetCarrier(carrier == player);
+
+        void OnBombCaught(Player receiver)
+        {
+            if (receiver == player) PulseCatch();
         }
 
         public void ApplyColor()

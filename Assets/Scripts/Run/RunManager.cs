@@ -36,6 +36,7 @@ namespace Beep
 
         readonly List<IResettable> resettables = new List<IResettable>();
         readonly HashSet<Player> placed = new HashSet<Player>();
+        Checkpoint[] checkpoints = Array.Empty<Checkpoint>();
         Checkpoint checkpoint;
         RunState state = RunState.Initializing;
         int resetCount;
@@ -52,7 +53,7 @@ namespace Beep
         public float SectionTime => (float)(NetMode.ServerTime - (Mirror ? netState.SectionStart : sectionStart));
         /// <summary>Total run time; frozen at completion.</summary>
         public float RunTime => Mirror ? netState.RunTime : runTime;
-        public Checkpoint CurrentCheckpoint => Mirror ? FindCheckpoint(netState.CheckpointId) : checkpoint;
+        public Checkpoint CurrentCheckpoint => Mirror ? CheckpointById(netState.CheckpointId) : checkpoint;
         public IReadOnlyList<Player> Players => Player.All;
         public BombController Bomb => bomb;
 
@@ -66,6 +67,8 @@ namespace Beep
         {
             foreach (var mb in FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None))
                 if (mb is IResettable r) resettables.Add(r);
+            // Cached once: remote clients resolve the replicated checkpoint id every frame.
+            checkpoints = FindObjectsByType<Checkpoint>(FindObjectsSortMode.None);
 
             bomb.BombExploded += OnBombExploded;
             if (NetMode.IsAuthority) Transition(RunState.WaitingForPlayers);
@@ -146,6 +149,14 @@ namespace Beep
 
         void ResetSection()
         {
+            if (Players.Count == 0)
+            {
+                // Everybody left during the failure delay: wait for players instead of handing the bomb to nobody.
+                bomb.BeginReset();
+                Transition(RunState.WaitingForPlayers);
+                return;
+            }
+
             Transition(RunState.Resetting);
             BeepLog.Run("Reset start");
 
@@ -165,6 +176,8 @@ namespace Beep
         public void ActivateCheckpoint(Checkpoint cp)
         {
             if (!NetMode.IsAuthority || state != RunState.Playing) return;
+            // Checkpoint ids increase along the course; walking back through an earlier one must not move the respawn back.
+            if (checkpoint != null && cp.Id <= checkpoint.Id) return;
 
             checkpoint = cp;
             // Normalise the bomb for the new section: this checkpoint's hold time, and a fresh window for whoever has it.
@@ -189,11 +202,11 @@ namespace Beep
         /// <summary>Starts the whole run again from the beginning (rematch). Authority only.</summary>
         public void Restart()
         {
-            if (!NetMode.IsAuthority || (state != RunState.Completed && state != RunState.Playing)) return;
+            if (!NetMode.IsAuthority || (state != RunState.Completed && state != RunState.Playing) || Players.Count == 0) return;
 
             checkpoint = null;
             resetCount = 0;
-            foreach (var cp in FindObjectsByType<Checkpoint>(FindObjectsSortMode.None)) cp.Rearm();
+            foreach (var cp in checkpoints) cp.Rearm();
             foreach (var r in resettables) r.ResetState();
             bomb.Fuse.SetDurationOverride(0f);
             placed.Clear();
@@ -260,11 +273,11 @@ namespace Beep
             return null;
         }
 
-        static Checkpoint FindCheckpoint(int id)
+        Checkpoint CheckpointById(int id)
         {
             if (id < 0) return null;
-            foreach (var c in FindObjectsByType<Checkpoint>(FindObjectsSortMode.None))
-                if (c.Id == id) return c;
+            foreach (var c in checkpoints)
+                if (c != null && c.Id == id) return c;
             return null;
         }
 

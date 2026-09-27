@@ -20,6 +20,7 @@ namespace Beep
         IReadOnlyList<Player> allPlayers;
         int aimMask;
         float chargeStartTime = -1f;
+        float bufferedCharge = -1f;   // a release during CaughtGrace, thrown as soon as the bomb is Held
 
         public bool Charging => chargeStartTime >= 0f;
 
@@ -66,13 +67,24 @@ namespace Beep
 
             if (released && Charging)
             {
-                float charge = Charge01;
-                CancelCharge();
+                // Throws only leave from Held (spec §5); a release during the short catch grace is kept, not lost.
+                bufferedCharge = Charge01;
+                chargeStartTime = -1f;
+            }
+
+            if (bufferedCharge >= 0f && bomb.State == BombState.Held)
+            {
+                float charge = bufferedCharge;
+                bufferedCharge = -1f;
                 TryThrow(charge);
             }
         }
 
-        public void CancelCharge() => chargeStartTime = -1f;
+        public void CancelCharge()
+        {
+            chargeStartTime = -1f;
+            bufferedCharge = -1f;
+        }
 
         void UpdateLockPreview()
         {
@@ -150,7 +162,7 @@ namespace Beep
 
             foreach (var other in allPlayers)
             {
-                if (other == player) continue;
+                if (other == null || other == player || other.CatchVolume == null) continue;
 
                 Vector3 to = other.CatchVolume.CatchCenter - origin;
                 if (to.magnitude > t.aimAssistDistance) continue;

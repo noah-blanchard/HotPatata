@@ -3,7 +3,7 @@ using UnityEngine;
 namespace Beep
 {
     /// <summary>
-    /// CharacterController-based third-person motor: fast accel/brake, moderate air control,
+    /// CharacterController-based first-person motor: fast accel/brake, moderate air control,
     /// single jump with coyote time and jump buffer. Knows nothing about the bomb.
     /// </summary>
     [RequireComponent(typeof(CharacterController), typeof(Player))]

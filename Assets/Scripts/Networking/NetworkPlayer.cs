@@ -14,10 +14,9 @@ namespace Beep
     [RequireComponent(typeof(Player))]
     public class NetworkPlayer : NetworkBehaviour
     {
-        static readonly Color[] Palette =
-        {
-            new Color(1f, 0.55f, 0.1f), new Color(0.2f, 0.8f, 1f), new Color(0.6f, 1f, 0.3f), new Color(1f, 0.4f, 0.8f)
-        };
+        const float ThrowSpeedTolerance = 1.05f;   // never trust a client for more than the design maximum
+        const float MaxReleaseDistance = 3f;       // metres between the claimed release point and the thrower's eyes
+        const float PitchSendThreshold = 0.25f;    // degrees
 
         readonly NetworkVariable<int> slot = new NetworkVariable<int>(-1);   // server-written
         readonly NetworkVariable<bool> locked = new NetworkVariable<bool>(false);   // server-written
@@ -51,9 +50,7 @@ namespace Beep
 
         void ApplySlot(int s)
         {
-            if (s < 0) return;
-            player.Configure(s, "Player " + (s + 1), Palette[s % Palette.Length]);
-            name = "Player_" + (s + 1);
+            if (s >= 0) player.ConfigureSlot(s);
         }
 
         void BecomeLocal()
@@ -83,7 +80,7 @@ namespace Beep
 
         void LateUpdate()
         {
-            if (IsSpawned && IsOwner && Mathf.Abs(pitch.Value - player.Look.Pitch) > 0.25f)
+            if (IsSpawned && IsOwner && Mathf.Abs(pitch.Value - player.Look.Pitch) > PitchSendThreshold)
                 pitch.Value = player.Look.Pitch;
         }
 
@@ -127,18 +124,20 @@ namespace Beep
         {
             var bomb = BombController.Instance;
             if (bomb == null || bomb.State != BombState.Held || bomb.Carrier != player) return;
+            if (!IsFinite(origin) || !IsFinite(velocity)) return;   // NaN/Infinity would poison the host's physics
 
-            var t = player.Tuning;
-            float max = t.throwSpeedMax * 1.05f;   // never trust a client for more than the design maximum
+            float max = player.Tuning.throwSpeedMax * ThrowSpeedTolerance;
             if (velocity.magnitude > max) velocity = velocity.normalized * max;
 
             Vector3 eye = player.CameraTarget.position;
-            if ((origin - eye).sqrMagnitude > 3f * 3f) return;   // the release point must be near the thrower
+            if ((origin - eye).sqrMagnitude > MaxReleaseDistance * MaxReleaseDistance) return;   // the release point must be near the thrower
 
             bomb.TryThrow(player, origin, velocity);
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         void RequestCatchRpc() => player.Catcher.TryOpenWindow();
+
+        static bool IsFinite(Vector3 v) => float.IsFinite(v.x) && float.IsFinite(v.y) && float.IsFinite(v.z);
     }
 }

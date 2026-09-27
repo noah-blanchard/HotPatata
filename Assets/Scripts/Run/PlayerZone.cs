@@ -10,13 +10,15 @@ namespace Beep
     public static class PlayerZone
     {
         static readonly Collider[] Buffer = new Collider[32];
+        static int playerMask;
 
         public static int Collect(Collider zone, HashSet<Player> result)
         {
             result.Clear();
+            if (playerMask == 0) playerMask = LayerMask.GetMask("Player");
             Bounds b = zone.bounds;
             int n = Physics.OverlapBoxNonAlloc(b.center, b.extents, Buffer, Quaternion.identity,
-                LayerMask.GetMask("Player"), QueryTriggerInteraction.Ignore);
+                playerMask, QueryTriggerInteraction.Ignore);
             for (int i = 0; i < n; i++)
             {
                 var p = Buffer[i].GetComponentInParent<Player>();

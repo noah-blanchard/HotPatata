@@ -64,6 +64,8 @@ namespace Beep
         public event Action<Player> BombThrown;              // thrower
         public event Action<Player> BombCaught;              // receiver
         public event Action<BombFailReason, string> BombExploded;
+        /// <summary>The flight stopped homing mid-air (it passed its target). Host only; replicated by NetworkBomb.</summary>
+        public event Action HomingCleared;
 
         void Awake()
         {
@@ -148,14 +150,19 @@ namespace Beep
         }
 
         /// <summary>Stop bending the flight (the bomb has passed its target).</summary>
-        public void ClearHoming() => HomingTarget = null;
+        public void ClearHoming()
+        {
+            if (HomingTarget == null) return;
+            HomingTarget = null;
+            HomingCleared?.Invoke();
+        }
 
         // ------------------------------------------------------------------ failure
 
-        /// <summary>Lethal contact reported by <see cref="BombPhysics"/>. Only counts while Thrown.</summary>
+        /// <summary>Lethal contact reported by <see cref="BombPhysics"/>. Only counts while Thrown, on the authority.</summary>
         public void ReportWorldContact(Collider other)
         {
-            if (State != BombState.Thrown) return;
+            if (!NetMode.IsAuthority || State != BombState.Thrown) return;
             Explode(BombFailReason.WorldContact,
                 $"object={other.name} layer={LayerMask.LayerToName(other.gameObject.layer)}");
         }
@@ -163,7 +170,7 @@ namespace Beep
         /// <summary>Trigger contact from <see cref="BombPhysics"/>: catch volumes and kill zones only.</summary>
         public void ReportTriggerContact(Collider other)
         {
-            if (State != BombState.Thrown) return;
+            if (!NetMode.IsAuthority || State != BombState.Thrown) return;
 
             if (other.TryGetComponent(out PlayerCatchVolume volume))
             {
