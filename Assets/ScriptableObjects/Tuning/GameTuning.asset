@@ -21,6 +21,31 @@ MonoBehaviour:
   gravity: 28
   coyoteTime: 0.1
   jumpBuffer: 0.1
+  groundTurnRate: 900
+  sprintTurnRate: 460
+  reverseAngle: 140
+  overspeedDeceleration: 9
+  airTurnRate: 220
+  airDrag: 3
+  airOverspeedDrag: 2.5
+  sprintSpeed: 11
+  sprintAcceleration: 18
+  sprintForwardDot: 0.5
+  slideMinEntrySpeed: 7
+  slideBoost: 3.5
+  slideBoostCooldown: 1
+  slideFriction: 7
+  slideExitSpeed: 5
+  slideMaxSpeed: 18
+  slideSteerRate: 90
+  slideSlopeAcceleration: 1
+  crouchSpeed: 4
+  crouchHeight: 1
+  crouchTransitionRate: 14
+  mantleMaxHeight: 1.4
+  mantleMinHeight: 0.1
+  mantleReach: 0.45
+  mantleDuration: 0.28
   mouseSensitivity: 0.1
   stickLookSpeed: 180
   pitchMin: -80
@@ -47,6 +72,7 @@ MonoBehaviour:
   throwUpAngle: 6
   bombGravityScale: 1.5
   throwInheritForward: 0.5
+  throwInheritMaxSpeed: 11
   aimMaxDistance: 40
   assistStrength: 0.6
   assistConeDegrees: 6
@@ -65,6 +91,7 @@ MonoBehaviour:
   catchCooldown: 0.35
   catchFrontBias: 0.25
   catchCenterHeight: 1.3
+  catchLagCompensation: 0.35
   beepIntervals:
   - 1
   - 0.55

@@ -174,14 +174,14 @@ One straight course along +Z (~290 m, about 3-5 minutes), every piece a kit pref
 |---|---|---|
 | A Safe Court | 0-30 | flat and wide: learn charge, throw, timed catch at 6 m |
 | B First Gap | 30-48 | 4.5 m pit, broad landing: the pass is the challenge, not the jump |
-| C Stair Relay | 51-79 | three 1.2 m steps up, big recovery space: relay the bomb upward |
+| C Stair Relay | 51-79 | two 1.2 m steps up, then a 1.8 m step (C3, above the jump height: jump and **mantle**), big recovery space: relay the bomb upward |
 | Checkpoint 1 | 87 | after the teaching beats |
 | D Moving Pair | 93-106 | two slow platforms that periodically line up: wait or risk it |
 | E Split Lanes | 118-154 | centre wall with two openings, a blocker in each lane: the bomb must cross between lanes |
 | Checkpoint 2 | 162 | |
 | F Vertical Catch | 170-204 | a `LaunchPad` throws the receiver 6 m up; catch the bomb near the top, land on the broad 8.4 m ledge |
 | Checkpoint 3 | 199 | shorter fuse (4.5 s) from here on (`holdFuseOverride`) |
-| G Final Sprint | 205-294 | narrow hops, three falling platforms, faster moving pair, then the `FinishZone` |
+| G Final Sprint | 204-298 | a 7.6 m entry gap from F2 that needs a **sprint** jump (F2 is the run-up), narrow hops, a **low bar** on `G_Landing_1` (1.3 m clearance: slide or crouch under, too tall to mantle), three falling platforms, faster moving pair, then the `FinishZone` |
 
 The finish shows `RunResultsUI` (time, resets); the host presses R for a rematch (`RunManager.Restart`).
 Levels are chosen in the Bootstrap menu (`gameplayScenes` on `NetworkBootstrap`).
@@ -313,6 +313,16 @@ Responsibilities:
 - coyote time;
 - jump buffer;
 - air control.
+
+Explicit state (`MoveState`): `Ground`, `Air`, `Slide`, `Mantle`, plus a `Crouched` posture flag and `IsSprinting`.
+
+- **Ground**: the horizontal velocity *carves*. Its direction rotates toward the stick at a speed-dependent turn rate (`groundTurnRate` → `sprintTurnRate`), and its magnitude settles toward the target speed (run / sprint / crouch). Reversals sharper than `reverseAngle` brake through zero. Overspeed bleeds off at `overspeedDeceleration`.
+- **Air**: same steering at `airTurnRate`, momentum kept, `airDrag` without input, `airOverspeedDrag` above sprint speed (no bunny-hop).
+- **Slide**: starts on a crouch press (or a landing with crouch held) at `slideMinEntrySpeed`+. It has a cooldown-limited boost capped at sprint speed + boost, friction, slope gravity along the ground normal (downward ray), and light steering. It ends on release or below `slideExitSpeed`.
+- **Mantle**: while airborne with forward input, a forward ray finds a ledge face, a downward ray finds its flat top (not Hazard) 0.1–1.4 m above the feet, and two capsule checks confirm room. A scripted rise-then-over via `CharacterController.Move` follows, and the forward speed is kept.
+- **Posture**: the capsule height changes at the feet pivot. Standing up waits for headroom (`CheckCapsule`). `HeightScale` (smoothed) lowers the eye pivot (`PlayerLook`) and the catch sphere (`PlayerCatchVolume`).
+- **Replication**: `PackedState` (state + crouch + sprint, one byte) is owner-written on `NetworkPlayer`. Remote copies apply it to their capsule, eye and catch height, so the host's catch sweeps and `FlightHistory` use the sliding player's real catch centre. `PlayerAnimator` uses it for the remote sprint blend (Speed 2 = run clip at 1.35×) and the procedural slide / crouch-walk pose.
+- `PlayerMotor.MotionFraction` (run = 1, sprint = 2, slides above) is the single speed scale for presentation.
 
 Should **not** know bomb game rules.
 

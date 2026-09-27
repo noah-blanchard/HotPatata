@@ -418,6 +418,8 @@ Initial controls:
 | Move | WASD | Left stick | Required |
 | Look | Mouse | Right stick | Required |
 | Jump | Space | South button | Required |
+| Sprint (hold) | Left Shift | Left stick press | Required (M9) |
+| Crouch / slide (hold) | Left Ctrl or C | East button | Required (M9) |
 | Throw | Left click (hold to charge, release to throw) | Right trigger | Required |
 | Catch | Right click (timed, see §9) | Left trigger | Required |
 | Ping / “throw to me” | Q | Bumper | Later MVP if needed |
@@ -430,18 +432,25 @@ Catch is required to receive the bomb; there is no automatic catch.
 
 Movement target:
 
-**responsive, forgiving, predictable first-person platforming.**
+**responsive, forgiving, predictable first-person platforming that flows** (Apex-lite: momentum carries, nothing snaps).
 
 Required characteristics:
 
 - first-person camera at eye height; the body always faces where the player looks, and the player's own body is hidden from their own view (other players still see it);
 - quick but **progressive** acceleration (a gentle start that builds to full speed in about a quarter of a second, so a run has momentum) and fast, slightly inertial braking;
 - a strong sense of speed in first person: the field of view widens with speed and narrows while charging a throw, the view leans into strafes, bobs with footsteps, dips on hard landings and punches on throws and catches; running adds a light vignette, chromatic aberration and wind (all tuned in `GameTuning`, starting run speed 8 m/s);
-- moderate air control;
+- the run direction **carves** toward the stick at a speed-dependent turn rate instead of snapping; sharp reversals brake through zero;
+- **sprint** (hold, forward-ish only) raises the run speed from 8 to 11 m/s; speed above the target (letting go of sprint, after a slide) bleeds off gently instead of snapping;
+- **momentum slide**: crouch while moving at 7 m/s or more slides, with a boost (+3.5 m/s, at most up to sprint speed + boost, no new boost within 1 s), friction that ends it in about a second, faster downhill, a little steering; release crouch to stand. A landing with crouch held goes straight into a slide;
+- **slide-jump** keeps the slide's full horizontal speed; **landings keep momentum**;
+- **crouch-walk** (4 m/s) when crouching slowly or when a ceiling is too low to stand; the capsule, eye, hand and catch sphere lower with the body (replicated to every machine);
+- **mantle**: moving forward into a ledge 0.1–1.4 m above the feet while airborne climbs it automatically (never onto hazards); a jump that will clear the ledge anyway is not interrupted;
+- moderate air control; a jump keeps its momentum, with extra drag above sprint speed so chained jumps cannot keep slide speed (no bunny-hop, no air-strafe gain);
 - single jump;
 - coyote time around **0.1 s**;
 - jump buffer around **0.1 s**;
 - no stamina;
+- no wall-run, dash or double jump (sprint, slide and mantle are movement, not the "abilities" excluded in §17.2);
 - no combat;
 - no grabbing;
 - no deliberate ragdoll locomotion in MVP.
@@ -763,7 +772,10 @@ At minimum:
 | Throw speed (tap → full charge) | 14 → 28 m/s |
 | Throw charge time | 0.45 s |
 | Throw lift / bomb gravity scale | 6° / 1.5 |
-| Run speed kept by the throw (along the aim) | 50 % |
+| Run speed kept by the throw (along the aim) | 50 %, of at most 11 m/s |
+| Run / sprint / crouch speed | 8 / 11 / 4 m/s |
+| Slide entry / boost / friction / exit | 7 m/s / +3.5 m/s / 7 m/s² / 5 m/s |
+| Mantle height / duration | 0.1–1.4 m / 0.28 s |
 | Normal pass distance | 8–12 m (0.25–0.5 s in the air) |
 | Aim assist (range / cone / max turn / max lift) | 14 m / 6° / 3.5° / 1° |
 | Catch radius (+ facing bonus), vertical scale | 1.0 m (+0.3 m), 0.6 |

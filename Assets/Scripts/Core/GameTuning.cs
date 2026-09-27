@@ -25,6 +25,60 @@ namespace HotPatata
         [Min(0f)] public float coyoteTime = 0.1f;
         [Min(0f)] public float jumpBuffer = 0.1f;
 
+        [Header("Movement - flow (turning and momentum)")]
+        [Tooltip("Degrees per second the run direction swings toward the stick at walking speed. Lower = more carve, higher = snappier.")]
+        [Min(0f)] public float groundTurnRate = 900f;
+        [Tooltip("Turn rate at sprint speed and above: fast runs carve wider, so they have weight.")]
+        [Min(0f)] public float sprintTurnRate = 460f;
+        [Tooltip("A change of direction sharper than this (degrees) is a reversal: brake and re-accelerate instead of carving round.")]
+        [Range(90f, 180f)] public float reverseAngle = 140f;
+        [Tooltip("Units/s² a grounded player above their target speed (after a slide, or letting go of sprint) sheds speed. Low = momentum.")]
+        [Min(0f)] public float overspeedDeceleration = 9f;
+        [Tooltip("Turn rate while airborne, degrees per second.")]
+        [Min(0f)] public float airTurnRate = 220f;
+        [Tooltip("Units/s² of drag in the air with no stick input (the jump keeps its momentum; pull back to brake).")]
+        [Min(0f)] public float airDrag = 3f;
+        [Tooltip("Units/s² of drag in the air above sprint speed, so chained jumps cannot keep slide speed forever (no bunny-hop).")]
+        [Min(0f)] public float airOverspeedDrag = 2.5f;
+
+        [Header("Movement - sprint (hold, no stamina)")]
+        [Min(0f)] public float sprintSpeed = 11f;
+        [Tooltip("Units/s² from run speed up to sprint speed. Lower than Acceleration, so a sprint builds instead of snapping.")]
+        [Min(0f)] public float sprintAcceleration = 18f;
+        [Tooltip("Sprint only applies while the stick points mostly forward: its forward share must be at least this (0.5 = within 60°).")]
+        [Range(0f, 1f)] public float sprintForwardDot = 0.5f;
+
+        [Header("Movement - slide and crouch")]
+        [Tooltip("Pressing crouch on the ground at this speed or faster starts a slide; slower, it is a crouch-walk.")]
+        [Min(0f)] public float slideMinEntrySpeed = 7f;
+        [Tooltip("Speed added when a slide starts.")]
+        [Min(0f)] public float slideBoost = 3.5f;
+        [Tooltip("Seconds after a boosted slide before another slide boosts again (no slide spamming).")]
+        [Min(0f)] public float slideBoostCooldown = 1.0f;
+        [Tooltip("Units/s² a slide loses on flat ground. Sets how long a slide lasts.")]
+        [Min(0f)] public float slideFriction = 7f;
+        [Tooltip("A slide ends below this speed (crouch-walk if crouch is still held).")]
+        [Min(0f)] public float slideExitSpeed = 5f;
+        [Min(0f)] public float slideMaxSpeed = 18f;
+        [Tooltip("Degrees per second the stick can steer a slide.")]
+        [Min(0f)] public float slideSteerRate = 90f;
+        [Tooltip("Multiplier on gravity along a slope while sliding (downhill speeds you up, uphill slows you).")]
+        [Min(0f)] public float slideSlopeAcceleration = 1f;
+        [Min(0f)] public float crouchSpeed = 4f;
+        [Tooltip("Capsule height while sliding or crouched, in metres (standing height comes from the CharacterController).")]
+        [Min(0.6f)] public float crouchHeight = 1.0f;
+        [Tooltip("How fast the eye and catch height follow crouching (1/s).")]
+        [Min(1f)] public float crouchTransitionRate = 14f;
+
+        [Header("Movement - mantle (automatic ledge climb)")]
+        [Tooltip("Highest ledge (above the feet) that can be climbed by moving into it while airborne.")]
+        [Min(0f)] public float mantleMaxHeight = 1.4f;
+        [Tooltip("A ledge top at least this far above the feet is climbed (in the air nothing steps up, so this is small).")]
+        [Min(0f)] public float mantleMinHeight = 0.1f;
+        [Tooltip("How far ahead of the capsule the ledge may be, in metres.")]
+        [Min(0.05f)] public float mantleReach = 0.45f;
+        [Min(0.05f)] public float mantleDuration = 0.28f;
+
         [Header("Camera / Look (first person)")]
         [Tooltip("Degrees per mouse-delta pixel.")]
         [Min(0f)] public float mouseSensitivity = 0.1f;
@@ -85,6 +139,8 @@ namespace HotPatata
         [Tooltip("Share of the thrower's run speed ALONG the aim direction that the throw keeps (running forward throws harder). " +
                  "Sideways and vertical motion are never added, so strafing or jumping does not push the throw off your aim.")]
         [Range(0f, 1f)] public float throwInheritForward = 0.5f;
+        [Tooltip("The run speed a throw can inherit from is capped here, so sliding or sprinting does not make passes wildly long.")]
+        [Min(0f)] public float throwInheritMaxSpeed = 11f;
         [Tooltip("Max distance of the aim ray that decides where the throw is pointed.")]
         [Min(1f)] public float aimMaxDistance = 40f;
 

@@ -56,16 +56,19 @@ namespace HotPatata
         void LateUpdate()
         {
             float p = player.IsLocal ? pitch : player.Net.RemotePitch;   // remote players' pitch is replicated
+            // The eye (and the hand and throw origin under it) sinks with a crouch or slide, on every machine.
+            Vector3 eye = new Vector3(baseEyePosition.x, baseEyePosition.y * player.Motor.HeightScale, baseEyePosition.z);
             var feel = player.IsLocal ? player.Feel : null;
             if (feel != null)
             {
                 // Roll, recoil and bob are applied to the eye pivot, so the held bomb moves with the view.
                 player.CameraTarget.localRotation = Quaternion.Euler(p + feel.PitchKick, 0f, feel.Roll);
-                player.CameraTarget.localPosition = baseEyePosition + feel.EyeOffset;
+                player.CameraTarget.localPosition = eye + feel.EyeOffset;
             }
             else
             {
                 player.CameraTarget.localRotation = Quaternion.Euler(p, 0f, 0f);
+                player.CameraTarget.localPosition = eye;
             }
         }
 

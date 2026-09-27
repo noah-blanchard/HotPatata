@@ -1074,6 +1074,36 @@ These are deliberately outside the initial execution path.
 
 ---
 
+# Milestone 9 — Movement & look pass (pulled forward by the owner)
+
+Deliberately taken on before the M6/M7 gates, at the owner's request: fluid movement first, then a cartoon look pass.
+
+## M9.1 — Fluid movement (sprint, slide, mantle)
+
+Acceptance criteria:
+
+- turning carves instead of snapping; sharp reversals still brake crisply;
+- hold sprint (forward-ish) reaches 11 m/s; letting go bleeds speed off smoothly;
+- crouch at speed slides with a boost that decays in about a second; boosts cannot be chained (cooldown, cap);
+- slide-jump keeps the slide speed; landings keep momentum; no bunny-hop gain;
+- a low ceiling keeps the player crouched until clear;
+- moving into a ledge up to 1.4 m above the feet while airborne mantles onto it; taller walls and hazards are never mantled;
+- slide/crouch posture (capsule, eye, catch sphere, pose) is identical on every machine;
+- throws inherit at most 11 m/s of run speed (passes stay predictable);
+- `SprintSlideTests` and `MovementTests` pass.
+
+## M9.2 — Course retune for the new movement
+
+- every beat is re-measured against run / sprint / slide-jump reach;
+- at least one beat needs a slide (low bar) and one offers a mantle ledge;
+- pass paths stay clean (spec §3).
+
+## M9.3 — Cartoon look, speed feel, potato VFX, audio
+
+See the plan in the PR description (toon shader, sky, post, speed lines, trail, fuse sparks, cartoon explosion, CC0 audio).
+
+---
+
 # Master MVP definition of done
 
 The MVP is complete when all of the following are true:

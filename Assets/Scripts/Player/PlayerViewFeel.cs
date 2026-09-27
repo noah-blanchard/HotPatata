@@ -47,6 +47,8 @@ namespace HotPatata
         public Vector3 EyeOffset { get; private set; }
         /// <summary>Horizontal speed as a fraction of run speed (0..1). Also feeds wind and post effects.</summary>
         public float SpeedFraction { get; private set; }
+        /// <summary>Unclamped: run = 1, sprint = 2, slides beyond (<see cref="PlayerMotor.MotionFraction"/>).</summary>
+        public float MotionFraction { get; private set; }
 
         /// <summary>Raised on each footfall with the current speed fraction.</summary>
         public event Action<float> Stepped;
@@ -102,7 +104,8 @@ namespace HotPatata
 
             Vector3 v = motor.Velocity;
             float speed = new Vector2(v.x, v.z).magnitude;
-            SpeedFraction = Mathf.Clamp01(speed / Mathf.Max(0.01f, t.moveSpeed));
+            MotionFraction = PlayerMotor.MotionFraction(t, speed);
+            SpeedFraction = Mathf.Clamp01(MotionFraction);
             bool grounded = motor.Grounded;
 
             if (!IsActive)
@@ -146,7 +149,7 @@ namespace HotPatata
 
             // ---- roll: lean into strafing and turning
             Vector3 right = player.Look.YawRotation * Vector3.right;
-            float strafe = Vector3.Dot(v, right) / Mathf.Max(0.01f, t.moveSpeed);
+            float strafe = Mathf.Clamp(Vector3.Dot(v, right) / Mathf.Max(0.01f, t.moveSpeed), -1.5f, 1.5f);
             float yawRate = Mathf.DeltaAngle(lastYaw, player.Look.Yaw) / dt;
             lastYaw = player.Look.Yaw;
             float rollTarget = -strafe * t.rollDegrees + Mathf.Clamp(-yawRate * 0.008f, -1.2f, 1.2f);

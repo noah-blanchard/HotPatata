@@ -31,7 +31,9 @@ namespace HotPatata
             var t = owner != null ? owner.Tuning : null;
             if (t == null) return;
             sphere.radius = t.catchRadius;
-            transform.localPosition = new Vector3(0f, t.catchCenterHeight, t.catchFrontBias);
+            // Sliding or crouching lowers the catch sphere with the body (replicated, so the host sweeps the same place).
+            float scale = owner.Motor != null ? owner.Motor.HeightScale : 1f;
+            transform.localPosition = new Vector3(0f, t.catchCenterHeight * scale, t.catchFrontBias);
         }
     }
 }
