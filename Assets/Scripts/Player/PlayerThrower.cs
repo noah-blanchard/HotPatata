@@ -20,6 +20,12 @@ namespace Beep
         IReadOnlyList<Player> allPlayers;
         int aimMask;
         float chargeStartTime = -1f;
+        bool throwQueued;
+        bool releaseOnThisMachine;
+        float queuedReleaseTime;
+        Vector3 queuedOrigin;
+        Vector3 queuedPlayerPosition;
+        Vector3 queuedVelocity;
 
         public bool Charging => chargeStartTime >= 0f;
 
@@ -47,6 +53,25 @@ namespace Beep
 
         void Update()
         {
+            if (throwQueued)
+            {
+                bool stillValid = bomb != null && !player.ControlLocked && bomb.Carrier == player &&
+                                  bomb.State == BombState.Held;
+                if (!stillValid)
+                {
+                    throwQueued = false;
+                    player.Animator?.CancelThrowCharge();
+                }
+                else if (releaseOnThisMachine && Time.time >= queuedReleaseTime)
+                {
+                    throwQueued = false;
+                    Vector3 releaseOrigin = queuedOrigin + (transform.position - queuedPlayerPosition);
+                    bomb.TryThrow(player, releaseOrigin, queuedVelocity);
+                }
+                return;
+            }
+
+            // A host also advances the queued release of a remote-owned player above.
             if (!player.IsLocal) return;
             UpdateLockPreview();
 
@@ -58,21 +83,35 @@ namespace Beep
                             && (bomb.State == BombState.Held || bomb.State == BombState.CaughtGrace);
             if (!mayThrow)
             {
-                CancelCharge();
+                if (Charging || throwQueued) CancelCharge();
                 return;
             }
 
-            if (pressed) chargeStartTime = Time.time;
+            if (pressed)
+            {
+                chargeStartTime = Time.time;
+                player.Animator?.BeginThrowCharge();
+                if (player.Net != null && player.Net.IsSpawned)
+                {
+                    if (NetMode.IsRemoteClient) player.Net.RequestThrowCharge();
+                    else player.Net.BroadcastThrowCharge();
+                }
+            }
 
             if (released && Charging)
             {
                 float charge = Charge01;
-                CancelCharge();
+                chargeStartTime = -1f;
                 TryThrow(charge);
             }
         }
 
-        public void CancelCharge() => chargeStartTime = -1f;
+        public void CancelCharge()
+        {
+            chargeStartTime = -1f;
+            throwQueued = false;
+            player.Animator?.CancelThrowCharge();
+        }
 
         void UpdateLockPreview()
         {
@@ -91,19 +130,45 @@ namespace Beep
 
         public bool TryThrow(float charge01 = 0f)
         {
-            if (bomb == null || bomb.State != BombState.Held || bomb.Carrier != player) return false;
+            if (throwQueued || bomb == null || bomb.State != BombState.Held || bomb.Carrier != player) return false;
 
             Vector3 origin = ThrowOriginNow();
             Vector3 velocity = ComputeThrowVelocity(origin, charge01);
 
+            player.Animator?.ReleaseThrow();
+            throwQueued = true;
+            releaseOnThisMachine = !NetMode.IsRemoteClient;
+            queuedReleaseTime = Time.time + (player.Animator != null ? player.Animator.ThrowReleaseDelay : 0f);
+            queuedOrigin = origin;
+            queuedPlayerPosition = transform.position;
+            queuedVelocity = velocity;
+
             if (NetMode.IsRemoteClient)
             {
-                // The host decides whether the throw happens; we only describe it.
+                // The owner begins the wind-up immediately. The host mirrors it to the other
+                // machines, waits for the hand-release frame, then performs the real throw.
                 player.Net.RequestThrow(origin, velocity);
                 return true;
             }
 
-            return bomb.TryThrow(player, origin, velocity);
+            if (player.Net != null && player.Net.IsSpawned) player.Net.BroadcastThrowRelease();
+            return true;
+        }
+
+        /// <summary>Host only: validate first, then queue the authoritative release on the animation frame.</summary>
+        public bool QueueNetworkThrow(Vector3 origin, Vector3 velocity)
+        {
+            if (throwQueued || bomb == null || bomb.State != BombState.Held || bomb.Carrier != player) return false;
+
+            player.Animator?.ReleaseThrow();
+            throwQueued = true;
+            releaseOnThisMachine = true;
+            queuedReleaseTime = Time.time + (player.Animator != null ? player.Animator.ThrowReleaseDelay : 0f);
+            queuedOrigin = origin;
+            queuedPlayerPosition = transform.position;
+            queuedVelocity = velocity;
+            player.Net.BroadcastThrowRelease();
+            return true;
         }
 
         /// <summary>Throw origin from the current aim (the anchor transform only updates in LateUpdate).</summary>

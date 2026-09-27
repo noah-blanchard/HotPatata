@@ -120,7 +120,38 @@ namespace Beep
 
         public void RequestThrow(Vector3 origin, Vector3 velocity) => RequestThrowRpc(origin, velocity);
 
+        public void RequestThrowCharge() => RequestThrowChargeRpc();
+
+        /// <summary>Server: show the charge pose on every client.</summary>
+        public void BroadcastThrowCharge()
+        {
+            if (IsServer) ThrowChargeRpc();
+        }
+
+        [Rpc(SendTo.NotServer)]
+        void ThrowChargeRpc() => player.Animator?.BeginThrowCharge();
+
+        /// <summary>Server: resume THROW on every client at release.</summary>
+        public void BroadcastThrowRelease()
+        {
+            if (IsServer) ThrowReleaseRpc();
+        }
+
+        [Rpc(SendTo.NotServer)]
+        void ThrowReleaseRpc() => player.Animator?.ReleaseThrow();
+
         public void RequestCatch() => RequestCatchRpc();
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+        void RequestThrowChargeRpc()
+        {
+            var bomb = BombController.Instance;
+            if (bomb == null || bomb.Carrier != player ||
+                (bomb.State != BombState.Held && bomb.State != BombState.CaughtGrace)) return;
+
+            player.Animator?.BeginThrowCharge();
+            BroadcastThrowCharge();
+        }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         void RequestThrowRpc(Vector3 origin, Vector3 velocity)
@@ -135,7 +166,7 @@ namespace Beep
             Vector3 eye = player.CameraTarget.position;
             if ((origin - eye).sqrMagnitude > 3f * 3f) return;   // the release point must be near the thrower
 
-            bomb.TryThrow(player, origin, velocity);
+            player.Thrower.QueueNetworkThrow(origin, velocity);
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
