@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// Development only (F3 toggles). Draws the throw/catch model in the game view so it can be tuned by eye:

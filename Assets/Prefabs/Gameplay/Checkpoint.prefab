@@ -43,7 +43,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 04cc3df383027754492a1ef9617e6661, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.PlayerSpawn
+  m_EditorClassIdentifier: HotPatata::HotPatata.PlayerSpawn
   slot: 1
   gizmoColor: {r: 0, g: 1, b: 1, a: 1}
 --- !u!1 &761748239881625315
@@ -89,7 +89,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 04cc3df383027754492a1ef9617e6661, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.PlayerSpawn
+  m_EditorClassIdentifier: HotPatata::HotPatata.PlayerSpawn
   slot: 3
   gizmoColor: {r: 0, g: 1, b: 1, a: 1}
 --- !u!1 &1268506438841036954
@@ -278,7 +278,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 04cc3df383027754492a1ef9617e6661, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.PlayerSpawn
+  m_EditorClassIdentifier: HotPatata::HotPatata.PlayerSpawn
   slot: 2
   gizmoColor: {r: 0, g: 1, b: 1, a: 1}
 --- !u!1 &3741423535136138342
@@ -324,7 +324,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 04cc3df383027754492a1ef9617e6661, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.PlayerSpawn
+  m_EditorClassIdentifier: HotPatata::HotPatata.PlayerSpawn
   slot: 0
   gizmoColor: {r: 0, g: 1, b: 1, a: 1}
 --- !u!1 &6034135454682804588
@@ -377,7 +377,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3a78d91a074a8dd49b3853d97c9f503b, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.Checkpoint
+  m_EditorClassIdentifier: HotPatata::HotPatata.Checkpoint
   id: 0
   trigger: {fileID: 5515804959377254840}
   spawns:

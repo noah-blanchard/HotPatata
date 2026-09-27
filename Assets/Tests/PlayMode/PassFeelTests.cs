@@ -3,7 +3,7 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
 
-namespace Beep.Tests
+namespace HotPatata.Tests
 {
     /// <summary>
     /// The pass feel (PROJECT_SPEC §8–9) on the PassSandbox range lane: a competent throw (sensible charge, aimed where

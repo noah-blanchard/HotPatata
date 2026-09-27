@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// The single place that decides whether a flying bomb is caught. First valid claim wins: the bomb leaves the
@@ -134,7 +134,7 @@ namespace Beep
 
             if (best != null && !bomb.ExplosionPending)
             {
-                BeepLog.Bomb($"Catch accepted {best} ({bestDistance:F2} m from the centre)");
+                PatataLog.Bomb($"Catch accepted {best} ({bestDistance:F2} m from the centre)");
                 bomb.AcceptCatch(best);
             }
         }
@@ -156,7 +156,7 @@ namespace Beep
             }
             if (best == null) return;
 
-            BeepLog.Bomb($"Catch accepted {best} (late press, in reach {(Time.time - bestTime) * 1000f:F0} ms ago)");
+            PatataLog.Bomb($"Catch accepted {best} (late press, in reach {(Time.time - bestTime) * 1000f:F0} ms ago)");
             bomb.AcceptCatch(best);
         }
 
@@ -172,11 +172,11 @@ namespace Beep
             float reached = history.LastReach(receiver.PlayerId, Time.time - window, CompensatedReach);
             if (reached < 0f)
             {
-                BeepLog.Bomb($"Catch claim rejected {receiver} (not in reach in the last {window * 1000f:F0} ms)");
+                PatataLog.Bomb($"Catch claim rejected {receiver} (not in reach in the last {window * 1000f:F0} ms)");
                 return false;
             }
 
-            BeepLog.Bomb($"Catch accepted {receiver} (lag-compensated, in reach {(Time.time - reached) * 1000f:F0} ms ago, rtt {RttMs(receiver)} ms)");
+            PatataLog.Bomb($"Catch accepted {receiver} (lag-compensated, in reach {(Time.time - reached) * 1000f:F0} ms ago, rtt {RttMs(receiver)} ms)");
             return bomb.AcceptCatch(receiver);
         }
 

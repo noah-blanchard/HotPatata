@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// Beep cadence by fuse stage plus throw / catch / explosion one-shots. Consumes bomb state and

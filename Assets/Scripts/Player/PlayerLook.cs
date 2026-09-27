@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// Owns the player's aim yaw/pitch. The camera follows it; movement is relative to yaw; throws

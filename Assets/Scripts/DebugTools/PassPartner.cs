@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// Development only, offline only: solo pass practice. F4 turns every player you are NOT controlling into a

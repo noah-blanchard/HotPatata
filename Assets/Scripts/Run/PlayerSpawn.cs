@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>Marks where a player slot (0-3) starts / respawns. Drawn as a gizmo in the Scene view.</summary>
     public class PlayerSpawn : MonoBehaviour

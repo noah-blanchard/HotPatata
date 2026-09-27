@@ -1,7 +1,7 @@
 using NUnit.Framework;
 using UnityEngine;
 
-namespace Beep.Tests
+namespace HotPatata.Tests
 {
     /// <summary>
     /// The release-time aim assist and the arc maths it relies on (PROJECT_SPEC §8.3): it only turns the direction,

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// A lethal volume (trigger). A bomb entering it explodes (handled by BombController), so a bomb can

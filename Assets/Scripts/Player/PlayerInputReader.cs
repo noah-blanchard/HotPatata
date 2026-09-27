@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Utilities;
 
-namespace Beep
+namespace HotPatata
 {
     public enum InputSource
     {
@@ -12,7 +12,7 @@ namespace Beep
     }
 
     /// <summary>
-    /// Reads one player's input from a private clone of the BeepControls asset, restricted to the
+    /// Reads one player's input from a private clone of the HotPatataControls asset, restricted to the
     /// devices of the selected <see cref="InputSource"/>. Several players can therefore coexist in
     /// one scene, each fed by a different device (or by none).
     /// </summary>

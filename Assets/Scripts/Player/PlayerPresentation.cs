@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// Purely visual: body colour and the carrier indicator. Reads state, never changes it.

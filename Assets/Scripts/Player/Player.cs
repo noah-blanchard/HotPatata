@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// Root component of the Player prefab. Holds identity, anchors and references to the
@@ -166,7 +166,7 @@ namespace Beep
 
         public void TeleportLocal(Vector3 position, Quaternion rotation)
         {
-            BeepLog.Run($"{this} teleported to {position:F1}");
+            PatataLog.Run($"{this} teleported to {position:F1}");
             Motor.Teleport(position, rotation);
             Look.SetYaw(rotation.eulerAngles.y);
             if (NetSpawned) Net.SyncTeleport(position, rotation);   // other machines jump, they do not glide through the level

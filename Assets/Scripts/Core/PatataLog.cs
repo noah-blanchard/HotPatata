@@ -1,12 +1,12 @@
 using System.Diagnostics;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// Concise development logging (ARCHITECTURE §19). Compiled out of release builds,
     /// and switchable at runtime via <see cref="Enabled"/>.
     /// </summary>
-    public static class BeepLog
+    public static class PatataLog
     {
         public static bool Enabled = true;
 

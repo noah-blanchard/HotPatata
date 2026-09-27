@@ -1,4 +1,4 @@
-# BEEP! — MVP_TASKS.md
+# HotPatata — MVP_TASKS.md
 
 > Ordered execution plan for a coding agent.  
 > Read `PROJECT_SPEC.md` and `ARCHITECTURE.md` before starting.  

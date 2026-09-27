@@ -1,6 +1,6 @@
 {
-    "name": "Beep",
-    "rootNamespace": "Beep",
+    "name": "HotPatata",
+    "rootNamespace": "HotPatata",
     "references": [
         "Unity.InputSystem",
         "Unity.Netcode.Runtime",

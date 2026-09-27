@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// A short record of where a flying bomb was, and where every player's catch centre was, on the host.

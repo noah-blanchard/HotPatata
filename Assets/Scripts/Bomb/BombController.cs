@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     public enum BombState
     {
@@ -117,7 +117,7 @@ namespace Beep
         {
             if (State != BombState.Held || Carrier != thrower)
             {
-                BeepLog.Bomb($"Throw rejected {thrower} (state={State}, carrier={Carrier})");
+                PatataLog.Bomb($"Throw rejected {thrower} (state={State}, carrier={Carrier})");
                 return false;
             }
 
@@ -126,7 +126,7 @@ namespace Beep
             SetCarrier(null);
             Transition(BombState.Thrown);
             bombPhysics.EnterThrown(origin, velocity);
-            BeepLog.Bomb($"Held -> Thrown carrier={thrower} speed={velocity.magnitude:F1}");
+            PatataLog.Bomb($"Held -> Thrown carrier={thrower} speed={velocity.magnitude:F1}");
             BombThrown?.Invoke(thrower);
             return true;
         }
@@ -136,7 +136,7 @@ namespace Beep
         {
             if (State != BombState.Thrown) return false;
 
-            if (ExplosionPending) BeepLog.Bomb($"Held lethal contact cancelled by a late catch ({pendingReason})");
+            if (ExplosionPending) PatataLog.Bomb($"Held lethal contact cancelled by a late catch ({pendingReason})");
             pendingExplosionAt = -1f;
             IntendedReceiver = null;
             SetCarrier(receiver);
@@ -144,7 +144,7 @@ namespace Beep
             fuse.Refresh();
             graceEndTime = Time.time + tuning.caughtGraceDuration;
             Transition(BombState.CaughtGrace);
-            BeepLog.Bomb($"Thrown -> CaughtGrace carrier={receiver}");
+            PatataLog.Bomb($"Thrown -> CaughtGrace carrier={receiver}");
             BombCaught?.Invoke(receiver);
             return true;
         }
@@ -212,7 +212,7 @@ namespace Beep
             pendingReason = reason;
             pendingDetail = detail;
             pendingExplosionAt = Time.time + hold;
-            BeepLog.Bomb($"Lethal contact held {hold * 1000f:F0} ms for a late catch ({reason} {detail})");
+            PatataLog.Bomb($"Lethal contact held {hold * 1000f:F0} ms for a late catch ({reason} {detail})");
         }
 
         void OnFuseExpired()
@@ -231,7 +231,7 @@ namespace Beep
             IntendedReceiver = null;
             bombPhysics.EnterInert();
             Transition(BombState.Exploding);
-            BeepLog.Bomb($"{from} -> Exploding reason={reason} {detail}");
+            PatataLog.Bomb($"{from} -> Exploding reason={reason} {detail}");
             BombExploded?.Invoke(reason, detail);
         }
 
@@ -257,7 +257,7 @@ namespace Beep
             bombPhysics.EnterHeld(carrier.HandAnchor);
             fuse.Refresh();
             Transition(BombState.Held);
-            BeepLog.Bomb($"Resetting -> Held carrier={carrier}");
+            PatataLog.Bomb($"Resetting -> Held carrier={carrier}");
         }
 
         // ------------------------------------------------------------------ remote mirroring
@@ -275,7 +275,7 @@ namespace Beep
             SetCarrier(carrier);
             if (newState == old) return;
 
-            BeepLog.Bomb($"(mirror) {old} -> {newState} carrier={carrier} lastThrower={lastThrower}");
+            PatataLog.Bomb($"(mirror) {old} -> {newState} carrier={carrier} lastThrower={lastThrower}");
             Transition(newState);
             if (newState == BombState.Thrown) BombThrown?.Invoke(lastThrower);
             else if (newState == BombState.CaughtGrace) BombCaught?.Invoke(carrier);

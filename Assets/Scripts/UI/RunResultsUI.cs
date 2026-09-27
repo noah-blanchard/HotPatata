@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// End-of-course screen: completion, run time and reset count, plus rematch. Shown to everyone from the

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>What the release-time aim assist did to one throw.</summary>
     public struct AssistResult

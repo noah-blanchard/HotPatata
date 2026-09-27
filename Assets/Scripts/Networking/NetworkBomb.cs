@@ -1,7 +1,7 @@
 using Unity.Netcode;
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// Replicates the bomb. The host runs the only real bomb (physics, fuse, catch resolution) and publishes

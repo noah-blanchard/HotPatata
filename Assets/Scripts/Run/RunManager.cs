@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     public enum RunState
     {
@@ -90,7 +90,7 @@ namespace Beep
                 if (Mirror && State != lastMirroredState)
                 {
                     lastMirroredState = State;
-                    BeepLog.Run($"(mirror) run state = {State} resets={ResetCount} time={RunTime:F1}s");
+                    PatataLog.Run($"(mirror) run state = {State} resets={ResetCount} time={RunTime:F1}s");
                 }
                 return;
             }
@@ -125,7 +125,7 @@ namespace Beep
             bomb.EndReset(CarrierForReset());
             SetPlayersLocked(false);
             Transition(RunState.Playing);
-            BeepLog.Run($"Run started with {Players.Count} players");
+            PatataLog.Run($"Run started with {Players.Count} players");
         }
 
         // ------------------------------------------------------------------ failure / reset
@@ -144,7 +144,7 @@ namespace Beep
             SetPlayersLocked(true);
             resetAtTime = Time.time + tuning.resetDelay;
             Transition(RunState.Failing);
-            BeepLog.Run($"Section fail reason={reason} {detail} (reset #{resetCount})");
+            PatataLog.Run($"Section fail reason={reason} {detail} (reset #{resetCount})");
         }
 
         void ResetSection()
@@ -158,7 +158,7 @@ namespace Beep
             }
 
             Transition(RunState.Resetting);
-            BeepLog.Run("Reset start");
+            PatataLog.Run("Reset start");
 
             foreach (var r in resettables) r.ResetState();   // falling platforms etc.
             sectionStart = NetMode.ServerTime;               // moving platforms / rotating bars restart their cycle
@@ -168,7 +168,7 @@ namespace Beep
             SetPlayersLocked(false);
 
             Transition(RunState.Playing);
-            BeepLog.Run("Reset end");
+            PatataLog.Run("Reset end");
         }
 
         // ------------------------------------------------------------------ checkpoints / completion
@@ -182,7 +182,7 @@ namespace Beep
             checkpoint = cp;
             // Normalise the bomb for the new section: this checkpoint's hold time, and a fresh window for whoever has it.
             bomb.Fuse.SetDurationOverride(cp.HoldFuseOverride);
-            BeepLog.Run($"Checkpoint {cp.Id} activated");
+            PatataLog.Run($"Checkpoint {cp.Id} activated");
             CheckpointActivated?.Invoke(cp);
         }
 
@@ -195,7 +195,7 @@ namespace Beep
             SetPlayersLocked(true);
             bomb.BeginReset();   // inert: nothing can explode after the finish
             Transition(RunState.Completed);
-            BeepLog.Run($"Course complete time={runTime:F1}s resets={resetCount}");
+            PatataLog.Run($"Course complete time={runTime:F1}s resets={resetCount}");
             RunCompleted?.Invoke(runTime);
         }
 
@@ -218,7 +218,7 @@ namespace Beep
             bomb.EndReset(CarrierForReset());
             SetPlayersLocked(false);
             Transition(RunState.Playing);
-            BeepLog.Run("Run restarted");
+            PatataLog.Run("Run restarted");
         }
 
         // ------------------------------------------------------------------ helpers

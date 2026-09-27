@@ -126,7 +126,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2c583483d15e3214cb64d8532d98efd6, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.RotatingObstacle
+  m_EditorClassIdentifier: HotPatata::HotPatata.RotatingObstacle
   axis: {x: 0, y: 1, z: 0}
   degreesPerSecond: 60
   phaseDegrees: 0

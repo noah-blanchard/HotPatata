@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// Development only. Records every flight (path, closest approach to each player, catch window state) and writes
@@ -165,7 +165,7 @@ namespace Beep
             }
 
             LastSummary = $"{Thrower} -> {outcome} after {flight:F2}s | {shot}{approach}";
-            BeepLog.Throw(LastSummary);
+            PatataLog.Throw(LastSummary);
         }
 
         static float Elevation(Vector3 v)

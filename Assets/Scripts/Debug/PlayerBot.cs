@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// A simple teammate bot for automated multiplayer runs and solo pass practice: when it holds the bomb it aims at
@@ -8,7 +8,7 @@ namespace Beep
     /// is flying toward it, it presses catch as it gets close. While not holding the bomb it can move in a
     /// <see cref="Pattern"/> so passes to a moving or jumping receiver can be practised alone.
     /// It plays through the same input path (and therefore the same network rules) as a human.
-    /// Enabled with the -beepBot command-line flag, or on the idle player in PassSandbox with F4 (dev builds).
+    /// Enabled with the -patataBot command-line flag, or on the idle player in PassSandbox with F4 (dev builds).
     /// </summary>
     [RequireComponent(typeof(Player))]
     public class PlayerBot : MonoBehaviour

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// Centre-screen feedback for the local player, drawn with IMGUI (prototype UI):

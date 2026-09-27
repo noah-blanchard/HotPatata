@@ -43,6 +43,6 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 04cc3df383027754492a1ef9617e6661, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.PlayerSpawn
+  m_EditorClassIdentifier: HotPatata::HotPatata.PlayerSpawn
   slot: 0
   gizmoColor: {r: 0, g: 1, b: 1, a: 1}

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// Lives in the Bootstrap scene. Makes sure the persistent network object (NetworkManager + transport +

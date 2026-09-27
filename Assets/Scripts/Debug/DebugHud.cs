@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>Prototype-only overlay: run/bomb state, carrier, fuse bar and the key bindings.</summary>
     public class DebugHud : MonoBehaviour

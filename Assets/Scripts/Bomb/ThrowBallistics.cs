@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// Pure maths of a thrown bomb: a plain ballistic arc under the bomb's own gravity (no drag, no steering).

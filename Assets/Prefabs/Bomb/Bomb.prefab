@@ -103,7 +103,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c330e905408fe0d40ac4629e0f1e50fd, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.BombFuse
+  m_EditorClassIdentifier: HotPatata::HotPatata.BombFuse
   tuning: {fileID: 11400000, guid: 35604efc4188ead42afe90813d44683f, type: 2}
 --- !u!114 &7265791048684793934
 MonoBehaviour:
@@ -116,7 +116,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ab2ea574b898a9447af72b8b58e6c74e, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.BombPhysics
+  m_EditorClassIdentifier: HotPatata::HotPatata.BombPhysics
   tuning: {fileID: 11400000, guid: 35604efc4188ead42afe90813d44683f, type: 2}
 --- !u!114 &883138894041679431
 MonoBehaviour:
@@ -129,7 +129,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bf9a339b2d976dd4eabedf3f53531bbc, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.CatchResolver
+  m_EditorClassIdentifier: HotPatata::HotPatata.CatchResolver
 --- !u!114 &7820380437575802060
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -141,7 +141,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e1f5a1f6b3b18694e87175b3273e0a00, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.BombController
+  m_EditorClassIdentifier: HotPatata::HotPatata.BombController
   tuning: {fileID: 11400000, guid: 35604efc4188ead42afe90813d44683f, type: 2}
   debugState: 4
   debugCarrier: '-'
@@ -254,7 +254,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5d808df4087136b46b78c26a1bb6d2c4, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.BombAudio
+  m_EditorClassIdentifier: HotPatata::HotPatata.BombAudio
   tuning: {fileID: 11400000, guid: 35604efc4188ead42afe90813d44683f, type: 2}
 --- !u!114 &6146846231687017979
 MonoBehaviour:
@@ -267,7 +267,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ec383d494058f3e4ebbc145ba0e2a6ed, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.BombPresentation
+  m_EditorClassIdentifier: HotPatata::HotPatata.BombPresentation
   bodyRenderer: {fileID: 7776809915477690082}
   visual: {fileID: 7497942771121259016}
   explosionMaterial: {fileID: 2100000, guid: 133b2d7f60ae23a49a0ea669b6bd1b04, type: 2}
@@ -311,7 +311,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5adfd37f550102d4799e5444088a5638, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.NetworkBomb
+  m_EditorClassIdentifier: HotPatata::HotPatata.NetworkBomb
   ShowTopMostFoldoutHeaderGroup: 1
 --- !u!114 &2293270824889259391
 MonoBehaviour:

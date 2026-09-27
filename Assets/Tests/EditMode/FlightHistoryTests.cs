@@ -1,7 +1,7 @@
 using NUnit.Framework;
 using UnityEngine;
 
-namespace Beep.Tests
+namespace HotPatata.Tests
 {
     /// <summary>The host's record of a flight, used to validate lag-compensated catches.</summary>
     public class FlightHistoryTests

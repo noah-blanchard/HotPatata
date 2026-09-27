@@ -1,7 +1,7 @@
 using Unity.Netcode;
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// Network face of a Player. The owning client drives movement and aim (its NetworkTransform is
@@ -43,10 +43,10 @@ namespace Beep
             ApplySlot(slot.Value);
 
             if (IsOwner) BecomeLocal();
-            BeepLog.Run($"Player spawned slot={slot.Value} owner={OwnerClientId} local={IsOwner}");
+            PatataLog.Run($"Player spawned slot={slot.Value} owner={OwnerClientId} local={IsOwner}");
         }
 
-        public override void OnNetworkDespawn() => BeepLog.Run($"Player despawned slot={slot.Value}");
+        public override void OnNetworkDespawn() => PatataLog.Run($"Player despawned slot={slot.Value}");
 
         void ApplySlot(int s)
         {

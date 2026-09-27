@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// A platform that ping-pongs between two waypoints at a constant speed. Its position is a pure

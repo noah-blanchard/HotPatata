@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// Activates once ALL players are inside its trigger volume. After that, a section reset returns the
@@ -44,7 +44,7 @@ namespace Beep
                 {
                     Activated = shouldBeActive;
                     Paint(shouldBeActive ? activeColor : inactiveColor);
-                    BeepLog.Run($"(mirror) checkpoint {id} {(shouldBeActive ? "active" : "inactive")}");
+                    PatataLog.Run($"(mirror) checkpoint {id} {(shouldBeActive ? "active" : "inactive")}");
                 }
             }
         }
