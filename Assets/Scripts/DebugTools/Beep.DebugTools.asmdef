@@ -3,6 +3,7 @@
     "rootNamespace": "Beep",
     "references": [
         "Beep",
+        "Unity.InputSystem",
         "Unity.Netcode.Runtime",
         "Unity.Multiplayer.Tools.NetworkSimulator.Runtime"
     ],

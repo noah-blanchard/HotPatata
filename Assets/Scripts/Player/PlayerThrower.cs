@@ -34,6 +34,11 @@ namespace Beep
         public Player LockTarget { get; private set; }
         public float LockQuality { get; private set; }
 
+        /// <summary>The throw you would make if you released now (local carrier only; Valid = false otherwise).</summary>
+        public ThrowShot Preview { get; private set; }
+        /// <summary>The most recent throw this player released (on the machine that computed it).</summary>
+        public ThrowShot LastShot { get; private set; }
+
         /// <summary>True while this player is the bomb's carrier (drives the charge UI).</summary>
         public bool HoldsBomb => bomb != null && bomb.Carrier == player;
 
@@ -126,9 +131,11 @@ namespace Beep
         {
             LockTarget = null;
             LockQuality = 0f;
+            Preview = default;
             if (bomb == null || bomb.Carrier != player || allPlayers == null) return;
 
             Vector3 origin = ThrowOriginNow();
+            Preview = ComputeShot(origin, Charge01);
             Vector3 velocity = ComputeThrowVelocity(origin, 0f);   // direction is the same for every charge
             if (HomingTargeting.TryPick(player.Tuning, origin, velocity, player, allPlayers, out var target, out _, out float quality))
             {
@@ -142,7 +149,9 @@ namespace Beep
             if (throwQueued || bomb == null || bomb.State != BombState.Held || bomb.Carrier != player) return false;
 
             Vector3 origin = ThrowOriginNow();
-            Vector3 velocity = ComputeThrowVelocity(origin, charge01);
+            var shot = ComputeShot(origin, charge01);
+            LastShot = shot;
+            Vector3 velocity = shot.Velocity;
 
             player.Animator?.ReleaseThrow();
             throwQueued = true;
@@ -188,14 +197,19 @@ namespace Beep
             Mathf.Lerp(t.throwSpeedMin, t.throwSpeedMax, Mathf.Clamp01(charge01));
 
         /// <summary>Deterministic: the same aim, charge and tuning always give the same velocity.</summary>
-        public Vector3 ComputeThrowVelocity(Vector3 origin, float charge01)
+        public Vector3 ComputeThrowVelocity(Vector3 origin, float charge01) => ComputeShot(origin, charge01).Velocity;
+
+        /// <summary>The full throw for this aim and charge: raw velocity, assisted velocity and the assist's reasons.</summary>
+        public ThrowShot ComputeShot(Vector3 origin, float charge01)
         {
             var t = player.Tuning;
             float speed = SpeedFor(t, charge01);
+            var shot = new ThrowShot { Valid = true, Charge01 = charge01, Speed = speed, Origin = origin };
 
             // 1. Where is the player aiming?
             Vector3 pivot = player.CameraTarget.position;
             Vector3 forward = player.Look.AimRotation * Vector3.forward;
+            shot.AimForward = forward;
             Vector3 aimPoint = Physics.Raycast(pivot, forward, out var hit, t.aimMaxDistance, aimMask, QueryTriggerInteraction.Ignore)
                 ? hit.point
                 : pivot + forward * t.aimMaxDistance;
@@ -207,18 +221,20 @@ namespace Beep
             Vector3 right = Vector3.Cross(Vector3.up, dir);
             if (right.sqrMagnitude > 1e-4f)
                 dir = Quaternion.AngleAxis(-t.throwUpAngle, right.normalized) * dir;
+            shot.RawVelocity = dir * speed;
 
             // 3. Optional small assist toward a nearby receiver.
-            dir = ApplyAimAssist(origin, dir, speed, t);
-
-            return dir * speed;
+            Vector3 assisted = ApplyAimAssist(origin, dir, speed, t, ref shot);
+            shot.AssistCorrection = Vector3.Angle(dir, assisted);
+            shot.Velocity = assisted * speed;
+            return shot;
         }
 
-        Vector3 ApplyAimAssist(Vector3 origin, Vector3 dir, float speed, GameTuning t)
+        Vector3 ApplyAimAssist(Vector3 origin, Vector3 dir, float speed, GameTuning t, ref ThrowShot shot)
         {
             if (allPlayers == null || t.aimAssistStrength <= 0f) return dir;
 
-            float g = -Physics.gravity.y * t.bombGravityScale;
+            float g = ThrowBallistics.Gravity(t);
             Vector3? best = null;
             float bestAngle = t.aimAssistAngle;
 
@@ -228,34 +244,19 @@ namespace Beep
 
                 Vector3 to = other.CatchVolume.CatchCenter - origin;
                 if (to.magnitude > t.aimAssistDistance) continue;
-                if (!TrySolveBallistic(to, speed, g, out Vector3 solved)) continue;
+                if (!ThrowBallistics.TrySolveLowArc(to, speed, g, out Vector3 solved, out _)) continue;
 
                 float angle = Vector3.Angle(dir, solved);
                 if (angle <= bestAngle)
                 {
                     bestAngle = angle;
                     best = solved;
+                    shot.AssistTarget = other;
+                    shot.AssistAngle = angle;
                 }
             }
 
             return best.HasValue ? Vector3.Slerp(dir, best.Value, t.aimAssistStrength).normalized : dir;
-        }
-
-        /// <summary>Low-arc launch direction that reaches <paramref name="to"/> at the given speed.</summary>
-        static bool TrySolveBallistic(Vector3 to, float speed, float gravity, out Vector3 direction)
-        {
-            direction = default;
-            var flat = new Vector3(to.x, 0f, to.z);
-            float d = flat.magnitude;
-            if (d < 0.5f || gravity <= 0f) return false;
-
-            float v2 = speed * speed;
-            float disc = v2 * v2 - gravity * (gravity * d * d + 2f * to.y * v2);
-            if (disc < 0f) return false;
-
-            float tanTheta = (v2 - Mathf.Sqrt(disc)) / (gravity * d);
-            direction = (flat.normalized + Vector3.up * tanTheta).normalized;
-            return true;
         }
     }
 }
