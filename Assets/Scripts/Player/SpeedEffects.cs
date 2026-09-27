@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// Speed you can see and hear, driven by the followed player's <see cref="PlayerViewFeel"/>:

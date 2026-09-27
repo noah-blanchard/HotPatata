@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// CharacterController-based first-person motor: fast accel/brake, moderate air control,

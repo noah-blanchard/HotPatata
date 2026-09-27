@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// Stateless "who is standing in this zone right now" query. It re-evaluates every call, so it stays

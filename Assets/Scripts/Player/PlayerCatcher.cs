@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// Catching is a timed action, never automatic. Pressing catch opens a short window
@@ -107,7 +107,7 @@ namespace Beep
             windowEnd = Time.time + t.catchWindowDuration;
             cooldownEnd = windowEnd + t.catchCooldown;
             claimSent = false;
-            BeepLog.Bomb($"Catch window open {player} ({t.catchWindowDuration:F2}s)");
+            PatataLog.Bomb($"Catch window open {player} ({t.catchWindowDuration:F2}s)");
             return true;
         }
 
@@ -154,7 +154,7 @@ namespace Beep
 
         void DeliverHint(string text)
         {
-            BeepLog.Bomb($"Catch hint for {player}: {text} (rtt {NetMode.RttMs} ms)");
+            PatataLog.Bomb($"Catch hint for {player}: {text} (rtt {NetMode.RttMs} ms)");
             if (IsRemotelyOwned) player.Net.SendHint(text);
             else ReceiveHint(text);
         }

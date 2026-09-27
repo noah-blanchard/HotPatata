@@ -1,7 +1,7 @@
 using Unity.Netcode;
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// Creates the players. Offline it builds the two-player local test rig; online the host spawns exactly
@@ -63,7 +63,7 @@ namespace Beep
             var go = Instantiate(playerPrefab, position, rotation);
             go.GetComponent<NetworkPlayer>().InitialSlot = slot;
             go.GetComponent<NetworkObject>().SpawnAsPlayerObject(clientId, destroyWithScene: true);
-            BeepLog.Run($"Spawned player slot {slot} for client {clientId}");
+            PatataLog.Run($"Spawned player slot {slot} for client {clientId}");
         }
 
         int FirstFreeSlot()

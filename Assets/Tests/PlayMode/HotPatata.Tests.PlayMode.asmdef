@@ -1,13 +1,13 @@
 {
-    "name": "Beep.Tests.PlayMode",
-    "rootNamespace": "Beep.Tests",
+    "name": "HotPatata.Tests.PlayMode",
+    "rootNamespace": "HotPatata.Tests",
     "references": [
         "UnityEngine.TestRunner",
         "Unity.InputSystem",
         "Unity.InputSystem.TestFramework",
         "Unity.RenderPipelines.Core.Runtime",
         "Unity.RenderPipelines.Universal.Runtime",
-        "Beep"
+        "HotPatata"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

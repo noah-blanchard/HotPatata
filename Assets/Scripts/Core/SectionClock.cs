@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// The single time base for gameplay-critical level motion. It restarts on every section reset, so a

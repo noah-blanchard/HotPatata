@@ -1,12 +1,12 @@
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// Single home for every gameplay tuning value (PROJECT_SPEC §20/§21).
     /// Gameplay scripts read from this asset; they never hard-code these numbers.
     /// </summary>
-    [CreateAssetMenu(fileName = "GameTuning", menuName = "BEEP/Game Tuning")]
+    [CreateAssetMenu(fileName = "GameTuning", menuName = "HotPatata/Game Tuning")]
     public class GameTuning : ScriptableObject
     {
         [Header("Movement")]

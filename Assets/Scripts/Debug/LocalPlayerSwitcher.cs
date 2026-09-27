@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// Offline pass-sandbox test rig: a single keyboard/mouse drives ONE player at a time and the camera

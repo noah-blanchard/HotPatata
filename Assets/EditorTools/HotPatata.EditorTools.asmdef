@@ -1,8 +1,8 @@
 {
-    "name": "Beep.EditorTools",
-    "rootNamespace": "Beep.Editor",
+    "name": "HotPatata.EditorTools",
+    "rootNamespace": "HotPatata.Editor",
     "references": [
-        "Beep"
+        "HotPatata"
     ],
     "includePlatforms": [
         "Editor"

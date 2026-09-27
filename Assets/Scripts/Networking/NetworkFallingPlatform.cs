@@ -1,6 +1,6 @@
 using Unity.Netcode;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>Replicates the moment a falling platform was triggered; every machine derives the same animation from it.</summary>
     [UnityEngine.RequireComponent(typeof(FallingPlatform))]
@@ -23,7 +23,7 @@ namespace Beep
                 triggerTime.OnValueChanged += (_, t) =>
                 {
                     platform.SetTriggerTime(t, false);
-                    BeepLog.Run($"(mirror) {name} trigger time = {t:F2}");
+                    PatataLog.Run($"(mirror) {name} trigger time = {t:F2}");
                 };
                 platform.SetTriggerTime(triggerTime.Value, false);
             }

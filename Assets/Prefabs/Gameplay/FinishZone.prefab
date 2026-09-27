@@ -188,5 +188,5 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3b4c9aab0bb34ae48a00eeeec7f15e38, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.FinishZone
+  m_EditorClassIdentifier: HotPatata::HotPatata.FinishZone
   trigger: {fileID: 6072644137200175576}

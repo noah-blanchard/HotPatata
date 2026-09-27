@@ -3,7 +3,7 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
 
-namespace Beep.Tests
+namespace HotPatata.Tests
 {
     /// <summary>M5: the PrototypeCourse - structure, checkpoints, finish, rematch, the launch pad beat.</summary>
     public class CourseTests : SandboxTestBase

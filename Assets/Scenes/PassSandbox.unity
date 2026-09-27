@@ -147,7 +147,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4581e376d8fee224b8afb6a67a2e8395, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.PlayerSpawner
+  m_EditorClassIdentifier: HotPatata::HotPatata.PlayerSpawner
   playerPrefab: {fileID: 8153791677947162974, guid: 3a9579038b586ef469fb96d3c7e9133a, type: 3}
   offlinePlayers: 2
   maxPlayers: 4
@@ -920,7 +920,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 565fda7d8aee4e74c956af01ae8ddde5, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.RunManager
+  m_EditorClassIdentifier: HotPatata::HotPatata.RunManager
   tuning: {fileID: 11400000, guid: 35604efc4188ead42afe90813d44683f, type: 2}
   bomb: {fileID: 1475634968}
   spawns:
@@ -969,7 +969,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 54882a4d9d47ba94493454c98578e585, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.NetworkRunState
+  m_EditorClassIdentifier: HotPatata::HotPatata.NetworkRunState
   ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1001 &669051493
 PrefabInstance:
@@ -1812,7 +1812,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e1f5a1f6b3b18694e87175b3273e0a00, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.BombController
+  m_EditorClassIdentifier: HotPatata::HotPatata.BombController
 --- !u!1 &1581619709
 GameObject:
   m_ObjectHideFlags: 0
@@ -1856,7 +1856,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 04cc3df383027754492a1ef9617e6661, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.PlayerSpawn
+  m_EditorClassIdentifier: HotPatata::HotPatata.PlayerSpawn
   slot: 1
   gizmoColor: {r: 0.2, g: 0.8, b: 1, a: 1}
 --- !u!1 &1621787544
@@ -1902,7 +1902,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 04cc3df383027754492a1ef9617e6661, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.PlayerSpawn
+  m_EditorClassIdentifier: HotPatata::HotPatata.PlayerSpawn
   slot: 0
   gizmoColor: {r: 1, g: 0.55, b: 0.1, a: 1}
 --- !u!1 &1735084069
@@ -2176,7 +2176,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0f1743b22a80c704eae0c96a2f31e6d2, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.ThirdPersonCamera
+  m_EditorClassIdentifier: HotPatata::HotPatata.ThirdPersonCamera
   target: {fileID: 0}
   tuning: {fileID: 11400000, guid: 35604efc4188ead42afe90813d44683f, type: 2}
 --- !u!81 &1922516123
@@ -2264,7 +2264,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8f1e9467702051e47864ee77b049044c, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.SpeedEffects
+  m_EditorClassIdentifier: HotPatata::HotPatata.SpeedEffects
   tuning: {fileID: 11400000, guid: 35604efc4188ead42afe90813d44683f, type: 2}
 --- !u!1 &1977614216
 GameObject:
@@ -2309,7 +2309,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 04cc3df383027754492a1ef9617e6661, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.PlayerSpawn
+  m_EditorClassIdentifier: HotPatata::HotPatata.PlayerSpawn
   slot: 2
   gizmoColor: {r: 0.6, g: 1, b: 0.3, a: 1}
 --- !u!1 &2049322983
@@ -2355,7 +2355,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 04cc3df383027754492a1ef9617e6661, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.PlayerSpawn
+  m_EditorClassIdentifier: HotPatata::HotPatata.PlayerSpawn
   slot: 3
   gizmoColor: {r: 1, g: 0.4, b: 0.8, a: 1}
 --- !u!1 &2051546668
@@ -2389,7 +2389,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8353876c6d7291c4292f0f490bf461eb, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.LocalPlayerSwitcher
+  m_EditorClassIdentifier: HotPatata::HotPatata.LocalPlayerSwitcher
   cam: {fileID: 1922516122}
   lockCursor: 1
 --- !u!4 &2051546670
@@ -2418,7 +2418,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bed5bdc3b08764e489d7b3b7ddd581cd, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.AimReticle
+  m_EditorClassIdentifier: HotPatata::HotPatata.AimReticle
   cam: {fileID: 1922516122}
   crosshairColor: {r: 1, g: 1, b: 1, a: 0.9}
 --- !u!114 &2051546672
@@ -2432,7 +2432,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ce4c0cb84c0ada54988193cc6e2afe7c, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.DebugHud
+  m_EditorClassIdentifier: HotPatata::HotPatata.DebugHud
   run: {fileID: 577991561}
   switcher: {fileID: 2051546669}
   visible: 1
@@ -2447,7 +2447,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: daf6b1efdcba46b4791f072b2ec7e371, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.RunResultsUI
+  m_EditorClassIdentifier: HotPatata::HotPatata.RunResultsUI
 --- !u!1 &2118007042
 GameObject:
   m_ObjectHideFlags: 0

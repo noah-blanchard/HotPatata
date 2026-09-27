@@ -65,4 +65,4 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 83b2db5f272782b45b0c6aa68df7d772, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.KillZone
+  m_EditorClassIdentifier: HotPatata::HotPatata.KillZone

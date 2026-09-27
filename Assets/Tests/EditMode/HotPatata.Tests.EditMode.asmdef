@@ -1,12 +1,12 @@
 {
-    "name": "Beep.Tests.EditMode",
-    "rootNamespace": "Beep.Tests",
+    "name": "HotPatata.Tests.EditMode",
+    "rootNamespace": "HotPatata.Tests",
     "references": [
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
         "Unity.InputSystem",
         "Unity.Services.Multiplayer",
-        "Beep"
+        "HotPatata"
     ],
     "includePlatforms": [
         "Editor"

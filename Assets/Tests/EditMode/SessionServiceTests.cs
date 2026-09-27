@@ -1,7 +1,7 @@
 using NUnit.Framework;
 using Unity.Services.Multiplayer;
 
-namespace Beep.Tests
+namespace HotPatata.Tests
 {
     /// <summary>M4: how game codes are cleaned up and how errors are worded for players.</summary>
     public class SessionServiceTests

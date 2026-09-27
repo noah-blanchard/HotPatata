@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// The "feel" of moving in first person, computed for the local player only and applied through

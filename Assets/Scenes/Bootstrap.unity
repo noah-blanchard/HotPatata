@@ -239,7 +239,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 15fb86eb2251797468bcc7bf80e82ce4, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.BootstrapEntry
+  m_EditorClassIdentifier: HotPatata::HotPatata.BootstrapEntry
   networkPrefab: {fileID: 5564819347932985297, guid: cd9b06122ef465b4ca950873534875ca, type: 3}
 --- !u!4 &1498981423
 Transform:

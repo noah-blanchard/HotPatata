@@ -1,4 +1,4 @@
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// Implemented by stateful level objects (falling platforms, ...). The RunManager calls

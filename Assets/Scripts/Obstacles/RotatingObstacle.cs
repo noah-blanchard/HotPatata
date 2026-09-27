@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// Continuously rotates around an axis. The angle is a pure function of <see cref="SectionClock"/>,

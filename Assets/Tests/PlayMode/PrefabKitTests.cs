@@ -3,7 +3,7 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
 
-namespace Beep.Tests
+namespace HotPatata.Tests
 {
     /// <summary>M2: the reusable greybox kit (moving / falling platforms, rotating bar, kill zone, checkpoint, finish zone).</summary>
     public class PrefabKitTests : SandboxTestBase

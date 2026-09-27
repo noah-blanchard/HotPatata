@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// Soft homing (PROJECT_SPEC §8.3): which player, if any, a throw is bent toward, and how strongly.

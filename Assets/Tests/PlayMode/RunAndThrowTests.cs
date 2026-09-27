@@ -3,7 +3,7 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
 
-namespace Beep.Tests
+namespace HotPatata.Tests
 {
     /// <summary>M1.5 throw by input and M1.10 fast, clean section reset (RunManager enabled).</summary>
     public class RunAndThrowTests : SandboxTestBase

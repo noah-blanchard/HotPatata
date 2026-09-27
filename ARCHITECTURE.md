@@ -1,4 +1,4 @@
-# BEEP! — ARCHITECTURE.md
+# HotPatata — ARCHITECTURE.md
 
 > This document defines the intended technical structure for the MVP.  
 > `PROJECT_SPEC.md` is the gameplay source of truth.  

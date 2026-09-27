@@ -100,7 +100,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 14fb1d15ff4284a4ea9db26e3a87d4d7, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.FallingPlatform
+  m_EditorClassIdentifier: HotPatata::HotPatata.FallingPlatform
   body: {fileID: 2736436281769329209}
   trigger: {fileID: 1605399778441462829}
   warningDelay: 0.6
@@ -145,7 +145,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6e07d3f88af729b4589c6df7cdb79c23, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.NetworkFallingPlatform
+  m_EditorClassIdentifier: HotPatata::HotPatata.NetworkFallingPlatform
   ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &2426117769132703869
 GameObject:

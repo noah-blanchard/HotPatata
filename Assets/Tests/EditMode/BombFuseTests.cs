@@ -1,7 +1,7 @@
 using NUnit.Framework;
 using UnityEngine;
 
-namespace Beep.Tests
+namespace HotPatata.Tests
 {
     /// <summary>Fuse maths (ARCHITECTURE §18.1): refresh, expiry, warning phase and stage bands.</summary>
     public class BombFuseTests

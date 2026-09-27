@@ -2,7 +2,7 @@ using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
 
-namespace Beep.Tests
+namespace HotPatata.Tests
 {
     /// <summary>M0: project baseline - tuning defaults, layers and the collision matrix.</summary>
     public class ConfigurationTests
@@ -74,7 +74,7 @@ namespace Beep.Tests
         [Test]
         public void InputActions_HaveTheGameplayActions()
         {
-            var asset = AssetDatabase.LoadAssetAtPath<UnityEngine.InputSystem.InputActionAsset>("Assets/BeepControls.inputactions");
+            var asset = AssetDatabase.LoadAssetAtPath<UnityEngine.InputSystem.InputActionAsset>("Assets/HotPatataControls.inputactions");
             Assert.IsNotNull(asset);
             var map = asset.FindActionMap("Player");
             Assert.IsNotNull(map);

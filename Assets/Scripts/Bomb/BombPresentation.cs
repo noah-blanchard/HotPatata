@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// Emissive pulse that mirrors the beep, catch pop, and a placeholder explosion flash. The visual also moves

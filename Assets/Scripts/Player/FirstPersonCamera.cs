@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// First-person camera: sits exactly at <see cref="Target"/>'s CameraTarget (the eyes) and looks

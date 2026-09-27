@@ -218,7 +218,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8ddcccf8d96b0eb49aa0a2b00edd68a0, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Beep::Beep.PlayerCatchVolume
+  m_EditorClassIdentifier: HotPatata::HotPatata.PlayerCatchVolume
 --- !u!1 &6511246212282715446
 GameObject:
   m_ObjectHideFlags: 0
@@ -335,7 +335,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 07c71c2d5e21c3946925c28844dcbf8d, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.Player
+  m_EditorClassIdentifier: HotPatata::HotPatata.Player
   playerId: 0
   displayName: Player
   color: {r: 1, g: 1, b: 1, a: 1}
@@ -356,7 +356,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3387105eea7c6784590fae86240ca74b, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.PlayerInputReader
+  m_EditorClassIdentifier: HotPatata::HotPatata.PlayerInputReader
   actionsAsset: {fileID: -944628639613478452, guid: 22888c0b5cdb84f4298efeb2d867145a, type: 3}
   initialSource: 0
   gamepadIndex: 0
@@ -371,7 +371,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d2de7b05bf512394590ecaf7ac3f696c, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.PlayerMotor
+  m_EditorClassIdentifier: HotPatata::HotPatata.PlayerMotor
 --- !u!114 &7028011039714512708
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -383,7 +383,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7a34fb7fe8892184ab6c4cede7ae73d2, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.PlayerLook
+  m_EditorClassIdentifier: HotPatata::HotPatata.PlayerLook
 --- !u!114 &8533199576086021940
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -395,7 +395,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 92d8e7c961d3525408e6c6a37f05b2ad, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.PlayerThrower
+  m_EditorClassIdentifier: HotPatata::HotPatata.PlayerThrower
 --- !u!114 &2280057609542735823
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -407,7 +407,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d9c6d55c26eb418429e971d28cc20d22, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.PlayerPresentation
+  m_EditorClassIdentifier: HotPatata::HotPatata.PlayerPresentation
   bodyRenderer: {fileID: 7592926721997933922}
   carrierIndicator: {fileID: 4339340131950625646}
   bobHeight: 0.12
@@ -424,7 +424,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d7c7d4defcb93014a90426367442824e, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.PlayerCatcher
+  m_EditorClassIdentifier: HotPatata::HotPatata.PlayerCatcher
 --- !u!114 &1298232167362216217
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -463,7 +463,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c5773d0f606a3c54ab933cc4785c1e4a, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.NetworkPlayer
+  m_EditorClassIdentifier: HotPatata::HotPatata.NetworkPlayer
   ShowTopMostFoldoutHeaderGroup: 1
 --- !u!114 &4555157243693248790
 MonoBehaviour:
@@ -522,7 +522,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 29d1475e0f4fb4b49927276a348ca833, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.PlayerViewFeel
+  m_EditorClassIdentifier: HotPatata::HotPatata.PlayerViewFeel
 --- !u!114 &762283682691296354
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -534,7 +534,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f70b2f3594c34a94eb916cf9bd153b5a, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Beep::Beep.PlayerAnimator
+  m_EditorClassIdentifier: HotPatata::HotPatata.PlayerAnimator
   animator: {fileID: 3401330428964523452}
   leftHand: {fileID: 2879003184998146360}
   rightHand: {fileID: 6277396219896249479}
