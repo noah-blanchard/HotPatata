@@ -118,7 +118,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4a92573cfa57c3449a853f7e7d5a02c7, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.NetworkBootstrap
+  m_EditorClassIdentifier: HotPatata::HotPatata.NetworkBootstrap
   menuScene: Bootstrap
   gameplayScene: PassSandbox
   port: 7777

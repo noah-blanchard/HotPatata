@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// The receiver's catch region: a trigger sphere on the PlayerCatch layer at upper-torso height,

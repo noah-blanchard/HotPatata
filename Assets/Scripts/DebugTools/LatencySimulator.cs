@@ -1,12 +1,12 @@
 using Unity.Multiplayer.Tools.NetworkSimulator.Runtime;
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// Debug only (Editor and development builds): delays every packet this machine sends, using Unity's Network
     /// Simulator from the Multiplayer Tools package. Triggered by <see cref="NetworkBootstrap.SimulateLatency"/>
-    /// (the -beepLatency flag). Lives in its own assembly so release builds never reference the tools package.
+    /// (the -patataLatency flag). Lives in its own assembly so release builds never reference the tools package.
     /// </summary>
     static class LatencySimulator
     {
@@ -18,12 +18,12 @@ namespace Beep
             var simulator = networkObject.GetComponent<NetworkSimulator>() ?? networkObject.AddComponent<NetworkSimulator>();
             simulator.ConnectionPreset = new NetworkSimulatorPreset
             {
-                Name = "Beep debug latency",
+                Name = "HotPatata debug latency",
                 PacketDelayMs = milliseconds,
                 PacketJitterMs = milliseconds / 5,
                 PacketLossPercent = 0
             };
-            BeepLog.Run($"Simulating {milliseconds} ms one-way latency (+/-{milliseconds / 5} ms jitter)");
+            PatataLog.Run($"Simulating {milliseconds} ms one-way latency (+/-{milliseconds / 5} ms jitter)");
         }
     }
 }

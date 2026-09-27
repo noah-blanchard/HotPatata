@@ -1,11 +1,11 @@
 using System;
 using System.Linq;
-using Beep;
+using HotPatata;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
 
-namespace Beep.Editor
+namespace HotPatata.Editor
 {
     /// <summary>Creates and maintains the mannequin/animation setup on the Player prefab.</summary>
     [InitializeOnLoad]
@@ -23,7 +23,7 @@ namespace Beep.Editor
             EditorApplication.delayCall += SetupIfNeeded;
         }
 
-        [MenuItem("BEEP!/Setup Player Mannequin & Animations")]
+        [MenuItem("HotPatata/Setup Player Mannequin & Animations")]
         public static void Setup()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode) return;

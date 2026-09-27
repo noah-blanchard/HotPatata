@@ -5,7 +5,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.TestTools;
 
-namespace Beep.Tests
+namespace HotPatata.Tests
 {
     /// <summary>First-person speed feel: progressive acceleration, FOV, lean, bob/dip, post effects, accessibility.</summary>
     public class ViewFeelTests : SandboxTestBase

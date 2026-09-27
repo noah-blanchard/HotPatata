@@ -1,8 +1,8 @@
 {
-    "name": "Beep.DebugTools",
-    "rootNamespace": "Beep",
+    "name": "HotPatata.DebugTools",
+    "rootNamespace": "HotPatata",
     "references": [
-        "Beep",
+        "HotPatata",
         "Unity.Netcode.Runtime",
         "Unity.Multiplayer.Tools.NetworkSimulator.Runtime"
     ],

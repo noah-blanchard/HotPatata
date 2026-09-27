@@ -4,7 +4,7 @@ using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// Session startup and the lobby (Milestone 4). Lives on the NetworkManager object, which persists across
@@ -18,10 +18,10 @@ namespace Beep
     /// Online games go through Unity Multiplayer Services (Relay), see <see cref="SessionService"/>.
     ///
     /// Command line (automated runs and second instances):
-    ///   -beepHost | -beepJoin &lt;ip&gt; | -beepLocal      direct IP / local
-    ///   -beepHostOnline | -beepJoinCode &lt;code&gt;         online session
-    ///   -beepAutoStart &lt;n&gt;                             host starts the level once n players are in the lobby
-    ///   -beepBot   -beepScene &lt;name&gt;   -beepQuit &lt;s&gt;   -beepLatency &lt;ms&gt;
+    ///   -patataHost | -patataJoin &lt;ip&gt; | -patataLocal      direct IP / local
+    ///   -patataHostOnline | -patataJoinCode &lt;code&gt;         online session
+    ///   -patataAutoStart &lt;n&gt;                             host starts the level once n players are in the lobby
+    ///   -patataBot   -patataScene &lt;name&gt;   -patataQuit &lt;s&gt;   -patataLatency &lt;ms&gt;
     /// </summary>
     [DefaultExecutionOrder(-1000)]
     public class NetworkBootstrap : MonoBehaviour
@@ -79,7 +79,7 @@ namespace Beep
 
             nm.OnServerStarted += OnServerStarted;
             nm.OnClientDisconnectCallback += OnClientDisconnected;
-            nm.OnClientConnectedCallback += id => BeepLog.Run($"Client {id} connected (local={id == nm.LocalClientId})");
+            nm.OnClientConnectedCallback += id => PatataLog.Run($"Client {id} connected (local={id == nm.LocalClientId})");
             sessions.Ended += reason => { if (!leaving) _ = LeaveAsync(reason); };
 
             ParseCommandLine();
@@ -99,21 +99,21 @@ namespace Beep
             {
                 switch (args[i])
                 {
-                    case "-beepBot": PlayerBot.Enabled = true; break;
-                    case "-beepScene" when i + 1 < args.Length: sceneIndex = Mathf.Max(0, Array.IndexOf(gameplayScenes, args[i + 1])); break;
-                    case "-beepLatency" when i + 1 < args.Length && int.TryParse(args[i + 1], out int ms): SimulateLatency(ms); break;
-                    case "-beepAutoStart" when i + 1 < args.Length && int.TryParse(args[i + 1], out int n): autoStartPlayers = n; break;
-                    case "-beepLeaveAfter" when i + 1 < args.Length && float.TryParse(args[i + 1], out float leaveIn): Invoke(nameof(AutoLeave), leaveIn); break;
-                    case "-beepQuit" when i + 1 < args.Length && float.TryParse(args[i + 1], out float s): Invoke(nameof(Quit), s); break;
+                    case "-patataBot": PlayerBot.Enabled = true; break;
+                    case "-patataScene" when i + 1 < args.Length: sceneIndex = Mathf.Max(0, Array.IndexOf(gameplayScenes, args[i + 1])); break;
+                    case "-patataLatency" when i + 1 < args.Length && int.TryParse(args[i + 1], out int ms): SimulateLatency(ms); break;
+                    case "-patataAutoStart" when i + 1 < args.Length && int.TryParse(args[i + 1], out int n): autoStartPlayers = n; break;
+                    case "-patataLeaveAfter" when i + 1 < args.Length && float.TryParse(args[i + 1], out float leaveIn): Invoke(nameof(AutoLeave), leaveIn); break;
+                    case "-patataQuit" when i + 1 < args.Length && float.TryParse(args[i + 1], out float s): Invoke(nameof(Quit), s); break;
                 }
             }
             for (int i = 0; i < args.Length; i++)
             {
-                if (args[i] == "-beepHost") { StartHostDirect(); break; }
-                if (args[i] == "-beepJoin" && i + 1 < args.Length) { StartClientDirect(args[i + 1]); break; }
-                if (args[i] == "-beepHostOnline") { _ = HostOnlineAsync(); break; }
-                if (args[i] == "-beepJoinCode" && i + 1 < args.Length) { _ = JoinCodeAsync(args[i + 1]); break; }
-                if (args[i] == "-beepLocal") { PlayLocal(); break; }
+                if (args[i] == "-patataHost") { StartHostDirect(); break; }
+                if (args[i] == "-patataJoin" && i + 1 < args.Length) { StartClientDirect(args[i + 1]); break; }
+                if (args[i] == "-patataHostOnline") { _ = HostOnlineAsync(); break; }
+                if (args[i] == "-patataJoinCode" && i + 1 < args.Length) { _ = JoinCodeAsync(args[i + 1]); break; }
+                if (args[i] == "-patataLocal") { PlayLocal(); break; }
             }
         }
 
@@ -192,12 +192,12 @@ namespace Beep
                 var session = await sessions.HostAsync();
                 mode = Mode.Lobby;
                 status = "";
-                BeepLog.Run($"[Session] lobby open, code {session.Code}");
+                PatataLog.Run($"[Session] lobby open, code {session.Code}");
             }
             catch (Exception e)
             {
                 Fail(SessionService.Describe(e));
-                BeepLog.Run($"[Session] host failed: {message}");
+                PatataLog.Run($"[Session] host failed: {message}");
                 await sessions.LeaveAsync();
             }
         }
@@ -212,7 +212,7 @@ namespace Beep
             if (!SessionService.IsPlausibleCode(code))
             {
                 Fail($"A game code has {SessionService.CodeLength} letters or digits.");
-                BeepLog.Run($"[Session] join failed: {message}");
+                PatataLog.Run($"[Session] join failed: {message}");
                 return;
             }
 
@@ -223,12 +223,12 @@ namespace Beep
                 var session = await sessions.JoinAsync(code);
                 mode = Mode.Lobby;
                 status = "";
-                BeepLog.Run($"[Session] joined lobby {session.Code}");
+                PatataLog.Run($"[Session] joined lobby {session.Code}");
             }
             catch (Exception e)
             {
                 Fail(SessionService.Describe(e));
-                BeepLog.Run($"[Session] join failed: {message}");
+                PatataLog.Run($"[Session] join failed: {message}");
                 await sessions.LeaveAsync();
             }
         }
@@ -237,7 +237,7 @@ namespace Beep
         public void StartLevel()
         {
             if (mode != Mode.Lobby || !nm.IsServer) return;
-            BeepLog.Run($"[Session] starting {GameplayScene} with {nm.ConnectedClientsIds.Count} connected");
+            PatataLog.Run($"[Session] starting {GameplayScene} with {nm.ConnectedClientsIds.Count} connected");
             nm.SceneManager.LoadScene(GameplayScene, LoadSceneMode.Single);
         }
 
@@ -256,7 +256,7 @@ namespace Beep
                 Cursor.visible = true;
                 mode = Mode.Menu;
                 message = reason ?? "";
-                BeepLog.Run($"[Session] left{(string.IsNullOrEmpty(reason) ? "" : ": " + reason)}");
+                PatataLog.Run($"[Session] left{(string.IsNullOrEmpty(reason) ? "" : ": " + reason)}");
                 if (SceneManager.GetActiveScene().name != menuScene) SceneManager.LoadScene(menuScene);
             }
             finally
@@ -267,7 +267,7 @@ namespace Beep
 
         void OnClientDisconnected(ulong clientId)
         {
-            BeepLog.Run($"Client {clientId} disconnected");
+            PatataLog.Run($"Client {clientId} disconnected");
             // On a client this fires for its own connection ending (host left, kicked, network lost).
             // On the host it fires for every client that leaves; the host itself just carries on.
             if (nm.IsServer && clientId != nm.LocalClientId) return;
@@ -284,7 +284,7 @@ namespace Beep
             mode = Mode.Menu;
         }
 
-        /// <summary>Raised when latency simulation is requested; handled by Beep.DebugTools (Editor / development builds only).</summary>
+        /// <summary>Raised when latency simulation is requested; handled by HotPatata.DebugTools (Editor / development builds only).</summary>
         public static event Action<GameObject, int> LatencyRequested;
 
         /// <summary>Debug only: delay every packet this side sends by <paramref name="milliseconds"/>.</summary>

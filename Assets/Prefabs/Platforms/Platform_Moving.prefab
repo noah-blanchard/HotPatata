@@ -46,7 +46,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9a83f8e16981625479a67f5f9c803349, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Beep::Beep.MovingPlatform
+  m_EditorClassIdentifier: HotPatata::HotPatata.MovingPlatform
   platform: {fileID: 985515510173267266}
   waypointA: {fileID: 4770014169595161717}
   waypointB: {fileID: 7419368407652684782}

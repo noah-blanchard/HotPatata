@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// Throws a player standing on it straight up so they reach <see cref="launchHeight"/> metres. Used for the
@@ -27,7 +27,7 @@ namespace Beep
 
                 lastLaunch[p] = Time.time;
                 p.Motor.Launch(Mathf.Sqrt(2f * p.Tuning.gravity * launchHeight));
-                BeepLog.Run($"{name} launched {p}");
+                PatataLog.Run($"{name} launched {p}");
             }
         }
     }

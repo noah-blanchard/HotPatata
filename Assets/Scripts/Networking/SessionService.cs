@@ -5,7 +5,7 @@ using Unity.Services.Authentication;
 using Unity.Services.Core;
 using Unity.Services.Multiplayer;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// Online sessions through Unity's Multiplayer Services: create a game (Relay-backed, no port forwarding),
@@ -136,7 +136,7 @@ namespace Beep
             session.PlayerHasLeft += OnPlayer;
             session.Deleted += OnDeleted;
             session.RemovedFromSession += OnRemoved;
-            BeepLog.Run($"[Session] {(session.IsHost ? "hosting" : "joined")} code={session.Code} players={session.PlayerCount}");
+            PatataLog.Run($"[Session] {(session.IsHost ? "hosting" : "joined")} code={session.Code} players={session.PlayerCount}");
         }
 
         void Detach()

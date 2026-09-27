@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// Placeholder sound effects synthesised at runtime, so the sandbox has distinct beep / catch /

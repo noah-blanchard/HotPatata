@@ -3,7 +3,7 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
 
-namespace Beep.Tests
+namespace HotPatata.Tests
 {
     /// <summary>Soft homing: a throw is bent toward the receiver near your aim, imperfectly; catching stays timed.</summary>
     public class HomingTests : SandboxTestBase

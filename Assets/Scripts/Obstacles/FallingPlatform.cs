@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// Stands until a player steps on it, shakes for <see cref="warningDelay"/>, then drops away.
@@ -41,7 +41,7 @@ namespace Beep
             if (NetMode.IsAuthority && IsIdle && PlayerZone.Collect(trigger, inside) > 0)
             {
                 SetTriggerTime(NetMode.ServerTime);
-                BeepLog.Run($"{name} warning ({warningDelay:F2}s)");
+                PatataLog.Run($"{name} warning ({warningDelay:F2}s)");
             }
         }
 

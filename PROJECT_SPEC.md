@@ -1,7 +1,7 @@
-# BEEP! — PROJECT_SPEC.md
+# HotPatata — PROJECT_SPEC.md
 
 > **Status:** MVP / rapid prototype  
-> **Working title:** BEEP!  
+> **Title:** HotPatata  
 > **Genre:** Cooperative first-person parkour / hot-potato party game  
 > **Initial target:** Windows PC  
 > **Target engine:** Unity 6.3 LTS  

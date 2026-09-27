@@ -1,12 +1,12 @@
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// A simple teammate bot for automated multiplayer runs: when it holds the bomb it aims at the next player
     /// and passes it after a short hold; when a bomb is flying toward it, it presses catch as it gets close.
     /// It plays through the same input path (and therefore the same network rules) as a human.
-    /// Enabled with the -beepBot command-line flag.
+    /// Enabled with the -patataBot command-line flag.
     /// </summary>
     [RequireComponent(typeof(Player))]
     public class PlayerBot : MonoBehaviour

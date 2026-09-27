@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// The single place that decides whether contact with a catch volume is a valid catch.
@@ -57,7 +57,7 @@ namespace Beep
             // Catching is never automatic: the receiver must have pressed catch just before / as the bomb arrives.
             if (!receiver.Catcher.WindowOpen) return false;
 
-            BeepLog.Bomb($"Catch accepted {receiver}");
+            PatataLog.Bomb($"Catch accepted {receiver}");
             return bomb.AcceptCatch(receiver);
         }
 
@@ -73,11 +73,11 @@ namespace Beep
             float reached = history.LastReach(receiver.PlayerId, Time.time - window, Reach);
             if (reached < 0f)
             {
-                BeepLog.Bomb($"Catch claim rejected {receiver} (not in reach in the last {window * 1000f:F0} ms)");
+                PatataLog.Bomb($"Catch claim rejected {receiver} (not in reach in the last {window * 1000f:F0} ms)");
                 return false;
             }
 
-            BeepLog.Bomb($"Catch accepted {receiver} (lag-compensated, in reach {(Time.time - reached) * 1000f:F0} ms ago, rtt {RttMs(receiver)} ms)");
+            PatataLog.Bomb($"Catch accepted {receiver} (lag-compensated, in reach {(Time.time - reached) * 1000f:F0} ms ago, rtt {RttMs(receiver)} ms)");
             return bomb.AcceptCatch(receiver);
         }
 

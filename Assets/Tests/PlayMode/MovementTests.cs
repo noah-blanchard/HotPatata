@@ -3,7 +3,7 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
 
-namespace Beep.Tests
+namespace HotPatata.Tests
 {
     /// <summary>M1.2: responsive movement - accel/brake, jump, coyote time, jump buffer.</summary>
     public class MovementTests : SandboxTestBase

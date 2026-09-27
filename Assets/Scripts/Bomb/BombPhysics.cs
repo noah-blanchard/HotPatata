@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Beep
+namespace HotPatata
 {
     /// <summary>
     /// Rigidbody/collider configuration for the two physical modes of the bomb, and the source of
