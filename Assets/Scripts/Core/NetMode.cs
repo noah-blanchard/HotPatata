@@ -26,15 +26,21 @@ namespace Beep
             {
                 if (!IsNetworked) return 0;
                 var nm = NetworkManager.Singleton;
-                var transport = nm.NetworkConfig.NetworkTransport as Unity.Netcode.Transports.UTP.UnityTransport;
-                if (transport == null) return 0;
-                if (!nm.IsServer) return (int)transport.GetCurrentRtt(NetworkManager.ServerClientId);
+                if (!nm.IsServer) return RttMsFor(NetworkManager.ServerClientId);
 
-                ulong worst = 0;
+                int worst = 0;
                 foreach (ulong id in nm.ConnectedClientsIds)
-                    if (id != nm.LocalClientId) worst = System.Math.Max(worst, transport.GetCurrentRtt(id));
-                return (int)worst;
+                    if (id != nm.LocalClientId) worst = Mathf.Max(worst, RttMsFor(id));
+                return worst;
             }
+        }
+
+        /// <summary>Round-trip time in ms to one connection (on the host: a client; on a client: the server). 0 if unknown.</summary>
+        public static int RttMsFor(ulong clientId)
+        {
+            if (!IsNetworked) return 0;
+            var transport = NetworkManager.Singleton.NetworkConfig.NetworkTransport as Unity.Netcode.Transports.UTP.UnityTransport;
+            return transport != null ? (int)transport.GetCurrentRtt(clientId) : 0;
         }
 
         /// <summary>Shared clock: the server's network time when online, local time offline.</summary>

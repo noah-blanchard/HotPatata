@@ -117,6 +117,12 @@ namespace Beep
         [Tooltip("Height of the catch sphere centre above the player's feet (upper torso / hands).")]
         [Min(0f)] public float catchCenterHeight = 1.3f;
 
+        [Header("Network - catch lag compensation")]
+        [Tooltip("Online only. How far back (seconds) the host accepts a remote player's catch that they saw happen on their screen, " +
+                 "and how long it may hold a lethal contact right after the bomb passed near a remote receiver. 0 = off. " +
+                 "Also the cap against abuse: the lag it can hide is about this value minus ~0.1 s.")]
+        [Range(0f, 0.5f)] public float catchLagCompensation = 0.35f;
+
         [Header("Bomb - feedback")]
         [Tooltip("Seconds between beeps for the four fuse stages: calm, medium, urgent, critical.")]
         public float[] beepIntervals = { 1.0f, 0.55f, 0.28f, 0.12f };

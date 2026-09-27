@@ -25,6 +25,8 @@ namespace Beep
     ///
     ///   Resetting --EndReset--> Held --TryThrow--> Thrown --AcceptCatch--> CaughtGrace --grace--> Held
     ///   Held / Thrown --Explode--> Exploding --BeginReset--> Resetting
+    /// Online, a lethal contact while Thrown may be held for a fraction of a second (still Thrown, frozen in place)
+    /// so a remote receiver's lag-compensated catch can win; see <see cref="CatchResolver"/>.
     /// </summary>
     [RequireComponent(typeof(BombFuse), typeof(BombPhysics), typeof(CatchResolver))]
     public class BombController : MonoBehaviour
@@ -40,6 +42,9 @@ namespace Beep
         BombPhysics bombPhysics;
         CatchResolver resolver;
         float graceEndTime;
+        float pendingExplosionAt = -1f;   // a lethal contact held for a late (lag-compensated) catch
+        BombFailReason pendingReason;
+        string pendingDetail;
 
         public static BombController Instance { get; private set; }
 
@@ -53,6 +58,8 @@ namespace Beep
         public Vector3 HomingOffset { get; private set; }
         /// <summary>Why the bomb last exploded (valid while Exploding).</summary>
         public BombFailReason LastFailReason { get; private set; }
+        /// <summary>Host only: the bomb has hit something lethal and will explode unless a late catch arrives first.</summary>
+        public bool ExplosionPending => pendingExplosionAt >= 0f;
 
         public GameTuning Tuning => tuning;
         public BombFuse Fuse => fuse;
@@ -93,6 +100,9 @@ namespace Beep
                 case BombState.Held:
                     fuse.Tick(Time.deltaTime);
                     break;
+                case BombState.Thrown:
+                    if (ExplosionPending && Time.time >= pendingExplosionAt) Explode(pendingReason, pendingDetail);
+                    break;
                 case BombState.CaughtGrace:
                     if (Time.time >= graceEndTime) Transition(BombState.Held);
                     break;
@@ -124,6 +134,8 @@ namespace Beep
         {
             if (State != BombState.Thrown) return false;
 
+            if (ExplosionPending) BeepLog.Bomb($"Held lethal contact cancelled by a late catch ({pendingReason})");
+            pendingExplosionAt = -1f;
             HomingTarget = null;
             SetCarrier(receiver);
             bombPhysics.EnterHeld(receiver.HandAnchor);
@@ -163,7 +175,7 @@ namespace Beep
         public void ReportWorldContact(Collider other)
         {
             if (!NetMode.IsAuthority || State != BombState.Thrown) return;
-            Explode(BombFailReason.WorldContact,
+            LethalContact(BombFailReason.WorldContact,
                 $"object={other.name} layer={LayerMask.LayerToName(other.gameObject.layer)}");
         }
 
@@ -178,8 +190,31 @@ namespace Beep
                 resolver.TryResolveCatch(volume);
             }
             else if (other.TryGetComponent(out KillZone _))
-                Explode(BombFailReason.KillZone, $"object={other.name}");
+                LethalContact(BombFailReason.KillZone, $"object={other.name}");
             // Any other trigger is intentionally neutral: it must never count as lethal world contact.
+        }
+
+        /// <summary>
+        /// A flying bomb touched something lethal. It explodes now, unless it has just passed a remote receiver whose
+        /// catch may still be on its way over the network: then it stops dead where it hit and waits a moment
+        /// (<see cref="CatchResolver.ExplosionHoldFor"/>). Either the late catch wins or the explosion happens.
+        /// </summary>
+        void LethalContact(BombFailReason reason, string detail)
+        {
+            if (ExplosionPending) return;
+
+            float hold = resolver.ExplosionHoldFor();
+            if (hold <= 0f)
+            {
+                Explode(reason, detail);
+                return;
+            }
+
+            bombPhysics.EnterInert();
+            pendingReason = reason;
+            pendingDetail = detail;
+            pendingExplosionAt = Time.time + hold;
+            BeepLog.Bomb($"Lethal contact held {hold * 1000f:F0} ms for a late catch ({reason} {detail})");
         }
 
         void OnFuseExpired()
@@ -193,6 +228,7 @@ namespace Beep
             if (State == BombState.Exploding || State == BombState.Resetting) return;
 
             var from = State;
+            pendingExplosionAt = -1f;
             LastFailReason = reason;
             HomingTarget = null;
             bombPhysics.EnterInert();
@@ -208,6 +244,7 @@ namespace Beep
         {
             bombPhysics.EnterInert();
             transform.SetParent(null, true);
+            pendingExplosionAt = -1f;
             HomingTarget = null;
             LastThrower = null;
             SetCarrier(null);

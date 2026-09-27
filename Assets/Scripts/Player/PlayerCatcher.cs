@@ -8,6 +8,9 @@ namespace Beep
     /// player's catch volume while the window is open. After the window closes there is a cooldown
     /// (<see cref="GameTuning.catchCooldown"/>) so the button cannot be mashed. The bomb's
     /// <see cref="CatchResolver"/> reads <see cref="WindowOpen"/>; this class never touches the bomb.
+    ///
+    /// Online, a remote player's own machine also watches its local window: when the (late-rendered) bomb reaches
+    /// the catch sphere while it is open, it sends one claim per window and the host's CatchResolver validates it.
     /// </summary>
     [RequireComponent(typeof(Player))]
     public class PlayerCatcher : MonoBehaviour
@@ -24,8 +27,11 @@ namespace Beep
         float cooldownEnd = -1f;
         float lastReachTime = -10f;
         bool windowWasOpen;
+        bool claimSent;
         string hint;
         float hintUntil;
+        string deferredHint;   // host: a miss explanation held back while a lag-compensated catch may still arrive
+        float deferredHintAt;
 
         /// <summary>Why the last catch attempt failed ("too late", "too early"), for a moment; null otherwise.</summary>
         public string Hint => Time.time < hintUntil ? hint : null;
@@ -62,16 +68,30 @@ namespace Beep
 
         void Update()
         {
-            if (NetMode.IsAuthority) CheckMissedEarly();   // the host judges timing, for every player
+            if (NetMode.IsAuthority)
+            {
+                CheckMissedEarly();   // the host judges timing, for every player
+                FlushDeferredHint();
+            }
 
             if (!player.IsLocal) return;
 
-            bool pressed = player.Input.CatchPressed;   // always consume the input
-            if (!pressed) return;
-
             // The local window is instant feedback (and the whole story offline); the host runs its own
             // window for this player and is the one that decides whether a bomb is caught.
-            if (TryOpenWindow() && NetMode.IsRemoteClient) player.Net.RequestCatch();
+            bool pressed = player.Input.CatchPressed;   // always consume the input
+            if (pressed && TryOpenWindow() && NetMode.IsRemoteClient) player.Net.RequestCatch();
+
+            if (NetMode.IsRemoteClient) ClaimIfInReach();
+        }
+
+        // What this machine sees is the bomb as it was a moment ago on the host: claim the catch we saw.
+        void ClaimIfInReach()
+        {
+            if (claimSent || !WindowOpen || bomb == null || bomb.State != BombState.Thrown || bomb.LastThrower == player) return;
+            if (Vector3.Distance(bomb.transform.position, player.CatchVolume.CatchCenter) > player.Tuning.catchRadius) return;
+
+            claimSent = true;
+            player.Net.ClaimCatch();
         }
 
         /// <summary>Opens a catch window if allowed. Also called on the host when a remote player asks.</summary>
@@ -86,6 +106,7 @@ namespace Beep
             var t = player.Tuning;
             windowEnd = Time.time + t.catchWindowDuration;
             cooldownEnd = windowEnd + t.catchCooldown;
+            claimSent = false;
             BeepLog.Bomb($"Catch window open {player} ({t.catchWindowDuration:F2}s)");
             return true;
         }
@@ -95,6 +116,7 @@ namespace Beep
             windowEnd = -1f;
             cooldownEnd = -1f;
             windowWasOpen = false;
+            deferredHint = null;
         }
 
         /// <summary>The bomb touched this player's catch volume (whether or not they were ready). Host only.</summary>
@@ -107,10 +129,33 @@ namespace Beep
             hintUntil = Time.time + HintDuration;
         }
 
+        bool IsRemotelyOwned => player.Net != null && player.Net.IsSpawned && !player.Net.IsOwner;
+
         void SayHint(string text)
         {
+            float delay = player.Tuning.catchLagCompensation;
+            if (IsRemotelyOwned && delay > 0f)
+            {
+                // Their lag-compensated catch for this flight may still arrive: explain the miss only if it does not.
+                deferredHint = text;
+                deferredHintAt = Time.time + delay;
+                return;
+            }
+            DeliverHint(text);
+        }
+
+        void FlushDeferredHint()
+        {
+            if (deferredHint == null || Time.time < deferredHintAt) return;
+            string text = deferredHint;
+            deferredHint = null;
+            DeliverHint(text);
+        }
+
+        void DeliverHint(string text)
+        {
             BeepLog.Bomb($"Catch hint for {player}: {text} (rtt {NetMode.RttMs} ms)");
-            if (player.Net != null && player.Net.IsSpawned && !player.Net.IsOwner) player.Net.SendHint(text);
+            if (IsRemotelyOwned) player.Net.SendHint(text);
             else ReceiveHint(text);
         }
 
