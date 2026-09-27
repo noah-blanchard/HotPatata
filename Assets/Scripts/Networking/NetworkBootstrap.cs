@@ -46,7 +46,6 @@ namespace Beep
         string status = "";
         bool showDirect;
         bool directMode;       // LAN / testing: the level loads as soon as the host starts
-        bool playingLocal;
         bool leaving;
         int autoStartPlayers;
 
@@ -146,7 +145,6 @@ namespace Beep
 
         public void PlayLocal()
         {
-            playingLocal = true;
             mode = Mode.InGame;
             message = "";
             SceneManager.LoadScene(GameplayScene);
@@ -252,7 +250,6 @@ namespace Beep
                 if (sessions.InSession) await sessions.LeaveAsync();          // the SDK also stops the network
                 else if (nm.IsListening) nm.Shutdown();
 
-                playingLocal = false;
                 directMode = false;
                 autoStartPlayers = 0;
                 Cursor.lockState = CursorLockMode.None;
@@ -287,14 +284,11 @@ namespace Beep
             mode = Mode.Menu;
         }
 
-        /// <summary>Debug only: delay every packet this side sends by <paramref name="milliseconds"/> (Editor / development builds).</summary>
-        public void SimulateLatency(int milliseconds)
-        {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            transport.SetDebugSimulatorParameters(milliseconds, milliseconds / 5, 0);
-            BeepLog.Run($"Simulating {milliseconds} ms one-way latency");
-#endif
-        }
+        /// <summary>Raised when latency simulation is requested; handled by Beep.DebugTools (Editor / development builds only).</summary>
+        public static event Action<GameObject, int> LatencyRequested;
+
+        /// <summary>Debug only: delay every packet this side sends by <paramref name="milliseconds"/>.</summary>
+        public void SimulateLatency(int milliseconds) => LatencyRequested?.Invoke(gameObject, milliseconds);
 
         // ------------------------------------------------------------------ UI (utilitarian on purpose)
 

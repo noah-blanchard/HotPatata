@@ -754,6 +754,13 @@ first free slot. Level objects are kept in sync by deriving their state from sha
 teleports (resets, respawns) are sent as teleports (`NetworkPlayer.SyncTeleport`), otherwise other machines
 interpolate the player across the level and sweep them through triggers.
 
+### 13.2 Known issue: catch timing under latency
+
+The catch window is measured on the host from when the request ARRIVES, while the receiver presses when they SEE the
+bomb (delayed by network + interpolation). Measured with the Network Simulator: fine up to ~90 ms RTT, failing at ~240 ms.
+A real fix needs lag compensation (evaluate the window at the press time the client reports, using a short history of the
+bomb and the receiver, and hold a world-contact failure briefly when the bomb passes an eligible receiver). Not done yet.
+
 ## 14. Session flow
 
 As built: Bootstrap menu (Host Online / Join with code / Play Local / Direct IP) -> Lobby (host presses Start) ->
