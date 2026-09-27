@@ -55,6 +55,8 @@ namespace Beep
         [Range(0f, 0.6f)] public float speedVignette = 0.28f;
         [Tooltip("Wind volume at full speed (0..1).")]
         [Range(0f, 1f)] public float windVolume = 0.3f;
+        [Tooltip("Footstep and landing sounds (0 = off).")]
+        [Range(0f, 1f)] public float footstepVolume = 0.2f;
 
         [Header("Bomb - fuse")]
         [Tooltip("Seconds a carrier may hold the bomb. Refreshed by every valid catch.")]
@@ -68,13 +70,14 @@ namespace Beep
         [Tooltip("Launch speed of a tap (no charge). Sets the shortest pass.")]
         [Min(0f)] public float throwSpeedMin = 10f;
         [Tooltip("Launch speed at full charge. Longer, faster throws.")]
-        [Min(0f)] public float throwSpeedMax = 24f;
+        [Min(0f)] public float throwSpeedMax = 22f;
         [Tooltip("Seconds of holding the throw button to reach full charge.")]
         [Min(0.05f)] public float throwChargeTime = 1.0f;
-        [Tooltip("Degrees the throw is pitched up from the aim direction.")]
-        [Range(0f, 45f)] public float throwUpAngle = 8f;
-        [Tooltip("Multiplier on Physics.gravity for the thrown bomb (flatter arcs = easier passes).")]
-        [Min(0f)] public float bombGravityScale = 0.6f;
+        [Tooltip("Degrees the throw is pitched up from the aim direction (counters the drop on short passes).")]
+        [Range(0f, 45f)] public float throwUpAngle = 12f;
+        [Tooltip("Multiplier on Physics.gravity for the thrown bomb. Above 1 the potato feels heavy and drops quickly; " +
+                 "below 1 it floats (flatter, much longer lobs).")]
+        [Min(0f)] public float bombGravityScale = 1.25f;
         [Tooltip("Max distance of the aim ray that decides where the throw is pointed.")]
         [Min(1f)] public float aimMaxDistance = 40f;
 

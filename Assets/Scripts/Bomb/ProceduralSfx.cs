@@ -4,7 +4,8 @@ namespace Beep
 {
     /// <summary>
     /// Placeholder sound effects synthesised at runtime, so the sandbox has distinct beep / catch /
-    /// throw / explosion audio without any audio assets. Replace with real clips later.
+    /// throw / explosion audio without any audio assets. Each one is only a fallback: assigning a real clip
+    /// in <see cref="BombAudio"/> or <see cref="SpeedEffects"/> (files go in Assets/Audio/SFX) replaces it.
     /// </summary>
     public static class ProceduralSfx
     {
@@ -91,18 +92,21 @@ namespace Beep
             return Make("wind", d);
         }
 
-        /// <summary>A soft footfall.</summary>
+        /// <summary>A muffled footfall: heavily low-passed noise with a soft attack, no tone and no hiss.</summary>
         public static AudioClip Step()
         {
-            int n = (int)(SampleRate * 0.09f);
+            int n = (int)(SampleRate * 0.07f);
             var d = new float[n];
             var rng = new System.Random(5);
-            float lp = 0f;
+            float lp1 = 0f, lp2 = 0f;
+            int attack = (int)(SampleRate * 0.004f);
             for (int i = 0; i < n; i++)
             {
                 float t = i / (float)SampleRate;
-                lp += ((float)(rng.NextDouble() * 2.0 - 1.0) - lp) * 0.25f;
-                d[i] = (lp * 0.6f + Mathf.Sin(2f * Mathf.PI * 95f * t) * 0.5f) * Mathf.Exp(-t * 55f);
+                lp1 += ((float)(rng.NextDouble() * 2.0 - 1.0) - lp1) * 0.05f;   // two low-pass stages: a dull "thp"
+                lp2 += (lp1 - lp2) * 0.05f;
+                float env = Mathf.Clamp01(i / (float)attack) * Mathf.Exp(-t * 60f);
+                d[i] = lp2 * 6f * env;
             }
             return Make("step", d);
         }

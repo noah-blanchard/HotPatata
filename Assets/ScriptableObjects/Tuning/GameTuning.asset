@@ -35,14 +35,15 @@ MonoBehaviour:
   chargeFovZoom: 6
   speedVignette: 0.28
   windVolume: 0.3
+  footstepVolume: 0.2
   holdFuseDuration: 6
   warningDuration: 2
   caughtGraceDuration: 0.35
   throwSpeedMin: 10
-  throwSpeedMax: 24
+  throwSpeedMax: 22
   throwChargeTime: 1
-  throwUpAngle: 8
-  bombGravityScale: 0.6
+  throwUpAngle: 12
+  bombGravityScale: 1.25
   aimMaxDistance: 40
   aimAssistAngle: 8
   aimAssistDistance: 16

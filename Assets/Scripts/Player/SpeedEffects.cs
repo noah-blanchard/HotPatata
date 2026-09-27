@@ -16,6 +16,11 @@ namespace Beep
     {
         [SerializeField] GameTuning tuning;
 
+        [Header("Real sounds (optional, from Assets/Audio/SFX; empty = procedural placeholder)")]
+        [SerializeField] AudioClip windClip;
+        [SerializeField, Tooltip("One is picked at random for each footfall.")] AudioClip[] stepClips;
+        [SerializeField] AudioClip landClip;
+
         FirstPersonCamera cam;
         Volume volume;
         VolumeProfile profile;
@@ -23,7 +28,7 @@ namespace Beep
         ChromaticAberration chromatic;
         LensDistortion lens;
         AudioSource wind, foley;
-        AudioClip stepClip, landClip;
+        AudioClip placeholderStep, placeholderLand;
         PlayerViewFeel subscribed;
 
         void Awake()
@@ -51,7 +56,7 @@ namespace Beep
             volume.sharedProfile = profile;
 
             wind = gameObject.AddComponent<AudioSource>();
-            wind.clip = ProceduralSfx.Wind();
+            wind.clip = windClip != null ? windClip : ProceduralSfx.Wind();
             wind.loop = true;
             wind.spatialBlend = 0f;
             wind.volume = 0f;
@@ -61,9 +66,18 @@ namespace Beep
             foley = gameObject.AddComponent<AudioSource>();
             foley.spatialBlend = 0f;
             foley.playOnAwake = false;
-            stepClip = ProceduralSfx.Step();
-            landClip = ProceduralSfx.Land();
         }
+
+        // Real clips when assigned, else placeholders made on first use (survives a script reload in Play Mode).
+        AudioClip StepClip()
+        {
+            var clip = stepClips != null && stepClips.Length > 0 ? stepClips[Random.Range(0, stepClips.Length)] : null;
+            if (clip != null) return clip;
+            return placeholderStep != null ? placeholderStep : placeholderStep = ProceduralSfx.Step();
+        }
+
+        AudioClip LandClip() =>
+            landClip != null ? landClip : placeholderLand != null ? placeholderLand : placeholderLand = ProceduralSfx.Land();
 
         void OnDestroy()
         {
@@ -105,17 +119,23 @@ namespace Beep
             }
         }
 
+        float FootstepVolume => tuning != null ? tuning.footstepVolume : 0.2f;
+
         void OnStep(float speedFraction)
         {
             float strength = tuning != null ? tuning.viewEffectsStrength : 1f;
+            float volume = FootstepVolume * Mathf.Lerp(0.5f, 1f, speedFraction) * Mathf.Max(0.3f, strength);
+            if (volume <= 0f) return;
             foley.pitch = Random.Range(0.9f, 1.1f);
-            foley.PlayOneShot(stepClip, (0.15f + 0.25f * speedFraction) * Mathf.Max(0.3f, strength));
+            foley.PlayOneShot(StepClip(), volume);
         }
 
         void OnLand(float impact)
         {
+            float volume = Mathf.Min(1f, FootstepVolume * (1f + 2f * impact));
+            if (volume <= 0f) return;
             foley.pitch = Random.Range(0.92f, 1.05f);
-            foley.PlayOneShot(landClip, 0.25f + 0.6f * impact);
+            foley.PlayOneShot(LandClip(), volume);
         }
     }
 }
