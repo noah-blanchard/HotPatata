@@ -4,7 +4,9 @@ using UnityEngine;
 namespace Beep
 {
     /// <summary>
-    /// Emissive pulse that mirrors the beep, catch pop, and a placeholder explosion flash.
+    /// Emissive pulse that mirrors the beep, catch pop, and a placeholder explosion flash. The visual also moves
+    /// naturally: it tumbles in flight (axis and speed slightly random, scaled by throw speed), then settles into a
+    /// gentle sway in the hand with a small jolt on every catch. Rotation is cosmetic only and never touches physics.
     /// Urgency is carried by pulse rate, brightness AND size, not by colour alone. Reads bomb state only.
     /// </summary>
     [RequireComponent(typeof(BombController), typeof(BombAudio))]
@@ -32,18 +34,28 @@ namespace Beep
         float catchPop;       // 0..1, set to 1 on catch
         FuseStage stage;
 
+        // natural motion
+        Vector3 spin;                  // world-space angular velocity while flying, degrees per second
+        bool needSpinAxis;             // pick the tumble axis once the direction of travel is known
+        Vector3 lastPosition;
+        Vector3 kick;                  // decaying random jolt (euler degrees) added to the hand sway
+        float swayPhase;
+
         void Awake()
         {
             bomb = GetComponent<BombController>();
             bombAudio = GetComponent<BombAudio>();
             block = new MaterialPropertyBlock();
             baseScale = visual.localScale;
+            swayPhase = Random.value * 10f;
+            lastPosition = transform.position;
         }
 
         void OnEnable()
         {
             bombAudio.Beeped += OnBeep;
             bomb.BombCaught += OnCaught;
+            bomb.BombThrown += OnThrown;
             bomb.StateChanged += OnStateChanged;
         }
 
@@ -51,6 +63,7 @@ namespace Beep
         {
             bombAudio.Beeped -= OnBeep;
             bomb.BombCaught -= OnCaught;
+            bomb.BombThrown -= OnThrown;
             bomb.StateChanged -= OnStateChanged;
         }
 
@@ -72,11 +85,69 @@ namespace Beep
             bodyRenderer.SetPropertyBlock(block);
 
             visual.localScale = baseScale * (1f + pulse * PopScale[s] + catchPop * 0.35f);
+
+            UpdateNaturalMotion();
+        }
+
+        void UpdateNaturalMotion()
+        {
+            float dt = Time.deltaTime;
+            var tuning = bomb.Tuning;
+            Vector3 travel = transform.position - lastPosition;
+            lastPosition = transform.position;
+
+            if (bomb.State == BombState.Thrown)
+            {
+                float speed = dt > 0f ? travel.magnitude / dt : 0f;
+                if (needSpinAxis && speed > 1f) ChooseSpin(travel.normalized, speed, tuning);
+                if (spin.sqrMagnitude > 0.01f)
+                    visual.rotation = Quaternion.AngleAxis(spin.magnitude * dt, spin.normalized) * visual.rotation;
+                return;
+            }
+
+            // Not flying: settle into the hand. A slow, slightly irregular sway keeps it alive, plus the catch jolt.
+            spin = Vector3.zero;
+            kick *= Mathf.Exp(-10f * dt);
+            float t = Time.time + swayPhase;
+            float sway = tuning != null ? tuning.handSwayDegrees : 0f;
+            Quaternion target = Quaternion.Euler(
+                Mathf.Sin(t * 1.6f) * sway + kick.x,
+                Mathf.Sin(t * 1.1f) * sway * 1.3f + kick.y,
+                Mathf.Sin(t * 2.3f) * sway * 0.6f + kick.z);
+            visual.localRotation = Quaternion.Slerp(visual.localRotation, target, 1f - Mathf.Exp(-12f * dt));
+        }
+
+        void ChooseSpin(Vector3 direction, float speed, GameTuning tuning)
+        {
+            needSpinAxis = false;
+            float randomness = tuning != null ? tuning.tumbleRandomness : 0.35f;
+            float degrees = tuning != null ? tuning.tumbleDegreesPerSecond : 480f;
+
+            // A lobbed object tumbles mostly end-over-end: about the horizontal axis across its path,
+            // with some random tilt and a random secondary wobble.
+            Vector3 across = Vector3.Cross(Vector3.up, direction);
+            if (across.sqrMagnitude < 0.01f) across = Vector3.right;
+            Vector3 axis = (across.normalized + Random.onUnitSphere * randomness).normalized;
+
+            float speedFactor = Mathf.Clamp01(speed / 24f);              // faster throws spin faster
+            float rate = degrees * Mathf.Lerp(0.55f, 1.35f, speedFactor) * Random.Range(0.8f, 1.2f);
+            if (Random.value < 0.25f) rate = -rate;                       // occasionally tumbles the other way
+            spin = axis * rate;
+        }
+
+        void OnThrown(Player thrower)
+        {
+            needSpinAxis = true;
+            lastPosition = transform.position;
         }
 
         void OnBeep(FuseStage beepStage) => pulse = 1f;
 
-        void OnCaught(Player receiver) => catchPop = 1f;
+        void OnCaught(Player receiver)
+        {
+            catchPop = 1f;
+            kick = Random.insideUnitSphere * 14f;   // a small jolt as it lands in the hand
+        }
 
         void OnStateChanged(BombState from, BombState to)
         {
@@ -88,6 +159,8 @@ namespace Beep
             else if (from == BombState.Exploding || from == BombState.Resetting)
             {
                 visual.gameObject.SetActive(true);
+                visual.localRotation = Quaternion.identity;
+                spin = Vector3.zero;
                 pulse = 0f;
                 catchPop = 0f;
             }

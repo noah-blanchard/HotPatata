@@ -50,6 +50,7 @@ namespace Beep
         /// <summary>Why the bomb last exploded (valid while Exploding).</summary>
         public BombFailReason LastFailReason { get; private set; }
 
+        public GameTuning Tuning => tuning;
         public BombFuse Fuse => fuse;
         public BombPhysics Body => bombPhysics;
         public CatchResolver Resolver => resolver;

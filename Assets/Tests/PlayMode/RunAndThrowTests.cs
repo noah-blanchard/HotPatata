@@ -217,6 +217,30 @@ namespace Beep.Tests
             Assert.Greater(chargedDistance, tapDistance * 1.5f, $"charged {chargedDistance:F1} m vs tap {tapDistance:F1} m");
         }
 
+        // ------------------------------------------------------------------ natural motion
+
+        [UnityTest]
+        public IEnumerator ThrownBomb_Tumbles_ThenSettlesInTheReceiversHand()
+        {
+            var visual = bomb.transform.Find("Visual");
+            p2.Input.Scripted = new PlayerInputReader.ScriptedInput();
+            p1.Look.SetAim(90f, 0f);
+            Drive.PressThrow();
+            yield return null;
+            yield return WaitUntil(() => bomb.State == BombState.Thrown, 1f, "not thrown");
+
+            yield return WaitSeconds(0.1f);
+            Quaternion a = visual.rotation;
+            yield return WaitSeconds(0.15f);
+            Assert.Greater(Quaternion.Angle(a, visual.rotation), 15f, "the potato should visibly tumble in flight");
+
+            yield return CatchWhenNear(p2);
+            yield return WaitUntil(() => bomb.State == BombState.CaughtGrace || bomb.State == BombState.Exploding, 2f, "flight never ended");
+            yield return WaitSeconds(0.6f);
+            Assert.AreEqual(BombState.Held, bomb.State);
+            Assert.Less(Quaternion.Angle(visual.localRotation, Quaternion.identity), 12f, "settled into a gentle sway, not still spinning");
+        }
+
         // ------------------------------------------------------------------ first person
 
         [UnityTest]
