@@ -299,10 +299,10 @@ Should **not** know bomb game rules.
 
 Responsibilities:
 
-- local camera rotation;
-- follow target;
+- own aim yaw/pitch (yaw turns the whole body, pitch turns the eye pivot);
 - pitch constraints;
-- camera collision if needed later.
+- first-person camera placed at the eye pivot (`CameraTarget`), no orbit and no camera collision;
+- keep the hand and throw anchors on the eye pivot so the held bomb stays in view.
 
 Network replication of camera is unnecessary.
 
@@ -581,13 +581,13 @@ Suggested structure:
 
 ```text
 Player
-├── Visual
+├── Visual              (hidden from the local player's own camera)
 ├── CharacterBody / Motor
 ├── CatchVolume
-├── ThrowOrigin
-├── HandAnchor
 ├── NameplateAnchor
-└── CameraTarget
+└── CameraTarget        (eye pivot: carries the camera and pitches with the look)
+    ├── ThrowOrigin     (right / down / forward of the eyes)
+    └── HandAnchor      (same place: the carrier sees the bomb here)
 ```
 
 Required components depend on chosen motor/network implementation.

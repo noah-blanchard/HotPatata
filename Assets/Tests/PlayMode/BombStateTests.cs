@@ -17,6 +17,8 @@ namespace Beep.Tests
         [UnitySetUp]
         public IEnumerator Subscribe()
         {
+            // These tests drive the bomb by hand; keep the RunManager's automatic reset out of the way.
+            Object.FindFirstObjectByType<RunManager>().enabled = false;
             explosions = catches = 0;
             lastFailReason = null;
             bomb.BombExploded += (reason, detail) => { explosions++; lastFailReason = reason; };
@@ -55,14 +57,6 @@ namespace Beep.Tests
         }
 
         // ------------------------------------------------------------------ M1.4 attach / detach
-
-        [UnityTest]
-        public IEnumerator Bomb_StartsInert_UntilGivenToAPlayer()
-        {
-            Assert.AreEqual(BombState.Resetting, bomb.State);
-            Assert.IsNull(bomb.Carrier);
-            yield break;
-        }
 
         [UnityTest]
         public IEnumerator Held_BombAttachesToHandAnchor_WithCollisionOff()

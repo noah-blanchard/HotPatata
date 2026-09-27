@@ -20,12 +20,11 @@ MonoBehaviour:
   gravity: 28
   coyoteTime: 0.1
   jumpBuffer: 0.1
-  turnSpeed: 900
   mouseSensitivity: 0.1
   stickLookSpeed: 180
-  pitchMin: -35
-  pitchMax: 60
-  cameraDistance: 4.5
+  pitchMin: -80
+  pitchMax: 80
+  fieldOfView: 75
   holdFuseDuration: 6
   warningDuration: 2
   caughtGraceDuration: 0.35

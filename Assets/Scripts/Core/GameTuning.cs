@@ -22,17 +22,17 @@ namespace Beep
         [Min(0f)] public float gravity = 28f;
         [Min(0f)] public float coyoteTime = 0.1f;
         [Min(0f)] public float jumpBuffer = 0.1f;
-        [Tooltip("Degrees/s the character turns toward its movement direction.")]
-        [Min(0f)] public float turnSpeed = 900f;
 
-        [Header("Camera / Look")]
+        [Header("Camera / Look (first person)")]
         [Tooltip("Degrees per mouse-delta pixel.")]
         [Min(0f)] public float mouseSensitivity = 0.1f;
         [Tooltip("Degrees per second at full stick deflection.")]
         [Min(0f)] public float stickLookSpeed = 180f;
-        public float pitchMin = -35f;
-        public float pitchMax = 60f;
-        [Min(0f)] public float cameraDistance = 4.5f;
+        [Tooltip("Most you can look up (negative degrees).")]
+        public float pitchMin = -80f;
+        [Tooltip("Most you can look down.")]
+        public float pitchMax = 80f;
+        [Range(40f, 110f)] public float fieldOfView = 75f;
 
         [Header("Bomb - fuse")]
         [Tooltip("Seconds a carrier may hold the bomb. Refreshed by every valid catch.")]

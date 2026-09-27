@@ -54,6 +54,13 @@ namespace Beep
             Presentation = GetComponent<PlayerPresentation>();
         }
 
+        /// <summary>Called once by the RunManager so the player can throw and mirror bomb state.</summary>
+        public void Bind(BombController bomb, System.Collections.Generic.IReadOnlyList<Player> allPlayers)
+        {
+            Thrower.Bind(bomb, allPlayers);
+            Presentation.Bind(bomb);
+        }
+
         public void Configure(int id, string name, Color playerColor)
         {
             playerId = id;

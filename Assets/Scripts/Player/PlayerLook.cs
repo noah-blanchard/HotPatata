@@ -11,7 +11,7 @@ namespace Beep
     {
         Player player;
         float yaw;
-        float pitch = 12f;
+        float pitch;
 
         public float Yaw => yaw;
         public float Pitch => pitch;
@@ -36,6 +36,16 @@ namespace Beep
             pitch = Mathf.Clamp(pitch - delta.y, t.pitchMin, t.pitchMax);
         }
 
+        // The eye pivot carries the camera, the hand anchor and the throw origin, so the bomb stays
+        // in view however you look.
+        void LateUpdate() => player.CameraTarget.localRotation = Quaternion.Euler(pitch, 0f, 0f);
+
         public void SetYaw(float degrees) => yaw = degrees;
+
+        public void SetAim(float yawDegrees, float pitchDegrees)
+        {
+            yaw = yawDegrees;
+            pitch = pitchDegrees;
+        }
     }
 }

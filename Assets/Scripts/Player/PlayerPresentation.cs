@@ -47,6 +47,26 @@ namespace Beep
             carrierIndicator.localScale = Vector3.one * (indicatorBaseScale * (1f + catchPulse * 0.8f));
         }
 
+        /// <summary>
+        /// The player the camera follows must not see their own body (no model hands for now, only the bomb).
+        /// Their shadow is kept so they still feel grounded.
+        /// </summary>
+        public void SetLocalView(bool isLocal)
+        {
+            var mode = isLocal ? UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly : UnityEngine.Rendering.ShadowCastingMode.On;
+            foreach (var r in GetComponentsInChildren<Renderer>(true))
+            {
+                if (r.GetComponentInParent<BombController>() != null) continue;   // never hide the held bomb
+                r.shadowCastingMode = mode;
+            }
+        }
+
+        public void Bind(BombController bomb)
+        {
+            bomb.CarrierChanged += carrier => SetCarrier(carrier == player);
+            bomb.BombCaught += receiver => { if (receiver == player) PulseCatch(); };
+        }
+
         public void ApplyColor()
         {
             if (bodyRenderer == null) return;

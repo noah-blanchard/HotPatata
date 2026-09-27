@@ -11,7 +11,7 @@ namespace Beep
     public class LocalPlayerSwitcher : MonoBehaviour
     {
         [SerializeField] Player[] players;
-        [SerializeField] ThirdPersonCamera cam;
+        [SerializeField] FirstPersonCamera cam;
         [SerializeField] bool lockCursor = true;
 
         /// <summary>Automated tests set this so no real keyboard/mouse is attached to a player.</summary>

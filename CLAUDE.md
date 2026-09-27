@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-**BEEP!** (repo/project name "HotPatata") is a 2–4 player cooperative third-person parkour / hot-potato game: players finish a course while throwing a live bomb between them. Unity **6000.3.25f1** (Unity 6.3 LTS), URP 17.3, Input System 1.20, Windows PC target.
+**BEEP!** (repo/project name "HotPatata") is a 2–4 player cooperative first-person parkour / hot-potato game: players finish a course while throwing a live bomb between them. Unity **6000.3.25f1** (Unity 6.3 LTS), URP 17.3, Input System 1.20, Windows PC target.
 
-The project is at **Milestone 0**: there are no gameplay scripts, `.asmdef` files, prefabs, or tests yet. `Assets/` holds only the Unity URP template (`Scenes/SampleScene.unity`, `Settings/` render pipeline assets, `InputSystem_Actions.inputactions`, `TutorialInfo/`). Networking packages (Netcode for GameObjects, Multiplayer Services) are **not yet installed**. `MVP_TASKS.md` M3.1 covers installing them.
+The project has completed **Milestone 1** (local PassSandbox: movement, bomb hold/throw/catch, fuse, beep, world-contact explosion, fast reset) apart from the human "proof-of-fun" playtest gate (M1.11). Networking packages (Netcode for GameObjects, Multiplayer Services) are **not yet installed**; `MVP_TASKS.md` M3.1 covers that. The only gameplay scene is `Assets/Scenes/PassSandbox.unity` (two players, one bomb, `LocalPlayerSwitcher` test rig: Tab swaps the controlled player). `Assets/Scripts/Beep.asmdef` holds all gameplay code (namespace `Beep`).
 
 ## Source-of-truth docs (read before implementing)
 
@@ -19,6 +19,7 @@ The project is at **Milestone 0**: there are no gameplay scripts, `.asmdef` file
 - **Do not invent gameplay features.** Out of scope: bounce/ricochet, bomb resting on geometry, floor pickup, multiple bombs, combat, grabbing, matchmaking, etc. (full list in spec §17.2).
 - **Local first, then network.** Build and validate the local PassSandbox loop (move, jump, throw, catch, fuse, world-contact explosion, reset) before any networking or level content (`ARCHITECTURE.md` §15, `MVP_TASKS.md` M1.11 gate). Netcode work waits for Milestone 3.
 - **Host authoritative, single decision point.** Bomb carrier, catch acceptance, fuse expiry, explosion, checkpoint activation, section reset, and finish are each decided once, on the host. Clients only send input or requests and display replicated state. Catch logic lives only in `CatchResolver`, never duplicated in player scripts.
+- **First person.** `FirstPersonCamera` sits at the player's `CameraTarget` (eye pivot); the body always faces `PlayerLook.Yaw`, pitch rotates only the eye pivot. `HandAnchor` and `ThrowOrigin` are children of that pivot so the carrier sees the bomb in hand (no hand models). The followed player's own renderers are `ShadowsOnly` (`PlayerPresentation.SetLocalView`); never hide the held bomb.
 - **Bomb state machine is explicit:** `Held → Thrown → CaughtGrace → Held`, plus `Exploding` and `Resetting`. While `Thrown`, contact with any environment collider is an immediate explosion (no bounce). Contact with a valid catch volume is a catch. While `Held`, world contact must never fail the bomb.
 - **Collision by layers/markers, never object names.** Planned layers: `Player`, `PlayerCatch`, `Bomb`, `Environment`, `Hazard`, `Trigger`. Any bomb-safe surface needs an explicit marker component or layer.
 - **All tuning goes in ScriptableObject(s)** (`GameTuning`, under `Assets/ScriptableObjects/Tuning/`). Do not scatter magic numbers. Starting values are in spec §20.
@@ -31,11 +32,13 @@ The project is at **Milestone 0**: there are no gameplay scripts, `.asmdef` file
 - Prefer Editor/MCP operations (the installed `unity` plugin and its `unity-cli` skill) for creating scenes, GameObjects, prefabs, components and serialized references, and for reading the Console. Hand-editing `.unity` / `.prefab` YAML is a last resort.
 - After each change: let Unity compile, check the Console, and fix errors before starting the next task. Never stack features on top of compile errors.
 - `Library/`, `Temp/`, `Logs/`, `UserSettings/` are gitignored. Keep `.meta` files with their assets.
-- The planned tests use the Unity Test Framework (1.6.0 is installed): EditMode tests in `Assets/Tests/EditMode/` for pure logic (bomb state transitions, fuse math), PlayMode tests in `Assets/Tests/PlayMode/` for behavior. There are no tests yet and no build/lint scripts. Everything runs through the Unity Editor.
+- Tests use the Unity Test Framework: EditMode in `Assets/Tests/EditMode/` (config, fuse maths), PlayMode in `Assets/Tests/PlayMode/` (load `PassSandbox`, drive players through `PlayerInputReader.Scripted`). There are no build/lint scripts; everything runs through the Editor. With a live Editor: `unity command run_tests --mode EditMode`, or `--mode PlayMode --async_tests true` then poll `unity command test_status` (results also in `Temp/pipeline_test_status.json`).
+- Testing quirks: an unfocused Editor freezes Play Mode unless `Application.runInBackground` is true (the PlayMode base fixture sets it), and hand-simulated key input is unreliable, so tests use `ScriptedInput` and `LocalPlayerSwitcher.SuppressAutoFocus`. The template's `InputSystem_Actions` project-wide actions log resolve errors around virtual keyboards; ignore them.
+- `run_script`/`eval_file` (unity command) compile a scratch C# file against the project assemblies with no domain reload; handy for building scenes/prefabs via Editor APIs. `eval` snippets cannot use `using` directives.
 
-## Planned layout (not yet created, see `ARCHITECTURE.md` §4–5)
+## Planned layout (partly created, see `ARCHITECTURE.md` §4–5)
 
 - Scenes: `Bootstrap`, `Lobby`, `PassSandbox` (build first), `PrototypeCourse`.
 - `Assets/Scripts/` is split into `Core`, `Networking`, `Player`, `Bomb`, `Run`, `Obstacles`, `UI`, `Debug`. Prefabs are grouped as `Player`, `Bomb`, `Gameplay`, `Platforms`, `Obstacles`.
-- Runtime systems: `RunManager` (run state, checkpoint, reset order) with `Checkpoint`, `KillZone`, `FinishZone`. The bomb is `BombController` + `BombFuse` + `BombPhysics` + `CatchResolver`. The player is `PlayerMotor` + `PlayerLook` + `PlayerThrower` + `PlayerCatchVolume`.
+- Runtime systems: `RunManager` (run state, checkpoint, reset order) with `Checkpoint`, `KillZone`, `FinishZone`. The bomb is `BombController` + `BombFuse` + `BombPhysics` + `CatchResolver`. The player is `PlayerMotor` + `PlayerLook` + `PlayerThrower` + `PlayerCatchVolume`, viewed through `FirstPersonCamera`.
 - Development logs use a concise `[Bomb]` / `[Run]` prefix format that can be switched off (`ARCHITECTURE.md` §19).

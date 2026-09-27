@@ -2,7 +2,7 @@
 
 > **Status:** MVP / rapid prototype  
 > **Working title:** BEEP!  
-> **Genre:** Cooperative third-person parkour / hot-potato party game  
+> **Genre:** Cooperative first-person parkour / hot-potato party game  
 > **Initial target:** Windows PC  
 > **Target engine:** Unity 6.3 LTS  
 > **Initial player count:** 2–4 players  
@@ -133,7 +133,7 @@ Entered when:
 
 Behavior:
 
-- bomb is attached to the carrier's hand anchor;
+- bomb is attached to the carrier's hand anchor, which sits in front of the camera (lower right), so the carrier sees the bomb in their hand (no hand models in the MVP);
 - hold fuse is active;
 - world collision failure is disabled while correctly attached;
 - carrier can initiate a throw.
@@ -372,11 +372,11 @@ Do not make the system depend on it until playtesting proves it improves clarity
 
 Movement target:
 
-**responsive, forgiving, predictable third-person platforming.**
+**responsive, forgiving, predictable first-person platforming.**
 
 Required characteristics:
 
-- stable third-person camera;
+- first-person camera at eye height; the body always faces where the player looks, and the player's own body is hidden from their own view (other players still see it);
 - fast acceleration;
 - fast braking;
 - moderate air control;
@@ -623,7 +623,7 @@ These must have **one authoritative source**.
 ### 17.1 Must have
 
 - Unity project boots cleanly;
-- one playable third-person character;
+- one playable first-person character;
 - 2–4 networked players;
 - host + join by code;
 - one bomb;

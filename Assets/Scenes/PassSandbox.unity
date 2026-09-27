@@ -608,6 +608,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 577991560}
+  - component: {fileID: 577991561}
   m_Layer: 0
   m_Name: RunManager
   m_TagString: Untagged
@@ -630,6 +631,29 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &577991561
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 577991559}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 565fda7d8aee4e74c956af01ae8ddde5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Beep::Beep.RunManager
+  tuning: {fileID: 11400000, guid: 35604efc4188ead42afe90813d44683f, type: 2}
+  bomb: {fileID: 1475634968}
+  players:
+  - {fileID: 2053575899}
+  - {fileID: 595677002}
+  spawns:
+  - {fileID: 1621787546}
+  - {fileID: 1581619711}
+  - {fileID: 1977614218}
+  - {fileID: 2049322985}
+  startingCarrier: 0
 --- !u!1001 &595677001
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1331,6 +1355,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 871a8db0f3ba20f45a2af6861e036c77, type: 3}
+--- !u!114 &1475634968 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7820380437575802060, guid: 871a8db0f3ba20f45a2af6861e036c77, type: 3}
+  m_PrefabInstance: {fileID: 1475634967}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1f5a1f6b3b18694e87175b3273e0a00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Beep::Beep.BombController
 --- !u!1 &1581619709
 GameObject:
   m_ObjectHideFlags: 0
@@ -1607,9 +1642,9 @@ Camera:
     y: 0
     width: 1
     height: 1
-  near clip plane: 0.3
+  near clip plane: 0.1
   far clip plane: 1000
-  field of view: 60
+  field of view: 75
   orthographic: 0
   orthographic size: 5
   m_Depth: -1
@@ -1744,6 +1779,8 @@ GameObject:
   m_Component:
   - component: {fileID: 2051546670}
   - component: {fileID: 2051546669}
+  - component: {fileID: 2051546672}
+  - component: {fileID: 2051546671}
   m_Layer: 0
   m_Name: LocalTestRig
   m_TagString: Untagged
@@ -1783,6 +1820,36 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2051546671
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2051546668}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bed5bdc3b08764e489d7b3b7ddd581cd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Beep::Beep.AimReticle
+  color: {r: 1, g: 1, b: 1, a: 0.9}
+  length: 14
+  thickness: 2
+--- !u!114 &2051546672
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2051546668}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce4c0cb84c0ada54988193cc6e2afe7c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Beep::Beep.DebugHud
+  run: {fileID: 577991561}
+  switcher: {fileID: 2051546669}
+  visible: 1
 --- !u!1001 &2053575898
 PrefabInstance:
   m_ObjectHideFlags: 0

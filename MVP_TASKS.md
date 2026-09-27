@@ -158,7 +158,7 @@ Geometry requirements:
 
 ---
 
-## M1.2 — Implement basic third-person player movement
+## M1.2 — Implement basic first-person player movement
 
 Create a reusable player prefab.
 
@@ -196,11 +196,14 @@ Target structure:
 Player
 ├── Visual
 ├── CatchVolume
-├── ThrowOrigin
-├── HandAnchor
 ├── NameplateAnchor
 └── CameraTarget
+    ├── ThrowOrigin
+    └── HandAnchor
 ```
+
+The camera sits at `CameraTarget` (first person). `ThrowOrigin` and `HandAnchor` are children of it so the
+holder sees the bomb in their hand; no hand models yet.
 
 Attach required movement/input components.
 

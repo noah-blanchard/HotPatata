@@ -36,6 +36,9 @@ namespace Beep
             bool locked = player.ControlLocked;
             var input = player.Input;
 
+            // First person: the body always faces the way you are looking.
+            transform.rotation = player.Look.YawRotation;
+
             // --- Horizontal: camera-relative wish direction -------------------------------------
             Vector2 stick = locked ? Vector2.zero : Vector2.ClampMagnitude(input.Move, 1f);
             Vector3 wish = player.Look.YawRotation * new Vector3(stick.x, 0f, stick.y);
@@ -68,17 +71,7 @@ namespace Beep
 
             Grounded = controller.isGrounded;
             if (Grounded) lastGroundedTime = Time.time;
-
-            // --- Facing: turn toward movement --------------------------------------------------
-            Vector3 flat = new Vector3(horizontalVelocity.x, 0f, horizontalVelocity.z);
-            if (flat.sqrMagnitude > 0.25f)
-            {
-                var want = Quaternion.LookRotation(flat, Vector3.up);
-                transform.rotation = Quaternion.RotateTowards(transform.rotation, want, t.turnSpeed * dt);
-            }
         }
-
-        public void FaceYaw(float yaw) => transform.rotation = Quaternion.Euler(0f, yaw, 0f);
 
         public void ResetVelocity()
         {
