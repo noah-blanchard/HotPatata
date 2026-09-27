@@ -20,7 +20,7 @@ namespace Beep
             public int Carrier;       // player slot, -1 = nobody
             public int LastThrower;   // player slot, -1 = nobody
             public int FailReason;
-            public int Target;        // player slot the bomb is homing on, -1 = none
+            public int Receiver;      // player slot the flight is heading for (feedback only), -1 = none
             public int Sequence;      // forces a change so identical states still replicate
 
             public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
@@ -29,12 +29,12 @@ namespace Beep
                 serializer.SerializeValue(ref Carrier);
                 serializer.SerializeValue(ref LastThrower);
                 serializer.SerializeValue(ref FailReason);
-                serializer.SerializeValue(ref Target);
+                serializer.SerializeValue(ref Receiver);
                 serializer.SerializeValue(ref Sequence);
             }
 
             public bool Equals(Snapshot o) =>
-                State == o.State && Carrier == o.Carrier && LastThrower == o.LastThrower && FailReason == o.FailReason && Target == o.Target && Sequence == o.Sequence;
+                State == o.State && Carrier == o.Carrier && LastThrower == o.LastThrower && FailReason == o.FailReason && Receiver == o.Receiver && Sequence == o.Sequence;
         }
 
         readonly NetworkVariable<Snapshot> snapshot = new NetworkVariable<Snapshot>();   // server-written
@@ -52,7 +52,6 @@ namespace Beep
             {
                 bomb.StateChanged += OnStateChanged;
                 bomb.CarrierChanged += OnCarrierChanged;
-                bomb.HomingCleared += Publish;
                 Publish();
             }
             else
@@ -67,7 +66,6 @@ namespace Beep
             if (bomb == null) return;
             bomb.StateChanged -= OnStateChanged;
             bomb.CarrierChanged -= OnCarrierChanged;
-            bomb.HomingCleared -= Publish;
             snapshot.OnValueChanged -= OnSnapshotChanged;
         }
 
@@ -83,14 +81,14 @@ namespace Beep
                 Carrier = bomb.Carrier != null ? bomb.Carrier.PlayerId : -1,
                 LastThrower = bomb.LastThrower != null ? bomb.LastThrower.PlayerId : -1,
                 FailReason = (int)bomb.LastFailReason,
-                Target = bomb.HomingTarget != null ? bomb.HomingTarget.PlayerId : -1,
+                Receiver = bomb.IntendedReceiver != null ? bomb.IntendedReceiver.PlayerId : -1,
                 Sequence = ++sequence
             };
         }
 
         void Apply(Snapshot s)
         {
-            bomb.ApplyMirror((BombState)s.State, FindPlayer(s.Carrier), FindPlayer(s.LastThrower), (BombFailReason)s.FailReason, FindPlayer(s.Target));
+            bomb.ApplyMirror((BombState)s.State, FindPlayer(s.Carrier), FindPlayer(s.LastThrower), (BombFailReason)s.FailReason, FindPlayer(s.Receiver));
         }
 
         static Player FindPlayer(int slot)

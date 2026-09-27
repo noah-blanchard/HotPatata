@@ -231,9 +231,9 @@ namespace Beep.Tests
         [UnityTest]
         public IEnumerator ChargedThrow_TravelsFartherThanATap()
         {
-            // This is about charge only: switch homing off so the throws are not bent toward player 2.
-            float homing = tuning.homingStrength;
-            tuning.homingStrength = 0f;
+            // This is about charge only: switch the aim assist off so the throws are not turned toward player 2.
+            float assist = tuning.assistStrength;
+            tuning.assistStrength = 0f;
             try
             {
                 // Aim level over open floor (+X, the far wall is 23 m away) and compare where the bomb first touches down.
@@ -255,7 +255,7 @@ namespace Beep.Tests
             }
             finally
             {
-                tuning.homingStrength = homing;
+                tuning.assistStrength = assist;
             }
         }
 

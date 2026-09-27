@@ -25,6 +25,8 @@ namespace Beep
         public float AssistAngle;
         /// <summary>Degrees the launch direction was turned by the assist.</summary>
         public float AssistCorrection;
+        /// <summary>0..1: how strongly the assist leaned toward the target (fades with angle and distance).</summary>
+        public float AssistStrength;
         /// <summary>The throw could not reach the target at its own speed: only its heading was corrected.</summary>
         public bool AssistYawOnly;
 

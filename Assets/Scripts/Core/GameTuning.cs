@@ -85,26 +85,22 @@ namespace Beep
         [Tooltip("Max distance of the aim ray that decides where the throw is pointed.")]
         [Min(1f)] public float aimMaxDistance = 40f;
 
-        [Header("Bomb - aim assist (small, never automatic)")]
-        [Tooltip("A receiver must be within this many degrees of the throw direction to get assistance.")]
-        [Range(0f, 30f)] public float aimAssistAngle = 8f;
-        [Min(0f)] public float aimAssistDistance = 16f;
-        [Tooltip("0 = no assist, 1 = fully corrected toward the receiver's catch point.")]
-        [Range(0f, 1f)] public float aimAssistStrength = 0.5f;
-
-        [Header("Bomb - soft homing (visible, never perfect)")]
-        [Tooltip("0 = no homing, 1 = the lock is as strong as it can be. Fades toward the edge of the cone.")]
-        [Range(0f, 1f)] public float homingStrength = 0.7f;
-        [Tooltip("Half-angle of the cone (around your throw direction) in which a receiver can be locked.")]
-        [Range(5f, 60f)] public float homingConeDegrees = 28f;
-        [Min(0f)] public float homingRange = 25f;
-        [Tooltip("How fast the flight path can bend toward the target, degrees per second at 14 m/s (scales with speed, so hard throws bend too).")]
-        [Min(0f)] public float homingTurnRate = 200f;
-        [Tooltip("Random error on the aim point, in degrees, chosen per throw. This is what lets a homing throw still miss.")]
-        [Range(0f, 15f)] public float homingSpreadDegrees = 5f;
-        [Tooltip("Inside this distance from the target, with their catch window open, the bomb is pulled into their hands.")]
-        [Min(0f)] public float magnetRadius = 2f;
-        [Range(0f, 1f)] public float magnetStrength = 0.8f;
+        [Header("Bomb - aim assist (at release, direction only, never automatic)")]
+        [Tooltip("0 = no assist. How far (0..1) the launch direction turns toward the receiver, dead on and up close; capped below.")]
+        [Range(0f, 1f)] public float assistStrength = 0.6f;
+        [Tooltip("The receiver's body must be within this many degrees of your aim to get any help.")]
+        [Range(0f, 15f)] public float assistConeDegrees = 6f;
+        [Tooltip("No assist beyond this horizontal distance, in metres.")]
+        [Min(0f)] public float assistMaxRange = 14f;
+        [Tooltip("Full strength up to this distance; it fades to assistFarStrength at assistMaxRange.")]
+        [Min(0f)] public float assistFullStrengthDistance = 8f;
+        [Range(0f, 1f)] public float assistFarStrength = 0.4f;
+        [Tooltip("Most the assist may turn a throw, in degrees.")]
+        [Range(0f, 10f)] public float assistMaxCorrectionDegrees = 3.5f;
+        [Tooltip("Most of that turn that may point UP, in degrees (upward turns add range; this keeps the assist from adding much).")]
+        [Range(0f, 5f)] public float assistMaxElevationDegrees = 1.5f;
+        [Tooltip("How much the assist aims ahead of a moving receiver (0 = where they are, 1 = where they will be).")]
+        [Range(0f, 1f)] public float assistLeadFactor = 0.5f;
 
         [Header("Catch")]
         [Tooltip("Radius of the receiver's catch sphere.")]

@@ -31,6 +31,9 @@ namespace Beep
     [RequireComponent(typeof(BombFuse), typeof(BombPhysics), typeof(CatchResolver))]
     public class BombController : MonoBehaviour
     {
+        const float IntendedReceiverReach = 2.5f;     // metres: an arc passing farther than this from everyone is not a pass
+        const float IntendedReceiverHorizon = 2.5f;   // seconds of flight considered
+
         [SerializeField] GameTuning tuning;
 
         [Header("Debug (read-only at runtime)")]
@@ -52,10 +55,11 @@ namespace Beep
         public Player Carrier { get; private set; }
         /// <summary>Who released the bomb most recently; cannot catch that same flight.</summary>
         public Player LastThrower { get; private set; }
-        /// <summary>The receiver a flying bomb is being bent toward (null = flying free).</summary>
-        public Player HomingTarget { get; private set; }
-        public float HomingQuality { get; private set; }
-        public Vector3 HomingOffset { get; private set; }
+        /// <summary>
+        /// Who a flying bomb is heading for: the player its arc passes closest to, if close enough to be a pass.
+        /// Feedback only (the receiver's "CATCH!" marker); nothing steers the bomb.
+        /// </summary>
+        public Player IntendedReceiver { get; private set; }
         /// <summary>Why the bomb last exploded (valid while Exploding).</summary>
         public BombFailReason LastFailReason { get; private set; }
         /// <summary>Host only: the bomb has hit something lethal and will explode unless a late catch arrives first.</summary>
@@ -71,8 +75,6 @@ namespace Beep
         public event Action<Player> BombThrown;              // thrower
         public event Action<Player> BombCaught;              // receiver
         public event Action<BombFailReason, string> BombExploded;
-        /// <summary>The flight stopped homing mid-air (it passed its target). Host only; replicated by NetworkBomb.</summary>
-        public event Action HomingCleared;
 
         void Awake()
         {
@@ -120,7 +122,7 @@ namespace Beep
             }
 
             LastThrower = thrower;
-            PickHomingTarget(thrower, origin, velocity);
+            IntendedReceiver = PickIntendedReceiver(thrower, origin, velocity);
             SetCarrier(null);
             Transition(BombState.Thrown);
             bombPhysics.EnterThrown(origin, velocity);
@@ -136,7 +138,7 @@ namespace Beep
 
             if (ExplosionPending) BeepLog.Bomb($"Held lethal contact cancelled by a late catch ({pendingReason})");
             pendingExplosionAt = -1f;
-            HomingTarget = null;
+            IntendedReceiver = null;
             SetCarrier(receiver);
             bombPhysics.EnterHeld(receiver.HandAnchor);
             fuse.Refresh();
@@ -147,26 +149,25 @@ namespace Beep
             return true;
         }
 
-        void PickHomingTarget(Player thrower, Vector3 origin, Vector3 velocity)
+        /// <summary>The player the (pure ballistic) arc passes closest to, within <see cref="IntendedReceiverReach"/>.</summary>
+        Player PickIntendedReceiver(Player thrower, Vector3 origin, Vector3 velocity)
         {
-            HomingTarget = null;
-            if (!NetMode.IsAuthority) return;
-            if (!HomingTargeting.TryPick(tuning, origin, velocity, thrower, Player.All, out var target, out float angle, out float quality)) return;
+            if (!NetMode.IsAuthority) return null;
 
-            HomingTarget = target;
-            HomingQuality = quality;
-            // A small random error on where the bomb aims: this is what lets a homing throw still miss.
-            float distance = Vector3.Distance(origin, target.CatchVolume.CatchCenter);
-            HomingOffset = UnityEngine.Random.insideUnitSphere * (Mathf.Tan(tuning.homingSpreadDegrees * Mathf.Deg2Rad) * distance);
-            BeepLog.Bomb($"Homing on {target} (off-aim {angle:F0} deg, strength {quality:F2})");
-        }
-
-        /// <summary>Stop bending the flight (the bomb has passed its target).</summary>
-        public void ClearHoming()
-        {
-            if (HomingTarget == null) return;
-            HomingTarget = null;
-            HomingCleared?.Invoke();
+            float g = ThrowBallistics.Gravity(tuning);
+            Player best = null;
+            float bestDistance = IntendedReceiverReach;
+            foreach (var p in Player.All)
+            {
+                if (p == null || p == thrower || p.CatchVolume == null) continue;
+                float d = ThrowBallistics.ClosestApproach(origin, velocity, g, p.CatchVolume.CatchCenter, IntendedReceiverHorizon, out _, 0.02f);
+                if (d < bestDistance)
+                {
+                    bestDistance = d;
+                    best = p;
+                }
+            }
+            return best;
         }
 
         // ------------------------------------------------------------------ failure
@@ -230,7 +231,7 @@ namespace Beep
             var from = State;
             pendingExplosionAt = -1f;
             LastFailReason = reason;
-            HomingTarget = null;
+            IntendedReceiver = null;
             bombPhysics.EnterInert();
             Transition(BombState.Exploding);
             BeepLog.Bomb($"{from} -> Exploding reason={reason} {detail}");
@@ -245,7 +246,7 @@ namespace Beep
             bombPhysics.EnterInert();
             transform.SetParent(null, true);
             pendingExplosionAt = -1f;
-            HomingTarget = null;
+            IntendedReceiver = null;
             LastThrower = null;
             SetCarrier(null);
             fuse.Refresh();
@@ -268,10 +269,10 @@ namespace Beep
         /// Remote clients only: adopt the host's state and raise the same events the host raised, so audio,
         /// visuals and UI react identically everywhere. Never called on the authority.
         /// </summary>
-        public void ApplyMirror(BombState newState, Player carrier, Player lastThrower, BombFailReason failReason, Player homingTarget)
+        public void ApplyMirror(BombState newState, Player carrier, Player lastThrower, BombFailReason failReason, Player receiver)
         {
             var old = State;
-            HomingTarget = homingTarget;
+            IntendedReceiver = receiver;
             LastThrower = lastThrower;
             LastFailReason = failReason;
             SetCarrier(carrier);

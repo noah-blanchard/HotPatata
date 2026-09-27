@@ -47,16 +47,14 @@ MonoBehaviour:
   throwUpAngle: 12
   bombGravityScale: 1.25
   aimMaxDistance: 40
-  aimAssistAngle: 8
-  aimAssistDistance: 16
-  aimAssistStrength: 0.35
-  homingStrength: 0.7
-  homingConeDegrees: 28
-  homingRange: 25
-  homingTurnRate: 200
-  homingSpreadDegrees: 5
-  magnetRadius: 2
-  magnetStrength: 0.8
+  assistStrength: 0.6
+  assistConeDegrees: 6
+  assistMaxRange: 14
+  assistFullStrengthDistance: 8
+  assistFarStrength: 0.4
+  assistMaxCorrectionDegrees: 3.5
+  assistMaxElevationDegrees: 1.5
+  assistLeadFactor: 0.5
   catchRadius: 0.9
   catchWindowDuration: 0.4
   catchCooldown: 0.5

@@ -19,6 +19,7 @@ namespace Beep
         BombController bomb;
         IReadOnlyList<Player> allPlayers;
         int aimMask;
+        int sightMask;   // what blocks the assist's line of sight to a receiver
         const float RequestTimeout = 1f;   // seconds a remote client waits for the host to act on its throw request
 
         float chargeStartTime = -1f;
@@ -27,11 +28,8 @@ namespace Beep
 
         public bool Charging => chargeStartTime >= 0f;
 
-        /// <summary>Who the throw would be bent toward if released now (drives the on-screen lock frame).</summary>
-        public Player LockTarget { get; private set; }
-        public float LockQuality { get; private set; }
-
-        /// <summary>The throw you would make if you released now (local carrier only; Valid = false otherwise).</summary>
+        /// <summary>The throw you would make if you released now (local carrier only; Valid = false otherwise).
+        /// Its assist target drives the on-screen lock brackets.</summary>
         public ThrowShot Preview { get; private set; }
         /// <summary>The most recent throw this player released (on the machine that computed it).</summary>
         public ThrowShot LastShot { get; private set; }
@@ -46,6 +44,7 @@ namespace Beep
         {
             player = GetComponent<Player>();
             aimMask = LayerMask.GetMask("Environment", "Hazard", "Player");
+            sightMask = LayerMask.GetMask("Environment", "Hazard");
         }
 
         public void Bind(BombController bombController, IReadOnlyList<Player> players)
@@ -111,19 +110,9 @@ namespace Beep
 
         void UpdateLockPreview()
         {
-            LockTarget = null;
-            LockQuality = 0f;
             Preview = default;
             if (bomb == null || bomb.Carrier != player || allPlayers == null) return;
-
-            Vector3 origin = ThrowOriginNow();
-            Preview = ComputeShot(origin, Charge01);
-            Vector3 velocity = ComputeThrowVelocity(origin, 0f);   // direction is the same for every charge
-            if (HomingTargeting.TryPick(player.Tuning, origin, velocity, player, allPlayers, out var target, out _, out float quality))
-            {
-                LockTarget = target;
-                LockQuality = quality;
-            }
+            Preview = ComputeShot(ThrowOriginNow(), Charge01);
         }
 
         /// <summary>Throws now (offline / host), or asks the host to (remote client). The bomb leaves this frame.</summary>
@@ -193,40 +182,15 @@ namespace Beep
                 dir = Quaternion.AngleAxis(-t.throwUpAngle, right.normalized) * dir;
             shot.RawVelocity = dir * speed;
 
-            // 3. Optional small assist toward a nearby receiver.
-            Vector3 assisted = ApplyAimAssist(origin, dir, speed, t, ref shot);
-            shot.AssistCorrection = Vector3.Angle(dir, assisted);
-            shot.Velocity = assisted * speed;
+            // 3. Small release-time assist toward a receiver near the aim: direction only, never speed.
+            var assist = AimAssist.Apply(t, pivot, forward, origin, dir, speed, Vector3.zero, player, allPlayers, sightMask);
+            shot.AssistTarget = assist.Target;
+            shot.AssistAngle = assist.Angle;
+            shot.AssistStrength = assist.Strength;
+            shot.AssistCorrection = assist.Correction;
+            shot.AssistYawOnly = assist.Target != null && !assist.Reachable;
+            shot.Velocity = assist.Direction * speed;
             return shot;
-        }
-
-        Vector3 ApplyAimAssist(Vector3 origin, Vector3 dir, float speed, GameTuning t, ref ThrowShot shot)
-        {
-            if (allPlayers == null || t.aimAssistStrength <= 0f) return dir;
-
-            float g = ThrowBallistics.Gravity(t);
-            Vector3? best = null;
-            float bestAngle = t.aimAssistAngle;
-
-            foreach (var other in allPlayers)
-            {
-                if (other == null || other == player || other.CatchVolume == null) continue;
-
-                Vector3 to = other.CatchVolume.CatchCenter - origin;
-                if (to.magnitude > t.aimAssistDistance) continue;
-                if (!ThrowBallistics.TrySolveLowArc(to, speed, g, out Vector3 solved, out _)) continue;
-
-                float angle = Vector3.Angle(dir, solved);
-                if (angle <= bestAngle)
-                {
-                    bestAngle = angle;
-                    best = solved;
-                    shot.AssistTarget = other;
-                    shot.AssistAngle = angle;
-                }
-            }
-
-            return best.HasValue ? Vector3.Slerp(dir, best.Value, t.aimAssistStrength).normalized : dir;
         }
     }
 }

@@ -88,7 +88,7 @@ namespace Beep
 
             // Assist cone: a ring around the aim ray at the target's distance (or 10 m).
             float distance = shot.HasAssist ? Vector3.Distance(eye, shot.AssistTarget.CatchVolume.CatchCenter) : 10f;
-            Ring(eye + shot.AimForward * distance, shot.AimForward, distance * Mathf.Tan(t.aimAssistAngle * Mathf.Deg2Rad), ConeColor);
+            Ring(eye + shot.AimForward * distance, shot.AimForward, distance * Mathf.Tan(t.assistConeDegrees * Mathf.Deg2Rad), ConeColor);
         }
 
         void DrawCatchVolumes()
