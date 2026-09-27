@@ -23,6 +23,8 @@ namespace Beep
         BombController controller;
 
         public Vector3 Velocity => body.isKinematic ? Vector3.zero : body.linearVelocity;
+        /// <summary>Not simulated (held, inert, or stopped on a lethal contact that is waiting for a late catch).</summary>
+        public bool Frozen => body.isKinematic;
 
         void Awake()
         {
@@ -35,7 +37,7 @@ namespace Beep
 
         void FixedUpdate()
         {
-            if (!NetMode.IsAuthority || controller.State != BombState.Thrown) return;
+            if (!NetMode.IsAuthority || controller.State != BombState.Thrown || Frozen) return;
 
             body.AddForce(Physics.gravity * tuning.bombGravityScale, ForceMode.Acceleration);
             Steer();

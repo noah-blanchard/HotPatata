@@ -7,7 +7,7 @@ namespace Beep
     /// Network face of a Player. The owning client drives movement and aim (its NetworkTransform is
     /// owner-authoritative); everything that decides the game (throw acceptance, catch windows, locking,
     /// teleports on reset) is requested from, or pushed by, the host:
-    ///   client --RequestThrow/RequestCatch--> host validates and applies
+    ///   client --RequestThrow/RequestCatch/ClaimCatch--> host validates and applies
     ///   host --Locked / TeleportOwner--> owning client
     /// Offline (not spawned) this component does nothing and Player behaves exactly as before.
     /// </summary>
@@ -119,6 +119,9 @@ namespace Beep
 
         public void RequestCatch() => RequestCatchRpc();
 
+        /// <summary>Owner only: "on my screen the bomb reached my catch sphere while my window was open". The host decides.</summary>
+        public void ClaimCatch() => ClaimCatchRpc();
+
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         void RequestThrowRpc(Vector3 origin, Vector3 velocity)
         {
@@ -137,6 +140,13 @@ namespace Beep
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         void RequestCatchRpc() => player.Catcher.TryOpenWindow();
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+        void ClaimCatchRpc()
+        {
+            var bomb = BombController.Instance;
+            if (bomb != null) bomb.Resolver.TryResolveCompensatedCatch(player);
+        }
 
         static bool IsFinite(Vector3 v) => float.IsFinite(v.x) && float.IsFinite(v.y) && float.IsFinite(v.z);
     }
