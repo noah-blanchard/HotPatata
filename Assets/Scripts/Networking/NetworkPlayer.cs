@@ -160,7 +160,8 @@ namespace Beep
             if (bomb == null || bomb.State != BombState.Held || bomb.Carrier != player) return;
             if (!IsFinite(origin) || !IsFinite(velocity)) return;   // NaN/Infinity would poison the host's physics
 
-            float max = player.Tuning.throwSpeedMax * ThrowSpeedTolerance;
+            var t = player.Tuning;
+            float max = (t.throwSpeedMax + t.throwInheritForward * t.moveSpeed) * ThrowSpeedTolerance;   // charge + kept run speed
             if (velocity.magnitude > max) velocity = velocity.normalized * max;
 
             Vector3 eye = player.CameraTarget.position;

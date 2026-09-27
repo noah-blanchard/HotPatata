@@ -82,7 +82,7 @@ namespace Beep
         void OnBombThrown(Player thrower)
         {
             if (thrower != player) return;
-            pitchKick.Kick(2.5f);      // a little follow-through as the potato leaves the hand
+            pitchKick.Kick(1.2f);      // a small follow-through as the potato leaves the hand (kept small: it moves the crosshair)
             fovImpulse.Kick(3f);
         }
 

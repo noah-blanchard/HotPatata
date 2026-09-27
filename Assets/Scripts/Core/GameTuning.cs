@@ -50,7 +50,7 @@ namespace Beep
         [Tooltip("How far the view dips on a hard landing, in metres.")]
         [Min(0f)] public float landingDip = 0.10f;
         [Tooltip("Degrees the field of view narrows while charging a throw (focus).")]
-        [Min(0f)] public float chargeFovZoom = 6f;
+        [Min(0f)] public float chargeFovZoom = 2f;
         [Tooltip("Vignette strength at full speed (0..1).")]
         [Range(0f, 0.6f)] public float speedVignette = 0.28f;
         [Tooltip("Wind volume at full speed (0..1).")]
@@ -68,20 +68,23 @@ namespace Beep
 
         [Header("Bomb - throw")]
         [Tooltip("Launch speed of a tap (no charge). Sets the shortest pass.")]
-        [Min(0f)] public float throwSpeedMin = 10f;
+        [Min(0f)] public float throwSpeedMin = 16f;
         [Tooltip("Launch speed at full charge. Longer, faster throws.")]
-        [Min(0f)] public float throwSpeedMax = 22f;
+        [Min(0f)] public float throwSpeedMax = 28f;
         [Tooltip("Seconds of holding the throw button to reach full charge.")]
-        [Min(0.05f)] public float throwChargeTime = 1.0f;
+        [Min(0.05f)] public float throwChargeTime = 0.45f;
         [Tooltip("Normalized point in THROW where the arm waits while the button stays held.")]
         [Range(0.05f, 0.9f)] public float throwAnimationHoldNormalized = 0.38f;
         [Tooltip("Minimum time before the same throw wind-up can be triggered again on a player.")]
         [Min(0f)] public float throwAnimationReplayGuard = 0.65f;
         [Tooltip("Degrees the throw is pitched up from the aim direction (counters the drop on short passes).")]
-        [Range(0f, 45f)] public float throwUpAngle = 12f;
+        [Range(0f, 45f)] public float throwUpAngle = 6f;
         [Tooltip("Multiplier on Physics.gravity for the thrown bomb. Above 1 the potato feels heavy and drops quickly; " +
                  "below 1 it floats (flatter, much longer lobs).")]
-        [Min(0f)] public float bombGravityScale = 1.25f;
+        [Min(0f)] public float bombGravityScale = 1.5f;
+        [Tooltip("Share of the thrower's run speed ALONG the aim direction that the throw keeps (running forward throws harder). " +
+                 "Sideways and vertical motion are never added, so strafing or jumping does not push the throw off your aim.")]
+        [Range(0f, 1f)] public float throwInheritForward = 0.5f;
         [Tooltip("Max distance of the aim ray that decides where the throw is pointed.")]
         [Min(1f)] public float aimMaxDistance = 40f;
 
@@ -100,7 +103,7 @@ namespace Beep
         [Tooltip("Most of that turn that may point UP, in degrees (upward turns add range; this keeps the assist from adding much).")]
         [Range(0f, 5f)] public float assistMaxElevationDegrees = 1.5f;
         [Tooltip("How much the assist aims ahead of a moving receiver (0 = where they are, 1 = where they will be).")]
-        [Range(0f, 1f)] public float assistLeadFactor = 0.5f;
+        [Range(0f, 1f)] public float assistLeadFactor = 0.8f;
 
         [Header("Catch")]
         [Tooltip("Radius of the receiver's catch sphere.")]

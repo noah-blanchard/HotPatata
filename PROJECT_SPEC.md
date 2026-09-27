@@ -316,7 +316,7 @@ release, on direction only**:
   whose body is within `assistConeDegrees` (6°) of the raw aim (the body counts as a 0.4 m disc, so a close
   receiver is not harder to hit than a far one). The smallest angle wins.
 - **What:** the launch direction is turned toward the low-arc solution that reaches that receiver **at the throw's own
-  speed**, aimed a little ahead of a moving receiver (`assistLeadFactor` 0.5). Strength fades toward the edge of the
+  speed**, aimed a little ahead of a moving receiver (`assistLeadFactor` 0.8). Strength fades toward the edge of the
   cone and with distance (`assistStrength` 0.6).
 - **Caps:** at most `assistMaxCorrectionDegrees` (3.5°) in total, of which at most `assistMaxElevationDegrees`
   (1.5°) upward, so the assist can add only a little range.

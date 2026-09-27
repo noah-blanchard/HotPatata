@@ -150,7 +150,20 @@ namespace Beep
 
         /// <summary>Throw origin from the current aim (the anchor transform only updates in LateUpdate).</summary>
         public Vector3 ThrowOriginNow() =>
-            player.CameraTarget.position + player.Look.AimRotation * player.ThrowOrigin.localPosition;
+            player.CameraTarget.position + player.Look.ViewRotation * player.ThrowOrigin.localPosition;
+
+        /// <summary>
+        /// The share of the thrower's own motion a throw along <paramref name="direction"/> keeps: horizontal, along the
+        /// aim, never backwards, never sideways, never vertical (so strafing and jumping do not bend your aim).
+        /// </summary>
+        public static Vector3 InheritedVelocity(GameTuning t, Vector3 playerVelocity, Vector3 direction)
+        {
+            var flatDir = new Vector3(direction.x, 0f, direction.z);
+            if (t.throwInheritForward <= 0f || flatDir.sqrMagnitude < 1e-4f) return Vector3.zero;
+            flatDir.Normalize();
+            float along = Vector3.Dot(new Vector3(playerVelocity.x, 0f, playerVelocity.z), flatDir);
+            return along > 0f ? flatDir * (along * t.throwInheritForward) : Vector3.zero;
+        }
 
         public static float SpeedFor(GameTuning t, float charge01) =>
             Mathf.Lerp(t.throwSpeedMin, t.throwSpeedMax, Mathf.Clamp01(charge01));
@@ -167,7 +180,7 @@ namespace Beep
 
             // 1. Where is the player aiming?
             Vector3 pivot = player.CameraTarget.position;
-            Vector3 forward = player.Look.AimRotation * Vector3.forward;
+            Vector3 forward = player.Look.ViewRotation * Vector3.forward;   // what the crosshair shows
             shot.AimForward = forward;
             Vector3 aimPoint = Physics.Raycast(pivot, forward, out var hit, t.aimMaxDistance, aimMask, QueryTriggerInteraction.Ignore)
                 ? hit.point
@@ -180,16 +193,18 @@ namespace Beep
             Vector3 right = Vector3.Cross(Vector3.up, dir);
             if (right.sqrMagnitude > 1e-4f)
                 dir = Quaternion.AngleAxis(-t.throwUpAngle, right.normalized) * dir;
-            shot.RawVelocity = dir * speed;
+            // 3. Keep a share of the run speed along the aim (never sideways or vertical).
+            Vector3 inherited = InheritedVelocity(t, player.Velocity, dir);
+            shot.RawVelocity = dir * speed + inherited;
 
-            // 3. Small release-time assist toward a receiver near the aim: direction only, never speed.
-            var assist = AimAssist.Apply(t, pivot, forward, origin, dir, speed, Vector3.zero, player, allPlayers, sightMask);
+            // 4. Small release-time assist toward a receiver near the aim: direction only, never speed.
+            var assist = AimAssist.Apply(t, pivot, forward, origin, dir, speed, inherited, player, allPlayers, sightMask);
             shot.AssistTarget = assist.Target;
             shot.AssistAngle = assist.Angle;
             shot.AssistStrength = assist.Strength;
             shot.AssistCorrection = assist.Correction;
             shot.AssistYawOnly = assist.Target != null && !assist.Reachable;
-            shot.Velocity = assist.Direction * speed;
+            shot.Velocity = assist.Direction * speed + inherited;
             return shot;
         }
     }

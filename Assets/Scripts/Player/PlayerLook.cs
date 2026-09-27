@@ -17,6 +17,19 @@ namespace Beep
         public float Yaw => yaw;
         public float Pitch => pitch;
         public Quaternion AimRotation => Quaternion.Euler(pitch, yaw, 0f);
+
+        /// <summary>
+        /// The direction the camera actually shows: the aim plus the current view kick (throw/catch punches).
+        /// Throws use this, so the crosshair never lies. Roll and bob do not change where the view points.
+        /// </summary>
+        public Quaternion ViewRotation
+        {
+            get
+            {
+                var feel = player.IsLocal ? player.Feel : null;
+                return feel != null ? Quaternion.Euler(pitch + feel.PitchKick, yaw, 0f) : AimRotation;
+            }
+        }
         public Quaternion YawRotation => Quaternion.Euler(0f, yaw, 0f);
 
         void Awake()

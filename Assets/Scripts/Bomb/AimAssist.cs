@@ -148,7 +148,7 @@ namespace Beep
             float cone = 1f - angle / t.assistConeDegrees;
             float far = Mathf.InverseLerp(t.assistFullStrengthDistance, Mathf.Max(t.assistFullStrengthDistance + 0.01f, t.assistMaxRange), distance);
             float falloff = Mathf.Lerp(1f, t.assistFarStrength, far);
-            return Mathf.Clamp01(t.assistStrength * cone * cone * falloff);
+            return Mathf.Clamp01(t.assistStrength * cone * falloff);
         }
 
         /// <summary>Limits the turn from <paramref name="from"/> to <paramref name="to"/>: total and upward caps, in degrees.</summary>

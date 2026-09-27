@@ -106,7 +106,7 @@ namespace Beep.Tests
             float assistedRange = Range(r.Direction * speed);
 
             if (!r.Reachable) Assert.AreEqual(Elevation(raw), Elevation(r.Direction), 1e-3f, "too weak: heading only, no lift");
-            Assert.LessOrEqual(assistedRange, rawRange * 1.2f + 0.01f, "the assist adds at most a little range");
+            Assert.LessOrEqual(assistedRange, rawRange + 1f, $"the assist adds at most a metre of range ({rawRange:F1} -> {assistedRange:F1} m)");
             Assert.Less(assistedRange, 12f, "a tap must not become a 14 m pass");
         }
 
