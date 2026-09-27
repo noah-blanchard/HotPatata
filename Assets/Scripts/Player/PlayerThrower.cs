@@ -101,10 +101,8 @@ namespace Beep
 
             if (released && Charging)
             {
-                float charge = Charge01;
-                chargeStartTime = -1f;
                 // Throws only leave from Held (spec §5); a release during the short catch grace is kept, not lost.
-                bufferedCharge = Charge01;
+                bufferedCharge = Charge01;   // read before clearing chargeStartTime, which zeroes Charge01
                 chargeStartTime = -1f;
             }
 

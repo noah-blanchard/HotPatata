@@ -12,10 +12,17 @@ namespace Beep
     {
         [SerializeField] GameTuning tuning;
 
+        [Header("Real sounds (optional, from Assets/Audio/SFX; empty = procedural placeholder)")]
+        [SerializeField, Tooltip("Calm, medium, urgent, critical. Leave empty (or any entry empty) for the placeholder.")]
+        AudioClip[] beeps = new AudioClip[4];
+        [SerializeField] AudioClip catchClip;
+        [SerializeField] AudioClip throwClip;
+        [SerializeField] AudioClip explosionClip;
+
         AudioSource source;
         BombController bomb;
-        AudioClip[] beeps;
-        AudioClip catchClip, throwClip, explosionClip;
+        AudioClip[] placeholderBeeps;
+        AudioClip placeholderCatch, placeholderThrow, placeholderExplosion;
         float nextBeepTime;
 
         /// <summary>Raised on every beep with the stage it was played at.</summary>
@@ -30,13 +37,20 @@ namespace Beep
             source.spatialBlend = 0.8f;
             source.maxDistance = 45f;
             source.rolloffMode = AudioRolloffMode.Linear;
-
-            beeps = new AudioClip[4];
-            for (int i = 0; i < beeps.Length; i++) beeps[i] = ProceduralSfx.Beep((FuseStage)i);
-            catchClip = ProceduralSfx.Catch();
-            throwClip = ProceduralSfx.Throw();
-            explosionClip = ProceduralSfx.Explosion();
         }
+
+        // Real clip if one is assigned, else the procedural placeholder. Resolved when played (not cached in Awake),
+        // so a script reload during Play Mode, which drops runtime-made clips, never leaves a null.
+        AudioClip BeepClip(FuseStage stage)
+        {
+            int i = (int)stage;
+            if (beeps != null && i < beeps.Length && beeps[i] != null) return beeps[i];
+            placeholderBeeps ??= new AudioClip[4];
+            return placeholderBeeps[i] != null ? placeholderBeeps[i] : placeholderBeeps[i] = ProceduralSfx.Beep(stage);
+        }
+
+        static AudioClip Pick(AudioClip assigned, ref AudioClip placeholder, Func<AudioClip> make) =>
+            assigned != null ? assigned : placeholder != null ? placeholder : placeholder = make();
 
         void OnEnable()
         {
@@ -60,7 +74,7 @@ namespace Beep
             if (!alive || Time.time < nextBeepTime) return;
 
             var stage = bomb.Fuse.Stage;
-            source.PlayOneShot(beeps[(int)stage], tuning.beepVolume);
+            source.PlayOneShot(BeepClip(stage), tuning.beepVolume);
             Beeped?.Invoke(stage);
             nextBeepTime = Time.time + tuning.beepIntervals[(int)stage];
         }
@@ -71,8 +85,9 @@ namespace Beep
             if (from == BombState.Resetting) nextBeepTime = Time.time + 0.4f;
         }
 
-        void OnCaught(Player receiver) => source.PlayOneShot(catchClip, 1f);
-        void OnThrown(Player thrower) => source.PlayOneShot(throwClip, 0.8f);
-        void OnExploded(BombFailReason reason, string detail) => source.PlayOneShot(explosionClip, 1f);
+        void OnCaught(Player receiver) => source.PlayOneShot(Pick(catchClip, ref placeholderCatch, ProceduralSfx.Catch), 1f);
+        void OnThrown(Player thrower) => source.PlayOneShot(Pick(throwClip, ref placeholderThrow, ProceduralSfx.Throw), 0.8f);
+        void OnExploded(BombFailReason reason, string detail) =>
+            source.PlayOneShot(Pick(explosionClip, ref placeholderExplosion, ProceduralSfx.Explosion), 1f);
     }
 }
