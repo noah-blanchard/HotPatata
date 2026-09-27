@@ -25,15 +25,35 @@ namespace Beep
         InputActionAsset actions;
         InputAction move, look, jump, throwAction;
 
-        public InputSource Source { get; private set; }
-        public bool Active => Source != InputSource.None;
+        /// <summary>
+        /// Programmatic input that completely replaces device input while assigned. Used by automated
+        /// tests (and usable for scripted dummies); the game never sets it.
+        /// </summary>
+        public sealed class ScriptedInput
+        {
+            public Vector2 Move;
+            /// <summary>Look rate in "stick" units (-1..1), like a gamepad stick.</summary>
+            public Vector2 Look;
+            bool jumpQueued, throwQueued;
 
-        public Vector2 Move => Active ? move.ReadValue<Vector2>() : Vector2.zero;
-        public Vector2 Look => Active ? look.ReadValue<Vector2>() : Vector2.zero;
+            public void PressJump() => jumpQueued = true;
+            public void PressThrow() => throwQueued = true;
+
+            internal bool ConsumeJump() { bool v = jumpQueued; jumpQueued = false; return v; }
+            internal bool ConsumeThrow() { bool v = throwQueued; throwQueued = false; return v; }
+        }
+
+        public ScriptedInput Scripted { get; set; }
+
+        public InputSource Source { get; private set; }
+        public bool Active => Scripted != null || Source != InputSource.None;
+
+        public Vector2 Move => Scripted != null ? Scripted.Move : Source != InputSource.None ? move.ReadValue<Vector2>() : Vector2.zero;
+        public Vector2 Look => Scripted != null ? Scripted.Look : Source != InputSource.None ? look.ReadValue<Vector2>() : Vector2.zero;
         /// <summary>Mouse look is a per-frame delta; stick look is a rate. Callers scale them differently.</summary>
-        public bool LookIsMouse => Source == InputSource.KeyboardMouse;
-        public bool JumpPressed => Active && jump.WasPressedThisFrame();
-        public bool ThrowPressed => Active && throwAction.WasPressedThisFrame();
+        public bool LookIsMouse => Scripted == null && Source == InputSource.KeyboardMouse;
+        public bool JumpPressed => Scripted != null ? Scripted.ConsumeJump() : Source != InputSource.None && jump.WasPressedThisFrame();
+        public bool ThrowPressed => Scripted != null ? Scripted.ConsumeThrow() : Source != InputSource.None && throwAction.WasPressedThisFrame();
 
         void Awake()
         {
@@ -47,8 +67,8 @@ namespace Beep
 
         void OnEnable()
         {
+            SetSource(initialSource, gamepadIndex);   // restrict devices first, so nothing resolves against all of them
             actions.Enable();
-            SetSource(initialSource, gamepadIndex);
         }
 
         void OnDisable() => actions.Disable();

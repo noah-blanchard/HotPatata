@@ -14,12 +14,16 @@ namespace Beep
         [SerializeField] ThirdPersonCamera cam;
         [SerializeField] bool lockCursor = true;
 
+        /// <summary>Automated tests set this so no real keyboard/mouse is attached to a player.</summary>
+        public static bool SuppressAutoFocus;
+
         int focused = -1;
 
         public Player Focused => focused >= 0 ? players[focused] : null;
 
         void Start()
         {
+            if (SuppressAutoFocus) return;
             Focus(0);
             SetCursor(lockCursor);
         }
@@ -27,7 +31,7 @@ namespace Beep
         void Update()
         {
             var kb = Keyboard.current;
-            if (kb == null) return;
+            if (kb == null || SuppressAutoFocus) return;
 
             if (kb.tabKey.wasPressedThisFrame) Focus((focused + 1) % players.Length);
             if (kb.escapeKey.wasPressedThisFrame) SetCursor(Cursor.lockState != CursorLockMode.Locked);
