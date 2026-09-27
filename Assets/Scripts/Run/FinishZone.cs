@@ -16,7 +16,7 @@ namespace Beep
         void FixedUpdate()
         {
             var run = RunManager.Instance;
-            if (run == null || run.State != RunState.Playing) return;
+            if (!NetMode.IsAuthority || run == null || run.State != RunState.Playing) return;
 
             if (PlayerZone.Collect(trigger, inside) >= run.Players.Count)
                 run.Complete();

@@ -30,10 +30,21 @@ namespace Beep
 
         void Awake() => Paint(inactiveColor);
 
+        void Update()
+        {
+            // Remote clients just show what the host decided.
+            var run = RunManager.Instance;
+            if (NetMode.IsRemoteClient && !Activated && run != null && run.CurrentCheckpoint != null && run.CurrentCheckpoint.Id >= id)
+            {
+                Activated = true;
+                Paint(activeColor);
+            }
+        }
+
         void FixedUpdate()
         {
             var run = RunManager.Instance;
-            if (Activated || run == null || run.State != RunState.Playing) return;
+            if (!NetMode.IsAuthority || Activated || run == null || run.State != RunState.Playing) return;
 
             if (PlayerZone.Collect(trigger, inside) >= run.Players.Count)
             {

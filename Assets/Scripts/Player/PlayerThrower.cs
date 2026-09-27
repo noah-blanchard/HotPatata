@@ -43,6 +43,8 @@ namespace Beep
 
         void Update()
         {
+            if (!player.IsLocal) return;
+
             // Always consume both edges so nothing queues up while we cannot throw.
             bool pressed = player.Input.ThrowPressed;
             bool released = player.Input.ThrowReleased;
@@ -72,7 +74,16 @@ namespace Beep
             if (bomb == null || bomb.State != BombState.Held || bomb.Carrier != player) return false;
 
             Vector3 origin = ThrowOriginNow();
-            return bomb.TryThrow(player, origin, ComputeThrowVelocity(origin, charge01));
+            Vector3 velocity = ComputeThrowVelocity(origin, charge01);
+
+            if (NetMode.IsRemoteClient)
+            {
+                // The host decides whether the throw happens; we only describe it.
+                player.Net.RequestThrow(origin, velocity);
+                return true;
+            }
+
+            return bomb.TryThrow(player, origin, velocity);
         }
 
         /// <summary>Throw origin from the current aim (the anchor transform only updates in LateUpdate).</summary>

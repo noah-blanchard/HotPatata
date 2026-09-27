@@ -45,6 +45,7 @@ namespace Beep.Tests
             bomb = Object.FindFirstObjectByType<BombController>();
             Drive = new PlayerInputReader.ScriptedInput();
             p1.Input.Scripted = Drive;
+            FirstPersonCamera.Instance.Target = p1;   // the switcher is suppressed, so pick the camera's player here
 
             yield return WaitUntil(() => p1.Motor.Grounded && p2.Motor.Grounded, 2f, "players never landed");
         }

@@ -15,35 +15,46 @@ namespace Beep
     }
 
     /// <summary>
-    /// Owns the local run: hands out the bomb, tracks the active checkpoint and the section clock, and turns
+    /// Owns the run: hands out the bomb, tracks the active checkpoint and the section clock, and turns
     /// any failure (bomb explosion, player fall) into a fast section reset
-    /// (lock -> feedback -> reset level objects -> teleport -> reset bomb -> resume).
-    /// Also decides course completion.
+    /// (lock -> feedback -> reset level objects -> teleport -> reset bomb -> resume). Also decides completion.
+    ///
+    /// Only the authority (offline, or the host online) runs these rules. Remote clients read the replicated
+    /// <see cref="NetworkRunState"/> through the same properties.
     /// </summary>
+    [DefaultExecutionOrder(100)]   // after players and the bomb have started
     public class RunManager : MonoBehaviour
     {
         public static RunManager Instance { get; private set; }
 
         [SerializeField] GameTuning tuning;
         [SerializeField] BombController bomb;
-        [SerializeField] Player[] players;
         [SerializeField, Tooltip("Fallback spawns used until a checkpoint is activated.")] PlayerSpawn[] spawns;
-        [SerializeField, Tooltip("Index into Players of who holds the bomb at the start.")] int startingCarrier;
+        [SerializeField, Tooltip("Player slot that holds the bomb at the start.")] int startingCarrier;
+        [SerializeField, Min(1), Tooltip("The section starts once this many players are present.")] int playersToStart = 2;
+        [SerializeField] NetworkRunState netState;
 
         readonly List<IResettable> resettables = new List<IResettable>();
+        readonly HashSet<Player> placed = new HashSet<Player>();
+        Checkpoint checkpoint;
+        RunState state = RunState.Initializing;
+        int resetCount;
+        double sectionStart;
+        double runStart;
+        float runTime;
         float resetAtTime;
-        float sectionStartTime;
-        float runStartTime;
 
-        public RunState State { get; private set; } = RunState.Initializing;
-        public int ResetCount { get; private set; }
-        public IReadOnlyList<Player> Players => players;
-        public BombController Bomb => bomb;
-        public Checkpoint CurrentCheckpoint { get; private set; }
+        bool Mirror => NetMode.IsRemoteClient && netState != null && netState.IsSpawned;
+
+        public RunState State => Mirror ? netState.State : state;
+        public int ResetCount => Mirror ? netState.ResetCount : resetCount;
         /// <summary>Seconds since the current section attempt began; the time base for level motion.</summary>
-        public float SectionTime => Time.time - sectionStartTime;
+        public float SectionTime => (float)(NetMode.ServerTime - (Mirror ? netState.SectionStart : sectionStart));
         /// <summary>Total run time; frozen at completion.</summary>
-        public float RunTime { get; private set; }
+        public float RunTime => Mirror ? netState.RunTime : runTime;
+        public Checkpoint CurrentCheckpoint => Mirror ? FindCheckpoint(netState.CheckpointId) : checkpoint;
+        public IReadOnlyList<Player> Players => Player.All;
+        public BombController Bomb => bomb;
 
         public event Action<RunState> StateChanged;
         public event Action<Checkpoint> CheckpointActivated;
@@ -53,13 +64,11 @@ namespace Beep
 
         void Start()
         {
-            foreach (var p in players) p.Bind(bomb, players);
             foreach (var mb in FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None))
                 if (mb is IResettable r) resettables.Add(r);
 
             bomb.BombExploded += OnBombExploded;
-            runStartTime = Time.time;
-            StartSection();
+            if (NetMode.IsAuthority) Transition(RunState.WaitingForPlayers);
         }
 
         void OnDestroy()
@@ -70,34 +79,58 @@ namespace Beep
 
         void Update()
         {
-            if (State == RunState.Playing) RunTime = Time.time - runStartTime;
-            if (State == RunState.Failing && Time.time >= resetAtTime) ResetSection();
+            if (!NetMode.IsAuthority) return;   // remote clients only mirror
+
+            switch (state)
+            {
+                case RunState.WaitingForPlayers:
+                    if (Players.Count >= playersToStart) StartSection();
+                    break;
+
+                case RunState.Playing:
+                    runTime = (float)(NetMode.ServerTime - runStart);
+                    PlaceLateJoiners();
+                    if (CarrierLeft()) FailSection("CarrierLeft", "the bomb holder disconnected");
+                    break;
+
+                case RunState.Failing:
+                    if (Time.time >= resetAtTime) ResetSection();
+                    break;
+            }
+
+            if (netState != null && netState.IsSpawned)
+                netState.Push(state, resetCount, sectionStart, runTime, checkpoint != null ? checkpoint.Id : -1);
         }
 
         void StartSection()
         {
-            sectionStartTime = Time.time;
+            runStart = NetMode.ServerTime;
+            sectionStart = runStart;
             PlacePlayers();
             bomb.BeginReset();
             bomb.EndReset(CarrierForReset());
             SetPlayersLocked(false);
             Transition(RunState.Playing);
+            BeepLog.Run($"Run started with {Players.Count} players");
         }
 
         // ------------------------------------------------------------------ failure / reset
 
-        void OnBombExploded(BombFailReason reason, string detail) => FailSection(reason.ToString(), detail);
+        void OnBombExploded(BombFailReason reason, string detail)
+        {
+            if (NetMode.IsAuthority) FailSection(reason.ToString(), detail);
+        }
 
         /// <summary>Fails the current section for the whole team. Ignored unless the run is being played.</summary>
         public void FailSection(string reason, string detail)
         {
-            if (State != RunState.Playing) return;
+            if (!NetMode.IsAuthority || state != RunState.Playing) return;
 
-            ResetCount++;
+            resetCount++;
             SetPlayersLocked(true);
             resetAtTime = Time.time + tuning.resetDelay;
             Transition(RunState.Failing);
-            BeepLog.Run($"Section fail reason={reason} {detail} (reset #{ResetCount})");
+            BeepLog.Run($"Section fail reason={reason} {detail} (reset #{resetCount})");
         }
 
         void ResetSection()
@@ -106,7 +139,7 @@ namespace Beep
             BeepLog.Run("Reset start");
 
             foreach (var r in resettables) r.ResetState();   // falling platforms etc.
-            sectionStartTime = Time.time;                    // moving platforms / rotating bars restart their cycle
+            sectionStart = NetMode.ServerTime;               // moving platforms / rotating bars restart their cycle
             bomb.BeginReset();                               // inert, ownerless, velocity cleared, fuse restored
             PlacePlayers();                                  // teleport + clear player velocity
             bomb.EndReset(CarrierForReset());
@@ -118,54 +151,75 @@ namespace Beep
 
         // ------------------------------------------------------------------ checkpoints / completion
 
-        public void ActivateCheckpoint(Checkpoint checkpoint)
+        public void ActivateCheckpoint(Checkpoint cp)
         {
-            if (State != RunState.Playing) return;
+            if (!NetMode.IsAuthority || state != RunState.Playing) return;
 
-            CurrentCheckpoint = checkpoint;
+            checkpoint = cp;
             // Normalise the bomb for the new section: a fresh hold window for whoever has it.
             if (bomb.State == BombState.Held || bomb.State == BombState.CaughtGrace) bomb.Fuse.Refresh();
-            BeepLog.Run($"Checkpoint {checkpoint.Id} activated");
-            CheckpointActivated?.Invoke(checkpoint);
+            BeepLog.Run($"Checkpoint {cp.Id} activated");
+            CheckpointActivated?.Invoke(cp);
         }
 
         /// <summary>Called by FinishZone once every required player is inside. Fires once.</summary>
         public void Complete()
         {
-            if (State != RunState.Playing) return;
+            if (!NetMode.IsAuthority || state != RunState.Playing) return;
 
-            RunTime = Time.time - runStartTime;
+            runTime = (float)(NetMode.ServerTime - runStart);
             SetPlayersLocked(true);
             bomb.BeginReset();   // inert: nothing can explode after the finish
             Transition(RunState.Completed);
-            BeepLog.Run($"Course complete time={RunTime:F1}s resets={ResetCount}");
-            RunCompleted?.Invoke(RunTime);
+            BeepLog.Run($"Course complete time={runTime:F1}s resets={resetCount}");
+            RunCompleted?.Invoke(runTime);
         }
 
         // ------------------------------------------------------------------ helpers
 
         Player CarrierForReset()
         {
-            int slot = CurrentCheckpoint != null ? CurrentCheckpoint.CarrierSlot : startingCarrier;
-            foreach (var p in players)
+            int slot = checkpoint != null ? checkpoint.CarrierSlot : startingCarrier;
+            foreach (var p in Players)
                 if (p.PlayerId == slot) return p;
-            return players[0];
+            return Players[0];
         }
+
+        bool CarrierLeft() =>
+            (bomb.State == BombState.Held || bomb.State == BombState.CaughtGrace) && bomb.Carrier == null;
 
         void PlacePlayers()
         {
-            foreach (var p in players)
+            foreach (var p in Players)
             {
-                var spawn = FindSpawn(p.PlayerId);
-                if (spawn != null) p.TeleportTo(spawn.transform.position, spawn.transform.rotation);
+                PlaceOne(p);
+                placed.Add(p);
             }
+        }
+
+        /// <summary>A player who connects while the run is in progress starts at their slot's spawn.</summary>
+        void PlaceLateJoiners()
+        {
+            foreach (var p in Players)
+            {
+                if (placed.Contains(p)) continue;
+                PlaceOne(p);
+                p.SetControlLocked(false);
+                placed.Add(p);
+            }
+        }
+
+        void PlaceOne(Player p)
+        {
+            var spawn = FindSpawn(p.PlayerId);
+            if (spawn != null) p.TeleportTo(spawn.transform.position, spawn.transform.rotation);
         }
 
         PlayerSpawn FindSpawn(int slot)
         {
-            if (CurrentCheckpoint != null)
+            if (checkpoint != null)
             {
-                var s = CurrentCheckpoint.FindSpawn(slot);
+                var s = checkpoint.FindSpawn(slot);
                 if (s != null) return s;
             }
             foreach (var s in spawns)
@@ -173,15 +227,23 @@ namespace Beep
             return null;
         }
 
+        static Checkpoint FindCheckpoint(int id)
+        {
+            if (id < 0) return null;
+            foreach (var c in FindObjectsByType<Checkpoint>(FindObjectsSortMode.None))
+                if (c.Id == id) return c;
+            return null;
+        }
+
         void SetPlayersLocked(bool locked)
         {
-            foreach (var p in players) p.SetControlLocked(locked);
+            foreach (var p in Players) p.SetControlLocked(locked);
         }
 
         void Transition(RunState next)
         {
-            if (State == next) return;
-            State = next;
+            if (state == next) return;
+            state = next;
             StateChanged?.Invoke(next);
         }
     }

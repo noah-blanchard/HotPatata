@@ -28,7 +28,7 @@ namespace Beep
             GUI.Box(new Rect(10, 10, 360, 146), GUIContent.none);
             GUI.Label(new Rect(18, 14, 290, 22), $"Run: {run.State}  resets: {run.ResetCount}  cp: {(run.CurrentCheckpoint != null ? run.CurrentCheckpoint.Id.ToString() : "-")}  {run.RunTime:F0}s", style);
             GUI.Label(new Rect(18, 34, 290, 22), $"Bomb: {bomb.State}   carrier: {(bomb.Carrier != null ? bomb.Carrier.DisplayName : "-")}", style);
-            GUI.Label(new Rect(18, 54, 290, 22), $"Controlling: {(switcher != null && switcher.Focused != null ? switcher.Focused.DisplayName : "-")}", style);
+            GUI.Label(new Rect(18, 54, 290, 22), $"Controlling: {(FirstPersonCamera.Instance != null && FirstPersonCamera.Instance.Target != null ? FirstPersonCamera.Instance.Target.DisplayName : "-")}", style);
 
             GUI.color = Color.Lerp(Color.red, Color.green, fuse);
             GUI.DrawTexture(new Rect(18, 80, 280 * Mathf.Clamp01(fuse), 8), Texture2D.whiteTexture);

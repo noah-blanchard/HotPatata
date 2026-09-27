@@ -41,10 +41,14 @@ namespace Beep
         CatchResolver resolver;
         float graceEndTime;
 
+        public static BombController Instance { get; private set; }
+
         public BombState State { get; private set; } = BombState.Resetting;
         public Player Carrier { get; private set; }
         /// <summary>Who released the bomb most recently; cannot catch that same flight.</summary>
         public Player LastThrower { get; private set; }
+        /// <summary>Why the bomb last exploded (valid while Exploding).</summary>
+        public BombFailReason LastFailReason { get; private set; }
 
         public BombFuse Fuse => fuse;
         public BombPhysics Body => bombPhysics;
@@ -58,6 +62,7 @@ namespace Beep
 
         void Awake()
         {
+            Instance = this;
             fuse = GetComponent<BombFuse>();
             bombPhysics = GetComponent<BombPhysics>();
             resolver = GetComponent<CatchResolver>();
@@ -66,8 +71,16 @@ namespace Beep
         void OnEnable() => fuse.Expired += OnFuseExpired;
         void OnDisable() => fuse.Expired -= OnFuseExpired;
 
+        void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
+        }
+
         void Update()
         {
+            debugFuseRemaining = fuse.Remaining;
+            if (!NetMode.IsAuthority) return;   // remote clients only mirror; the host runs the rules
+
             switch (State)
             {
                 case BombState.Held:
@@ -77,8 +90,6 @@ namespace Beep
                     if (Time.time >= graceEndTime) Transition(BombState.Held);
                     break;
             }
-
-            debugFuseRemaining = fuse.Remaining;
         }
 
         // ------------------------------------------------------------------ throw / catch
@@ -148,6 +159,7 @@ namespace Beep
             if (State == BombState.Exploding || State == BombState.Resetting) return;
 
             var from = State;
+            LastFailReason = reason;
             bombPhysics.EnterInert();
             Transition(BombState.Exploding);
             BeepLog.Bomb($"{from} -> Exploding reason={reason} {detail}");
@@ -175,6 +187,27 @@ namespace Beep
             fuse.Refresh();
             Transition(BombState.Held);
             BeepLog.Bomb($"Resetting -> Held carrier={carrier}");
+        }
+
+        // ------------------------------------------------------------------ remote mirroring
+
+        /// <summary>
+        /// Remote clients only: adopt the host's state and raise the same events the host raised, so audio,
+        /// visuals and UI react identically everywhere. Never called on the authority.
+        /// </summary>
+        public void ApplyMirror(BombState newState, Player carrier, Player lastThrower, BombFailReason failReason)
+        {
+            var old = State;
+            LastThrower = lastThrower;
+            LastFailReason = failReason;
+            SetCarrier(carrier);
+            if (newState == old) return;
+
+            BeepLog.Bomb($"(mirror) {old} -> {newState} carrier={carrier} lastThrower={lastThrower}");
+            Transition(newState);
+            if (newState == BombState.Thrown) BombThrown?.Invoke(lastThrower);
+            else if (newState == BombState.CaughtGrace) BombCaught?.Invoke(carrier);
+            else if (newState == BombState.Exploding) BombExploded?.Invoke(failReason, "remote");
         }
 
         // ------------------------------------------------------------------ internals

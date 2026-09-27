@@ -1,0 +1,127 @@
+using Unity.Netcode;
+using UnityEngine;
+
+namespace Beep
+{
+    /// <summary>
+    /// Network face of a Player. The owning client drives movement and aim (its NetworkTransform is
+    /// owner-authoritative); everything that decides the game (throw acceptance, catch windows, locking,
+    /// teleports on reset) is requested from, or pushed by, the host:
+    ///   client --RequestThrow/RequestCatch--> host validates and applies
+    ///   host --Locked / TeleportOwner--> owning client
+    /// Offline (not spawned) this component does nothing and Player behaves exactly as before.
+    /// </summary>
+    [RequireComponent(typeof(Player))]
+    public class NetworkPlayer : NetworkBehaviour
+    {
+        static readonly Color[] Palette =
+        {
+            new Color(1f, 0.55f, 0.1f), new Color(0.2f, 0.8f, 1f), new Color(0.6f, 1f, 0.3f), new Color(1f, 0.4f, 0.8f)
+        };
+
+        readonly NetworkVariable<int> slot = new NetworkVariable<int>(-1);   // server-written
+        readonly NetworkVariable<bool> locked = new NetworkVariable<bool>(false);   // server-written
+        readonly NetworkVariable<float> pitch = new NetworkVariable<float>(0f,
+            NetworkVariableBase.DefaultReadPerm, NetworkVariableWritePermission.Owner);   // owner-written
+
+        Player player;
+
+        /// <summary>Set by the spawner on the server before the object is spawned.</summary>
+        public int InitialSlot { get; set; } = -1;
+
+        public bool Locked => locked.Value;
+        public float RemotePitch => pitch.Value;
+
+        public override void OnNetworkSpawn()
+        {
+            player = GetComponent<Player>();
+            if (IsServer) slot.Value = InitialSlot;
+
+            slot.OnValueChanged += (_, s) => ApplySlot(s);
+            locked.OnValueChanged += (_, l) => OnLockedChanged(l);
+            ApplySlot(slot.Value);
+
+            if (IsOwner) BecomeLocal();
+            BeepLog.Run($"Player spawned slot={slot.Value} owner={OwnerClientId} local={IsOwner}");
+        }
+
+        public override void OnNetworkDespawn() => BeepLog.Run($"Player despawned slot={slot.Value}");
+
+        void ApplySlot(int s)
+        {
+            if (s < 0) return;
+            player.Configure(s, "Player " + (s + 1), Palette[s % Palette.Length]);
+            name = "Player_" + (s + 1);
+        }
+
+        void BecomeLocal()
+        {
+            if (PlayerBot.Enabled)
+            {
+                player.Input.Scripted = new PlayerInputReader.ScriptedInput();
+                player.gameObject.AddComponent<PlayerBot>();
+            }
+            else
+            {
+                player.Input.SetSource(InputSource.KeyboardMouse);
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+            }
+
+            if (FirstPersonCamera.Instance != null) FirstPersonCamera.Instance.Target = player;
+        }
+
+        void OnLockedChanged(bool isLocked)
+        {
+            if (!isLocked || !IsOwner) return;
+            player.Motor.ResetVelocity();
+            player.Thrower.CancelCharge();
+            player.Catcher.Clear();
+        }
+
+        void LateUpdate()
+        {
+            if (IsSpawned && IsOwner && Mathf.Abs(pitch.Value - player.Look.Pitch) > 0.25f)
+                pitch.Value = player.Look.Pitch;
+        }
+
+        // ------------------------------------------------------------------ host -> players
+
+        /// <summary>Host only: lock or unlock this player's controls.</summary>
+        public void SetLocked(bool value)
+        {
+            if (IsServer) locked.Value = value;
+        }
+
+        /// <summary>Host only: move a player that is owned by a remote client (it owns its own transform).</summary>
+        public void TeleportOwner(Vector3 position, Quaternion rotation) => TeleportOwnerRpc(position, rotation);
+
+        [Rpc(SendTo.Owner)]
+        void TeleportOwnerRpc(Vector3 position, Quaternion rotation) => player.TeleportLocal(position, rotation);
+
+        // ------------------------------------------------------------------ players -> host
+
+        public void RequestThrow(Vector3 origin, Vector3 velocity) => RequestThrowRpc(origin, velocity);
+
+        public void RequestCatch() => RequestCatchRpc();
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+        void RequestThrowRpc(Vector3 origin, Vector3 velocity)
+        {
+            var bomb = BombController.Instance;
+            if (bomb == null || bomb.State != BombState.Held || bomb.Carrier != player) return;
+
+            var t = player.Tuning;
+            float max = t.throwSpeedMax * 1.05f;   // never trust a client for more than the design maximum
+            if (velocity.magnitude > max) velocity = velocity.normalized * max;
+
+            Vector3 eye = player.CameraTarget.position;
+            if ((origin - eye).sqrMagnitude > 3f * 3f) return;   // the release point must be near the thrower
+
+            bomb.TryThrow(player, origin, velocity);
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+        void RequestCatchRpc() => player.Catcher.TryOpenWindow();
+    }
+}

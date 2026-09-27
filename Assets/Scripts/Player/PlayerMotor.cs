@@ -32,6 +32,8 @@ namespace Beep
 
         void Update()
         {
+            if (!player.IsLocal) return;   // remote copies are moved by their NetworkTransform
+
             var t = player.Tuning;
             float dt = Time.deltaTime;
             bool locked = player.ControlLocked;

@@ -29,7 +29,7 @@ namespace Beep
 
         void FixedUpdate()
         {
-            if (controller.State == BombState.Thrown)
+            if (NetMode.IsAuthority && controller.State == BombState.Thrown)
                 body.AddForce(Physics.gravity * tuning.bombGravityScale, ForceMode.Acceleration);
         }
 

@@ -32,7 +32,7 @@ namespace Beep
 
         void FixedUpdate()
         {
-            if (state == State.Idle && PlayerZone.Collect(trigger, inside) > 0)
+            if (NetMode.IsAuthority && state == State.Idle && PlayerZone.Collect(trigger, inside) > 0)
             {
                 state = State.Warning;
                 timer = warningDelay;

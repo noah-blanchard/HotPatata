@@ -702,6 +702,31 @@ Synchronize:
 
 ---
 
+### 13.1 As implemented in Milestone 3
+
+Transport is Unity Transport with **direct IP connect** (port 7777); Relay / join codes arrive with the lobby
+milestone. One persistent `NetworkManager` prefab (`NetworkManager` + `UnityTransport` + `NetworkBootstrap`)
+is created by the `Bootstrap` scene; `NetworkBootstrap` offers Host / Join / Play Local and handles
+disconnects. The host loads `PassSandbox` through NGO scene management; clients follow.
+
+Authority split (the same gameplay classes run offline and online; `NetMode.IsAuthority` is true offline
+and on the host):
+
+| Concern | Who decides | How it reaches others |
+|---|---|---|
+| Player movement, aim | owning client (owner-authoritative `NetworkTransform`) | transform + replicated pitch |
+| Throw | host | owner sends `RequestThrow(origin, velocity)`; host clamps speed, checks the release point, then `TryThrow` |
+| Catch | host | owner sends `RequestCatch`; host opens that player's catch window; `CatchResolver` decides once |
+| Bomb state, carrier, fuse, explosion | host only | `NetworkBomb` snapshot (one atomic `NetworkVariable`) + fuse fraction; clients mirror it via `BombController.ApplyMirror` and raise the same events |
+| Bomb position | host physics | server-authoritative `NetworkTransform`; while held, each client attaches it to the carrier's hand locally |
+| Run state, checkpoint, section clock | host | `NetworkRunState`; the section clock start is a server time, so platforms match everywhere |
+| Lock / teleport on reset | host | `NetworkPlayer.locked` variable; `TeleportOwner` RPC (owners move themselves) |
+
+Remote clients never simulate the bomb (kinematic, collider off) and never run zone / checkpoint / finish logic.
+`PlayerSpawner` builds the offline two-player rig, or on the host spawns one player per connection into the
+first free slot. Known gap: `FallingPlatform` state is not yet replicated (needs a host-timed trigger like the
+section clock); moving platforms and rotating bars already are, through `SectionClock`.
+
 ## 14. Session flow
 
 Expected high-level flow:

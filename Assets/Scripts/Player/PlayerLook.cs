@@ -26,7 +26,7 @@ namespace Beep
 
         void Update()
         {
-            if (player.ControlLocked || !player.Input.Active) return;
+            if (!player.IsLocal || player.ControlLocked || !player.Input.Active) return;
 
             var t = player.Tuning;
             Vector2 delta = player.Input.Look;
@@ -38,7 +38,11 @@ namespace Beep
 
         // The eye pivot carries the camera, the hand anchor and the throw origin, so the bomb stays
         // in view however you look.
-        void LateUpdate() => player.CameraTarget.localRotation = Quaternion.Euler(pitch, 0f, 0f);
+        void LateUpdate()
+        {
+            float p = player.IsLocal ? pitch : player.Net.RemotePitch;   // remote players' pitch is replicated
+            player.CameraTarget.localRotation = Quaternion.Euler(p, 0f, 0f);
+        }
 
         public void SetYaw(float degrees) => yaw = degrees;
 

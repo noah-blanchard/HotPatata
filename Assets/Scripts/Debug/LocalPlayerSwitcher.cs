@@ -4,13 +4,14 @@ using UnityEngine.InputSystem;
 namespace Beep
 {
     /// <summary>
-    /// Local pass-sandbox test rig: a single keyboard/mouse drives ONE player at a time and the camera
+    /// Offline pass-sandbox test rig: a single keyboard/mouse drives ONE player at a time and the camera
     /// follows that player. Tab hands control to the next player, so one person can throw to the other
     /// player, switch, and throw back. Esc releases the mouse cursor. Not part of the shipped game.
+    /// Online, each machine controls only its own player, so this only handles the cursor.
     /// </summary>
+    [DefaultExecutionOrder(50)]   // after the spawner has built the local rig
     public class LocalPlayerSwitcher : MonoBehaviour
     {
-        [SerializeField] Player[] players;
         [SerializeField] FirstPersonCamera cam;
         [SerializeField] bool lockCursor = true;
 
@@ -19,11 +20,12 @@ namespace Beep
 
         int focused = -1;
 
-        public Player Focused => focused >= 0 ? players[focused] : null;
+        /// <summary>The player the camera (and, offline, the keyboard) currently belongs to.</summary>
+        public Player Focused => cam != null ? cam.Target : null;
 
         void Start()
         {
-            if (SuppressAutoFocus) return;
+            if (SuppressAutoFocus || NetMode.IsNetworked) return;
             Focus(0);
             SetCursor(lockCursor);
         }
@@ -33,16 +35,18 @@ namespace Beep
             var kb = Keyboard.current;
             if (kb == null || SuppressAutoFocus) return;
 
-            if (kb.tabKey.wasPressedThisFrame) Focus((focused + 1) % players.Length);
+            if (!NetMode.IsNetworked && kb.tabKey.wasPressedThisFrame && Player.All.Count > 0)
+                Focus((focused + 1) % Player.All.Count);
             if (kb.escapeKey.wasPressedThisFrame) SetCursor(Cursor.lockState != CursorLockMode.Locked);
         }
 
         public void Focus(int index)
         {
-            if (players == null || players.Length == 0) return;
-            focused = Mathf.Clamp(index, 0, players.Length - 1);
+            var players = Player.All;
+            if (players.Count == 0) return;
+            focused = Mathf.Clamp(index, 0, players.Count - 1);
 
-            for (int i = 0; i < players.Length; i++)
+            for (int i = 0; i < players.Count; i++)
                 players[i].Input.SetSource(i == focused ? InputSource.KeyboardMouse : InputSource.None);
 
             if (cam != null) cam.Target = players[focused];

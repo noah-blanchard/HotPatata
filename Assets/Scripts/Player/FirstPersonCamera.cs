@@ -15,6 +15,8 @@ namespace Beep
 
         Camera cam;
 
+        public static FirstPersonCamera Instance { get; private set; }
+
         public Player Target
         {
             get => target;
@@ -26,7 +28,16 @@ namespace Beep
             }
         }
 
-        void Awake() => cam = GetComponent<Camera>();
+        void Awake()
+        {
+            Instance = this;
+            cam = GetComponent<Camera>();
+        }
+
+        void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
+        }
 
         void Start()
         {
