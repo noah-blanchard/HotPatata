@@ -7622,6 +7622,10 @@ PrefabInstance:
       propertyPath: InScenePlacedSourceGlobalObjectIdHash
       value: 761544348
       objectReference: {fileID: 0}
+    - target: {fileID: 7820380437575802060, guid: 871a8db0f3ba20f45a2af6861e036c77, type: 3}
+      propertyPath: disableExplosion
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -9954,6 +9958,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Beep::Beep.SpeedEffects
   tuning: {fileID: 11400000, guid: 35604efc4188ead42afe90813d44683f, type: 2}
+  windClip: {fileID: 0}
+  stepClips: []
+  landClip: {fileID: 0}
 --- !u!1001 &1933356344
 PrefabInstance:
   m_ObjectHideFlags: 0
