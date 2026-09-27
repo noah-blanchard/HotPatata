@@ -1030,6 +1030,10 @@ Observe:
 
 ## M7.4 — First external playtest
 
+Owner playtest note (2026-09-27): the owner played Act 1 and found it fun, and approved new obstacles and a longer
+course (Acts 2–3: conveyors, pistons, windmill, sweepers, crushers, elevators, mega slide with hoops). The external
+playtest questions below still apply to the whole course.
+
 Questions:
 
 1. Did players understand world-contact failure after one mistake?

@@ -577,6 +577,40 @@ Question:
 
 > Can the receiver catch while jumping or landing?
 
+### 13.9 Conveyor lanes
+
+Question:
+
+> Can the thrower lead a receiver who is being carried (or held back)?
+
+Primary levers: belt speed and direction per lane, lane spacing, hurdles that force lane changes.
+
+### 13.10 Piston floor / piston gates
+
+Question:
+
+> Can the team pass through the moment the line opens, onto a target that moves vertically?
+
+Primary levers: travel, dwell share, phase wave between pistons.
+
+### 13.11 Lethal sweepers, windmills, crushers
+
+Question:
+
+> Can the team keep the pass chain going while dodging something that is lethal to players too?
+
+Rules: lethal parts are on the `Hazard` layer, striped (never red alone), and a crusher never closes below the
+crouch height, so sliding or crouching under it is always possible. The bomb question stays central: the windmill
+guards the only bomb line through a wall, the crusher is a low-tunnel throw (13.5) when it is down.
+
+### 13.12 Mega slide with pass gates
+
+Question:
+
+> Can two sliders at full speed pass sideways, leading the throw, through spinning hoop windows?
+
+Primary levers: slope, lane divider height, hoop speed and spacing, stretches where a tall divider blocks passes.
+
 ---
 
 ## 14. Early-level constraints
@@ -602,7 +636,9 @@ Working level:
 
 Target length:
 
-- approximately **3–5 minutes** for the first complete greybox version.
+- approximately **3–5 minutes** for the first complete greybox version (Act 1, beats A–G);
+- extended to approximately **8–10 minutes** with Act 2 (Patata Factory) and Act 3 (The Climb & The Drop) after
+  the owner's playtests of Act 1 (see ARCHITECTURE.md §4 for the beat layout). Still one course (§17.2).
 
 ### Beat A — Safe Court
 
@@ -786,7 +822,7 @@ At minimum:
 | Jump buffer | 0.1 s |
 | Reset delay | ~1.0 s |
 | Checkpoint spacing | 30–60 s |
-| First course length | 3–5 min |
+| First course length | 3–5 min (Act 1); 8–10 min with Acts 2–3 |
 | Target frame rate | 60 fps |
 
 These are **starting values**, not final design decisions.
