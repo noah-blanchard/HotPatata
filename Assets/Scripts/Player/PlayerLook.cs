@@ -45,7 +45,8 @@ namespace HotPatata
 
             var t = player.Tuning;
             Vector2 delta = player.Input.Look;
-            delta *= player.Input.LookIsMouse ? t.mouseSensitivity : t.stickLookSpeed * Time.deltaTime;
+            delta *= player.Input.LookIsMouse ? Settings.MouseSensitivity(t) : Settings.StickLookSpeed(t) * Time.deltaTime;
+            if (Settings.InvertY) delta.y = -delta.y;
 
             yaw += delta.x;
             pitch = Mathf.Clamp(pitch - delta.y, t.pitchMin, t.pitchMax);

@@ -340,6 +340,18 @@ Run                      resetDelay
 
 Starting values are in spec §20. Do not scatter magic numbers across scripts.
 
+**Player settings layer (M6.5).** Some tuning values are also player choices: `viewEffectsStrength`,
+`flashReduction`, `beepVolume`, `mouseSensitivity`, `stickLookSpeed`, `fieldOfView`, plus invert Y, master volume and
+display (window mode, resolution, vsync, frame cap). `Settings` (`Assets/Scripts/Core/Settings.cs`) holds them in a
+`SettingsData` saved as JSON in `Application.persistentDataPath/settings.json`. Systems read them through
+`Settings.ViewEffectsStrength(tuning)` and similar, never the tuning field directly. `BootstrapEntry` loads the file
+once at the game's entry. Until then (tests, a gameplay scene played directly) and until the player saves anything,
+`Settings.Current` is null and every accessor returns the `GameTuning` value, so the designer values are the
+first-launch defaults and tests still drive the tuning. The shared asset is never written at runtime. A settings
+screen edits `Settings.Editable(tuning)` and commits with `Settings.Save(data, tuning)`, which clamps, applies
+(`AudioListener.volume`, vsync/frame cap, and resolution/window mode outside the Editor), writes the file and raises
+`Settings.Changed`. SFX/music/UI volumes wait for the AudioMixer.
+
 ---
 
 ## 7. Player subsystem

@@ -1017,7 +1017,9 @@ At minimum prepare:
 > **Status (partial):** in `GameTuning`, `viewEffectsStrength` scales every camera effect (shake, bob, roll, FOV),
 > `flashReduction` dims every flash, and `beepVolume` sets the bomb warning volume. The fuse warning uses pulse speed,
 > sparks and beep cadence, and hazards are striped, so neither relies on colour alone. There is no player-facing
-> settings menu yet.
+> settings menu yet. The per-player layer exists (`Settings`, ARCHITECTURE §6.1): the values are saved per machine and
+> read instead of the shared asset, so the menu (#17, after the UI Toolkit base #14 and the pause menu #16) only has to
+> edit and save them.
 
 ---
 

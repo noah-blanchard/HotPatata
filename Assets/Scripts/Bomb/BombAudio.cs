@@ -74,7 +74,7 @@ namespace HotPatata
             if (!alive || Time.time < nextBeepTime) return;
 
             var stage = bomb.Fuse.Stage;
-            source.PlayOneShot(BeepClip(stage), tuning.beepVolume);
+            source.PlayOneShot(BeepClip(stage), Settings.BeepVolume(tuning));
             Beeped?.Invoke(stage);
             nextBeepTime = Time.time + tuning.beepIntervals[(int)stage];
         }

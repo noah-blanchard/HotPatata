@@ -264,7 +264,7 @@ namespace HotPatata
             {
                 visual.gameObject.SetActive(false);
                 if (trail != null) trail.Clear();
-                if (explosion != null) explosion.Play(transform.position, bomb.Tuning != null ? bomb.Tuning.flashReduction : 0f);
+                if (explosion != null) explosion.Play(transform.position, bomb.Tuning != null ? Settings.FlashReduction(bomb.Tuning) : 0f);
                 else StartCoroutine(ExplosionFlash(transform.position));
             }
             else if (from == BombState.Exploding || from == BombState.Resetting)
