@@ -9,7 +9,7 @@
 
 | Suite | Mode | Covers |
 |---|---|---|
-| `ConfigurationTests` | EditMode | M0 baseline: tuning defaults, layers, collision matrix |
+| `ConfigurationTests` | EditMode | M0 baseline: tuning defaults, layers, collision matrix, player colours/shapes and their indicator meshes |
 | `BombFuseTests` | EditMode | fuse maths: refresh, expiry, warning phase, stage bands |
 | `AimAssistTests` | EditMode | release-time aim assist and arc maths (spec §8.3) |
 | `FlightHistoryTests` | EditMode | the host's flight record used for lag-compensated catches |

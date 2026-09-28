@@ -324,5 +324,15 @@ namespace HotPatata.Tests
                 Assert.AreEqual(UnityEngine.Rendering.ShadowCastingMode.On, r.shadowCastingMode, r.name + " of the remote player");
             Assert.AreEqual(UnityEngine.Rendering.ShadowCastingMode.On, bomb.GetComponentInChildren<Renderer>().shadowCastingMode, "the held bomb must stay visible");
         }
+
+        [UnityTest]
+        public IEnumerator CarrierIndicator_ShowsTheCarriersSlotShape()
+        {
+            yield return null;
+            Assert.AreEqual(p1, bomb.Carrier);
+            Assert.AreNotEqual(p1.Shape, p2.Shape, "two slots, two shapes");
+            Assert.AreEqual(PlayerShapeMesh.For(p1.Shape), p1.Presentation.IndicatorMesh, "carrier indicator of " + p1);
+            Assert.AreEqual(PlayerShapeMesh.For(p2.Shape), p2.Presentation.IndicatorMesh, "indicator of " + p2 + ", ready for when they carry");
+        }
     }
 }

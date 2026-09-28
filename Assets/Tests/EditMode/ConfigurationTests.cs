@@ -55,6 +55,26 @@ namespace HotPatata.Tests
         }
 
         [Test]
+        public void PlayerShapeMeshes_AreDistinctSolids_FacingOutward()
+        {
+            var shapes = (PlayerShape[])System.Enum.GetValues(typeof(PlayerShape));
+            Assert.AreEqual(shapes.Length, shapes.Select(PlayerShapeMesh.For).Distinct().Count(), "one mesh per shape");
+            foreach (var shape in shapes)
+            {
+                var mesh = PlayerShapeMesh.For(shape);
+                Assert.AreSame(mesh, PlayerShapeMesh.For(shape), shape + " is built once");
+                Assert.LessOrEqual(mesh.bounds.extents.magnitude, new Vector3(0.5f, 0.5f, 0.5f).magnitude + 1e-4f, shape + " fits the unit cube");
+                var v = mesh.vertices;
+                var tris = mesh.triangles;
+                for (int i = 0; i < tris.Length; i += 3)
+                {
+                    Vector3 a = v[tris[i]], b = v[tris[i + 1]], c = v[tris[i + 2]];
+                    Assert.GreaterOrEqual(Vector3.Dot(Vector3.Cross(b - a, c - a), a + b + c), -1e-6f, shape + " triangle " + i / 3 + " faces inward (culled)");
+                }
+            }
+        }
+
+        [Test]
         public void GameplayLayers_Exist()
         {
             foreach (var name in new[] { "Player", "PlayerCatch", "Bomb", "Environment", "Hazard", "Trigger" })

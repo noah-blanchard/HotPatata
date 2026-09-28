@@ -123,7 +123,7 @@ namespace HotPatata
             playerId = id;
             displayName = name;
             color = playerColor;
-            if (Presentation != null) Presentation.ApplyColor();
+            if (Presentation != null) Presentation.ApplyIdentity();
         }
 
         /// <summary>Standard identity for a slot (name, colour and shape from <see cref="GameTuning"/>, GameObject name), the same offline and online.</summary>

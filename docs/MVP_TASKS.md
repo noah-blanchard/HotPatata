@@ -959,7 +959,8 @@ Required:
 Show current holder clearly.
 
 > **Status (implemented, to verify):** `PlayerPresentation` shows a bobbing, spinning indicator above the carrier
-> that pulses on catch. It is driven by `BombController.CarrierChanged`, so it also works on remote mirrors.
+> that pulses on catch, shaped like the carrier's slot (● ▲ ■ ◆, `ARCHITECTURE.md` §25). It is driven by
+> `BombController.CarrierChanged`, so it also works on remote mirrors.
 
 **Acceptance criteria**
 
