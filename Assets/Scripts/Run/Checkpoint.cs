@@ -62,6 +62,13 @@ namespace HotPatata
             }
         }
 
+        /// <summary>Counts as reached without the team walking in (the run starts at or past it). Authority only.</summary>
+        public void MarkReached()
+        {
+            Activated = true;
+            Paint(activeColor);
+        }
+
         /// <summary>Back to inactive (a new run).</summary>
         public void Rearm()
         {

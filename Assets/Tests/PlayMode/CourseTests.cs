@@ -98,6 +98,40 @@ namespace HotPatata.Tests
         }
 
         [UnityTest]
+        public IEnumerator StartCheckpoint_BeginsTheRunThere_AndARematchStartsThereAgain()
+        {
+            RunOptions.StartCheckpoint = 6;
+            try
+            {
+                run.Restart();   // same path as the level start: the run begins at the chosen checkpoint
+                Assert.AreEqual(RunState.Playing, run.State);
+                Assert.AreEqual(6, run.CurrentCheckpoint.Id);
+                Assert.AreEqual(5f, bomb.Fuse.Duration, 0.001f, "checkpoint 6's fuse");
+                Assert.AreEqual(BombState.Held, bomb.State);
+                foreach (var cp in Object.FindObjectsByType<Checkpoint>(FindObjectsSortMode.None))
+                    Assert.AreEqual(cp.Id <= 6, cp.Activated, $"checkpoint {cp.Id} reached");
+                yield return null;
+                Assert.AreEqual(PosOf("CP_06").z, p1.transform.position.z, 2f, "spawned at checkpoint 6");
+
+                yield return Place(p1, new Vector3(0f, 3.65f, 118f));
+                bomb.Explode(BombFailReason.WorldContact, "test");
+                yield return WaitUntil(() => run.State == RunState.Playing && run.ResetCount == 1, 4f, "reset");
+                yield return null;
+                Assert.AreEqual(PosOf("CP_06").z, p1.transform.position.z, 2f, "a reset returns to the start checkpoint");
+
+                RunOptions.StartCheckpoint = 99;   // not in this level
+                run.Restart();
+                Assert.IsNull(run.CurrentCheckpoint, "an unknown checkpoint starts at the beginning");
+                yield return null;
+                Assert.AreEqual(4f, p1.transform.position.z, 0.5f);
+            }
+            finally
+            {
+                RunOptions.StartCheckpoint = 0;
+            }
+        }
+
+        [UnityTest]
         public IEnumerator FailureAfterACheckpoint_ReturnsTheTeamThere_NotToTheStart()
         {
             yield return StandTeamAt(PosOf("CP_01"));

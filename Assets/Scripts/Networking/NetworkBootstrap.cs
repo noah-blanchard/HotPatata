@@ -21,6 +21,7 @@ namespace HotPatata
     ///   -patataHost | -patataJoin &lt;ip&gt; | -patataLocal      direct IP / local
     ///   -patataHostOnline | -patataJoinCode &lt;code&gt;         online session
     ///   -patataAutoStart &lt;n&gt;                             host starts the level once n players are in the lobby
+    ///   -patataCheckpoint &lt;id&gt;                          start the run at that checkpoint (host / local)
     ///   -patataBot   -patataScene &lt;name&gt;   -patataQuit &lt;s&gt;   -patataLatency &lt;ms&gt;
     /// </summary>
     [DefaultExecutionOrder(-1000)]
@@ -32,6 +33,8 @@ namespace HotPatata
 
         [SerializeField] string menuScene = "Bootstrap";
         [SerializeField] string[] gameplayScenes = { "PrototypeCourse", "PassSandbox" };
+        [SerializeField, Tooltip("Highest checkpoint id of each gameplay scene (same order), offered as a start point.")]
+        int[] sceneCheckpoints = { 7, 1 };
         [SerializeField] ushort port = 7777;
 
         NetworkManager nm;
@@ -50,6 +53,7 @@ namespace HotPatata
         int autoStartPlayers;
 
         string GameplayScene => gameplayScenes[Mathf.Clamp(sceneIndex, 0, gameplayScenes.Length - 1)];
+        int SceneCheckpoints => sceneIndex >= 0 && sceneIndex < sceneCheckpoints.Length ? sceneCheckpoints[sceneIndex] : 0;
 
         public bool InSession => mode == Mode.InGame;
         public string SessionCode => sessions.Current?.Code;
@@ -103,6 +107,7 @@ namespace HotPatata
                     case "-patataScene" when i + 1 < args.Length: sceneIndex = Mathf.Max(0, Array.IndexOf(gameplayScenes, args[i + 1])); break;
                     case "-patataLatency" when i + 1 < args.Length && int.TryParse(args[i + 1], out int ms): SimulateLatency(ms); break;
                     case "-patataAutoStart" when i + 1 < args.Length && int.TryParse(args[i + 1], out int n): autoStartPlayers = n; break;
+                    case "-patataCheckpoint" when i + 1 < args.Length && int.TryParse(args[i + 1], out int cp): RunOptions.StartCheckpoint = Mathf.Max(0, cp); break;
                     case "-patataLeaveAfter" when i + 1 < args.Length && float.TryParse(args[i + 1], out float leaveIn): Invoke(nameof(AutoLeave), leaveIn); break;
                     case "-patataQuit" when i + 1 < args.Length && float.TryParse(args[i + 1], out float s): Invoke(nameof(Quit), s); break;
                 }
@@ -326,6 +331,7 @@ namespace HotPatata
             {
                 GUILayout.Label("Level");
                 sceneIndex = GUILayout.SelectionGrid(sceneIndex, gameplayScenes, gameplayScenes.Length, GUILayout.Height(26));
+                DrawStartCheckpoint(26f);
                 GUILayout.Space(8);
 
                 if (GUILayout.Button("Host Online  (get a game code)", GUILayout.Height(32))) _ = HostOnlineAsync();
@@ -349,7 +355,7 @@ namespace HotPatata
                 }
 
                 if (!string.IsNullOrEmpty(message)) GUILayout.Label(message, error);
-            }, showDirect ? 350f : 320f);
+            }, showDirect ? 400f : 370f);
         }
 
         void DrawLobby()
@@ -384,6 +390,7 @@ namespace HotPatata
                 {
                     GUILayout.Label("Level");
                     sceneIndex = GUILayout.SelectionGrid(sceneIndex, gameplayScenes, gameplayScenes.Length, GUILayout.Height(24));
+                    DrawStartCheckpoint(24f);
                     if (GUILayout.Button("Start", GUILayout.Height(32))) StartLevel();
                 }
                 else
@@ -392,7 +399,21 @@ namespace HotPatata
                 }
 
                 if (GUILayout.Button("Leave", GUILayout.Height(26))) _ = LeaveAsync(null);
-            }, 400f);
+            }, session.IsHost ? 450f : 400f);
+        }
+
+        /// <summary>Where the run starts: the beginning or one of the level's checkpoints (<see cref="RunOptions"/>).</summary>
+        void DrawStartCheckpoint(float height)
+        {
+            int count = SceneCheckpoints;
+            RunOptions.StartCheckpoint = Mathf.Clamp(RunOptions.StartCheckpoint, 0, count);
+            if (count == 0) return;
+
+            var labels = new string[count + 1];
+            labels[0] = "Start";
+            for (int i = 1; i <= count; i++) labels[i] = "CP" + i;
+            GUILayout.Label("Spawn at");
+            RunOptions.StartCheckpoint = GUILayout.SelectionGrid(RunOptions.StartCheckpoint, labels, labels.Length, GUILayout.Height(height));
         }
 
         static class Keys
