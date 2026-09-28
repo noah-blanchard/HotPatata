@@ -1170,3 +1170,10 @@ Soft, bright party-game toon style.
   and a global `LookVolume` (`Assets/Settings/Look/HotPatata_Look.asset`: Neutral tonemapping, bloom, saturation, warm
   balance) in every scene. `PC_RPAsset` uses MSAA 4x.
 - **Backdrop:** see §4 (`PrototypeCourse/Backdrop`, |x| >= 25 m, no colliders).
+- **Player identity:** one colour and one shape per slot, both in `GameTuning` (`playerColors`, `playerShapes`) and
+  read through `PlayerIdentity`. Slots 1–4: royal blue ●, sky blue ▲, plum ■, white ◆. The palette was chosen by
+  simulating protanopia, deuteranopia and tritanopia (Machado 2009, full severity) and measuring CIEDE2000: every
+  pair stays at least 23 apart in all four visions (the old orange/cyan/green/pink palette fell to 8.7 in tritanopia),
+  and every colour stays at least 18.7 from hazard red, the potato orange and glow, and the carrier yellow. Warm hues
+  are left to the bomb and hazards. The body colour is the in-game cue; the shape is shown with the colour in the lobby
+  and on the results screen (spec §19: never colour alone). Simulated swatches: [`images/player-palette.png`](images/player-palette.png).

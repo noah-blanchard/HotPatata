@@ -1,3 +1,4 @@
+using System.Linq;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -41,6 +42,16 @@ namespace HotPatata.Tests
                 Assert.Less(t.beepIntervals[i], t.beepIntervals[i - 1], "beeps must speed up with urgency");
             for (int i = 1; i < t.stageThresholds.Length; i++)
                 Assert.Greater(t.stageThresholds[i], t.stageThresholds[i - 1]);
+        }
+
+        [Test]
+        public void TuningAsset_PlayerIdentity_OneDistinctColourAndShapePerSlot()
+        {
+            var t = Tuning;
+            Assert.AreEqual(Player.MaxSlots, t.playerColors.Length, "one colour per player slot");
+            Assert.AreEqual(Player.MaxSlots, t.playerShapes.Length, "one shape per player slot (spec §19: never colour alone)");
+            Assert.AreEqual(t.playerShapes.Length, t.playerShapes.Distinct().Count(), "shapes must differ");
+            Assert.AreEqual(t.playerColors.Length, t.playerColors.Distinct().Count(), "colours must differ");
         }
 
         [Test]
