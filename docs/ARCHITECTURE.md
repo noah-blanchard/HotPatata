@@ -1162,11 +1162,23 @@ Soft, bright party-game toon style.
   HLSL (not Shader Graph) that reuses URP's ShadowCaster/DepthOnly/DepthNormals passes. Features: a two-band ramp with a
   tinted `_ShadeColor`, `_TopColor` on upward faces, rim, an optional spec blob, emission always added
   (MaterialPropertyBlock friendly), a fake bevel on scaled unit cubes (`_EdgeWidth`), world checker/stripes (`_Pattern`;
-  hazards are striped so they do not rely on red alone), and `_VERTEX_COLOR` for particle meshes. Particles, trails and
+  hazards are striped so they do not rely on red alone), `_VERTEX_COLOR` for particle meshes, and `_SuitTint` (players:
+  the texture's coloured swatches take `_BaseColor`, greys, whites and the face stay as painted; 0 = the usual multiply). Particles, trails and
   flashes use `HotPatata/Particle`.
 - **Materials:** the kit materials kept their names (`Greybox_*`, `Pad_*`) and were switched to the toon shader in
-  place, so prefab references did not change. The mannequin's FBX material is remapped to `Toon_Mannequin`.
+  place, so prefab references did not change. The mannequin's FBX material is remapped to `Toon_Mannequin` (`_SuitTint` = 1).
 - **Sky and grading:** skybox `HotPatata/Sky` (`Sky_HotPatata`), gradient ambient, linear fog matched to the horizon,
   and a global `LookVolume` (`Assets/Settings/Look/HotPatata_Look.asset`: Neutral tonemapping, bloom, saturation, warm
   balance) in every scene. `PC_RPAsset` uses MSAA 4x.
 - **Backdrop:** see §4 (`PrototypeCourse/Backdrop`, |x| >= 25 m, no colliders).
+- **Player identity:** one colour and one shape per slot, both in `GameTuning` (`playerColors`, `playerShapes`) and
+  read through `PlayerIdentity`. Slots 1–4: royal blue ●, sky blue ▲, plum ■, white ◆. The palette was chosen by
+  simulating protanopia, deuteranopia and tritanopia (Machado 2009, full severity) and measuring CIEDE2000: every
+  pair stays at least 23 apart in all four visions (the old orange/cyan/green/pink palette fell to 8.7 in tritanopia),
+  and every colour stays at least 18.7 from hazard red, the potato orange and glow, and the carrier yellow. Warm hues
+  are left to the bomb and hazards. Spec §19 (never colour alone): in game the whole suit takes the slot colour
+  (`PlayerPresentation.bodyRenderers`, every mannequin part, through `_SuitTint`) and the carrier indicator takes the
+  slot's shape (`PlayerShapeMesh`: sphere, pyramid, cube, octahedron, each reading as its glyph from any side while it
+  spins, in the carrier yellow); the lobby and results show the glyph in the slot colour. Simulated swatches:
+  [`images/player-palette.png`](images/player-palette.png); four players in PassSandbox, raw and simulated:
+  [`images/player-lineup.png`](images/player-lineup.png).

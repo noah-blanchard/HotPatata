@@ -1,7 +1,8 @@
 // HotPatata toon: soft, bright, party-game shading for URP (Forward / Forward+).
 //  - a soft two-band ramp on the main light (with its shadows) and a tinted, never-black shade colour;
 //  - ambient from the sky probe, rim light, optional specular blob, emission (MaterialPropertyBlock friendly);
-//  - kit extras: fake bevel highlight on scaled unit cubes, world-space checker / stripe patterns.
+//  - kit extras: fake bevel highlight on scaled unit cubes, world-space checker / stripe patterns;
+//  - suit tint (players): the texture's coloured areas take the base colour, greys and whites stay as painted.
 // ShadowCaster, DepthOnly and DepthNormals (SSAO) reuse URP's own passes.
 Shader "HotPatata/Toon"
 {
@@ -15,6 +16,7 @@ Shader "HotPatata/Toon"
         _RampThreshold ("Ramp Threshold", Range(-1, 1)) = 0.05
         _RampSmoothness ("Ramp Softness", Range(0.001, 1)) = 0.12
         _AmbientStrength ("Ambient Strength", Range(0, 2)) = 0.45
+        _SuitTint ("Suit Tint (coloured texels take Base Color, greys stay; 0 = multiply as usual)", Range(0, 1)) = 0
 
         [Header(Rim)]
         _RimColor ("Rim Colour", Color) = (1, 1, 1, 1)
@@ -154,7 +156,17 @@ Shader "HotPatata/Toon"
                 half3 viewWS = GetWorldSpaceNormalizeViewDir(input.positionWS);
                 float2 screenUV = GetNormalizedScreenSpaceUV(input.positionCS);
 
-                half3 albedo = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).rgb * _BaseColor.rgb;
+                half3 texel = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).rgb;
+                half3 albedo = texel * _BaseColor.rgb;
+                if (_SuitTint > 0.0)
+                {
+                    // Player suit (ARCHITECTURE §25): the coloured swatches of the atlas become the slot colour,
+                    // keeping a little of their light-to-dark gradient; greys, whites and the face stay as painted.
+                    half hi = max(texel.r, max(texel.g, texel.b));
+                    half chroma = hi - min(texel.r, min(texel.g, texel.b));
+                    half3 suit = _BaseColor.rgb * lerp(0.7, 1.0, hi);
+                    albedo = lerp(texel, suit, smoothstep(0.15, 0.35, chroma) * _SuitTint);
+                }
                 #if defined(_VERTEX_COLOR)
                     albedo *= input.color.rgb;
                 #endif

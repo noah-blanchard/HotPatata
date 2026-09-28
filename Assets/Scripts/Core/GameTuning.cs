@@ -223,6 +223,15 @@ namespace HotPatata
         [Tooltip("Smoke puffs left per metre of flight.")]
         [Min(0f)] public float flightPuffsPerMetre = 1.6f;
 
+        [Header("Players - identity (spec §19: never colour alone)")]
+        [Tooltip("Body colour per slot. Chosen to stay distinct under protanopia, deuteranopia and tritanopia, and away from hazard red, the potato orange and the carrier yellow (ARCHITECTURE §25).")]
+        public Color[] playerColors =
+        {
+            new Color(0.1f, 0.32f, 1f), new Color(0f, 0.75f, 1f), new Color(0.6f, 0f, 0.4f), new Color(0.95f, 0.95f, 0.95f)
+        };
+        [Tooltip("Shape per slot, shown next to the colour wherever a player is identified (lobby, results).")]
+        public PlayerShape[] playerShapes = { PlayerShape.Circle, PlayerShape.Triangle, PlayerShape.Square, PlayerShape.Diamond };
+
         [Header("Run")]
         [Tooltip("Seconds between an explosion and the section being playable again.")]
         [Min(0f)] public float resetDelay = 1.0f;

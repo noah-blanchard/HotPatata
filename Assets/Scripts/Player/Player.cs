@@ -19,11 +19,6 @@ namespace HotPatata
 
         public const int MaxSlots = 4;
 
-        static readonly Color[] SlotColors =
-        {
-            new Color(1f, 0.55f, 0.1f), new Color(0.2f, 0.8f, 1f), new Color(0.6f, 1f, 0.3f), new Color(1f, 0.4f, 0.8f)
-        };
-
         [Header("Identity")]
         [SerializeField] int playerId;
         [SerializeField] string displayName = "Player";
@@ -52,6 +47,8 @@ namespace HotPatata
         public Vector3 Velocity => IsLocal && Motor != null ? Motor.Velocity : observedVelocity;
         public string DisplayName => displayName;
         public Color Color => color;
+        /// <summary>The slot's shape, paired with <see cref="Color"/> so identity never rests on colour alone.</summary>
+        public PlayerShape Shape => PlayerIdentity.ShapeFor(tuning, playerId);
         public GameTuning Tuning => tuning;
 
         public Transform HandAnchor => handAnchor;
@@ -126,13 +123,13 @@ namespace HotPatata
             playerId = id;
             displayName = name;
             color = playerColor;
-            if (Presentation != null) Presentation.ApplyColor();
+            if (Presentation != null) Presentation.ApplyIdentity();
         }
 
-        /// <summary>Standard identity for a slot (name, colour, GameObject name), the same offline and online.</summary>
+        /// <summary>Standard identity for a slot (name, colour and shape from <see cref="GameTuning"/>, GameObject name), the same offline and online.</summary>
         public void ConfigureSlot(int slot)
         {
-            Configure(slot, "Player " + (slot + 1), SlotColors[Mathf.Abs(slot) % SlotColors.Length]);
+            Configure(slot, "Player " + (slot + 1), PlayerIdentity.ColorFor(tuning, slot));
             gameObject.name = "Player_" + (slot + 1);
         }
 

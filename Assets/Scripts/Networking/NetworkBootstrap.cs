@@ -36,6 +36,7 @@ namespace HotPatata
         [SerializeField, Tooltip("Highest checkpoint id of each gameplay scene (same order), offered as a start point.")]
         int[] sceneCheckpoints = { 7, 1 };
         [SerializeField] ushort port = 7777;
+        [SerializeField, Tooltip("Player colours and shapes for the lobby list.")] GameTuning tuning;
 
         NetworkManager nm;
         UnityTransport transport;
@@ -297,12 +298,13 @@ namespace HotPatata
 
         // ------------------------------------------------------------------ UI (utilitarian on purpose)
 
-        GUIStyle big, error;
+        GUIStyle big, error, rich;
 
         void OnGUI()
         {
             big ??= new GUIStyle(GUI.skin.label) { fontSize = 34, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
             error ??= new GUIStyle(GUI.skin.label) { wordWrap = true, normal = { textColor = new Color(1f, 0.45f, 0.4f) } };
+            rich ??= new GUIStyle(GUI.skin.label) { richText = true };
 
             switch (mode)
             {
@@ -382,7 +384,9 @@ namespace HotPatata
                 {
                     string tag = players[i].Id == session.Host ? "  (host)" : "";
                     string you = players[i].Id == session.CurrentPlayer.Id ? "  (you)" : "";
-                    GUILayout.Label($"   Player {i + 1}{tag}{you}");
+                    // Level slots are handed out in connection order, so the list index is usually the slot the
+                    // player gets in the level (not guaranteed after someone leaves the lobby).
+                    GUILayout.Label($"   {PlayerIdentity.RichLabel(tuning, i, $"Player {i + 1}")}{tag}{you}", rich);
                 }
                 GUILayout.Space(8);
 
