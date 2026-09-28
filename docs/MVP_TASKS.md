@@ -1,9 +1,32 @@
 # HotPatata — MVP_TASKS.md
 
 > Ordered execution plan for a coding agent.  
-> Read `PROJECT_SPEC.md` and `ARCHITECTURE.md` before starting.  
+> Read [`PROJECT_SPEC.md`](PROJECT_SPEC.md) and [`ARCHITECTURE.md`](ARCHITECTURE.md) before starting.  
 > Do not skip acceptance criteria.  
 > Do not add out-of-scope gameplay while completing these tasks.
+
+---
+
+# Status (last updated 2026-09-27)
+
+A ticked box is verified by the automated tests (see [`TESTING.md`](TESTING.md)), by recorded bot/latency runs, or
+by the owner's own play. An unticked box in a finished milestone is a **human gate**: it needs a group or external
+playtest and cannot be closed by code.
+
+| Milestone | State | Still open |
+|---|---|---|
+| M0 Project baseline | done | |
+| M1 Local pass sandbox | done | M1.11 proof-of-fun gate: owner found it fun, external playtest pending (M7.4) |
+| M2 Greybox prefab kit | done | |
+| M3 Network proof | done (host authority, lag-compensated catch) | M3.7: test on two physical machines |
+| M4 Session and lobby | done, verified with real Relay sessions | |
+| M5 First greybox course | done, then extended to Acts 2–3 (~680 m, 7 checkpoints) | group playtest of the full course |
+| M6 UX and readability | partly covered by earlier work (see each task) | verify M6.1/M6.2 at range, player-facing progress UI, settings menu, ping only if needed |
+| M7 Test and harden | not started (bot latency runs cover part of M7.3) | all |
+| M8 Post-validation polish | gated on M7.4; some pulled forward through M9 | |
+| M9 Movement and look pass | done (pulled forward by the owner) | |
+
+**Next up:** M6, then M7 (M7.4 external playtest gates any new mechanic). M3.7 is the oldest open gate.
 
 ---
 
@@ -46,10 +69,10 @@ Networking packages may be installed now, but networking implementation waits un
 
 **Acceptance criteria**
 
-- [ ] project opens without compilation failure;
-- [ ] Input System package is available;
-- [ ] project can enter Play Mode;
-- [ ] Console has no recurring exceptions in an empty scene.
+- [x] project opens without compilation failure;
+- [x] Input System package is available;
+- [x] project can enter Play Mode;
+- [x] Console has no recurring exceptions in an empty scene.
 
 ---
 
@@ -84,8 +107,8 @@ Assets/
 
 **Acceptance criteria**
 
-- [ ] folders exist;
-- [ ] no unnecessary framework folders are added.
+- [x] folders exist;
+- [x] no unnecessary framework folders are added.
 
 ---
 
@@ -111,8 +134,8 @@ Minimum values:
 
 **Acceptance criteria**
 
-- [ ] all values can be changed from Inspector;
-- [ ] gameplay scripts do not need duplicated hard-coded tuning constants.
+- [x] all values can be changed from Inspector;
+- [x] gameplay scripts do not need duplicated hard-coded tuning constants.
 
 ---
 
@@ -151,10 +174,10 @@ Geometry requirements:
 
 **Acceptance criteria**
 
-- [ ] scene is saved as `Assets/Scenes/PassSandbox.unity`;
-- [ ] geometry has appropriate colliders;
-- [ ] spawn markers are visible in Scene view;
-- [ ] no scene errors.
+- [x] scene is saved as `Assets/Scenes/PassSandbox.unity`;
+- [x] geometry has appropriate colliders;
+- [x] spawn markers are visible in Scene view;
+- [x] no scene errors.
 
 ---
 
@@ -180,11 +203,11 @@ Do not implement:
 
 **Acceptance criteria**
 
-- [ ] player can traverse the sandbox reliably;
-- [ ] jump feels responsive;
-- [ ] player does not slide excessively after releasing movement;
-- [ ] player can adjust modestly in air;
-- [ ] no obvious collider snagging on flat geometry.
+- [x] player can traverse the sandbox reliably;
+- [x] jump feels responsive;
+- [x] player does not slide excessively after releasing movement;
+- [x] player can adjust modestly in air;
+- [x] no obvious collider snagging on flat geometry.
 
 ---
 
@@ -209,9 +232,9 @@ Attach required movement/input components.
 
 **Acceptance criteria**
 
-- [ ] prefab exists under `Assets/Prefabs/Player/`;
-- [ ] all anchor references are assigned;
-- [ ] prefab can be instantiated without missing references.
+- [x] prefab exists under `Assets/Prefabs/Player/`;
+- [x] all anchor references are assigned;
+- [x] prefab can be instantiated without missing references.
 
 ---
 
@@ -241,11 +264,11 @@ Required states:
 
 **Acceptance criteria**
 
-- [ ] state is inspectable/debuggable;
-- [ ] bomb can attach to a player hand anchor;
-- [ ] bomb can detach into physics;
-- [ ] no world-contact failure while correctly held;
-- [ ] state transitions are logged in development builds/editor.
+- [x] state is inspectable/debuggable;
+- [x] bomb can attach to a player hand anchor;
+- [x] bomb can detach into physics;
+- [x] no world-contact failure while correctly held;
+- [x] state transitions are logged in development builds/editor.
 
 ---
 
@@ -264,10 +287,10 @@ speed runs from `throwSpeedMin` to `throwSpeedMax` over `throwChargeTime`. Show 
 
 **Acceptance criteria**
 
-- [ ] bomb leaves hand cleanly;
-- [ ] bomb does not collide instantly with carrier;
-- [ ] throw direction follows aim predictably;
-- [ ] the same input gives repeatable results.
+- [x] bomb leaves hand cleanly;
+- [x] bomb does not collide instantly with carrier;
+- [x] throw direction follows aim predictably;
+- [x] the same input gives repeatable results.
 
 ---
 
@@ -291,11 +314,11 @@ Starting values:
 
 **Acceptance criteria**
 
-- [ ] moving receiver can catch;
-- [ ] jumping receiver can catch;
-- [ ] successful catch is obvious;
-- [ ] same catch cannot resolve twice;
-- [ ] catch does not immediately produce an environment explosion from overlapping geometry.
+- [x] moving receiver can catch;
+- [x] jumping receiver can catch;
+- [x] successful catch is obvious;
+- [x] same catch cannot resolve twice;
+- [x] catch does not immediately produce an environment explosion from overlapping geometry.
 
 ---
 
@@ -317,11 +340,11 @@ No bounce.
 
 **Acceptance criteria**
 
-- [ ] deliberately throw at floor → explosion;
-- [ ] deliberately throw at wall → explosion;
-- [ ] miss receiver and hit platform → explosion;
-- [ ] valid player catch does not explode;
-- [ ] failure reason is logged.
+- [x] deliberately throw at floor → explosion;
+- [x] deliberately throw at wall → explosion;
+- [x] miss receiver and hit platform → explosion;
+- [x] valid player catch does not explode;
+- [x] failure reason is logged.
 
 ---
 
@@ -341,10 +364,10 @@ Required:
 
 **Acceptance criteria**
 
-- [ ] holding bomb continuously causes failure;
-- [ ] successful catch restores full hold window;
-- [ ] no stale fuse continues after reset;
-- [ ] fuse cannot expire during reset state.
+- [x] holding bomb continuously causes failure;
+- [x] successful catch restores full hold window;
+- [x] no stale fuse continues after reset;
+- [x] fuse cannot expire during reset state.
 
 ---
 
@@ -363,10 +386,10 @@ Placeholder audio is acceptable.
 
 **Acceptance criteria**
 
-- [ ] player can estimate urgency without a number;
-- [ ] warning becomes clearly stronger near expiry;
-- [ ] catch sound is distinct;
-- [ ] explosion sound is distinct.
+- [x] player can estimate urgency without a number;
+- [x] warning becomes clearly stronger near expiry;
+- [x] catch sound is distinct;
+- [x] explosion sound is distinct.
 
 ---
 
@@ -387,12 +410,12 @@ Target interruption:
 
 **Acceptance criteria**
 
-- [ ] all players return to configured spawn points;
-- [ ] bomb has zero stale velocity;
-- [ ] bomb has valid carrier or configured start state;
-- [ ] fuse is full;
-- [ ] player control returns;
-- [ ] repeated failures do not corrupt state.
+- [x] all players return to configured spawn points;
+- [x] bomb has zero stale velocity;
+- [x] bomb has valid carrier or configured start state;
+- [x] fuse is full;
+- [x] player control returns;
+- [x] repeated failures do not corrupt state.
 
 ---
 
@@ -419,6 +442,9 @@ Evaluate:
 
 If these fail, tune before proceeding.
 
+> **Status (open, human gate):** the owner's own playtests were positive and led to the throw/catch rework
+> (charged throw, timed catch, receiver-side forgiveness, `PassFeelTests`). Close with the external playtest (M7.4).
+
 ---
 
 # Milestone 2 — Reusable greybox prefab kit
@@ -439,8 +465,8 @@ Requirements:
 
 **Acceptance criteria**
 
-- [ ] saved under `Assets/Prefabs/Platforms/`;
-- [ ] scaling does not create broken collision.
+- [x] saved under `Assets/Prefabs/Platforms/`;
+- [x] scaling does not create broken collision.
 
 ---
 
@@ -452,8 +478,8 @@ Keep initial default forgiving.
 
 **Acceptance criteria**
 
-- [ ] reusable;
-- [ ] visually distinguishable in greybox if useful.
+- [x] reusable;
+- [x] visually distinguishable in greybox if useful.
 
 ---
 
@@ -477,10 +503,10 @@ Expose:
 
 **Acceptance criteria**
 
-- [ ] moves repeatedly between endpoints;
-- [ ] player can stand on it without obvious instability;
-- [ ] movement can be reset;
-- [ ] values editable in Inspector.
+- [x] moves repeatedly between endpoints;
+- [x] player can stand on it without obvious instability;
+- [x] movement can be reset;
+- [x] values editable in Inspector.
 
 ---
 
@@ -494,9 +520,9 @@ Expose:
 
 **Acceptance criteria**
 
-- [ ] deterministic continuous rotation;
-- [ ] collider matches visible bar;
-- [ ] reset is consistent.
+- [x] deterministic continuous rotation;
+- [x] collider matches visible bar;
+- [x] reset is consistent.
 
 ---
 
@@ -511,8 +537,8 @@ Required:
 
 **Acceptance criteria**
 
-- [ ] first qualifying interaction starts collapse;
-- [ ] platform restores correctly after section reset.
+- [x] first qualifying interaction starts collapse;
+- [x] platform restores correctly after section reset.
 
 ---
 
@@ -525,8 +551,8 @@ Required:
 
 **Acceptance criteria**
 
-- [ ] bomb cannot disappear forever below level;
-- [ ] player fall behavior is deterministic.
+- [x] bomb cannot disappear forever below level;
+- [x] player fall behavior is deterministic.
 
 ---
 
@@ -547,9 +573,9 @@ Checkpoint
 
 **Acceptance criteria**
 
-- [ ] stores/identifies player respawn slots;
-- [ ] activates only when required condition is met;
-- [ ] RunManager can reset to it.
+- [x] stores/identifies player respawn slots;
+- [x] activates only when required condition is met;
+- [x] RunManager can reset to it.
 
 ---
 
@@ -562,8 +588,8 @@ Required:
 
 **Acceptance criteria**
 
-- [ ] one player alone cannot finish a multi-player run;
-- [ ] completion fires once.
+- [x] one player alone cannot finish a multi-player run;
+- [x] completion fires once.
 
 ---
 
@@ -583,9 +609,9 @@ Required packages:
 
 **Acceptance criteria**
 
-- [ ] project compiles;
-- [ ] networking initialization succeeds;
-- [ ] no obsolete duplicate Lobby/Relay package architecture is introduced unnecessarily.
+- [x] project compiles;
+- [x] networking initialization succeeds;
+- [x] no obsolete duplicate Lobby/Relay package architecture is introduced unnecessarily.
 
 ---
 
@@ -597,9 +623,9 @@ Do not build polished menu yet.
 
 **Acceptance criteria**
 
-- [ ] one instance can host;
-- [ ] second instance can connect;
-- [ ] disconnect is handled without permanent editor breakage.
+- [x] one instance can host;
+- [x] second instance can connect;
+- [x] disconnect is handled without permanent editor breakage.
 
 ---
 
@@ -613,9 +639,9 @@ Required:
 
 **Acceptance criteria**
 
-- [ ] host and client see both players;
-- [ ] each controls only their own character;
-- [ ] no duplicate camera/input activation on remote players.
+- [x] host and client see both players;
+- [x] each controls only their own character;
+- [x] no duplicate camera/input activation on remote players.
 
 ---
 
@@ -633,10 +659,10 @@ Required:
 
 **Acceptance criteria**
 
-- [ ] clients cannot independently assign carrier;
-- [ ] both clients agree on carrier;
-- [ ] both clients agree on explosion;
-- [ ] repeated passes do not duplicate bomb.
+- [x] clients cannot independently assign carrier;
+- [x] both clients agree on carrier;
+- [x] both clients agree on explosion;
+- [x] repeated passes do not duplicate bomb.
 
 ---
 
@@ -652,10 +678,10 @@ Required:
 
 **Acceptance criteria**
 
-- [ ] host→client pass works;
-- [ ] client→host pass works;
-- [ ] client→client via host authority works if 3+ players available;
-- [ ] no common “caught then exploded anyway” race.
+- [x] host→client pass works;
+- [x] client→host pass works;
+- [x] client→client via host authority works if 3+ players available;
+- [x] no common “caught then exploded anyway” race.
 
 ---
 
@@ -669,9 +695,9 @@ Required:
 
 **Acceptance criteria**
 
-- [ ] no duplicate reset calls;
-- [ ] all clients resume same section;
-- [ ] bomb carrier/fuse match after reset.
+- [x] no duplicate reset calls;
+- [x] all clients resume same section;
+- [x] bomb carrier/fuse match after reset.
 
 ---
 
@@ -693,6 +719,10 @@ Observe:
 - [ ] core loop remains playable online;
 - [ ] no critical authority race remains unresolved.
 
+> **Status (open):** verified only with several processes on one machine, with bots and the Network Simulator
+> (see [`TESTING.md`](TESTING.md)). Catch lag compensation (M3.5) holds 20/20 and 22/22 catches at ~230 ms RTT.
+> Two physical machines are still to be tested.
+
 ---
 
 # Milestone 4 — Session and lobby
@@ -709,8 +739,8 @@ Responsibilities:
 
 **Acceptance criteria**
 
-- [ ] clean startup;
-- [ ] no duplicate persistent managers after scene changes.
+- [x] clean startup;
+- [x] no duplicate persistent managers after scene changes.
 
 ---
 
@@ -724,7 +754,7 @@ Host flow:
 
 **Acceptance criteria**
 
-- [ ] host can create session repeatedly after returning to menu.
+- [x] host can create session repeatedly after returning to menu.
 
 ---
 
@@ -738,8 +768,8 @@ Client flow:
 
 **Acceptance criteria**
 
-- [ ] invalid code gives readable error;
-- [ ] valid code connects.
+- [x] invalid code gives readable error;
+- [x] valid code connects.
 
 ---
 
@@ -755,7 +785,7 @@ Keep UI utilitarian.
 
 **Acceptance criteria**
 
-- [ ] list updates on connect/disconnect.
+- [x] list updates on connect/disconnect.
 
 ---
 
@@ -765,9 +795,9 @@ Host launches `PassSandbox` or `PrototypeCourse`.
 
 **Acceptance criteria**
 
-- [ ] all connected clients load intended scene;
-- [ ] all spawn once;
-- [ ] bomb starts once.
+- [x] all connected clients load intended scene;
+- [x] all spawn once;
+- [x] bomb starts once.
 
 ---
 
@@ -819,7 +849,7 @@ Required:
 **Acceptance criteria**
 
 - [ ] multiple players must reposition;
-- [ ] bomb progresses upward through passes.
+- [x] bomb progresses upward through passes.
 
 ---
 
@@ -829,8 +859,8 @@ Place checkpoint after initial teaching beats.
 
 **Acceptance criteria**
 
-- [ ] full team activates;
-- [ ] reset returns here after later failure.
+- [x] full team activates;
+- [x] reset returns here after later failure.
 
 ---
 
@@ -841,7 +871,7 @@ Use moving-platform prefab.
 **Acceptance criteria**
 
 - [ ] players can wait for safe window or attempt riskier timing;
-- [ ] movement is network-consistent enough to catch.
+- [x] movement is network-consistent enough to catch.
 
 ---
 
@@ -855,7 +885,7 @@ Required:
 
 **Acceptance criteria**
 
-- [ ] bomb must cross between lanes;
+- [x] bomb must cross between lanes;
 - [ ] all players remain involved.
 
 ---
@@ -877,7 +907,7 @@ Required:
 **Acceptance criteria**
 
 - [ ] success requires moving catch;
-- [ ] failure is readable.
+- [x] failure is readable.
 
 ---
 
@@ -912,11 +942,13 @@ Required:
 
 **Acceptance criteria**
 
-- [ ] same group can restart without recreating project/session manually.
+- [x] same group can restart without recreating project/session manually.
 
 ---
 
-> **Status:** Milestone 5 is implemented (course beats A-G, three checkpoints, finish and rematch); the human playtest of the full course is still open.
+> **Status:** Milestone 5 is implemented (course beats A-G, three checkpoints, finish and rematch) and was later
+> extended with Acts 2–3 (~680 m, 7 checkpoints, see [`ARCHITECTURE.md`](ARCHITECTURE.md) §4). The unticked boxes need a
+> group playtest of the full course.
 
 # Milestone 6 — UX and readability
 
@@ -925,6 +957,9 @@ Required:
 ## M6.1 — Carrier indicator
 
 Show current holder clearly.
+
+> **Status (implemented, to verify):** `PlayerPresentation` shows a bobbing, spinning indicator above the carrier
+> that pulses on catch. It is driven by `BombController.CarrierChanged`, so it also works on remote mirrors.
 
 **Acceptance criteria**
 
@@ -937,6 +972,9 @@ Show current holder clearly.
 
 Prototype visual feedback for valid receiver / catch-ready state.
 
+> **Status (implemented, to verify):** `AimReticle` shows a "CATCH!" marker to the intended receiver
+> (`BombController.IntendedReceiver`), catch-window brackets and cooldown, and `PlayerCatcher.Hint` ("Too late by N ms").
+
 **Acceptance criteria**
 
 - [ ] helps passing without making throws automatic;
@@ -947,6 +985,8 @@ Prototype visual feedback for valid receiver / catch-ready state.
 ## M6.3 — Checkpoint/course progress
 
 Minimal UI only.
+
+> **Status (open):** only the dev `DebugHud` shows the checkpoint; `RunResultsUI` shows time and resets at the finish.
 
 **Acceptance criteria**
 
@@ -973,6 +1013,11 @@ At minimum prepare:
 - flash/reduced-flash option;
 - bomb warning volume;
 - visual warning independent of color alone.
+
+> **Status (partial):** in `GameTuning`, `viewEffectsStrength` scales every camera effect (shake, bob, roll, FOV),
+> `flashReduction` dims every flash, and `beepVolume` sets the bomb warning volume. The fuse warning uses pulse speed,
+> sparks and beep cadence, and hazards are striped, so neither relies on colour alone. There is no player-facing
+> settings menu yet.
 
 ---
 
@@ -1025,6 +1070,10 @@ Observe:
 
 - [ ] no common catastrophic desync;
 - [ ] critical gameplay decisions remain authoritative.
+
+> **Status (partial):** bot runs under the Network Simulator: RTT 5 ms 32/32 catches, 90 ms 26/26, ~230 ms 20/20
+> (22/22 incl. client→client). About 450 ms RTT still fails (0/14): it is beyond the `catchLagCompensation` cap
+> (0.35 s). Ownership, thrown motion and reset under latency still need a dedicated pass.
 
 ---
 
@@ -1104,7 +1153,10 @@ Acceptance criteria:
 
 ## M9.3 — Cartoon look, speed feel, potato VFX, audio
 
-See the plan in the PR description (toon shader, sky, post, speed lines, trail, fuse sparks, cartoon explosion, CC0 audio).
+Done: toon shader, sky, post-processing, speed lines, trail, fuse sparks, cartoon explosion. Movement sounds were
+removed on purpose afterwards; only the bomb sounds remain. Details in [`ARCHITECTURE.md`](ARCHITECTURE.md) §8.6 and §25.
+
+> **Status:** M9.1–M9.3 are done (PRs #7–#10).
 
 ---
 
@@ -1112,31 +1164,33 @@ See the plan in the PR description (toon shader, sky, post, speed lines, trail, 
 
 The MVP is complete when all of the following are true:
 
-- [ ] host can create a session;
-- [ ] 1–3 friends can join by code;
+- [x] host can create a session;
+- [x] 1–3 friends can join by code;
 - [ ] 2–4 players spawn correctly;
-- [ ] movement is responsive;
-- [ ] one bomb exists;
-- [ ] bomb can be thrown;
-- [ ] bomb can be caught while players move/jump;
-- [ ] successful catch refreshes the fuse;
-- [ ] bomb beeps/pulses with urgency;
-- [ ] bomb hitting environment causes authoritative explosion;
-- [ ] holding too long causes authoritative explosion;
-- [ ] explosion resets current section quickly;
-- [ ] checkpoints work;
-- [ ] one 3–5 minute greybox course exists;
-- [ ] all required players must finish;
-- [ ] run can be replayed;
-- [ ] host/client agree on bomb state;
+- [x] movement is responsive;
+- [x] one bomb exists;
+- [x] bomb can be thrown;
+- [x] bomb can be caught while players move/jump;
+- [x] successful catch refreshes the fuse;
+- [x] bomb beeps/pulses with urgency;
+- [x] bomb hitting environment causes authoritative explosion;
+- [x] holding too long causes authoritative explosion;
+- [x] explosion resets current section quickly;
+- [x] checkpoints work;
+- [x] one 3–5 minute greybox course exists;
+- [x] all required players must finish;
+- [x] run can be replayed;
+- [x] host/client agree on bomb state;
 - [ ] no recurring Console errors;
 - [ ] playtesters understand failures;
 - [ ] playtesters voluntarily want another attempt.
+
+Open: 4-player spawning (M7.2), a clean Console over a long session (M7.1), and the two playtest items (M7.4).
 
 ---
 
 # First command for the coding agent
 
-Use this as the initial execution instruction:
+Original bootstrap instruction (Milestones 0–1 are done; start from the status table at the top instead):
 
-> Read `PROJECT_SPEC.md`, `ARCHITECTURE.md`, and `MVP_TASKS.md`. Inspect the existing Unity project before changing anything. Start at Milestone 0 and proceed in order. Use Unity Editor/MCP tools for scenes, prefabs, component assignment, hierarchy inspection, Console inspection, and Play Mode validation when available. Do not implement networking or substantial level content until the local PassSandbox throw/catch/fuse/reset loop satisfies Milestone 1 acceptance criteria. Do not invent features outside the specification.
+> Read `docs/PROJECT_SPEC.md`, `docs/ARCHITECTURE.md`, and `docs/MVP_TASKS.md`. Inspect the existing Unity project before changing anything. Start at the first open milestone in the status table and proceed in order. Use Unity Editor/MCP tools for scenes, prefabs, component assignment, hierarchy inspection, Console inspection, and Play Mode validation when available. Do not invent features outside the specification.
