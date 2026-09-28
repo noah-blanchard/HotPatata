@@ -139,17 +139,30 @@ instability).
 
 ## 4. CI and releases
 
-`.github/workflows/build-windows.yml` builds StandaloneWindows64 (Mono) with GameCI on GitHub-hosted Ubuntu.
+`.github/workflows/build.yml` builds the player with GameCI on GitHub-hosted Ubuntu (Mono for the desktop targets),
+one job per platform, and releases only from tags. Pushes to `main` do not build.
 
-- A push to `main` uploads a zipped build as a workflow artifact.
-- A `v*` tag on a commit that is on `main` publishes a GitHub Release with `HotPatata-Windows-<version>.zip`. The
-  version comes from the tag: `git tag v0.2.0 && git push origin v0.2.0`.
-- The same tag also pushes the build to itch.io when the repo variable `ITCH_TARGET` is set (`<itch user>/<game>`,
-  channel `windows`, user version = the tag). It needs the secret `BUTLER_API_KEY` (itch.io → Settings → API keys, or
-  `butler login` then `~/.config/itch/butler_creds`). Without `ITCH_TARGET` the step is skipped; with it but no key,
-  the job fails after the GitHub Release is published. butler is downloaded from itch.io, not from a third-party action.
-- A pull request only builds when it changes the workflow itself.
+| Tag (on a commit on `main`) | Builds |
+|---|---|
+| `v0.4.0` (global) | every enabled platform: Windows, Linux, macOS, plus Web when the repo variable `WEBGL_BUILD` is `true` (#64) |
+| `v0.4.0-linux` | Linux only |
+| `v0.4.0-linux-macos` | several platforms (tokens: `windows`, `linux`, `macos`, `web`) |
+| `v0.4.0-rc1-web` | other tokens stay in the version (`0.4.0-rc1`) |
+
+- Each tag publishes one GitHub Release named after the tag, with `HotPatata-<Windows|Linux|macOS|Web>-<version>.zip`:
+  `git tag v0.4.0 && git push origin v0.4.0`.
+- When the repo variable `ITCH_TARGET` is set (`<itch user>/<game>`), each zip is also pushed to its itch.io channel
+  (`windows`, `linux`, `osx`, `html5`; user version = the tag's version). It needs the secret `BUTLER_API_KEY`
+  (itch.io → Settings → API keys). Without `ITCH_TARGET` the step is skipped; with it but no key, the publish job fails
+  after the GitHub Release. butler is downloaded from itch.io, not from a third-party action.
+- A platform that fails does not stop the others: the release publishes what built, and the failed job keeps the
+  run red.
+- macOS builds are **not signed or notarized** (owner decision, for now): players open the app with right-click → Open
+  the first time. Linux builds also run on the Steam Deck.
+- **Actions → Build → Run workflow** builds on demand (input `platforms`: `all` or e.g. `windows web`) and keeps the zips
+  as workflow artifacts for 7 days, without publishing.
+- A pull request builds every enabled platform when it changes the workflow itself.
 - Required repo secrets: `UNITY_LICENSE` (the contents of `C:\ProgramData\Unity\Unity_lic.ulf`), `UNITY_EMAIL`,
-  `UNITY_PASSWORD`.
+  `UNITY_PASSWORD`. The same license activates every target in the GameCI images.
 
 CI does not run the test suites. Run the relevant suites locally (section 1) before opening a PR.

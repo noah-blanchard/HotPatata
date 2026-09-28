@@ -3,7 +3,7 @@
 > **Status:** MVP / rapid prototype; progress per milestone is tracked in [`MVP_TASKS.md`](MVP_TASKS.md)  
 > **Title:** HotPatata  
 > **Genre:** Cooperative first-person parkour / hot-potato party game  
-> **Initial target:** Windows PC  
+> **Initial target:** Windows PC (primary). Each release also ships Linux and macOS builds, best effort (macOS unsigned); a Web (WebGL) build is planned (#64). Priority: Windows → Web → the rest.  
 > **Target engine:** Unity 6.3 LTS  
 > **Initial player count:** 2–4 players  
 > **Primary development goal:** Prove that passing the bomb while moving through a parkour course is fun before building content or polish.
