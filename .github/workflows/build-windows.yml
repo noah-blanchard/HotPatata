@@ -1,7 +1,9 @@
 # Builds the Windows player with GameCI.
 #   push to main   -> zipped build uploaded as a workflow artifact
-#   push tag v*    -> same build, published as a GitHub Release (tag must be on main)
+#   push tag v*    -> same build, published as a GitHub Release (tag must be on main),
+#                     and pushed to itch.io when the repo variable ITCH_TARGET is set
 # Required repo secrets: UNITY_LICENSE (contents of Unity_lic.ulf), UNITY_EMAIL, UNITY_PASSWORD.
+# itch.io (optional): repo variable ITCH_TARGET = "<itch user>/<game>", secret BUTLER_API_KEY.
 name: Build Windows
 
 on:
@@ -109,3 +111,26 @@ jobs:
         with:
           files: ${{ steps.zip.outputs.file }}
           generate_release_notes: true
+
+      # butler comes straight from itch.io (no third-party action). It pushes the folder, not the zip, so players
+      # only download what changed.
+      - name: Publish to itch.io
+        if: startsWith(github.ref, 'refs/tags/v') && vars.ITCH_TARGET != ''
+        shell: bash
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+          ITCH_TARGET: ${{ vars.ITCH_TARGET }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if [[ -z "$BUTLER_API_KEY" ]]; then
+            echo "::error::ITCH_TARGET is set but the BUTLER_API_KEY secret is missing."
+            exit 1
+          fi
+          curl -sSfL -o butler.zip https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default
+          unzip -q butler.zip -d butler-bin
+          chmod +x butler-bin/butler
+          butler-bin/butler -V
+          butler-bin/butler push build/StandaloneWindows64 "$ITCH_TARGET:windows" \
+            --userversion "$VERSION" \
+            --ignore '*_BurstDebugInformation_DoNotShip*' \
+            --ignore '*_BackUpThisFolder_ButDontShipItWithYourGame*'
