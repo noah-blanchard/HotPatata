@@ -10,7 +10,7 @@ throwing a live bomb between them.
 
 - **Engine and packages:** Unity **6000.3.25f1** (6.3 LTS), URP 17.3, Input System 1.20, Netcode for GameObjects
   2.13, Multiplayer Services (Relay sessions, linked to Unity Cloud project HotPatata), Multiplayer Play Mode.
-- **Target:** Windows PC.
+- **Target:** Windows PC (primary). Linux and macOS builds ship with each release, best effort (macOS unsigned).
 - **Scenes:**
   - `Bootstrap` (entry: menu and lobby);
   - `PassSandbox` (one bomb, the kit demo, the pass range);
@@ -98,5 +98,5 @@ same PR. Code comments cite doc sections (e.g. `PROJECT_SPEC §8.3`), so never r
 - Online sessions: never call `NetworkManager.Shutdown` in session mode (use `SessionService.LeaveAsync`).
 - Editor screenshots (`capture_game_view`) land under `Assets/`. Delete them, never commit them.
 - `Library/`, `Temp/`, `Logs/` and `UserSettings/` are gitignored. Keep `.meta` files with their assets.
-- Git: branch from `main`, sync with `git merge origin/main` (not rebase), and open a PR. CI builds Windows on pushes to
-  `main` and on `v*` tags.
+- Git: branch from `main`, sync with `git merge origin/main` (not rebase), and open a PR. CI builds only on `v*` tags (global
+  `vX.Y.Z` = every platform, `vX.Y.Z-linux` = one platform; see `docs/TESTING.md` §4), not on pushes to `main`.

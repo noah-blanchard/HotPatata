@@ -139,12 +139,29 @@ instability).
 
 ## 4. CI and releases
 
-`.github/workflows/build-windows.yml` builds StandaloneWindows64 (Mono) with GameCI on GitHub-hosted Ubuntu.
+`.github/workflows/build.yml` builds the player for Windows, Linux and macOS (Mono) with GameCI on GitHub-hosted
+Ubuntu, one job per platform, and releases only from tags. Pushes to `main` do not build.
 
-- A push to `main` uploads a zipped build as a workflow artifact.
-- A `v*` tag on a commit that is on `main` publishes a GitHub Release with `HotPatata-Windows-<version>.zip`. The
-  version comes from the tag: `git tag v0.2.0 && git push origin v0.2.0`.
-- A pull request only builds when it changes the workflow itself.
+| Tag (on a commit on `main`) | Builds |
+|---|---|
+| `v0.4.0` (global) | Windows, Linux and macOS |
+| `v0.4.0-linux` | Linux only |
+| `v0.4.0-linux-macos` | several platforms (tokens: `windows`, `linux`, `macos`) |
+| `v0.4.0-rc1-linux` | other tokens stay in the version (`0.4.0-rc1`); an unknown word such as `html5` is part of the version, not a platform |
+
+- Each tag publishes one GitHub Release named after the tag, with `HotPatata-<Windows|Linux|macOS>-<version>.zip`:
+  `git tag v0.4.0 && git push origin v0.4.0`.
+- When the repo variable `ITCH_TARGET` is set (`<itch user>/<game>`), each zip is also pushed to its itch.io channel
+  (`windows`, `linux`, `osx`; user version = the tag's version). It needs the secret `BUTLER_API_KEY`
+  (itch.io → Settings → API keys). Without `ITCH_TARGET` the step is skipped; with it but no key, the publish job fails
+  after the GitHub Release. butler is downloaded from itch.io, not from a third-party action.
+- A platform that fails does not stop the others: the release publishes what built, and the failed job keeps the
+  run red.
+- macOS builds are **not signed or notarized** (owner decision, for now): players open the app with right-click → Open
+  the first time. Linux builds also run on the Steam Deck.
+- **Actions → Build → Run workflow** builds on demand (input `platforms`: `all` or e.g. `windows linux`) and keeps the zips
+  as workflow artifacts for 7 days, without publishing.
+- A pull request builds every platform when it changes the workflow itself.
 - Required repo secrets: `UNITY_LICENSE` (the contents of `C:\ProgramData\Unity\Unity_lic.ulf`), `UNITY_EMAIL`,
   `UNITY_PASSWORD`.
 

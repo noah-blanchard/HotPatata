@@ -275,7 +275,7 @@ PrototypeCourse
 
 ## 5. Project folders
 
-As built (the Unity template leftovers `TutorialInfo/` and `Scenes/SampleScene.unity` are unused):
+As built:
 
 ```text
 Assets/
