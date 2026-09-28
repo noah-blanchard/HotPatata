@@ -131,7 +131,10 @@ and the lobby; `SessionService` wraps Multiplayer Services. See §13.1.
 ### `Lobby`
 
 As built: **not a separate scene.** The lobby is a UI state of `Bootstrap`, drawn by `NetworkBootstrap` (session code,
-player list with host marker, Start for the host). The original plan follows.
+player list with host marker, Start for the host). The menu and the host's lobby also pick the **spawn point**
+(`Start` or `CP1`..`CPn`, stored in `RunOptions.StartCheckpoint`): `RunManager` begins the run, and every rematch, as
+if the team had just reached that checkpoint (its spawns, carrier slot and fuse; earlier checkpoints count as reached).
+It is a practice aid; only the authority's choice matters. The original plan follows.
 
 Purpose:
 

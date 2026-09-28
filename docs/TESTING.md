@@ -22,7 +22,7 @@
 | `ViewFeelTests` | PlayMode | first-person speed feel, post effects, accessibility scaling |
 | `PassFeelTests` | PlayMode | **pass-feel regression suite**: catches at 4/8/12 m moving and jumping, the assist never creates range |
 | `PrefabKitTests` | PlayMode | M2 greybox kit (moving/falling platforms, rotating bar, kill zone, checkpoint, finish) |
-| `CourseTests` | PlayMode | M5 course Act 1: structure, checkpoints, finish, rematch, launch pad |
+| `CourseTests` | PlayMode | M5 course Act 1: structure, checkpoints, finish, rematch, start checkpoint, launch pad |
 | `FactoryCourseTests` | PlayMode | course Acts 2–3: belts, elevators, sweepers, crushers, mega slide |
 
 EditMode tests live in `Assets/Tests/EditMode/`. PlayMode tests live in `Assets/Tests/PlayMode/`: they load
@@ -80,6 +80,7 @@ change, run `CourseTests` / `FactoryCourseTests`.
 | `-patataHostOnline` / `-patataJoinCode <code>` | Relay session host / join by code |
 | `-patataScene <name>` | level to load (e.g. `PassSandbox`) |
 | `-patataAutoStart <n>` | session host starts the level when n players are in |
+| `-patataCheckpoint <id>` | the run starts at that checkpoint (host / local; `RunOptions.StartCheckpoint`) |
 | `-patataBot` | the local player is a bot (`PlayerBot`) |
 | `-patataLatency <ms>` | Network Simulator latency (Editor / dev builds only) |
 | `-patataQuit <s>` / `-patataLeaveAfter <s>` | quit / leave the session after s seconds |

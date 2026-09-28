@@ -120,12 +120,14 @@ namespace HotPatata
         {
             runStart = NetMode.ServerTime;
             sectionStart = runStart;
+            ApplyStartCheckpoint();
             PlacePlayers();
             bomb.BeginReset();
             bomb.EndReset(CarrierForReset());
             SetPlayersLocked(false);
             Transition(RunState.Playing);
-            PatataLog.Run($"Run started with {Players.Count} players");
+            PatataLog.Run($"Run started with {Players.Count} players"
+                          + (checkpoint != null ? $" at checkpoint {checkpoint.Id}" : ""));
         }
 
         // ------------------------------------------------------------------ failure / reset
@@ -179,11 +181,36 @@ namespace HotPatata
             // Checkpoint ids increase along the course; walking back through an earlier one must not move the respawn back.
             if (checkpoint != null && cp.Id <= checkpoint.Id) return;
 
+            SetCheckpoint(cp);
+            PatataLog.Run($"Checkpoint {cp.Id} activated");
+        }
+
+        void SetCheckpoint(Checkpoint cp)
+        {
             checkpoint = cp;
             // Normalise the bomb for the new section: this checkpoint's hold time, and a fresh window for whoever has it.
             bomb.Fuse.SetDurationOverride(cp.HoldFuseOverride);
-            PatataLog.Run($"Checkpoint {cp.Id} activated");
             CheckpointActivated?.Invoke(cp);
+        }
+
+        /// <summary>
+        /// <see cref="RunOptions.StartCheckpoint"/>: the run begins as if the team had just reached that checkpoint.
+        /// Every checkpoint up to it counts as reached. An id this level does not have starts at the beginning.
+        /// </summary>
+        void ApplyStartCheckpoint()
+        {
+            int id = RunOptions.StartCheckpoint;
+            if (id <= 0) return;
+
+            var start = CheckpointById(id);
+            if (start == null)
+            {
+                PatataLog.Run($"No checkpoint {id} in this level, starting at the beginning");
+                return;
+            }
+            foreach (var cp in checkpoints)
+                if (cp.Id <= id) cp.MarkReached();
+            SetCheckpoint(start);
         }
 
         /// <summary>Called by FinishZone once every required player is inside. Fires once.</summary>
@@ -199,7 +226,7 @@ namespace HotPatata
             RunCompleted?.Invoke(runTime);
         }
 
-        /// <summary>Starts the whole run again from the beginning (rematch). Authority only.</summary>
+        /// <summary>Starts the whole run again from the beginning, or the chosen start checkpoint (rematch). Authority only.</summary>
         public void Restart()
         {
             if (!NetMode.IsAuthority || (state != RunState.Completed && state != RunState.Playing) || Players.Count == 0) return;
@@ -213,6 +240,7 @@ namespace HotPatata
             runStart = NetMode.ServerTime;
             sectionStart = runStart;
             runTime = 0f;
+            ApplyStartCheckpoint();
             PlacePlayers();
             bomb.BeginReset();
             bomb.EndReset(CarrierForReset());
