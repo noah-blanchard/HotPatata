@@ -1,8 +1,12 @@
 # HotPatata — ARCHITECTURE.md
 
-> This document defines the intended technical structure for the MVP.  
-> `PROJECT_SPEC.md` is the gameplay source of truth.  
+> This document describes the technical structure of the MVP: what was planned and, where it differs, what was built
+> ("As built" notes). [`PROJECT_SPEC.md`](PROJECT_SPEC.md) is the gameplay source of truth; testing and tooling live in
+> [`TESTING.md`](TESTING.md).
+>
 > Prefer simple, inspectable Unity components over framework-heavy abstractions.
+>
+> Section numbers are cited from code comments: add sub-sections, never renumber.
 
 ---
 
@@ -39,6 +43,11 @@ Target:
 - **Unity Multiplayer Services**
 - **Sessions / Relay** for friend-hosted online sessions
 - **Multiplayer Play Mode** or equivalent local multi-instance workflow for testing
+
+As built: Unity **6000.3.25f1** (6.3 LTS), URP 17.3, Input System 1.20, Netcode for GameObjects 2.13, Multiplayer
+Services (Sessions + Relay, project linked to Unity Cloud), Multiplayer Play Mode, glTFast (potato model). All gameplay
+code is in one assembly, `Assets/Scripts/HotPatata.asmdef` (namespace `HotPatata`); Editor/dev-only code is in
+`HotPatata.DebugTools` (`Assets/Scripts/DebugTools`) and `HotPatata.EditorTools` (`Assets/EditorTools`).
 
 The target topology is:
 
@@ -114,7 +123,15 @@ Bootstrap
 └── EventSystem
 ```
 
+As built: the `Bootstrap` scene holds `BootstrapEntry`, which instantiates the persistent `NetworkManager` prefab
+(`Assets/Prefabs/Network`: `NetworkManager` + `UnityTransport` + `NetworkBootstrap`) exactly once. `NetworkBootstrap`
+draws the menu (Host Online / Join with code / Play Local / Direct IP, choose Course or Sandbox via `gameplayScenes`)
+and the lobby; `SessionService` wraps Multiplayer Services. See §13.1.
+
 ### `Lobby`
+
+As built: **not a separate scene.** The lobby is a UI state of `Bootstrap`, drawn by `NetworkBootstrap` (session code,
+player list with host marker, Start for the host). The original plan follows.
 
 Purpose:
 
@@ -165,6 +182,10 @@ PassSandbox
 └── Main Camera / player cameras as required
 ```
 
+As built: one bomb, a `KitDemo` group showing every kit prefab, and no pre-placed players: `PlayerSpawner` builds the
+offline two-player rig or, on the host, one networked player per connection. A pass range lane on the east side has
+marks at 4 / 8 / 12 / 16 m (used by `PassFeelTests` and the F4/F5 practice bot, see [`TESTING.md`](TESTING.md)).
+
 ### `PrototypeCourse` (Milestone 5, extended with Acts 2-3)
 
 One straight course along +Z (~680 m, about 8-10 minutes, 7 checkpoints), every piece a kit prefab, all parented under
@@ -210,8 +231,13 @@ not by hand.
 | M Mega Slide | 548-616 | 18° downhill, two lanes split by a low divider (two tall stretches block passes); three `Obstacle_Hoop`s spin over the divider. Slide at 15-18 m/s and pass sideways, leading the throw |
 | N Factory Finale | 616-678 | run-out under a crusher, a forward belt through three piston gates, the `FinishZone` podium at z 671 |
 
-The finish shows `RunResultsUI` (time, resets); the host presses R for a rematch (`RunManager.Restart`).
-Levels are chosen in the Bootstrap menu (`gameplayScenes` on `NetworkBootstrap`).
+The finish shows `RunResultsUI` (time, resets); the host presses R for a rematch (`RunManager.Restart`, which rearms
+everything). Levels are chosen in the Bootstrap menu (`gameplayScenes` on `NetworkBootstrap`).
+
+`CourseBuilder` also creates the Factory/Slide prefabs and materials if they are missing. `Checkpoint.holdFuseOverride`
+changes the bomb's hold time from that checkpoint on (CP6 5 s, CP7 4.5 s). `PrototypeCourse/Backdrop` holds collider-free
+decoration (islands, trees, clouds) kept at |x| >= 25 m from the course so it never enters a pass path (spec §3).
+Course tests: `CourseTests` (Act 1, checkpoints, finish) and `FactoryCourseTests` (Acts 2–3).
 
 (Original plan follows.)
 
@@ -244,40 +270,35 @@ PrototypeCourse
 
 ---
 
-## 5. Proposed project folders
+## 5. Project folders
+
+As built (the Unity template leftovers `TutorialInfo/` and `Scenes/SampleScene.unity` are unused):
 
 ```text
 Assets/
 ├── Art/
-│   ├── Materials/
-│   ├── Models/
-│   └── VFX/
-├── Audio/
-│   ├── Bomb/
-│   └── UI/
-├── Prefabs/
-│   ├── Network/
-│   ├── Player/
-│   ├── Bomb/
-│   ├── Gameplay/
-│   ├── Platforms/
-│   └── Obstacles/
-├── Scenes/
-│   ├── Bootstrap.unity
-│   ├── Lobby.unity
-│   ├── PassSandbox.unity
-│   └── PrototypeCourse.unity
+│   ├── Materials/        kit materials (Greybox_*, Pad_*), toon materials
+│   ├── Models/           Bomb/ (potato.glb), Player/ (mannequin + animations)
+│   ├── Shaders/          HotPatata/Toon, HotPatata/Particle, HotPatata/Sky, speed lines
+│   └── VFX/              textures for particles and trails
+├── Audio/SFX/            optional real clips (see its README; procedural fallback otherwise)
+├── EditorTools/          CourseBuilder, PlayerAnimationSetup (HotPatata.EditorTools)
+├── Prefabs/              Bomb/ Gameplay/ Network/ Obstacles/ Platforms/ Player/ VFX/
+├── Scenes/               Bootstrap, PassSandbox, PrototypeCourse
+├── ScriptableObjects/Tuning/GameTuning.asset
 ├── Scripts/
-│   ├── Core/
-│   ├── Networking/
-│   ├── Player/
-│   ├── Bomb/
-│   ├── Run/
-│   ├── Obstacles/
-│   ├── UI/
-│   └── Debug/
-├── ScriptableObjects/
-│   └── Tuning/
+│   ├── Core/             GameTuning, NetMode, SectionClock, IResettable, PatataLog
+│   ├── Networking/       NetworkBootstrap, BootstrapEntry, SessionService, NetworkPlayer/Bomb/RunState/FallingPlatform
+│   ├── Player/           Player, PlayerMotor, PlayerLook, PlayerThrower, PlayerCatcher, PlayerCatchVolume,
+│   │                     FirstPersonCamera, PlayerViewFeel, SpeedEffects, PlayerPresentation, PlayerAnimator, ...
+│   ├── Bomb/             BombController, BombFuse, BombPhysics, CatchResolver, FlightHistory, AimAssist,
+│   │                     ThrowBallistics, BombAudio, BombPresentation, ExplosionFx, ProceduralSfx
+│   ├── Run/              RunManager, Checkpoint, KillZone, FinishZone, PlayerZone, PlayerSpawner, PlayerSpawn
+│   ├── Obstacles/        MovingPlatform, RotatingObstacle, FallingPlatform, Conveyor, LaunchPad, IPlatformCarrier
+│   ├── UI/               AimReticle, RunResultsUI
+│   ├── Debug/            DebugHud, LocalPlayerSwitcher, PlayerBot
+│   └── DebugTools/       Editor/dev-build only: LatencySimulator, ThrowDebugOverlay, ThrowTelemetry, PassPartner
+├── Settings/             URP assets (PC_RPAsset, PC_Renderer), Look/HotPatata_Look.asset
 └── Tests/
     ├── EditMode/
     └── PlayMode/
@@ -293,37 +314,28 @@ Names are recommendations. The agent may adjust exact names only when a clear Un
 
 ### 6.1 `GameTuning`
 
-Prefer one or several ScriptableObjects for fast tuning.
-
-Suggested fields:
+One ScriptableObject, `GameTuning` (`Assets/Scripts/Core/GameTuning.cs`, asset
+`Assets/ScriptableObjects/Tuning/GameTuning.asset`), grouped by `[Header]`:
 
 ```text
-Movement
-- moveSpeed
-- acceleration
-- braking
-- airControl
-- jumpHeight / jumpVelocity
-- coyoteTime
-- jumpBuffer
-
-Bomb
-- holdFuseDuration
-- warningDuration
-- caughtGraceDuration
-- throwSpeed
-- throwChargeMin / Max (only if charge exists)
-- bombGravityScale
-- catchRadius
-- catchFrontBias
-- aimAssistAngle
-- aimAssistDistance
-
-Run
-- resetDelay
+Movement                 run speed, progressive acceleration, braking, air control, jump, gravity, coyote, buffer
+Movement - flow          turn rates, reverse angle, overspeed deceleration, air drag
+Movement - sprint        sprintSpeed, acceleration, forward cone
+Movement - slide/crouch  entry speed, boost + cooldown, friction, exit speed, steering, crouch speed/height
+Movement - mantle        min/max height, reach, duration
+Camera / Look            sensitivity, pitch limits, field of view
+View feel                viewEffectsStrength, FOV kicks, roll, bob, landing dip, speed lines, vignette, shake, flashReduction
+Bomb - fuse              holdFuseDuration, warningDuration, caughtGraceDuration
+Bomb - throw             throwSpeedMin/Max, throwChargeTime, throwUpAngle, bombGravityScale, run-speed inheritance
+Bomb - aim assist        strength, cone, range, max correction/elevation, lead
+Catch                    catchRadius, facing bonus, vertical scale, late grace, window, cooldown
+Network                  catchLagCompensation
+Bomb - feedback          beepIntervals, stageThresholds, beepVolume
+Bomb - motion / VFX      tumble, hand sway, trail, fuse spark rates, flight puffs
+Run                      resetDelay
 ```
 
-Do not scatter magic numbers across scripts.
+Starting values are in spec §20. Do not scatter magic numbers across scripts.
 
 ---
 
@@ -364,6 +376,10 @@ Responsibilities:
 
 Network replication of camera is unnecessary.
 
+`PlayerLook` owns `Yaw`; the body always faces it and pitch rotates only the eye pivot. `HandAnchor` and `ThrowOrigin`
+are children of that pivot. The followed player's own renderers are `ShadowsOnly` (`PlayerPresentation.SetLocalView`);
+the held bomb is never hidden.
+
 ### 7.3 `PlayerThrower`
 
 Responsibilities:
@@ -378,6 +394,12 @@ Responsibilities:
 - expose release anchor.
 
 Should not directly mutate authoritative bomb ownership on clients.
+
+Throw feel (spec §8.2–9.2): the bomb flies a plain ballistic arc and nothing steers it after release (soft homing and
+the magnet were removed on purpose). `AimAssist.TryAssist` turns the launch direction a few degrees toward a receiver in
+a small cone at the throw's **own** speed; a throw too weak to reach only gets a heading correction and falls short (the
+assist never creates range). Throws inherit run speed only up to `throwInheritMaxSpeed`. A remote client draws its own
+throw immediately (`NetworkBomb.PredictLocalThrow`, drawing only).
 
 ### 7.4 `PlayerCatchVolume`
 
@@ -411,6 +433,24 @@ Responsibilities:
 - local animation hooks.
 
 No authoritative game rules.
+
+### 7.6 First-person feel (`PlayerViewFeel`, `SpeedEffects`)
+
+`PlayerViewFeel` runs for the local, camera-followed player only and computes:
+
+- a FOV curve over `MotionFraction` (`fovKickAtSpeed` run → `fovKickAtSprint` → `fovKickMax` in slides);
+- roll: strafe lean plus the slide roll (`slideRollDegrees`);
+- a foot-plant bob (a dip on each footfall) and the landing dip;
+- throw/catch punches, a slide rumble, and the explosion shake (`explosionShake`, by distance).
+
+`PlayerLook` applies roll/kick/bob to the eye pivot (so the held bomb moves with the view) and `FirstPersonCamera`
+applies the FOV. Above run speed, `SpeedEffects` (on the camera) drives the anime speed lines (a Full Screen Pass
+feature `SpeedLines` on `PC_Renderer` reading the global `_HotPatataSpeedLines`) and emits wind streaks from
+`VFX_WindStreaks`; it adds a vignette only while sliding. Read `Volume.sharedProfile`, never `.profile` (it clones).
+
+Removed on purpose, do not add back: movement sounds (footsteps, landings, wind, slide scrape), chromatic aberration,
+lens distortion. Every effect scales with `GameTuning.viewEffectsStrength` and `flashReduction` dims every flash
+(spec §19).
 
 ---
 
@@ -484,6 +524,9 @@ Responsibilities:
 
 Do not duplicate catch decisions inside player scripts.
 
+`BombController.IntendedReceiver` (replicated) only drives the "CATCH!" marker. `PlayerCatcher.Hint` explains failed
+catches ("Too late by N ms" / "Too early"). Online, remote receivers are covered by lag compensation (§13.2).
+
 ### 8.5 `BombAudio`
 
 Responsibilities:
@@ -505,6 +548,24 @@ Responsibilities:
 - holder visual;
 - trail;
 - explosion VFX hooks.
+
+As built, the bomb is a potato (`Assets/Art/Models/Bomb/potato.glb`, glTFast; UVs flipped in the copy
+`Potato_UVfixed.asset`; toon material `Bomb_Potato`). The model is the `Model` child of `Bomb/Visual`.
+`BombPresentation` drives its `_EmissionColor` pulse (scaled by `emissionScale` so it reads through bloom), a scale pop,
+and cosmetic motion (random-axis tumble in flight scaled by throw speed; sway and a small jolt in the hand:
+`tumble*`/`handSway*` in `GameTuning`). Rotation is applied to `Visual` only, never the Rigidbody. To swap the model,
+replace the mesh/material on `Model` and keep `BombPresentation.bodyRenderer` pointing at its renderer.
+
+VFX, all presentation-only and driven by state events (so they also play on remote mirrors):
+
+- a `Wick` with `FuseSparks` under `Visual`, rate per fuse stage from `fuseSparkRates`;
+- `FlightFx` on the bomb root: a `TrailRenderer` (`trailTime`/`trailWidth`, width by throw speed, warmer at urgent
+  stages) and `FlightPuffs`, active only while Thrown;
+- a pooled `ExplosionFx` (`VFX_Explosion`: toon fireball puffs, potato debris, sparks, shock ring, flash sphere and
+  light, a billboarded "BOOM!").
+
+`BombAudio` plays beeps (cadence from `beepIntervals`; "beep" is a gameplay term), catch, throw and explosion, using
+clips from `Assets/Audio/SFX` when assigned and `ProceduralSfx` otherwise.
 
 ---
 
@@ -609,7 +670,6 @@ Obstacles/
 - Obstacle_Sweeper    (knee-high lethal RotatingObstacle bar)
 - Obstacle_Windmill   (lethal blades turning in a wall's plane)
 - Obstacle_Hoop       (spinning ring: a moving pass window)
-- Obstacle_LowOpening
 
 Gameplay/
 - PlayerSpawn
@@ -617,7 +677,7 @@ Gameplay/
 - Checkpoint
 - KillZone
 - FinishZone
-- LaunchPad (later in course)
+- LaunchPad            (prefab lives in Obstacles/)
 ```
 
 ### 10.3 `MovingPlatform`
@@ -634,6 +694,13 @@ Must be deterministic enough for networked play: the position is `MovingPlatform
 a pure function. Anything that carries riders implements `IPlatformCarrier` (`FrameDelta`), which `PlayerMotor`
 adds to its move while grounded on it (moving platforms, elevators, pistons, `Conveyor` belts).
 Lethal obstacles (sweeper, windmill, crusher) are on the `Hazard` layer, striped, with a child `KillZone` trigger.
+A crusher never closes below 1.45 m, so crouching or sliding under it is safe. `MovingPlatform.Evaluate` is pure and
+also has a `Dwell` mode (wait at the ends, then ease), used by elevators and pistons.
+
+Stateful objects (`FallingPlatform`) implement `IResettable`, which `RunManager` calls on reset. Zones (`Checkpoint`,
+`FinishZone`, the falling-platform trigger) use the stateless `PlayerZone.Collect` overlap query, never Enter/Exit
+bookkeeping. `KillZone` fails the section for a player and explodes a bomb. `LaunchPad` launches only the machine that
+owns the player.
 
 ### 10.4 `RotatingObstacle`
 
@@ -710,7 +777,7 @@ Checkpoint
 
 ## 12. Layers / collision policy
 
-Define explicit layers early.
+Define explicit layers early. As built, all six exist (`ProjectSettings/TagManager.asset`).
 
 Suggested layers:
 
@@ -784,7 +851,7 @@ Online games use **Unity Multiplayer Services** (`SessionService`): the host cre
 Bootstrap scene (code, player list with host marker, Start for the host); Start makes the host load the level and
 every client follows. Direct IP (port 7777) remains as a LAN / testing path. One persistent `NetworkManager` prefab (`NetworkManager` + `UnityTransport` + `NetworkBootstrap`)
 is created by the `Bootstrap` scene; `NetworkBootstrap` offers Host / Join / Play Local and handles
-disconnects. The host loads `PassSandbox` through NGO scene management; clients follow.
+disconnects. The host loads the chosen level (`PassSandbox` or `PrototypeCourse`) through NGO scene management; clients follow.
 
 Authority split (the same gameplay classes run offline and online; `NetMode.IsAuthority` is true offline
 and on the host):
@@ -806,12 +873,29 @@ first free slot. Level objects are kept in sync by deriving their state from sha
 teleports (resets, respawns) are sent as teleports (`NetworkPlayer.SyncTeleport`), otherwise other machines
 interpolate the player across the level and sweep them through triggers.
 
-### 13.2 Known issue: catch timing under latency
+### 13.2 Catch lag compensation (M3.5)
 
-The catch window is measured on the host from when the request ARRIVES, while the receiver presses when they SEE the
-bomb (delayed by network + interpolation). Measured with the Network Simulator: fine up to ~90 ms RTT, failing at ~240 ms.
-A real fix needs lag compensation (evaluate the window at the press time the client reports, using a short history of the
-bomb and the receiver, and hold a world-contact failure briefly when the bomb passes an eligible receiver). Not done yet.
+Problem: the host measures the catch window from when the request ARRIVES, while the receiver presses when they SEE the
+bomb (delayed by network + interpolation). Without compensation the timed catch broke between ~110 and ~240 ms RTT.
+
+Fix, as built:
+
+- A remote client that sees its (late-rendered) bomb reach its catch sphere while its own window is open sends
+  `NetworkPlayer.ClaimCatch`.
+- `CatchResolver.TryResolveCompensatedCatch` accepts it if the host's `FlightHistory` (bomb + every catch centre,
+  recorded each FixedUpdate while Thrown, online only) had the bomb within `catchRadius + 0.4 m` of that player in the
+  last `GameTuning.catchLagCompensation` seconds (0.35 s, also the abuse cap).
+- A lethal contact right after the bomb passed a remote eligible receiver is held (`BombController.ExplosionPending`:
+  still Thrown, frozen) for `min(cap, rtt + 0.15 s)` so the late catch can win.
+- Host "Too late/early" hints for remote players are deferred by the same cap and dropped if the catch lands.
+- Offline and for the host's own player nothing changes.
+
+Measured with bots (numbers and method in [`TESTING.md`](TESTING.md)): ~230 ms RTT 20/20 (1 client) and 22/22 incl.
+client→client; ~450 ms still 0/14, beyond the cap (raising `catchLagCompensation` toward 0.5 would cover it, at the
+cost of longer freezes before explosions).
+
+Movement posture is replicated too: the owner writes `PackedState` on `NetworkPlayer` (§7.1), so the host's catch
+sweeps and `FlightHistory` use a crouching or sliding player's real catch centre.
 
 ## 14. Session flow
 
@@ -942,36 +1026,24 @@ Every generated gameplay prefab should:
 
 ## 18. Testing strategy
 
+The suites, how to run them, bot sessions, latency simulation and CI are documented in [`TESTING.md`](TESTING.md).
+
 ### 18.1 Edit Mode
 
-Good candidates:
-
-- bomb state transition rules;
-- fuse reset/expiry math;
-- checkpoint data validation;
-- tuning configuration tests.
+Pure logic: tuning/layer configuration, fuse maths, aim assist and arc maths, `MovingPlatform.Evaluate`,
+`FlightHistory`, session-code cleanup.
 
 ### 18.2 Play Mode
 
-Priority tests:
+Real components in `PassSandbox` / `PrototypeCourse`, driven through `ScriptedInput`: the bomb state machine and its
+rules, throw and reset, movement, the prefab kit, the pass feel, first-person feel, and both course halves.
 
-1. held bomb expires;
-2. thrown bomb hitting environment explodes;
-3. thrown bomb entering catch volume is caught;
-4. catch refreshes fuse;
-5. catch enters grace and does not instantly fail;
-6. reset clears bomb velocity;
-7. reset returns players to checkpoint;
-8. checkpoint activates only under required conditions.
+### 18.3 Multiplayer tests
 
-### 18.3 Multiplayer manual tests
+Bots and the Network Simulator (several processes on one machine), plus a manual test on two physical machines
+(MVP_TASKS M3.7, still open).
 
-Must be tested on at least:
-
-- host + one client;
-- ideally two separate machines before building many levels.
-
-Critical network test:
+Critical network rule, still the one to protect:
 
 > A bomb that visually appears caught must not explode because the host resolved a stale environment hit afterward.
 
@@ -999,6 +1071,9 @@ Example conceptual output:
 ```
 
 Debug spam should be removable/disableable.
+
+As built: `PatataLog.Bomb/Run/Throw` (`Assets/Scripts/Core/PatataLog.cs`) are compiled out of release builds and
+switchable at runtime (`PatataLog.Enabled`). Client lines are tagged `(mirror)`.
 
 ---
 
@@ -1048,7 +1123,7 @@ Do not prematurely lock:
 - custom character motor vs CharacterController-based motor;
 - exact network transform strategy;
 - advanced client prediction;
-- lag compensation details;
+- lag compensation details (since decided, see §13.2);
 - animation system sophistication;
 - final art pipeline.
 
@@ -1073,3 +1148,22 @@ PassSandbox scene
 ```
 
 Only after that works should the network layer mirror the same state transitions.
+
+---
+
+## 25. Look / rendering (M9.3)
+
+Soft, bright party-game toon style.
+
+- **Shaders** (`Assets/Art/Shaders`): kit, pads, bomb, mannequin and backdrop use `HotPatata/Toon`, hand-written URP
+  HLSL (not Shader Graph) that reuses URP's ShadowCaster/DepthOnly/DepthNormals passes. Features: a two-band ramp with a
+  tinted `_ShadeColor`, `_TopColor` on upward faces, rim, an optional spec blob, emission always added
+  (MaterialPropertyBlock friendly), a fake bevel on scaled unit cubes (`_EdgeWidth`), world checker/stripes (`_Pattern`;
+  hazards are striped so they do not rely on red alone), and `_VERTEX_COLOR` for particle meshes. Particles, trails and
+  flashes use `HotPatata/Particle`.
+- **Materials:** the kit materials kept their names (`Greybox_*`, `Pad_*`) and were switched to the toon shader in
+  place, so prefab references did not change. The mannequin's FBX material is remapped to `Toon_Mannequin`.
+- **Sky and grading:** skybox `HotPatata/Sky` (`Sky_HotPatata`), gradient ambient, linear fog matched to the horizon,
+  and a global `LookVolume` (`Assets/Settings/Look/HotPatata_Look.asset`: Neutral tonemapping, bloom, saturation, warm
+  balance) in every scene. `PC_RPAsset` uses MSAA 4x.
+- **Backdrop:** see §4 (`PrototypeCourse/Backdrop`, |x| >= 25 m, no colliders).

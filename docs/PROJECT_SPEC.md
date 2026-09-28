@@ -1,6 +1,6 @@
 # HotPatata — PROJECT_SPEC.md
 
-> **Status:** MVP / rapid prototype  
+> **Status:** MVP / rapid prototype; progress per milestone is tracked in [`MVP_TASKS.md`](MVP_TASKS.md)  
 > **Title:** HotPatata  
 > **Genre:** Cooperative first-person parkour / hot-potato party game  
 > **Initial target:** Windows PC  
@@ -638,7 +638,7 @@ Target length:
 
 - approximately **3–5 minutes** for the first complete greybox version (Act 1, beats A–G);
 - extended to approximately **8–10 minutes** with Act 2 (Patata Factory) and Act 3 (The Climb & The Drop) after
-  the owner's playtests of Act 1 (see ARCHITECTURE.md §4 for the beat layout). Still one course (§17.2).
+  the owner's playtests of Act 1 (see [`ARCHITECTURE.md`](ARCHITECTURE.md) §4 for the beat layout). Still one course (§17.2).
 
 ### Beat A — Safe Court
 
@@ -682,7 +682,9 @@ Target length:
 
 - three short parkour beats;
 - faster required handoffs;
-- optionally shorter fuse around **4.5 s** for this section only after the base version works.
+- optionally shorter fuse around **4.5 s** for this section only after the base version works (as built, the
+  shorter fuse lives in Act 3 instead: `Checkpoint.holdFuseOverride` gives 5 s from checkpoint 6 and 4.5 s from
+  checkpoint 7).
 
 ### Finish
 
@@ -792,7 +794,8 @@ At minimum:
 - do not rely on red/green distinction alone;
 - use pulse speed / icon / shape / brightness;
 - expose camera shake setting before broader testing (`viewEffectsStrength` in `GameTuning` scales every first-person camera effect, 0 = perfectly steady; to be surfaced in a settings menu);
-- expose flash reduction before broader testing;
+- expose flash reduction before broader testing (`flashReduction` in `GameTuning` dims every flash; to be surfaced in a settings menu, MVP_TASKS M6.5);
+- lethal hazards are striped, not only red; the fuse stage reads through pulse speed, sparks and beep cadence;
 - use the Input System so rebinding remains possible.
 
 ---
@@ -816,11 +819,13 @@ At minimum:
 | Aim assist (range / cone / max turn / max lift) | 14 m / 6° / 3.5° / 1° |
 | Catch radius (+ facing bonus), vertical scale | 1.0 m (+0.3 m), 0.6 |
 | Late catch grace | 0.06 s |
+| Catch lag compensation (online, remote receivers) | 0.35 s |
 | Catch window | 0.4 s |
 | Catch cooldown | 0.35 s |
 | Jump coyote time | 0.1 s |
 | Jump buffer | 0.1 s |
 | Reset delay | ~1.0 s |
+| Hold fuse override (Act 3) | 5.0 s from CP6, 4.5 s from CP7 |
 | Checkpoint spacing | 30–60 s |
 | First course length | 3–5 min (Act 1); 8–10 min with Acts 2–3 |
 | Target frame rate | 60 fps |
@@ -840,9 +845,12 @@ The coding agent must expose these cleanly for playtesting rather than hard-code
 - aim assist strength;
 - bomb speed;
 - gravity / arc;
-- final-section fuse modifier;
+- final-section fuse modifier (built as per-checkpoint overrides, see §20; values still open);
 - checkpoint frequency;
-- visible fuse meter vs audio/visual-only feedback.
+- visible fuse meter vs audio/visual-only feedback (currently audio/visual only: pulse, sparks, beep cadence).
+
+All of these are exposed in `GameTuning` (`Assets/ScriptableObjects/Tuning/GameTuning.asset`); the values in §20
+match that asset. They are to be settled by the external playtest (MVP_TASKS M7.4).
 
 Prefer a centralized tuning asset/configuration.
 
@@ -899,7 +907,7 @@ Mitigation:
 Mitigation:
 
 - one authoritative catch resolver;
-- lag-tolerant design;
+- lag-tolerant design (catch lag compensation, see ARCHITECTURE §13.2);
 - avoid extreme projectile speeds;
 - test with remote machines before content expansion.
 
