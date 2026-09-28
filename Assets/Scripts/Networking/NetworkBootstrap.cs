@@ -22,6 +22,7 @@ namespace HotPatata
     ///   -patataHostOnline | -patataJoinCode &lt;code&gt;         online session
     ///   -patataAutoStart &lt;n&gt;                             host starts the level once n players are in the lobby
     ///   -patataCheckpoint &lt;id&gt;                          start the run at that checkpoint (host / local)
+    ///   -patataName &lt;name&gt;                             player name for this process (instead of the saved one)
     ///   -patataBot   -patataScene &lt;name&gt;   -patataQuit &lt;s&gt;   -patataLatency &lt;ms&gt;
     /// </summary>
     [DefaultExecutionOrder(-1000)]
@@ -45,6 +46,7 @@ namespace HotPatata
         int sceneIndex;
         string ip = "127.0.0.1";
         string codeInput = "";
+        string nameInput = "";
         string message = "";
         string status = "";
         bool showDirect;
@@ -87,6 +89,7 @@ namespace HotPatata
             sessions.Ended += reason => { if (!leaving) _ = LeaveAsync(reason); };
 
             ParseCommandLine();
+            nameInput = PlayerNames.Local;
         }
 
         void OnDestroy()
@@ -107,6 +110,7 @@ namespace HotPatata
                     case "-patataScene" when i + 1 < args.Length: sceneIndex = Mathf.Max(0, Array.IndexOf(gameplayScenes, args[i + 1])); break;
                     case "-patataLatency" when i + 1 < args.Length && int.TryParse(args[i + 1], out int ms): SimulateLatency(ms); break;
                     case "-patataAutoStart" when i + 1 < args.Length && int.TryParse(args[i + 1], out int n): autoStartPlayers = n; break;
+                    case "-patataName" when i + 1 < args.Length: PlayerNames.OverrideForThisProcess(args[i + 1]); break;
                     case "-patataCheckpoint" when i + 1 < args.Length && int.TryParse(args[i + 1], out int cp): RunOptions.StartCheckpoint = Mathf.Max(0, cp); break;
                     case "-patataLeaveAfter" when i + 1 < args.Length && float.TryParse(args[i + 1], out float leaveIn): Invoke(nameof(AutoLeave), leaveIn); break;
                     case "-patataQuit" when i + 1 < args.Length && float.TryParse(args[i + 1], out float s): Invoke(nameof(Quit), s); break;
@@ -194,7 +198,7 @@ namespace HotPatata
             mode = Mode.Working;
             try
             {
-                var session = await sessions.HostAsync();
+                var session = await sessions.HostAsync(PlayerNames.Shared);
                 mode = Mode.Lobby;
                 status = "";
                 PatataLog.Run($"[Session] lobby open, code {session.Code}");
@@ -225,7 +229,7 @@ namespace HotPatata
             mode = Mode.Working;
             try
             {
-                var session = await sessions.JoinAsync(code);
+                var session = await sessions.JoinAsync(code, PlayerNames.Shared);
                 mode = Mode.Lobby;
                 status = "";
                 PatataLog.Run($"[Session] joined lobby {session.Code}");
@@ -329,6 +333,13 @@ namespace HotPatata
         {
             DrawPanel("HotPatata", () =>
             {
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Your name", GUILayout.Width(80));
+                string typed = GUILayout.TextField(nameInput, PlayerNames.MaxLength, GUILayout.Height(24));
+                GUILayout.EndHorizontal();
+                if (typed != nameInput) PlayerNames.Local = nameInput = typed;   // saved locally; the host cleans it up when shared
+                GUILayout.Space(4);
+
                 GUILayout.Label("Level");
                 sceneIndex = GUILayout.SelectionGrid(sceneIndex, gameplayScenes, gameplayScenes.Length, GUILayout.Height(26));
                 DrawStartCheckpoint(26f);
@@ -355,7 +366,7 @@ namespace HotPatata
                 }
 
                 if (!string.IsNullOrEmpty(message)) GUILayout.Label(message, error);
-            }, showDirect ? 400f : 370f);
+            }, showDirect ? 430f : 400f);
         }
 
         void DrawLobby()
@@ -382,7 +393,7 @@ namespace HotPatata
                 {
                     string tag = players[i].Id == session.Host ? "  (host)" : "";
                     string you = players[i].Id == session.CurrentPlayer.Id ? "  (you)" : "";
-                    GUILayout.Label($"   Player {i + 1}{tag}{you}");
+                    GUILayout.Label($"   {SessionService.NameOf(players[i], i)}{tag}{you}");
                 }
                 GUILayout.Space(8);
 

@@ -15,6 +15,7 @@
 | `FlightHistoryTests` | EditMode | the host's flight record used for lag-compensated catches |
 | `MovingPlatformTests` | EditMode | `MovingPlatform.Evaluate`, the pure clock-to-position maths |
 | `SessionServiceTests` | EditMode | M4: code cleanup and player-facing error wording |
+| `PlayerNamesTests` | EditMode | M6: player-name cleanup (trim, length, control characters, "Player N" fallback) |
 | `BombStateTests` | PlayMode | bomb state machine plus catch / world-contact / fuse rules (M1.4–M1.8) |
 | `RunAndThrowTests` | PlayMode | throw by input (M1.5) and fast, clean section reset (M1.10) |
 | `MovementTests` | PlayMode | accel/brake, jump, coyote time, jump buffer (M1.2) |
@@ -81,6 +82,7 @@ change, run `CourseTests` / `FactoryCourseTests`.
 | `-patataScene <name>` | level to load (e.g. `PassSandbox`) |
 | `-patataAutoStart <n>` | session host starts the level when n players are in |
 | `-patataCheckpoint <id>` | the run starts at that checkpoint (host / local; `RunOptions.StartCheckpoint`) |
+| `-patataName <name>` | player name for this process instead of the saved one (two instances on one PC share `PlayerPrefs`); bots keep "Player N" without it |
 | `-patataBot` | the local player is a bot (`PlayerBot`) |
 | `-patataLatency <ms>` | Network Simulator latency (Editor / dev builds only) |
 | `-patataQuit <s>` / `-patataLeaveAfter <s>` | quit / leave the session after s seconds |
