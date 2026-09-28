@@ -10,8 +10,7 @@ throwing a live bomb between them.
 
 - **Engine and packages:** Unity **6000.3.25f1** (6.3 LTS), URP 17.3, Input System 1.20, Netcode for GameObjects
   2.13, Multiplayer Services (Relay sessions, linked to Unity Cloud project HotPatata), Multiplayer Play Mode.
-- **Target:** Windows PC (primary). Linux and macOS builds ship with each release, best effort (macOS unsigned);
-  Web (WebGL) is planned (#64).
+- **Target:** Windows PC (primary). Linux and macOS builds ship with each release, best effort (macOS unsigned).
 - **Scenes:**
   - `Bootstrap` (entry: menu and lobby);
   - `PassSandbox` (one bomb, the kit demo, the pass range);

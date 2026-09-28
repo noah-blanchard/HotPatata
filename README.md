@@ -4,7 +4,7 @@ A 2–4 player cooperative first-person parkour game where the team finishes a c
 (a potato) between them. Hold it too long and it explodes. Throw it into the world and it explodes. Catch it and its
 fuse resets. Every explosion sends the whole team back to the last checkpoint.
 
-Windows PC (Linux and macOS builds best effort, web planned), friend-hosted online sessions (join by code), Unity 6.3 LTS.
+Windows PC (Linux and macOS builds best effort), friend-hosted online sessions (join by code), Unity 6.3 LTS.
 
 ## Status
 

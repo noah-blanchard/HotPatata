@@ -1,11 +1,10 @@
-# Builds the player with GameCI for every platform a tag asks for, then publishes one release.
-#   tag vX.Y.Z               -> every enabled platform (global release)
+# Builds the desktop player with GameCI for every platform a tag asks for, then publishes one release.
+#   tag vX.Y.Z               -> Windows, Linux and macOS (global release)
 #   tag vX.Y.Z-linux         -> only that platform; several can be combined: vX.Y.Z-linux-macos
-#                               platforms: windows, linux, macos, web (web needs #64; the global tag
-#                               includes it only when the repo variable WEBGL_BUILD is "true")
+#                               platform tokens: windows, linux, macos
 #   Tags must point to a commit on main. Each tag publishes a GitHub Release with one zip per platform
-#   (HotPatata-<Platform>-<version>.zip) and, when the repo variable ITCH_TARGET is set, pushes each zip to
-#   its itch.io channel (windows, linux, osx, html5).
+#   (HotPatata-<Windows|Linux|macOS>-<version>.zip) and, when the repo variable ITCH_TARGET is set, pushes each
+#   zip to its itch.io channel (windows, linux, osx).
 #   Pushes to main do not build (CI minutes). Actions -> Build -> Run workflow builds on demand.
 #   A pull request builds every platform when it changes this workflow.
 # Required repo secrets: UNITY_LICENSE (contents of Unity_lic.ulf), UNITY_EMAIL, UNITY_PASSWORD.
@@ -20,7 +19,7 @@ on:
   workflow_dispatch:
     inputs:
       platforms:
-        description: 'Platforms to build: "all" or a list such as "windows linux"'
+        description: 'Platforms to build: "all" or a list of windows, linux, macos (e.g. "windows linux")'
         default: all
 
 concurrency:
@@ -48,12 +47,8 @@ jobs:
         id: plan
         shell: bash
         env:
-          WEBGL_BUILD: ${{ vars.WEBGL_BUILD }}
           REQUESTED: ${{ inputs.platforms }}
         run: |
-          all="windows linux macos"
-          [[ "$WEBGL_BUILD" == "true" ]] && all="$all web"
-
           picked=()
           publish=false
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
@@ -67,7 +62,7 @@ jobs:
             version=""
             for p in "${parts[@]}"; do
               case "$p" in
-                windows|linux|macos|web) picked+=("$p") ;;
+                windows|linux|macos) picked+=("$p") ;;
                 *) version="${version:+$version-}$p" ;;
               esac
             done
@@ -78,16 +73,16 @@ jobs:
               read -ra picked <<< "${REQUESTED//,/ }"
             fi
           fi
-          [[ ${#picked[@]} -eq 0 ]] && read -ra picked <<< "$all"
+          [[ ${#picked[@]} -eq 0 ]] && picked=(windows linux macos)
 
+          # target = GameCI targetPlatform (also the build/<target> output folder); label = zip name.
           entries=()
           for p in "${picked[@]}"; do
             case "$p" in
-              windows) entries+=('{"platform":"windows","target":"StandaloneWindows64","label":"Windows","dir":"build/StandaloneWindows64"}') ;;
-              linux)   entries+=('{"platform":"linux","target":"StandaloneLinux64","label":"Linux","dir":"build/StandaloneLinux64"}') ;;
-              macos)   entries+=('{"platform":"macos","target":"StandaloneOSX","label":"macOS","dir":"build/StandaloneOSX"}') ;;
-              web)     entries+=('{"platform":"web","target":"WebGL","label":"Web","dir":"build/WebGL/HotPatata"}') ;;
-              *) echo "::error::Unknown platform '$p' (use windows, linux, macos, web)."; exit 1 ;;
+              windows) entries+=('{"target":"StandaloneWindows64","label":"Windows"}') ;;
+              linux)   entries+=('{"target":"StandaloneLinux64","label":"Linux"}') ;;
+              macos)   entries+=('{"target":"StandaloneOSX","label":"macOS"}') ;;
+              *) echo "::error::Unknown platform '$p' (use windows, linux, macos)."; exit 1 ;;
             esac
           done
           matrix="{\"include\":[$(IFS=,; echo "${entries[*]}")]}"
@@ -157,7 +152,7 @@ jobs:
           name="HotPatata-${{ matrix.label }}-${{ needs.plan.outputs.version }}.zip"
           sudo chown -R "$(id -u)" build
           # zip keeps the Unix permissions, so the Linux and macOS executables stay executable.
-          (cd "${{ matrix.dir }}" && zip -qr "$GITHUB_WORKSPACE/$name" . -x '*_BurstDebugInformation_DoNotShip/*' '*_BackUpThisFolder_ButDontShipItWithYourGame/*')
+          (cd "build/${{ matrix.target }}" && zip -qr "$GITHUB_WORKSPACE/$name" . -x '*_BurstDebugInformation_DoNotShip/*' '*_BackUpThisFolder_ButDontShipItWithYourGame/*')
           echo "file=$name" >> "$GITHUB_OUTPUT"
 
       - name: Upload artifact
@@ -223,7 +218,6 @@ jobs:
               HotPatata-Windows-*) channel=windows ;;
               HotPatata-Linux-*)   channel=linux ;;
               HotPatata-macOS-*)   channel=osx ;;
-              HotPatata-Web-*)     channel=html5 ;;
               *) echo "::warning::No itch.io channel for $f"; continue ;;
             esac
             butler-bin/butler push "$f" "$ITCH_TARGET:$channel" --userversion "$VERSION" || status=1
