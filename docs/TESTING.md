@@ -144,6 +144,10 @@ instability).
 - A push to `main` uploads a zipped build as a workflow artifact.
 - A `v*` tag on a commit that is on `main` publishes a GitHub Release with `HotPatata-Windows-<version>.zip`. The
   version comes from the tag: `git tag v0.2.0 && git push origin v0.2.0`.
+- The same tag also pushes the build to itch.io when the repo variable `ITCH_TARGET` is set (`<itch user>/<game>`,
+  channel `windows`, user version = the tag). It needs the secret `BUTLER_API_KEY` (itch.io → Settings → API keys, or
+  `butler login` then `~/.config/itch/butler_creds`). Without `ITCH_TARGET` the step is skipped; with it but no key,
+  the job fails after the GitHub Release is published. butler is downloaded from itch.io, not from a third-party action.
 - A pull request only builds when it changes the workflow itself.
 - Required repo secrets: `UNITY_LICENSE` (the contents of `C:\ProgramData\Unity\Unity_lic.ulf`), `UNITY_EMAIL`,
   `UNITY_PASSWORD`.
