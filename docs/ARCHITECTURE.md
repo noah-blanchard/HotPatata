@@ -352,6 +352,13 @@ screen edits `Settings.Editable(tuning)` and commits with `Settings.Save(data, t
 (`AudioListener.volume`, vsync/frame cap, and resolution/window mode outside the Editor), writes the file and raises
 `Settings.Changed`. SFX/music/UI volumes wait for the AudioMixer.
 
+**Key rebinding (#18).** `InputRebinding` lists the bindings a player may change per device (every button, plus the
+WASD parts; sticks and mouse delta stay as authored). It runs the interactive rebind (`PerformInteractiveRebinding`,
+limited to the device, Esc / Start cancels), reports conflicts on the same control, and resets one binding or all.
+The overrides are saved as `SettingsData.bindingOverrides` (`SaveBindingOverridesAsJson`). Each `PlayerInputReader`
+applies them to its own copy of HotPatataControls on creation and again on `Settings.Changed`, so a rebind works
+immediately. A screen edits `InputRebinding.CreateEditableCopy(asset)` and commits with `InputRebinding.Commit`.
+
 ---
 
 ## 7. Player subsystem

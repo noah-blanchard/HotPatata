@@ -16,6 +16,7 @@
 | `MovingPlatformTests` | EditMode | `MovingPlatform.Evaluate`, the pure clock-to-position maths |
 | `SessionServiceTests` | EditMode | M4: code cleanup and player-facing error wording |
 | `SettingsTests` | EditMode | M6.5: player settings layer (tuning defaults, JSON parsing, clamping, fallback) |
+| `InputRebindingTests` | EditMode | #18: rebindable bindings per device, conflicts, saved overrides reaching a player's copy, reset |
 | `BombStateTests` | PlayMode | bomb state machine plus catch / world-contact / fuse rules (M1.4–M1.8) |
 | `RunAndThrowTests` | PlayMode | throw by input (M1.5) and fast, clean section reset (M1.10) |
 | `MovementTests` | PlayMode | accel/brake, jump, coyote time, jump buffer (M1.2) |
