@@ -4,7 +4,7 @@ A 2–4 player cooperative first-person parkour game where the team finishes a c
 (a potato) between them. Hold it too long and it explodes. Throw it into the world and it explodes. Catch it and its
 fuse resets. Every explosion sends the whole team back to the last checkpoint.
 
-Windows PC, friend-hosted online sessions (join by code), Unity 6.3 LTS.
+Windows PC (Linux and macOS builds best effort, web planned), friend-hosted online sessions (join by code), Unity 6.3 LTS.
 
 ## Status
 
@@ -30,7 +30,8 @@ Online sessions use Unity Relay, and the project is linked to a Unity Cloud proj
 Offline, one keyboard drives one of two players at a time: **Tab** switches player and **Esc** frees the cursor.
 At the finish, the host presses **R** for a rematch.
 
-Prebuilt Windows builds are published as GitHub Releases on `v*` tags. See [`docs/TESTING.md`](docs/TESTING.md#4-ci-and-releases).
+Prebuilt builds (Windows; Linux and macOS best effort) are published on `v*` tags as GitHub Releases and on
+[itch.io](https://nblxrd.itch.io/hotpatata). See [`docs/TESTING.md`](docs/TESTING.md#4-ci-and-releases).
 
 ## Controls
 
