@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using HotPatata;
+using Unity.Netcode;
 using UnityEditor;
 using UnityEngine;
 using static HotPatata.Editor.CourseKit;
@@ -23,6 +25,14 @@ namespace HotPatata.Editor
         public const string ZoneHot = GameplayDir + "Zone_Hot";
         public const string ZoneCold = GameplayDir + "Zone_Cold";
         public const string LaserCurtain = GameplayDir + "LaserCurtain";
+        public const string GateRing = GameplayDir + "BombGate_Ring";
+        public const string GateArch = GameplayDir + "BombGate_Arch";
+        public const string Plate = GameplayDir + "PressurePlate";
+        public const string Door = ObstaclesDir + "Actuator_Door";
+        public const string Bridge = PlatformsDir + "Actuator_Bridge";
+        public const string Lift = PlatformsDir + "Actuator_Lift";
+
+        public static readonly Vector3 DoorSize = new Vector3(4f, 3.6f, 0.5f);
 
         [MenuItem("HotPatata/Course/Build Bomb Obstacle Prefabs")]
         public static void BuildAll()
@@ -34,6 +44,15 @@ namespace HotPatata.Editor
             MakePrefab(ZoneHot + ".prefab", true, () => BuildZone("Zone_Hot", FuseZoneKind.Hot));
             MakePrefab(ZoneCold + ".prefab", true, () => BuildZone("Zone_Cold", FuseZoneKind.Cold));
             MakePrefab(LaserCurtain + ".prefab", true, BuildCurtain);
+            MakePrefab(GateRing + ".prefab", true, BuildGateRing);
+            MakePrefab(GateArch + ".prefab", true, BuildGateArch);
+            MakePrefab(Plate + ".prefab", true, BuildPlate);
+            MakePrefab(Door + ".prefab", true, () => BuildActuator("Actuator_Door", DoorSize, new Vector3(0f, DoorSize.y + 0.4f, 0f),
+                                                                   0.8f, Mat("Greybox_Hazard"), "Hazard", lethal: true));
+            MakePrefab(Bridge + ".prefab", true, () => BuildActuator("Actuator_Bridge", new Vector3(3f, 0.5f, 8f), new Vector3(0f, 0f, 8f),
+                                                                     1.2f, Mat("Greybox_Moving"), "Environment", lethal: false));
+            MakePrefab(Lift + ".prefab", true, () => BuildActuator("Actuator_Lift", new Vector3(3f, 0.5f, 3f), new Vector3(0f, 4f, 0f),
+                                                                   2f, Mat("Greybox_Moving"), "Environment", lethal: false));
             EnsureBombComponents();
             AssetDatabase.SaveAssets();
             Debug.Log("[BombObstacleKitBuilder] bomb obstacle kit built");
@@ -153,6 +172,163 @@ namespace HotPatata.Editor
             Set(t.Find("Sign_Back"), new Vector3(0f, height + post + 0.55f, 0.05f), Vector3.one * 0.9f);
         }
 
+        // ------------------------------------------------------------------ bomb gates and plates
+
+        /// <summary>A zone volume on <paramref name="root"/> with a <see cref="BombGate"/>, replicated.</summary>
+        static BombGate AddGate(GameObject root, Vector3 size, Vector3 center, float holdSeconds)
+        {
+            var box = root.AddComponent<BoxCollider>();
+            box.isTrigger = true;
+            box.size = size;
+            box.center = center;
+            var zone = root.AddComponent<Zone>();
+            SetReference(zone, "volume", box);
+            var gate = root.AddComponent<BombGate>();
+            SetField(gate, "holdSeconds", p => p.floatValue = holdSeconds);
+            root.AddComponent<NetworkObject>();
+            root.AddComponent<NetworkBombGate>();
+            return gate;
+        }
+
+        static void AddIndicator(GameObject root, MonoBehaviour source, IList<Renderer> lamps, Transform pressed = null)
+        {
+            var indicator = root.AddComponent<SignalIndicator>();
+            SetReference(indicator, "source", source);
+            SetField(indicator, "lamps", p =>
+            {
+                p.arraySize = lamps.Count;
+                for (int i = 0; i < lamps.Count; i++) p.GetArrayElementAtIndex(i).objectReferenceValue = lamps[i];
+            });
+            if (pressed != null) SetReference(indicator, "pressed", pressed);
+        }
+
+        /// <summary>
+        /// A yellow ring facing Z (pivot at its centre) that the bomb must fly through; its rim is Environment, so
+        /// clipping it explodes the bomb like any wall. It glows while active and pulses before it closes.
+        /// </summary>
+        static GameObject BuildGateRing()
+        {
+            const int segments = 12;
+            const float radius = 1.3f;
+            var root = new GameObject("BombGate_Ring") { layer = Layer("Trigger") };
+            KinematicBody(root);
+            var gate = AddGate(root, new Vector3(radius * 1.4f, radius * 1.4f, 0.6f), Vector3.zero, 8f);
+            var lamps = new List<Renderer>();
+            var mat = Mat("Greybox_Gate");
+            float segLength = 2f * Mathf.PI * radius / segments * 1.08f;
+            for (int i = 0; i < segments; i++)
+            {
+                var seg = new GameObject($"Segment_{i + 1}").transform;
+                seg.SetParent(root.transform, false);
+                seg.localRotation = Quaternion.Euler(0f, 0f, i * 360f / segments);
+                lamps.Add(Cube("Visual", seg, new Vector3(0f, radius, 0f), new Vector3(segLength, 0.3f, 0.3f), mat, "Environment").GetComponent<Renderer>());
+                Box("Collision", seg, new Vector3(0f, radius, 0f), new Vector3(segLength, 0.3f, 0.3f), "Environment");
+            }
+            AddIndicator(root, gate, lamps);
+            return root;
+        }
+
+        public const float ArchWidth = 3.2f, ArchHeight = 3.4f;
+
+        /// <summary>
+        /// The checkpoint arch (PROJECT_SPEC §13.17): a yellow frame standing on the floor (pivot at the floor, centre),
+        /// latched once the bomb flies through it until the section resets. Players walk through it too; only the
+        /// flight counts. Wire it to a <see cref="Checkpoint"/>'s <c>claimGate</c>.
+        /// </summary>
+        static GameObject BuildGateArch()
+        {
+            const float post = 0.4f;
+            var root = new GameObject("BombGate_Arch") { layer = Layer("Trigger") };
+            var gate = AddGate(root, new Vector3(ArchWidth, ArchHeight, 0.6f), new Vector3(0f, ArchHeight / 2f, 0f), 0f);
+            var mat = Mat("Greybox_Gate");
+            var t = root.transform;
+            var lamps = new List<Renderer>
+            {
+                Cube("Post_L", t, new Vector3(-(ArchWidth + post) / 2f, (ArchHeight + post) / 2f, 0f), new Vector3(post, ArchHeight + post, 0.6f), mat, "Environment", keepCollider: true).GetComponent<Renderer>(),
+                Cube("Post_R", t, new Vector3((ArchWidth + post) / 2f, (ArchHeight + post) / 2f, 0f), new Vector3(post, ArchHeight + post, 0.6f), mat, "Environment", keepCollider: true).GetComponent<Renderer>(),
+                Cube("Lintel", t, new Vector3(0f, ArchHeight + post / 2f, 0f), new Vector3(ArchWidth + 2f * post, post, 0.6f), mat, "Environment", keepCollider: true).GetComponent<Renderer>()
+            };
+            AddIndicator(root, gate, lamps);
+            return root;
+        }
+
+        /// <summary>A floor pad (pivot on the floor, centre) held by any player standing on it, carrier included.</summary>
+        static GameObject BuildPlate()
+        {
+            var root = new GameObject("PressurePlate") { layer = Layer("Trigger") };
+            var box = root.AddComponent<BoxCollider>();
+            box.isTrigger = true;
+            box.size = new Vector3(2.4f, 1.4f, 2.4f);
+            box.center = new Vector3(0f, 0.7f, 0f);
+            var zone = root.AddComponent<Zone>();
+            SetReference(zone, "volume", box);
+            var plate = root.AddComponent<PressurePlate>();
+            var t = root.transform;
+            Shape("Rim", PrimitiveType.Cylinder, t, new Vector3(0f, 0.02f, 0f), Quaternion.identity, new Vector3(2.8f, 0.02f, 2.8f), Mat("Greybox_Wall"), "Default");
+            var pad = Shape("Pad", PrimitiveType.Cylinder, t, new Vector3(0f, 0.07f, 0f), Quaternion.identity, new Vector3(2.4f, 0.04f, 2.4f), Mat("Pad_Plate"), "Default");
+            AddIndicator(root, plate, new[] { pad.GetComponent<Renderer>() }, pad.transform);
+            return root;
+        }
+
+        // ------------------------------------------------------------------ actuators
+
+        /// <summary>
+        /// SignalActuator root / Platform (kinematic) / Visual + Collision (+ a lethal lower edge for doors, armed only
+        /// while closing), Waypoint_Closed at the root, Waypoint_Open at <paramref name="travel"/>. Replicated.
+        /// </summary>
+        static GameObject BuildActuator(string name, Vector3 size, Vector3 travel, float seconds, Material mat, string layer, bool lethal)
+        {
+            var root = new GameObject(name);
+            var platform = new GameObject("Platform");
+            platform.transform.SetParent(root.transform, false);
+            KinematicBody(platform);
+            Cube("Visual", platform.transform, Vector3.zero, size, mat, layer);
+            Box("Collision", platform.transform, Vector3.zero, size, layer);
+            BoxCollider kill = null;
+            if (lethal)
+            {
+                kill = Box("Kill", platform.transform, Vector3.zero, Vector3.one, "Trigger", trigger: true);
+                kill.gameObject.AddComponent<KillZone>();
+                kill.enabled = false;
+            }
+            var closed = new GameObject("Waypoint_Closed").transform;
+            closed.SetParent(root.transform, false);
+            var open = new GameObject("Waypoint_Open").transform;
+            open.SetParent(root.transform, false);
+
+            var actuator = root.AddComponent<SignalActuator>();
+            SetReference(actuator, "platform", platform.transform);
+            SetReference(actuator, "waypointClosed", closed);
+            SetReference(actuator, "waypointOpen", open);
+            SetField(actuator, "travelSeconds", p => p.floatValue = seconds);
+            if (kill != null) SetReference(actuator, "lethalWhileClosing", kill);
+            root.AddComponent<NetworkObject>();
+            root.AddComponent<NetworkSignalActuator>();
+            ResizeActuator(root, size, travel);
+            return root;
+        }
+
+        /// <summary>Resizes an actuator's moving part (and its lethal edge) and sets its open offset from the closed pose.</summary>
+        public static void ResizeActuator(GameObject actuator, Vector3 size, Vector3 travel)
+        {
+            var t = actuator.transform;
+            var platform = t.Find("Platform");
+            platform.localPosition = Vector3.zero;
+            platform.Find("Visual").localScale = size;
+            platform.Find("Collision").GetComponent<BoxCollider>().size = size;
+            var kill = platform.Find("Kill");
+            if (kill != null)
+            {
+                kill.localPosition = new Vector3(0f, -size.y / 2f - 0.1f, 0f);   // reaches 0.25 m below the lower edge
+                kill.GetComponent<BoxCollider>().size = new Vector3(size.x - 0.2f, 0.3f, size.z + 0.3f);
+            }
+            t.Find("Waypoint_Closed").localPosition = Vector3.zero;
+            t.Find("Waypoint_Open").localPosition = travel;
+        }
+
+        /// <summary>Links an actuator to the one source that drives it.</summary>
+        public static void Wire(GameObject actuator, MonoBehaviour source) => SetReference(actuator.GetComponent<SignalActuator>(), "source", source);
+
         static void Set(Transform t, Vector3 localPos, Vector3 scale)
         {
             t.localPosition = localPos;
@@ -177,6 +353,9 @@ namespace HotPatata.Editor
             MakeUnlitMaterial("Icon_Hot", new Color(1f, 0.7f, 0.25f, 1f), Icon("Flame"), false);
             MakeUnlitMaterial("Icon_Cold", new Color(0.65f, 0.93f, 1f, 1f), Icon("Snowflake"), false);
             MakeUnlitMaterial("Laser_Beam", new Color(1f, 0.18f, 0.2f, 0.9f), null, true);
+            // Pressure plates: yellow and dark checker, reads as "step here" next to the plain floor.
+            MakeMaterial("Pad_Plate", "Greybox_Hazard", new Color(1f, 0.83f, 0.25f), new Color(1f, 0.9f, 0.5f),
+                         1, new Color(0.25f, 0.2f, 0.1f), 0.6f, 0.55f);
             AssetDatabase.SaveAssets();
         }
 

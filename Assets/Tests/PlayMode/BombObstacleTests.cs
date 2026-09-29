@@ -10,7 +10,8 @@ namespace HotPatata.Tests
 {
     /// <summary>
     /// The #68 bomb obstacles (MVP_TASKS M10), built from their kit prefabs on the open floor of PassSandbox and driven
-    /// through the real bomb: fuse zones and laser curtains (PROJECT_SPEC §7.3).
+    /// through the real bomb: fuse zones and laser curtains (PROJECT_SPEC §7.3), bomb gates, pressure plates, actuators
+    /// and the checkpoint arch (§12.3, §13.15).
     /// </summary>
     public class BombObstacleTests : SandboxTestBase
     {
@@ -41,6 +42,35 @@ namespace HotPatata.Tests
             Assert.Inconclusive("Editor only");
             return null;
 #endif
+        }
+
+        /// <summary>Sets a serialized field on a spawned fixture (what the builders do in the Editor).</summary>
+        static void SetField(Object target, string field, System.Action<object> set)
+        {
+#if UNITY_EDITOR
+            var so = new SerializedObject(target);
+            var p = so.FindProperty(field);
+            Assert.IsNotNull(p, field);
+            set(p);
+            so.ApplyModifiedPropertiesWithoutUndo();
+#endif
+        }
+
+#if UNITY_EDITOR
+        static System.Action<object> Float(float v) => p => ((SerializedProperty)p).floatValue = v;
+        static System.Action<object> Int(int v) => p => ((SerializedProperty)p).intValue = v;
+        static System.Action<object> Ref(Object v) => p => ((SerializedProperty)p).objectReferenceValue = v;
+#else
+        static System.Action<object> Float(float v) => null;
+        static System.Action<object> Int(int v) => null;
+        static System.Action<object> Ref(Object v) => null;
+#endif
+
+        static SignalActuator Actuator(GameObject go, MonoBehaviour source)
+        {
+            var actuator = go.GetComponent<SignalActuator>();
+            SetField(actuator, "source", Ref(source));
+            return actuator;
         }
 
         IEnumerator PassFrom(Player thrower, Vector3 throwerSpot, Player receiver, Vector3 receiverSpot)
@@ -161,6 +191,80 @@ namespace HotPatata.Tests
             yield return Place(p1, O + new Vector3(-3f, 0.05f, 0f));
             yield return WaitSeconds(0.4f);
             Assert.AreEqual(0, explosions);
+        }
+
+        // ------------------------------------------------------------------ signals
+
+        [UnityTest]
+        public IEnumerator BombGate_OpensItsActuator_ForItsHoldTime_ThenItCloses()
+        {
+            var gate = Spawn("Gameplay/BombGate_Ring", O + new Vector3(0f, 1.6f, 0f)).GetComponent<BombGate>();
+            SetField(gate, "holdSeconds", Float(1.5f));
+            var lift = Actuator(Spawn("Platforms/Actuator_Lift", O + new Vector3(7f, 0.25f, 0f)), gate);
+            yield return null;
+            Assert.IsFalse(lift.Opening);
+
+            yield return PassFrom(p1, O + new Vector3(0f, 0.05f, -5f), p2, O + new Vector3(0f, 0.05f, 5f));
+            yield return WaitUntil(() => catches > 0 || explosions > 0, 2f, "the pass through the ring");
+            Assert.AreEqual(1, catches, "the ring lets a clean pass through");
+            Assert.IsTrue(gate.PassedThisSection);
+            yield return WaitUntil(() => lift.Opening, 0.5f, "the gate opened the lift");
+
+            yield return WaitUntil(() => !lift.Opening, 3f, "the gate closed after its hold time");
+            yield return WaitUntil(() => lift.CurrentProgress <= 0f, 3f, "the lift went back down");
+        }
+
+        [UnityTest]
+        public IEnumerator CarryingTheBombThroughAGate_DoesNotCount()
+        {
+            var gate = Spawn("Gameplay/BombGate_Arch", O).GetComponent<BombGate>();
+            yield return Place(p1, O + new Vector3(0f, 0.05f, -3f));
+            Give(p1);
+            yield return Place(p1, O + new Vector3(0f, 0.05f, 0f));
+            yield return Place(p1, O + new Vector3(0f, 0.05f, 3f));
+            yield return WaitSeconds(0.2f);
+            Assert.IsFalse(gate.PassedThisSection);
+        }
+
+        [UnityTest]
+        public IEnumerator PressurePlate_HoldsItsDoorOpen_AndTheClosingDoorKills()
+        {
+            var run = Object.FindFirstObjectByType<RunManager>();
+            // (the kit demo's launch pad sits just west of O: keep the plate clear of it)
+            var plate = Spawn("Gameplay/PressurePlate", O + new Vector3(-1.5f, 0f, -3f)).GetComponent<PressurePlate>();
+            var door = Actuator(Spawn("Obstacles/Actuator_Door", O + new Vector3(3.5f, 1.8f, 0f)), plate);
+            yield return Place(p2, O + new Vector3(-1.5f, 0.05f, -3f));
+            yield return WaitUntil(() => door.CurrentProgress >= 1f, 2f, "the plate opened the door");
+
+            yield return Place(p1, O + new Vector3(3.5f, 0.05f, 0f));   // under the open door
+            yield return WaitSeconds(0.3f);
+            Assert.AreEqual(RunState.Playing, run.State, "an open door is harmless");
+
+            yield return Place(p2, O + new Vector3(-1.5f, 0.05f, 1.5f));   // off the plate
+            yield return WaitUntil(() => run.State == RunState.Failing, 2f, "the closing door caught the player under it");
+        }
+
+        [UnityTest]
+        public IEnumerator ArchCheckpoint_ActivatesOnlyAfterAPassThroughItsArch()
+        {
+            var run = Object.FindFirstObjectByType<RunManager>();
+            var arch = Spawn("Gameplay/BombGate_Arch", O).GetComponent<BombGate>();
+            var cp = Spawn("Gameplay/Checkpoint", O + new Vector3(0f, 0f, 4.5f)).GetComponent<Checkpoint>();
+            SetField(cp, "id", Int(9));
+            SetField(cp, "claimGate", Ref(arch));
+            yield return Place(p1, O + new Vector3(-0.8f, 0.05f, 4.5f));
+            yield return Place(p2, O + new Vector3(0.8f, 0.05f, 4.5f));
+            yield return WaitSeconds(0.4f);
+            Assert.IsFalse(cp.Activated, "everyone is in, but the bomb has not flown through the arch");
+
+            yield return PassFrom(p1, O + new Vector3(0f, 0.05f, -4f), p2, O + new Vector3(0f, 0.05f, 4.5f));
+            yield return WaitUntil(() => catches > 0 || explosions > 0, 2f, "the pass through the arch");
+            Assert.AreEqual(1, catches);
+            Assert.IsTrue(arch.PassedThisSection);
+
+            yield return Place(p1, O + new Vector3(-0.8f, 0.05f, 4.5f));
+            yield return WaitUntil(() => cp.Activated, 1f, "the claimed checkpoint activated");
+            Assert.AreSame(cp, run.CurrentCheckpoint);
         }
     }
 }

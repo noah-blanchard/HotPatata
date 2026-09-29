@@ -3,7 +3,10 @@ using UnityEngine;
 
 namespace HotPatata.Tests
 {
-    /// <summary>Pure rules of the #68 zones: fuse-zone severity (PROJECT_SPEC §7.3) and the flight-sweep geometry.</summary>
+    /// <summary>
+    /// Pure rules of the #68 obstacles: fuse-zone severity (PROJECT_SPEC §7.3), the flight-sweep geometry and the
+    /// actuator motion derived from the replicated direction change (§13.15).
+    /// </summary>
     public class ZoneRuleTests
     {
         GameTuning tuning;
@@ -64,5 +67,23 @@ namespace HotPatata.Tests
         [Test]
         public void Segment_ParallelToAFace_OutsideIt_DoesNotTouch() =>
             Assert.IsFalse(Zone.SegmentHitsBox(new Vector3(-3f, 0f, 0.4f), new Vector3(3f, 0f, 0.4f), Half, out _));
+
+        // ------------------------------------------------------------------ actuators
+
+        [Test]
+        public void Actuator_OpensOverItsTravelTime_ThenStays()
+        {
+            Assert.AreEqual(0f, SignalActuator.Progress(10.0, 0f, true, 2f, 10.0));
+            Assert.AreEqual(0.5f, SignalActuator.Progress(10.0, 0f, true, 2f, 11.0), 1e-5f);
+            Assert.AreEqual(1f, SignalActuator.Progress(10.0, 0f, true, 2f, 30.0));
+        }
+
+        [Test]
+        public void Actuator_ReversedMidway_ClosesFromWhereItWas()
+        {
+            // Half open when the source let go at t = 5: back to closed one second later (travel 2 s).
+            Assert.AreEqual(0.25f, SignalActuator.Progress(5.0, 0.5f, false, 2f, 5.5), 1e-5f);
+            Assert.AreEqual(0f, SignalActuator.Progress(5.0, 0.5f, false, 2f, 6.5));
+        }
     }
 }
