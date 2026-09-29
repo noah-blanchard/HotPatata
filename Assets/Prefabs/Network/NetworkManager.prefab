@@ -72,6 +72,7 @@ MonoBehaviour:
     NetworkTopology: 0
     UseCMBService: 0
     AutoSpawnPlayerPrefabClientSide: 1
+    NetworkMessageMetrics: 1
     NetworkProfilingMetrics: 1
     OldPrefabList: []
   RunInBackground: 1
@@ -120,6 +121,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: HotPatata::HotPatata.NetworkBootstrap
   menuScene: Bootstrap
-  gameplayScene: PassSandbox
+  gameplayScenes:
+  - PlaytestCourse
+  - PrototypeCourse
+  - PassSandbox
+  sceneCheckpoints: 090000000700000001000000
   port: 7777
   tuning: {fileID: 11400000, guid: 35604efc4188ead42afe90813d44683f, type: 2}

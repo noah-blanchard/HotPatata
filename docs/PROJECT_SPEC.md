@@ -679,8 +679,9 @@ Question:
 
 > Can the team keep the pass rhythm when the fuse burns twice as fast, and use a breather wisely?
 
-Hot zones (× 2) sit on the pass line of a corridor or a mover; cold zones (× 0.5) are small pockets, never on the
-critical path, so they help without becoming a shelter.
+Hot zones (× 2) sit on the pass line of a corridor or a mover; cold zones (× 0.5) are small pockets beside the
+running line, never a whole beat: a place to breathe, or for a lone carrier to wait while a teammate is still on
+their way (before a tube, a cannon or a lock), so they help without becoming a shelter.
 
 Primary levers: zone length, what else moves in the zone, where the cold pockets are.
 
@@ -947,7 +948,7 @@ At minimum:
 | Transit delay (tube / cannon) | ~1.2 s / 0.35 s, exit warning 0.5 s before |
 | Bomb gate hold time | per gate, 6–10 s |
 | Checkpoint spacing | 30–60 s |
-| First course length | 3–5 min (Act 1); 8–10 min with Acts 2–3 |
+| First course length | 3–5 min (Act 1); 8–10 min with Acts 2–3; `PlaytestCourse` ~10 min |
 | Target frame rate | 60 fps |
 
 These are **starting values**, not final design decisions.

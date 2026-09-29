@@ -26,8 +26,8 @@ throwing a live bomb between them.
 - M3.7 two physical machines;
 - the full-course playtest.
 
-M10 (bomb obstacles, #68) is in progress; M6 (UX) and M7 (hardening, external playtest) follow. The live table is
-at the top of `docs/MVP_TASKS.md`.
+M10 (bomb obstacles, #68) is built; its group playtest is open. M6 (UX) and M7 (hardening, external playtest) follow.
+The live table is at the top of `docs/MVP_TASKS.md`.
 
 ## Docs (read before implementing)
 

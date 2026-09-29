@@ -25,10 +25,10 @@ playtest and cannot be closed by code.
 | M7 Test and harden | not started (bot latency runs cover part of M7.3) | all |
 | M8 Post-validation polish | gated on M7.4; some pulled forward through M9 | |
 | M9 Movement and look pass | done (pulled forward by the owner) | |
-| M10 Bomb obstacles (#68) | in progress (pulled forward by the owner, M7.4 gate lifted for it) | group playtest of `PlaytestCourse` |
+| M10 Bomb obstacles (#68) | done (pulled forward by the owner, M7.4 gate lifted for it) | group playtest of `PlaytestCourse` |
 
-**Next up:** M10 (bomb obstacles and `PlaytestCourse`), then M6 and M7 (M7.4 external playtest gates any other new
-mechanic). M3.7 is the oldest open gate.
+**Next up:** the group playtest of `PlaytestCourse` (M10.4), then M6 and M7 (M7.4 external playtest gates any other
+new mechanic). M3.7 is the oldest open gate.
 
 ---
 
@@ -1169,7 +1169,10 @@ removed on purpose afterwards; only the bomb sounds remain. Details in [`ARCHITE
 # Milestone 10 — Bomb obstacles (#68, pulled forward by the owner)
 
 Obstacles that use the pass itself, decided in the #68 brainstorm. Rules: PROJECT_SPEC §5 (`InTransit`), §7.3,
-§12.3, §13.13–§13.17. The M7.4 gate is lifted for this milestone.
+§12.3, §13.13–§13.17. The M7.4 gate is lifted for this milestone. Architecture: ARCHITECTURE §10.6; course: §4.
+
+> **Status:** M10.1–M10.4 are built and covered by `ZoneRuleTests`, `BombObstacleTests` and `PlaytestCourseTests`.
+> Open: the group playtest of the course, and a two-machine check of the replicated gates, actuators and transits.
 
 ## M10.1 — Zones: fuse zones and laser curtains
 

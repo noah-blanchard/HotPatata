@@ -4,6 +4,7 @@ using System.IO;
 using HotPatata;
 using Unity.Netcode;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using static HotPatata.Editor.CourseKit;
 using Object = UnityEngine.Object;
@@ -62,6 +63,39 @@ namespace HotPatata.Editor
             EnsureBombComponents();
             AssetDatabase.SaveAssets();
             Debug.Log("[BombObstacleKitBuilder] bomb obstacle kit built");
+        }
+
+        // ------------------------------------------------------------------ PassSandbox demo
+
+        const string SandboxScene = "Assets/Scenes/PassSandbox.unity";
+
+        /// <summary>
+        /// Rebuilds <c>SectionRoot/KitDemo/BombObstacles</c> in PassSandbox, in the free north-west corner (clear of the test
+        /// fixtures at z -14 and of the pass range): a forbidden strip, hot and cold zones, a window between two laser
+        /// curtains, and a ring that raises a lift. Play them with the F4 bot.
+        /// </summary>
+        [MenuItem("HotPatata/Course/Build Sandbox Bomb Obstacles")]
+        public static void BuildSandboxDemo()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+            var scene = EditorSceneManager.OpenScene(SandboxScene);
+            var kitDemo = GameObject.Find("SectionRoot/KitDemo")?.transform ?? throw new InvalidOperationException("PassSandbox has no SectionRoot/KitDemo");
+            RebuildGroup(kitDemo, "BombObstacles", demo =>
+            {
+                ResizeZone(Place(demo, ZoneForbidden, "Demo_ForbiddenStrip", new Vector3(-14f, 0f, 8.5f), Quaternion.identity), new Vector3(8f, 2.5f, 1.5f));
+                ResizeZone(Place(demo, ZoneHot, "Demo_HotZone", new Vector3(-18f, 0f, 11.5f), Quaternion.identity), new Vector3(3f, 2.5f, 3f));
+                ResizeZone(Place(demo, ZoneCold, "Demo_ColdZone", new Vector3(-18f, 0f, 15.5f), Quaternion.identity), new Vector3(3f, 2.5f, 3f));
+                ResizeCurtain(Place(demo, LaserCurtain, "Demo_Curtain_L", new Vector3(-15.2f, 0f, 13f), Quaternion.identity), 2f, 3.2f);
+                ResizeCurtain(Place(demo, LaserCurtain, "Demo_Curtain_R", new Vector3(-10.8f, 0f, 13f), Quaternion.identity), 2f, 3.2f);
+                var gate = Place(demo, GateRing, "Demo_Gate", new Vector3(-14f, 1.8f, 17f), Quaternion.identity).GetComponent<BombGate>();
+                SetField(gate, "holdSeconds", p => p.floatValue = 6f);
+                var lift = Place(demo, Lift, "Demo_Lift", new Vector3(-10.5f, 0.3f, 17.5f), Quaternion.identity);
+                ResizeActuator(lift, new Vector3(2.5f, 0.5f, 2.5f), new Vector3(0f, 2.5f, 0f));
+                Wire(lift, gate);
+            });
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            Debug.Log("[BombObstacleKitBuilder] PassSandbox bomb obstacles built");
         }
 
         // ------------------------------------------------------------------ bomb prefab
@@ -174,8 +208,9 @@ namespace HotPatata.Editor
             for (int i = 0; i < CurtainBeams; i++)
                 Set(t.Find($"Beam_{i + 1}"), new Vector3(0f, height * (i + 1) / (CurtainBeams + 1), 0f), new Vector3(0.05f, width / 2f, 0.05f));
             Set(t.Find("Field"), new Vector3(0f, height / 2f, 0f), new Vector3(width, height, 0.04f));
-            Set(t.Find("Sign_Front"), new Vector3(0f, height + post + 0.55f, -0.05f), Vector3.one * 0.9f);
-            Set(t.Find("Sign_Back"), new Vector3(0f, height + post + 0.55f, 0.05f), Vector3.one * 0.9f);
+            // Just outside a 1 m wall's faces, so the signs show when the curtain closes a passage in a wall.
+            Set(t.Find("Sign_Front"), new Vector3(0f, height + post + 0.55f, -0.56f), Vector3.one * 0.9f);
+            Set(t.Find("Sign_Back"), new Vector3(0f, height + post + 0.55f, 0.56f), Vector3.one * 0.9f);
         }
 
         // ------------------------------------------------------------------ bomb gates and plates
