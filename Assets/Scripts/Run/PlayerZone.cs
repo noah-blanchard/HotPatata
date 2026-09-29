@@ -5,7 +5,8 @@ namespace HotPatata
 {
     /// <summary>
     /// Stateless "who is standing in this zone right now" query. It re-evaluates every call, so it stays
-    /// correct across teleports and resets (no Enter/Exit bookkeeping to go stale).
+    /// correct across teleports and resets (no Enter/Exit bookkeeping to go stale). A box collider is tested as the
+    /// oriented box it is (a zone laid on a slope); any other collider by its bounds.
     /// </summary>
     public static class PlayerZone
     {
@@ -16,9 +17,24 @@ namespace HotPatata
         {
             result.Clear();
             if (playerMask == 0) playerMask = LayerMask.GetMask("Player");
-            Bounds b = zone.bounds;
-            int n = Physics.OverlapBoxNonAlloc(b.center, b.extents, Buffer, Quaternion.identity,
-                playerMask, QueryTriggerInteraction.Ignore);
+            Vector3 center, extents;
+            Quaternion rotation;
+            if (zone is BoxCollider box)
+            {
+                var t = box.transform;
+                Vector3 s = t.lossyScale;
+                center = t.TransformPoint(box.center);
+                extents = Vector3.Scale(box.size * 0.5f, new Vector3(Mathf.Abs(s.x), Mathf.Abs(s.y), Mathf.Abs(s.z)));
+                rotation = t.rotation;
+            }
+            else
+            {
+                Bounds b = zone.bounds;
+                center = b.center;
+                extents = b.extents;
+                rotation = Quaternion.identity;
+            }
+            int n = Physics.OverlapBoxNonAlloc(center, extents, Buffer, rotation, playerMask, QueryTriggerInteraction.Ignore);
             for (int i = 0; i < n; i++)
             {
                 var p = Buffer[i].GetComponentInParent<Player>();

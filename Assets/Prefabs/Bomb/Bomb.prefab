@@ -21,6 +21,7 @@ GameObject:
   - component: {fileID: 1151939524676019905}
   - component: {fileID: 8993696010510467686}
   - component: {fileID: 2293270824889259391}
+  - component: {fileID: 8093722982991009831}
   m_Layer: 10
   m_Name: Bomb
   m_TagString: Untagged
@@ -282,6 +283,8 @@ MonoBehaviour:
   explosionMaterial: {fileID: 2100000, guid: 133b2d7f60ae23a49a0ea669b6bd1b04, type: 2}
   baseEmission: {r: 1, g: 0.25, b: 0.05, a: 1}
   criticalEmission: {r: 1, g: 0.9, b: 0.7, a: 1}
+  emissionScale: 0.3
+  frostEmission: {r: 0.45, g: 0.85, b: 1, a: 1}
   fuseSparks: {fileID: 4902871332006479808}
   trail: {fileID: 1338192621687718689}
   flightPuffs: {fileID: 5832937958774600148}
@@ -432,6 +435,18 @@ MonoBehaviour:
   SwitchTransformSpaceWhenParented: 0
   Interpolate: 1
   SlerpPosition: 0
+--- !u!114 &8093722982991009831
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 525825818582813792}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a14f991f47a96c1459901eb092673b0c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: HotPatata::HotPatata.BombZoneSweep
 --- !u!1 &3547146537337036511
 GameObject:
   m_ObjectHideFlags: 0

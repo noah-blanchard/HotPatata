@@ -93,6 +93,9 @@ These rules are the source of truth for the MVP.
 
    **player hand → free flight → another player's catch**
 
+   A level transit (tube or cannon, §5 `InTransit`, §13.16) may carry the bomb between two free flights:
+   **hand → flight → transit → flight → catch** is still one valid pass.
+
 6. While airborne, if the bomb touches **any invalid environment collider**, it explodes immediately.
 7. Invalid environment includes by default:
    - floor;
@@ -203,6 +206,24 @@ Behavior:
 - restore fuse;
 - transition to `Held` when section becomes active.
 
+#### `InTransit` (added by #68, tubes and cannons)
+
+Entered when:
+
+- a `Thrown` bomb passes through a transit mouth (§13.16).
+
+Behavior:
+
+- the level carries the bomb: no carrier, **no fuse** (nothing burns), no collision, not catchable;
+- a tube hides the bomb; a cannon shows it sitting in its basket;
+- after the transit's delay, the bomb leaves the exit linked to the mouth it entered on a fixed, readable arc
+  and is `Thrown` again, with the normal catch and collision rules;
+- nobody counts as its thrower (anyone may catch the exit arc) and the aim assist does not apply.
+
+Failure:
+
+- none while inside; a section reset clears it like any other state.
+
 ---
 
 ## 6. Bomb collision contract
@@ -234,6 +255,9 @@ If a thrown bomb touches the world, the pass failed.
 No surface should be bomb-safe in the first sandbox unless required for technical reasons.
 
 If later added, safe surfaces must use an explicit marker/component/layer. Do not infer safety from object names.
+
+The only safe volume so far is a **transit mouth** (§13.16): an explicit `TransitMouth` marker volume, detected by
+the host's sweep of the flight, that captures the bomb into `InTransit` instead of exploding it.
 
 ---
 
@@ -267,6 +291,28 @@ Suggested progression:
 A numerical timer is **not required** for the MVP.
 
 The visual pulse must communicate the same urgency as audio.
+
+### 7.3 Fuse zones (added by #68)
+
+A **fuse zone** is a marked volume that changes how fast the carrier's fuse burns while the carrier is inside it.
+Only the carrier is affected; other players cross freely.
+
+| Zone | Fuse rate | Meaning |
+|---|---:|---|
+| Forbidden | ∞ | the bomb explodes as soon as its carrier is inside |
+| Hot | × 2 | pass or get out fast |
+| Cold | × 0.5 | a breather, not a shelter: staying still still ends in an explosion |
+
+Rules:
+
+- when zones overlap, **the most severe wins** (forbidden > hot > cold > normal), so nothing can cancel a forbidden
+  zone;
+- a catch made inside a forbidden zone explodes immediately (the zone decides, the catch rules are unchanged);
+- a **laser curtain** is a forbidden zone that is also lethal to the bomb in flight (a thrown bomb crossing it
+  explodes, like hitting a wall), while players walk through it. Curtains are how a window becomes mandatory
+  (§13.13);
+- the zone rate is shown on the bomb (sparks speed up in a hot zone, frost in a cold one) and in the beep; every
+  zone reads by pattern and icon, never by colour alone (§19).
 
 ---
 
@@ -488,6 +534,10 @@ On checkpoint activation:
 - normalize bomb state;
 - clear temporary section state.
 
+**Bomb-claimed checkpoint (arch, added by #68).** A checkpoint may have an arch: it then activates only when
+all required players are inside **and** the bomb has passed through the arch **in flight** during the current
+section attempt. The claim is cleared by a section reset. Checkpoints without an arch keep the rule above.
+
 Recommended normal spacing:
 
 - **30–60 seconds** of gameplay between checkpoints.
@@ -610,6 +660,70 @@ Question:
 > Can two sliders at full speed pass sideways, leading the throw, through spinning hoop windows?
 
 Primary levers: slope, lane divider height, hoop speed and spacing, stretches where a tall divider blocks passes.
+
+### 13.13 Forbidden strip and laser window (#68)
+
+Question:
+
+> Can the team get the bomb across a line its carrier is not allowed to cross?
+
+A forbidden strip on the floor is passed over (throw across, catch on the far side). A wall with a window whose
+side passages are closed by laser curtains (§7.3) makes the window mandatory: runners walk through the curtains,
+the bomb must be thrown through the hole. Variants: a slalom of windows, a spinning hoop as the window.
+
+Primary levers: strip width, window size and height, which side the runners are on, hoop speed.
+
+### 13.14 Hot and cold zones (#68)
+
+Question:
+
+> Can the team keep the pass rhythm when the fuse burns twice as fast, and use a breather wisely?
+
+Hot zones (× 2) sit on the pass line of a corridor or a mover; cold zones (× 0.5) are small pockets beside the
+running line, never a whole beat: a place to breathe, or for a lone carrier to wait while a teammate is still on
+their way (before a tube, a cannon or a lock), so they help without becoming a shelter.
+
+Primary levers: zone length, what else moves in the zone, where the cold pockets are.
+
+### 13.15 Bomb switches and pressure plates (#68)
+
+Question:
+
+> Can the pass open the way for the runners, or can a runner hold the way open for the pass?
+
+A **bomb gate** is a ring the bomb must fly through; a **pressure plate** is held by any player standing on it,
+carrier included. Each drives exactly **one** actuator (a door, a bridge, a lift): the gate for a fixed time after
+the pass, the plate while it is held. No AND/OR logic (§17.2).
+
+A door is a portcullis that closes completely (a door that left crouch room would not block anything). It is a
+lethal hazard: striped, on the `Hazard` layer, with a lethal lower edge while it moves.
+
+Primary levers: gate hold time, actuator travel time, distance between the plate and what it opens.
+
+### 13.16 Tubes and cannons (#68)
+
+Question:
+
+> Can the thrower send the bomb into the right mouth, and is the receiver already at the exit?
+
+A thrown bomb entering a transit mouth goes `InTransit` (§5), then leaves the linked exit after the transit's
+delay on a fixed arc that lands on a painted receiver pad. A **tube** hides the bomb for its delay; a **cannon**
+shows it in its basket and fires after a short delay, far and high. Several mouths may lead to several exits: the
+thrower chooses by aiming (each mouth and its exit share a colour **and** a symbol). No randomness. The exit lights
+up and a rising tone plays just before the bomb comes out.
+
+Primary levers: delay, exit arc and flight time, how far the receiver must travel to reach the pad.
+
+### 13.17 Checkpoint arch (#68)
+
+Question:
+
+> Can the team end the section with one clean pass through the arch?
+
+The arch stands at the entrance of the checkpoint (§12.3); the usual layout is a throw through it across a short
+gap to a teammate already on the pad.
+
+Primary levers: arch size, gap, whether the arch is framed by curtains.
 
 ---
 
@@ -753,7 +867,8 @@ Do not implement unless this file is changed:
 - progression;
 - cosmetics;
 - multiple bomb types;
-- multiple courses;
+- multiple courses (exception: `PlaytestCourse`, the course that tests the #68 obstacles, lives beside
+  `PrototypeCourse`);
 - Steam-specific integration;
 - leaderboards;
 - procedural levels;
@@ -765,7 +880,10 @@ Do not implement unless this file is changed:
 - abilities;
 - persistent accounts beyond service requirements;
 - advanced ragdoll gameplay;
-- two-bomb mode.
+- two-bomb mode;
+- wind, fans or currents that bend a flight in progress (#68: they would break the plain ballistic arc, §8.2);
+- logic wiring between switches (AND/OR, sequences, several sources on one actuator): one source drives one
+  actuator (§13.15).
 
 ---
 
@@ -826,8 +944,11 @@ At minimum:
 | Jump buffer | 0.1 s |
 | Reset delay | ~1.0 s |
 | Hold fuse override (Act 3) | 5.0 s from CP6, 4.5 s from CP7 |
+| Fuse zones (hot / cold) | × 2 / × 0.5 (forbidden = explodes) |
+| Transit delay (tube / cannon) | ~1.2 s / 0.35 s, exit warning 0.5 s before |
+| Bomb gate hold time | per gate, 6–10 s |
 | Checkpoint spacing | 30–60 s |
-| First course length | 3–5 min (Act 1); 8–10 min with Acts 2–3 |
+| First course length | 3–5 min (Act 1); 8–10 min with Acts 2–3; `PlaytestCourse` ~10 min |
 | Target frame rate | 60 fps |
 
 These are **starting values**, not final design decisions.

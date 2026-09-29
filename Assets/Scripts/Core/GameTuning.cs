@@ -130,6 +130,12 @@ namespace HotPatata
         [Tooltip("After a catch the bomb is inert for this long before it counts as Held again.")]
         [Min(0f)] public float caughtGraceDuration = 0.35f;
 
+        [Header("Bomb - fuse zones (PROJECT_SPEC §7.3; forbidden zones explode)")]
+        [Tooltip("Fuse rate multiplier while the carrier stands in a hot zone.")]
+        [Min(1f)] public float hotZoneFuseRate = 2f;
+        [Tooltip("Fuse rate multiplier while the carrier stands in a cold zone: a breather, never a pause.")]
+        [Range(0.05f, 1f)] public float coldZoneFuseRate = 0.5f;
+
         [Header("Bomb - throw")]
         [Tooltip("Launch speed of a tap (no charge). Sets the shortest pass.")]
         [Min(0f)] public float throwSpeedMin = 14f;

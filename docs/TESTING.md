@@ -24,9 +24,14 @@
 | `PrefabKitTests` | PlayMode | M2 greybox kit (moving/falling platforms, rotating bar, kill zone, checkpoint, finish) |
 | `CourseTests` | PlayMode | M5 course Act 1: structure, checkpoints, finish, rematch, start checkpoint, launch pad |
 | `FactoryCourseTests` | PlayMode | course Acts 2–3: belts, elevators, sweepers, crushers, mega slide |
+| `ZoneRuleTests` | EditMode | #68 pure rules: fuse-zone severity, flight-sweep geometry, actuator motion, transit exit arc |
+| `BombObstacleTests` | PlayMode | #68 kit on the PassSandbox floor: fuse zones, curtains and windows, gates, plates, doors, arch checkpoint, tubes |
+| `PlaytestCourseTests` | PlayMode | M10.4 `PlaytestCourse`: every beat wired, nine checkpoints with two arches, the podium gate, finish and rematch |
 
 EditMode tests live in `Assets/Tests/EditMode/`. PlayMode tests live in `Assets/Tests/PlayMode/`: they load
-`PassSandbox` (or `PrototypeCourse`) through `SandboxTestBase` and drive players through `PlayerInputReader.Scripted`.
+`PassSandbox` (or `PrototypeCourse`, `PlaytestCourse`) through `SandboxTestBase` and drive players through
+`PlayerInputReader.Scripted`. After touching the bomb obstacles run `ZoneRuleTests`, `BombObstacleTests` and
+`BombStateTests`; after a course builder change, the tests of that course.
 
 ### Running them
 
