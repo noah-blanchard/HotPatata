@@ -16,7 +16,8 @@ namespace HotPatata
     {
         HoldFuseExpired,
         WorldContact,
-        KillZone
+        KillZone,
+        ForbiddenZone   // carrier in a forbidden fuse zone, or a flying bomb through a laser curtain (PROJECT_SPEC §7.3)
     }
 
     /// <summary>
@@ -100,15 +101,37 @@ namespace HotPatata
             switch (State)
             {
                 case BombState.Held:
-                    fuse.Tick(Time.deltaTime);
+                    if (InForbiddenZone()) break;
+                    fuse.Tick(Time.deltaTime * fuse.Rate);
                     break;
                 case BombState.Thrown:
+                    fuse.SetRate(1f);
                     if (ExplosionPending && Time.time >= pendingExplosionAt) Explode(pendingReason, pendingDetail);
                     break;
                 case BombState.CaughtGrace:
+                    if (InForbiddenZone()) break;   // a catch made inside a forbidden zone explodes at once
                     if (Time.time >= graceEndTime) Transition(BombState.Held);
                     break;
+                default:
+                    fuse.SetRate(1f);
+                    break;
             }
+        }
+
+        /// <summary>
+        /// Updates the fuse rate from the fuse zones the carrier stands in (PROJECT_SPEC §7.3) and explodes the bomb if
+        /// one of them is forbidden. Returns true when it exploded.
+        /// </summary>
+        bool InForbiddenZone()
+        {
+            float rate = FuseZone.RateFor(Carrier, tuning);
+            if (!float.IsPositiveInfinity(rate))
+            {
+                fuse.SetRate(rate);
+                return false;
+            }
+            Explode(BombFailReason.ForbiddenZone, $"carrier={Carrier} in a forbidden zone");
+            return true;
         }
 
         // ------------------------------------------------------------------ throw / catch
@@ -178,6 +201,16 @@ namespace HotPatata
             if (!NetMode.IsAuthority || State != BombState.Thrown) return;
             LethalContact(BombFailReason.WorldContact,
                 $"object={other.name} layer={LayerMask.LayerToName(other.gameObject.layer)}");
+        }
+
+        /// <summary>
+        /// A flying bomb crossed a zone it may not cross (<see cref="BombBarrier"/>, found by <see cref="BombZoneSweep"/>).
+        /// Lethal like world contact, including the hold for a late catch. Authority only.
+        /// </summary>
+        public void ReportZoneContact(string detail)
+        {
+            if (!NetMode.IsAuthority || State != BombState.Thrown) return;
+            LethalContact(BombFailReason.ForbiddenZone, detail);
         }
 
         /// <summary>

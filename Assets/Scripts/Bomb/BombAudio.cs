@@ -76,7 +76,8 @@ namespace HotPatata
             var stage = bomb.Fuse.Stage;
             source.PlayOneShot(BeepClip(stage), tuning.beepVolume);
             Beeped?.Invoke(stage);
-            nextBeepTime = Time.time + tuning.beepIntervals[(int)stage];
+            // A fuse zone changes the burn rate: the beep speeds up in a hot zone and slows in a cold one (spec §7.3).
+            nextBeepTime = Time.time + tuning.beepIntervals[(int)stage] / Mathf.Clamp(bomb.Fuse.Rate, 0.25f, 4f);
         }
 
         void OnStateChanged(BombState from, BombState to)

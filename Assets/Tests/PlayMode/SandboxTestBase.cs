@@ -103,6 +103,29 @@ namespace HotPatata.Tests
             }
         }
 
+        /// <summary>Hands the bomb to <paramref name="p"/> directly (reset path), with a fresh fuse.</summary>
+        protected void Give(Player p)
+        {
+            bomb.BeginReset();
+            bomb.EndReset(p);
+        }
+
+        /// <summary>Velocity that carries a projectile from origin to target in `time` seconds under bomb gravity.</summary>
+        protected Vector3 VelocityToHit(Vector3 origin, Vector3 target, float time)
+        {
+            Vector3 g = Physics.gravity * tuning.bombGravityScale;
+            return (target - origin) / time - 0.5f * g * time;
+        }
+
+        protected static Vector3 CatchPoint(Player p) => p.CatchVolume.CatchCenter;
+
+        /// <summary>An exact ballistic throw from <paramref name="from"/>'s hand to <paramref name="to"/>'s catch centre.</summary>
+        protected void ThrowAt(Player from, Player to, float time = 0.5f)
+        {
+            Vector3 origin = from.ThrowOrigin.position;
+            Assert.IsTrue(bomb.TryThrow(from, origin, VelocityToHit(origin, CatchPoint(to), time)));
+        }
+
         /// <summary>Place a player on flat ground facing +Z, ready to be driven.</summary>
         protected static IEnumerator Place(Player p, Vector3 position)
         {
