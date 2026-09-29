@@ -84,6 +84,8 @@ namespace HotPatata
         {
             // Give a fresh bomb a beat of silence before its first beep.
             if (from == BombState.Resetting) nextBeepTime = Time.time + 0.4f;
+            // Swallowed by a tube or cannon: a low "thunk" (the exit's rising tone is TransitPresentation's).
+            if (to == BombState.InTransit) source.PlayOneShot(Pick(catchClip, ref placeholderCatch, ProceduralSfx.Catch), 0.5f);
         }
 
         void OnCaught(Player receiver) => source.PlayOneShot(Pick(catchClip, ref placeholderCatch, ProceduralSfx.Catch), 1f);

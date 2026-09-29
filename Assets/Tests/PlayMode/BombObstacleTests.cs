@@ -11,7 +11,7 @@ namespace HotPatata.Tests
     /// <summary>
     /// The #68 bomb obstacles (MVP_TASKS M10), built from their kit prefabs on the open floor of PassSandbox and driven
     /// through the real bomb: fuse zones and laser curtains (PROJECT_SPEC §7.3), bomb gates, pressure plates, actuators
-    /// and the checkpoint arch (§12.3, §13.15).
+    /// and the checkpoint arch (§12.3, §13.15), tubes (§5 InTransit, §13.16).
     /// </summary>
     public class BombObstacleTests : SandboxTestBase
     {
@@ -242,6 +242,62 @@ namespace HotPatata.Tests
 
             yield return Place(p2, O + new Vector3(-1.5f, 0.05f, 1.5f));   // off the plate
             yield return WaitUntil(() => run.State == RunState.Failing, 2f, "the closing door caught the player under it");
+        }
+
+        // ------------------------------------------------------------------ transit
+
+        /// <summary>
+        /// The tube prefab's default route, spawned at O: mouth 1.6 m up at O facing the thrower (-Z), exit at O + (0, 5, 8),
+        /// receiver pad at O + (0, 0, 14).
+        /// </summary>
+        IEnumerator ThrowIntoTube(BombTransit tube)
+        {
+            yield return Place(p1, O + new Vector3(0f, 0.05f, -4f));
+            Give(p1);
+            yield return null;
+            Vector3 origin = p1.ThrowOrigin.position;
+            Vector3 mouth = tube.transform.Find("Mouth_1").position;
+            Assert.IsTrue(bomb.TryThrow(p1, origin, VelocityToHit(origin, mouth, 0.3f)));
+            yield return WaitUntil(() => bomb.State != BombState.Thrown, 1f, "the bomb reached the tube");
+        }
+
+        [UnityTest]
+        public IEnumerator Tube_SwallowsTheBomb_ThenSendsItToTheReceiverOnItsPad()
+        {
+            var tube = Spawn("Obstacles/Obstacle_Tube", O).GetComponent<BombTransit>();
+            yield return Place(p2, O + new Vector3(0f, 0.05f, 14f));
+            yield return ThrowIntoTube(tube);
+
+            Assert.AreEqual(BombState.InTransit, bomb.State, "captured, not exploded");
+            Assert.AreEqual(0, explosions);
+            Assert.AreEqual(0, tube.ActiveExit);
+            Assert.IsFalse(bomb.GetComponent<SphereCollider>().enabled, "nothing touches a bomb in transit");
+            float fuse = bomb.Fuse.Remaining;
+            yield return WaitSeconds(tube.Delay * 0.6f);
+            Assert.AreEqual(BombState.InTransit, bomb.State);
+            Assert.AreEqual(fuse, bomb.Fuse.Remaining, 1e-4f, "no fuse burns in transit");
+
+            yield return WaitUntil(() => bomb.State == BombState.Thrown, tube.Delay, "the bomb came out of the exit");
+            Assert.IsNull(bomb.LastThrower, "nobody threw the exit arc");
+            Assert.AreEqual(-1, tube.ActiveExit);
+            yield return CatchWhenNear(p2);
+            yield return WaitUntil(() => catches > 0 || explosions > 0, 3f, "the exit arc reached the pad");
+            Assert.AreEqual(1, catches, "the exit arc lands in the hands of the receiver on the pad");
+        }
+
+        [UnityTest]
+        public IEnumerator SectionReset_DuringATransit_RestoresTheBombNormally()
+        {
+            var tube = Spawn("Obstacles/Obstacle_Tube", O).GetComponent<BombTransit>();
+            yield return ThrowIntoTube(tube);
+            Assert.AreEqual(BombState.InTransit, bomb.State);
+
+            Give(p1);   // reset path: BeginReset + EndReset
+            Assert.AreEqual(BombState.Held, bomb.State);
+            Assert.AreEqual(-1, tube.ActiveExit);
+            yield return WaitSeconds(tube.Delay + 0.3f);
+            Assert.AreEqual(BombState.Held, bomb.State, "the cancelled transit never fires");
+            Assert.AreSame(p1, bomb.Carrier);
         }
 
         [UnityTest]

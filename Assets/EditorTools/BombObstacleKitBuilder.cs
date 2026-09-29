@@ -31,6 +31,10 @@ namespace HotPatata.Editor
         public const string Door = ObstaclesDir + "Actuator_Door";
         public const string Bridge = PlatformsDir + "Actuator_Bridge";
         public const string Lift = PlatformsDir + "Actuator_Lift";
+        public const string Tube = ObstaclesDir + "Obstacle_Tube";
+        public const string Cannon = ObstaclesDir + "Obstacle_Cannon";
+        const string TuningPath = "Assets/ScriptableObjects/Tuning/GameTuning.asset";
+        public const int TubeSlots = 3;
 
         public static readonly Vector3 DoorSize = new Vector3(4f, 3.6f, 0.5f);
 
@@ -53,6 +57,8 @@ namespace HotPatata.Editor
                                                                      1.2f, Mat("Greybox_Moving"), "Environment", lethal: false));
             MakePrefab(Lift + ".prefab", true, () => BuildActuator("Actuator_Lift", new Vector3(3f, 0.5f, 3f), new Vector3(0f, 4f, 0f),
                                                                    2f, Mat("Greybox_Moving"), "Environment", lethal: false));
+            MakePrefab(Tube + ".prefab", true, BuildTube);
+            MakePrefab(Cannon + ".prefab", true, BuildCannon);
             EnsureBombComponents();
             AssetDatabase.SaveAssets();
             Debug.Log("[BombObstacleKitBuilder] bomb obstacle kit built");
@@ -326,6 +332,254 @@ namespace HotPatata.Editor
             t.Find("Waypoint_Open").localPosition = travel;
         }
 
+        // ------------------------------------------------------------------ transit: tubes and cannons
+
+        static GameTuning Tuning => AssetDatabase.LoadAssetAtPath<GameTuning>(TuningPath);
+
+        /// <summary>A ring of <paramref name="segments"/> blocks in the local XY plane (facing Z), colliders on <paramref name="layer"/>.</summary>
+        static List<Renderer> Ring(Transform parent, float radius, int segments, float thickness, Material mat, string layer)
+        {
+            var renderers = new List<Renderer>();
+            float segLength = 2f * Mathf.PI * radius / segments * 1.1f;
+            for (int i = 0; i < segments; i++)
+            {
+                var seg = new GameObject($"Ring_{i + 1}").transform;
+                seg.SetParent(parent, false);
+                seg.localRotation = Quaternion.Euler(0f, 0f, i * 360f / segments);
+                renderers.Add(Cube("Visual", seg, new Vector3(0f, radius, 0f), new Vector3(segLength, thickness, thickness), mat, layer).GetComponent<Renderer>());
+                Box("Collision", seg, new Vector3(0f, radius, 0f), new Vector3(segLength, thickness, thickness), layer);
+            }
+            return renderers;
+        }
+
+        /// <summary>The receiver pad on the floor: a disc in the slot's colour with its pip symbol (collider-free).</summary>
+        static Transform Pad(Transform parent, string name, int slot)
+        {
+            var pad = new GameObject(name).transform;
+            pad.SetParent(parent, false);
+            Shape("Disc", PrimitiveType.Cylinder, pad, new Vector3(0f, 0.04f, 0f), Quaternion.identity, new Vector3(1.8f, 0.03f, 1.8f), Mat($"Tube_Slot_{slot}"), "Default");
+            Shape("Icon", PrimitiveType.Quad, pad, new Vector3(0f, 0.08f, 0f), Quaternion.Euler(90f, 0f, 0f), Vector3.one * 1.2f, Mat($"Icon_Pips{slot}"), "Default");
+            return pad;
+        }
+
+        /// <summary>A transit root: BombTransit + exit lamps presentation, replicated.</summary>
+        static BombTransit AddTransit(GameObject root, float delay)
+        {
+            var transit = root.AddComponent<BombTransit>();
+            SetField(transit, "delay", p => p.floatValue = delay);
+            SetReference(transit, "tuning", Tuning);
+            root.AddComponent<TransitPresentation>();
+            root.AddComponent<NetworkObject>();
+            root.AddComponent<NetworkBombTransit>();
+            return transit;
+        }
+
+        static void AddMouth(Transform mouth, BombTransit transit, int exit, Vector3 size, Vector3 center)
+        {
+            mouth.gameObject.layer = Layer("Trigger");
+            var box = mouth.gameObject.AddComponent<BoxCollider>();
+            box.isTrigger = true;
+            box.size = size;
+            box.center = center;
+            var zone = mouth.gameObject.AddComponent<Zone>();
+            SetReference(zone, "volume", box);
+            var m = mouth.gameObject.AddComponent<TransitMouth>();
+            SetReference(m, "transit", transit);
+            SetField(m, "exit", p => p.intValue = exit);
+        }
+
+        static void SetExits(BombTransit transit, Transform[] holds, Transform[] muzzles, Transform[] pads, float flightTime)
+        {
+            SetField(transit, "exits", p =>
+            {
+                p.arraySize = holds.Length;
+                for (int i = 0; i < holds.Length; i++)
+                {
+                    var e = p.GetArrayElementAtIndex(i);
+                    e.FindPropertyRelative("hold").objectReferenceValue = holds[i];
+                    e.FindPropertyRelative("muzzle").objectReferenceValue = muzzles[i];
+                    e.FindPropertyRelative("pad").objectReferenceValue = pads[i];
+                    e.FindPropertyRelative("flightTime").floatValue = flightTime;
+                }
+            });
+        }
+
+        static void SetLamps(GameObject root, IList<Renderer> lamps) =>
+            SetField(root.GetComponent<TransitPresentation>(), "exitLamps", p =>
+            {
+                p.arraySize = lamps.Count;
+                for (int i = 0; i < lamps.Count; i++) p.GetArrayElementAtIndex(i).objectReferenceValue = lamps[i];
+            });
+
+        /// <summary>
+        /// A tube with up to three mouth/exit pairs (PROJECT_SPEC §13.16). Slot N: Mouth_N (a ring facing the thrower, its
+        /// capture volume reaching 1.3 m in front), Pipe_N (the straight pipe the bomb travels in, out of sight), Exit_N
+        /// (nozzle, lamp, muzzle) and Pad_N (the receiver pad). Each slot has its colour and pip symbol. Place it with
+        /// <see cref="ConfigureTube"/>; unused slots are switched off.
+        /// </summary>
+        static GameObject BuildTube()
+        {
+            var root = new GameObject("Obstacle_Tube");
+            var transit = AddTransit(root, 1.2f);
+            var holds = new Transform[TubeSlots];
+            var muzzles = new Transform[TubeSlots];
+            var pads = new Transform[TubeSlots];
+            var lamps = new List<Renderer>();
+            for (int s = 1; s <= TubeSlots; s++)
+            {
+                var slotMat = Mat($"Tube_Slot_{s}");
+                var mouth = new GameObject($"Mouth_{s}").transform;
+                mouth.SetParent(root.transform, false);
+                AddMouth(mouth, transit, s - 1, new Vector3(2.2f, 2.2f, 1.6f), new Vector3(0f, 0f, -0.5f));
+                Ring(mouth, 1.05f, 12, 0.3f, slotMat, "Environment");
+                Shape("Sign", PrimitiveType.Quad, mouth, new Vector3(0f, 1.9f, -0.2f), Quaternion.identity, Vector3.one * 1.1f, Mat($"Icon_Pips{s}"), "Default");
+                var hold = new GameObject("Hold").transform;
+                hold.SetParent(mouth, false);
+                hold.localPosition = new Vector3(0f, 0f, 1.2f);
+                holds[s - 1] = hold;
+
+                var pipe = Shape($"Pipe_{s}", PrimitiveType.Cylinder, root.transform, Vector3.zero, Quaternion.identity, Vector3.one, slotMat, "Environment");
+                pipe.AddComponent<CapsuleCollider>();
+
+                var exit = new GameObject($"Exit_{s}").transform;
+                exit.SetParent(root.transform, false);
+                Shape("Nozzle", PrimitiveType.Cylinder, exit, Vector3.zero, Quaternion.Euler(90f, 0f, 0f), new Vector3(1.2f, 0.35f, 1.2f), slotMat, "Environment");
+                lamps.Add(Shape("Lamp", PrimitiveType.Cylinder, exit, new Vector3(0f, 0f, 0.36f), Quaternion.Euler(90f, 0f, 0f), new Vector3(1.3f, 0.04f, 1.3f), Mat("Tube_Lamp"), "Default").GetComponent<Renderer>());
+                Shape("Sign", PrimitiveType.Quad, exit, new Vector3(0f, 1.2f, 0f), Quaternion.identity, Vector3.one * 0.9f, Mat($"Icon_Pips{s}"), "Default");
+                var muzzle = new GameObject("Muzzle").transform;
+                muzzle.SetParent(exit, false);
+                muzzle.localPosition = new Vector3(0f, 0f, 0.9f);
+                muzzles[s - 1] = muzzle;
+
+                pads[s - 1] = Pad(root.transform, $"Pad_{s}", s);
+            }
+            SetExits(transit, holds, muzzles, pads, 1.1f);
+            SetLamps(root, lamps);
+            ConfigureTube(root, new[]
+            {
+                new TubeSlot(new Vector3(0f, 1.6f, 0f), 0f, new Vector3(0f, 5f, 8f), new Vector3(0f, 0f, 14f), 1.1f)
+            });
+            return root;
+        }
+
+        /// <summary>One mouth-to-exit route of a tube, in world space.</summary>
+        public struct TubeSlot
+        {
+            public Vector3 Mouth;      // centre of the mouth ring
+            public float MouthYaw;     // degrees; 0 = the mouth faces -Z (thrown into while travelling +Z)
+            public Vector3 Exit;       // where the bomb comes out
+            public Vector3 Pad;        // the receiver pad, on the floor
+            public float FlightTime;   // seconds from the exit to catch height above the pad
+
+            public TubeSlot(Vector3 mouth, float mouthYaw, Vector3 exit, Vector3 pad, float flightTime)
+            {
+                Mouth = mouth;
+                MouthYaw = mouthYaw;
+                Exit = exit;
+                Pad = pad;
+                FlightTime = flightTime;
+            }
+        }
+
+        /// <summary>
+        /// Lays out a tube's routes (1..3; the other slots are switched off): mouth, straight pipe from the mouth to the
+        /// exit, exit nozzle turned along the launch direction of its fixed arc, and the receiver pad.
+        /// </summary>
+        public static void ConfigureTube(GameObject tube, IList<TubeSlot> slots)
+        {
+            var t = tube.transform;
+            var transit = tube.GetComponent<BombTransit>();
+            var tuning = Tuning;
+            float g = ThrowBallistics.Gravity(tuning);
+            for (int s = 1; s <= TubeSlots; s++)
+            {
+                bool used = s <= slots.Count;
+                foreach (var part in new[] { $"Mouth_{s}", $"Pipe_{s}", $"Exit_{s}", $"Pad_{s}" })
+                    t.Find(part).gameObject.SetActive(used);
+                if (!used) continue;
+
+                var slot = slots[s - 1];
+                var mouth = t.Find($"Mouth_{s}");
+                mouth.SetPositionAndRotation(slot.Mouth, Quaternion.Euler(0f, slot.MouthYaw, 0f));
+                t.Find($"Pad_{s}").position = slot.Pad;
+
+                var exit = t.Find($"Exit_{s}");
+                Vector3 aim = slot.Pad + Vector3.up * tuning.catchCenterHeight;
+                Vector3 v = BombTransit.ExitVelocity(slot.Exit, aim, g, slot.FlightTime);
+                exit.SetPositionAndRotation(slot.Exit - v.normalized * 0.9f, Quaternion.LookRotation(v.normalized));   // muzzle lands on slot.Exit
+
+                Vector3 from = mouth.TransformPoint(new Vector3(0f, 0f, 0.4f)), to = exit.position;
+                var pipe = t.Find($"Pipe_{s}");
+                pipe.SetPositionAndRotation((from + to) / 2f, Quaternion.FromToRotation(Vector3.up, (to - from).normalized));
+                pipe.localScale = new Vector3(1.1f, Vector3.Distance(from, to) / 2f, 1.1f);
+
+                SetField(transit, "exits", p => p.GetArrayElementAtIndex(s - 1).FindPropertyRelative("flightTime").floatValue = slot.FlightTime);
+            }
+        }
+
+        /// <summary>
+        /// A cannon (PROJECT_SPEC §13.16): an open basket (the mouth: throw the bomb in from above or from any side, its
+        /// capture volume reaches 2 m over the rim) and a barrel that fires it far and high after a short delay, onto the
+        /// receiver pad. Place it with <see cref="ConfigureCannon"/>.
+        /// </summary>
+        static GameObject BuildCannon()
+        {
+            const float basket = 2.4f, wall = 0.25f, rim = 0.8f;
+            var root = new GameObject("Obstacle_Cannon");
+            var transit = AddTransit(root, 0.35f);
+            var gateMat = Mat("Greybox_Gate");
+            var t = root.transform;
+
+            var mouth = new GameObject("Basket").transform;
+            mouth.SetParent(t, false);
+            AddMouth(mouth, transit, 0, new Vector3(basket, 2.6f, basket), new Vector3(0f, rim + 1.1f, 0f));
+            Cube("Floor", mouth, new Vector3(0f, 0.1f, 0f), new Vector3(basket + 2f * wall, 0.2f, basket + 2f * wall), Mat("Greybox_Wall"), "Environment", keepCollider: true);
+            for (int i = 0; i < 4; i++)
+            {
+                var side = Quaternion.Euler(0f, i * 90f, 0f);
+                var w = Cube($"Wall_{i + 1}", mouth, side * new Vector3(0f, rim / 2f, (basket + wall) / 2f), new Vector3(basket + 2f * wall, rim, wall), gateMat, "Environment", keepCollider: true);
+                w.transform.localRotation = side;
+            }
+            Shape("Sign", PrimitiveType.Quad, mouth, new Vector3(0f, rim + 2.4f, 0f), Quaternion.identity, Vector3.one * 1.1f, Mat("Icon_Pips1"), "Default");
+            Shape("Sign_Back", PrimitiveType.Quad, mouth, new Vector3(0f, rim + 2.4f, 0f), Quaternion.Euler(0f, 180f, 0f), Vector3.one * 1.1f, Mat("Icon_Pips1"), "Default");
+            var hold = new GameObject("Hold").transform;
+            hold.SetParent(mouth, false);
+            hold.localPosition = new Vector3(0f, 0.55f, 0f);
+
+            var exit = new GameObject("Exit_1").transform;
+            exit.SetParent(t, false);
+            Shape("Barrel", PrimitiveType.Cylinder, exit, new Vector3(0f, 0f, -1.1f), Quaternion.Euler(90f, 0f, 0f), new Vector3(1f, 1.1f, 1f), Mat("Tube_Slot_1"), "Environment").AddComponent<CapsuleCollider>();
+            var lamp = Shape("Lamp", PrimitiveType.Cylinder, exit, new Vector3(0f, 0f, 0.02f), Quaternion.Euler(90f, 0f, 0f), new Vector3(1.15f, 0.04f, 1.15f), Mat("Tube_Lamp"), "Default");
+            var muzzle = new GameObject("Muzzle").transform;
+            muzzle.SetParent(exit, false);
+            muzzle.localPosition = new Vector3(0f, 0f, 0.7f);
+
+            var pad = Pad(t, "Pad_1", 1);
+            SetExits(transit, new[] { hold }, new[] { muzzle }, new[] { pad }, 2f);
+            SetLamps(root, new[] { lamp.GetComponent<Renderer>() });
+            ConfigureCannon(root, new Vector3(0f, 0f, 24f), 2f);
+            return root;
+        }
+
+        /// <summary>
+        /// Aims a cannon (root on the floor at the basket) at a receiver pad: the barrel stands beside the basket, turned
+        /// along the launch direction of the fixed arc that reaches catch height above the pad after <paramref name="flightTime"/>.
+        /// </summary>
+        public static void ConfigureCannon(GameObject cannon, Vector3 pad, float flightTime)
+        {
+            var t = cannon.transform;
+            var tuning = Tuning;
+            Vector3 flat = pad - t.position;
+            flat.y = 0f;
+            Quaternion yaw = flat.sqrMagnitude > 0.01f ? Quaternion.LookRotation(flat.normalized) : Quaternion.identity;
+            t.Find("Basket").localRotation = Quaternion.Inverse(t.rotation) * yaw;
+            t.Find("Pad_1").position = pad;
+            Vector3 muzzle = t.position + yaw * new Vector3(0f, 2.6f, 2.2f);
+            Vector3 v = BombTransit.ExitVelocity(muzzle, pad + Vector3.up * tuning.catchCenterHeight, ThrowBallistics.Gravity(tuning), flightTime);
+            t.Find("Exit_1").SetPositionAndRotation(muzzle - v.normalized * 0.7f, Quaternion.LookRotation(v.normalized));
+            SetField(cannon.GetComponent<BombTransit>(), "exits", p => p.GetArrayElementAtIndex(0).FindPropertyRelative("flightTime").floatValue = flightTime);
+        }
+
         /// <summary>Links an actuator to the one source that drives it.</summary>
         public static void Wire(GameObject actuator, MonoBehaviour source) => SetReference(actuator.GetComponent<SignalActuator>(), "source", source);
 
@@ -353,6 +607,15 @@ namespace HotPatata.Editor
             MakeUnlitMaterial("Icon_Hot", new Color(1f, 0.7f, 0.25f, 1f), Icon("Flame"), false);
             MakeUnlitMaterial("Icon_Cold", new Color(0.65f, 0.93f, 1f, 1f), Icon("Snowflake"), false);
             MakeUnlitMaterial("Laser_Beam", new Color(1f, 0.18f, 0.2f, 0.9f), null, true);
+            // Tube / cannon slots: a colour AND a pip count (1, 2, 3) per mouth-exit pair, away from hazard red and player colours.
+            var slotColors = new[] { new Color(0.25f, 0.85f, 0.45f), new Color(0.62f, 0.45f, 1f), new Color(1f, 0.6f, 0.8f) };
+            for (int s = 1; s <= TubeSlots; s++)
+            {
+                Color c = slotColors[s - 1];
+                MakeMaterial($"Tube_Slot_{s}", "Greybox_Hazard", c, Color.Lerp(c, Color.white, 0.3f), 0, Color.black, 1f, 0f);
+                MakeUnlitMaterial($"Icon_Pips{s}", Color.Lerp(c, Color.white, 0.25f), Icon($"Pips{s}"), false);
+            }
+            MakeMaterial("Tube_Lamp", "Greybox_Hazard", new Color(0.95f, 0.92f, 0.8f), Color.white, 0, Color.black, 1f, 0f);
             // Pressure plates: yellow and dark checker, reads as "step here" next to the plain floor.
             MakeMaterial("Pad_Plate", "Greybox_Hazard", new Color(1f, 0.83f, 0.25f), new Color(1f, 0.9f, 0.5f),
                          1, new Color(0.25f, 0.2f, 0.1f), 0.6f, 0.55f);
@@ -370,8 +633,13 @@ namespace HotPatata.Editor
             DrawIcon("NoCarry", NoCarry);
             DrawIcon("Flame", Flame);
             DrawIcon("Snowflake", Snowflake);
+            for (int s = 1; s <= TubeSlots; s++)
+            {
+                int pips = s;
+                DrawIcon($"Pips{s}", p => Pips(p, pips));
+            }
             AssetDatabase.Refresh();
-            foreach (var name in new[] { "NoCarry", "Flame", "Snowflake" })
+            foreach (var name in new[] { "NoCarry", "Flame", "Snowflake", "Pips1", "Pips2", "Pips3" })
             {
                 var importer = (TextureImporter)AssetImporter.GetAtPath(IconDir + name + ".png");
                 importer.textureType = TextureImporterType.Default;
@@ -440,6 +708,19 @@ namespace HotPatata.Editor
                 float k = i / 12f;
                 var c = new Vector2(Mathf.Sin(k * 3.2f) * 0.1f * k, Mathf.Lerp(-0.35f, 0.72f, k));
                 d = Mathf.Min(d, Circle(p, c, Mathf.Lerp(0.45f, 0.04f, k)));
+            }
+            return d;
+        }
+
+        /// <summary><paramref name="count"/> big dots (1, 2 or 3) inside a ring: the symbol of a tube's mouth, exit and pad.</summary>
+        static float Pips(Vector2 p, int count)
+        {
+            float d = Mathf.Abs(p.magnitude - 0.8f) - 0.07f;
+            for (int i = 0; i < count; i++)
+            {
+                float a = Mathf.PI / 2f + i * 2f * Mathf.PI / count;
+                Vector2 c = count == 1 ? Vector2.zero : new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * 0.36f;
+                d = Mathf.Min(d, Circle(p, c, count == 1 ? 0.34f : 0.22f));
             }
             return d;
         }

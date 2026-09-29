@@ -195,7 +195,7 @@ namespace HotPatata
             if (state == BombState.Thrown) sawThrown = true;
 
             bool outcome = state == BombState.CaughtGrace || state == BombState.Exploding || state == BombState.Resetting ||
-                           (sawThrown && state == BombState.Held);
+                           state == BombState.InTransit || (sawThrown && state == BombState.Held);
             bool rejected = !sawThrown && state == BombState.Held && Time.time - predictedStart > RejectedAfter;
             bool lostIt = !sawThrown && bomb.Carrier != predictedThrower;
             if (outcome || rejected || lostIt || Time.time - predictedStart > PredictionHorizon + RejectedAfter)

@@ -5,7 +5,7 @@ namespace HotPatata.Tests
 {
     /// <summary>
     /// Pure rules of the #68 obstacles: fuse-zone severity (PROJECT_SPEC §7.3), the flight-sweep geometry and the
-    /// actuator motion derived from the replicated direction change (§13.15).
+    /// actuator motion derived from the replicated direction change (§13.15) and the transit exit arc (§13.16).
     /// </summary>
     public class ZoneRuleTests
     {
@@ -76,6 +76,19 @@ namespace HotPatata.Tests
             Assert.AreEqual(0f, SignalActuator.Progress(10.0, 0f, true, 2f, 10.0));
             Assert.AreEqual(0.5f, SignalActuator.Progress(10.0, 0f, true, 2f, 11.0), 1e-5f);
             Assert.AreEqual(1f, SignalActuator.Progress(10.0, 0f, true, 2f, 30.0));
+        }
+
+        // ------------------------------------------------------------------ transit
+
+        [Test]
+        public void TransitExitArc_ReachesItsTarget_AtTheFlightTime()
+        {
+            float g = ThrowBallistics.Gravity(tuning);
+            var from = new Vector3(0f, 5f, 8f);
+            var to = new Vector3(2f, 1.3f, 30f);
+            Vector3 v = BombTransit.ExitVelocity(from, to, g, 2f);
+            Vector3 at = ThrowBallistics.PositionAt(from, v, g, 2f);
+            Assert.Less(Vector3.Distance(to, at), 1e-3f);
         }
 
         [Test]
