@@ -34,8 +34,9 @@ namespace HotPatata
         // Controls: InputActionAsset.SaveBindingOverridesAsJson of HotPatataControls ("" = authored bindings), see InputRebinding
         public string bindingOverrides = "";
 
-        // Audio (SFX / music / UI volumes come with the AudioMixer)
+        // Audio: master is AudioListener.volume (every sound); the others are groups of the HotPatataMixer (AudioVolumes)
         public float masterVolume = 1f;
+        public float sfxVolume = 1f;
 
         // Display: Unset leaves the current value alone
         public int fullScreenMode = Unset;   // UnityEngine.FullScreenMode
@@ -69,6 +70,7 @@ namespace HotPatata
             stickLookSpeed = Clamp(stickLookSpeed, MinStickLookSpeed, MaxStickLookSpeed, defaults.stickLookSpeed);
             fieldOfView = Clamp(fieldOfView, MinFieldOfView, MaxFieldOfView, defaults.fieldOfView);
             masterVolume = Clamp(masterVolume, 0f, 1f, defaults.masterVolume);
+            sfxVolume = Clamp(sfxVolume, 0f, 1f, defaults.sfxVolume);
             bindingOverrides ??= "";
 
             if (fullScreenMode != Unset && !Enum.IsDefined(typeof(FullScreenMode), fullScreenMode)) fullScreenMode = Unset;
@@ -121,6 +123,7 @@ namespace HotPatata
         public static float StickLookSpeed(GameTuning t) => Current != null ? Current.stickLookSpeed : t.stickLookSpeed;
         public static float FieldOfView(GameTuning t) => Current != null ? Current.fieldOfView : t.fieldOfView;
         public static bool InvertY => Current != null && Current.invertY;
+        public static float SfxVolume => Current != null ? Current.sfxVolume : 1f;
 
         // ------------------------------------------------------------------ load / save
 
@@ -150,22 +153,31 @@ namespace HotPatata
         /// <summary>A copy to edit in a settings screen: the saved values, or the tuning defaults on first launch.</summary>
         public static SettingsData Editable(GameTuning t) => (Current ?? SettingsData.FromTuning(t)).Clone();
 
-        /// <summary>Makes <paramref name="data"/> the active settings, applies it and writes it to disk.</summary>
-        public static void Save(SettingsData data, GameTuning t)
+        /// <summary>
+        /// Makes <paramref name="data"/> the active settings and applies it, without writing the file: a settings
+        /// screen previews every change live (a slider moves many times a second) and calls <see cref="Save"/> once.
+        /// </summary>
+        public static void Preview(SettingsData data, GameTuning t)
         {
             var copy = data.Clone();
             copy.Sanitize(SettingsData.FromTuning(t));
             Current = copy;
             ApplyGlobal(copy);
+            Changed?.Invoke();
+        }
+
+        /// <summary>Makes <paramref name="data"/> the active settings, applies it and writes it to disk.</summary>
+        public static void Save(SettingsData data, GameTuning t)
+        {
+            Preview(data, t);
             try
             {
-                File.WriteAllText(FilePath, JsonUtility.ToJson(copy, true));
+                File.WriteAllText(FilePath, JsonUtility.ToJson(Current, true));
             }
             catch (Exception e)
             {
                 Debug.LogWarning($"[Settings] could not write {FilePath}: {e.Message}");
             }
-            Changed?.Invoke();
         }
 
         /// <summary>Forgets the saved settings: everything returns to the tuning defaults.</summary>
@@ -202,11 +214,17 @@ namespace HotPatata
             if (s.targetFrameRate != SettingsData.Unset) Application.targetFrameRate = s.targetFrameRate;
 
             if (Application.isEditor) return;   // the Game view owns resolution and window mode in the Editor
+            // Only when something differs: Preview runs on every slider step, and a needless mode switch flickers.
             var mode = s.fullScreenMode != SettingsData.Unset ? (FullScreenMode)s.fullScreenMode : Screen.fullScreenMode;
             if (s.resolutionWidth != SettingsData.Unset)
-                Screen.SetResolution(s.resolutionWidth, s.resolutionHeight, mode);
-            else if (s.fullScreenMode != SettingsData.Unset)
+            {
+                if (Screen.width != s.resolutionWidth || Screen.height != s.resolutionHeight || Screen.fullScreenMode != mode)
+                    Screen.SetResolution(s.resolutionWidth, s.resolutionHeight, mode);
+            }
+            else if (Screen.fullScreenMode != mode)
+            {
                 Screen.fullScreenMode = mode;
+            }
         }
     }
 }

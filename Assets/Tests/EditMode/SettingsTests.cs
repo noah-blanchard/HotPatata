@@ -33,6 +33,7 @@ namespace HotPatata.Tests
             Assert.AreEqual(tuning.stickLookSpeed, s.stickLookSpeed);
             Assert.IsFalse(s.invertY);
             Assert.AreEqual(1f, s.masterVolume);
+            Assert.AreEqual(1f, s.sfxVolume);
             Assert.AreEqual(SettingsData.Unset, s.fullScreenMode);
         }
 
@@ -53,6 +54,7 @@ namespace HotPatata.Tests
             original.flashReduction = 1f;
             original.invertY = true;
             original.masterVolume = 0.3f;
+            original.sfxVolume = 0.4f;
             original.vSyncCount = 0;
             original.targetFrameRate = 144;
 
@@ -63,12 +65,13 @@ namespace HotPatata.Tests
         [Test]
         public void Parse_OutOfRange_IsClamped()
         {
-            var s = Settings.Parse("{\"viewEffectsStrength\":3,\"flashReduction\":-1,\"fieldOfView\":500,\"mouseSensitivity\":0,\"masterVolume\":2}", tuning);
+            var s = Settings.Parse("{\"viewEffectsStrength\":3,\"flashReduction\":-1,\"fieldOfView\":500,\"mouseSensitivity\":0,\"masterVolume\":2,\"sfxVolume\":-1}", tuning);
             Assert.AreEqual(1f, s.viewEffectsStrength);
             Assert.AreEqual(0f, s.flashReduction);
             Assert.AreEqual(SettingsData.MaxFieldOfView, s.fieldOfView);
             Assert.AreEqual(SettingsData.MinMouseSensitivity, s.mouseSensitivity);
             Assert.AreEqual(1f, s.masterVolume);
+            Assert.AreEqual(0f, s.sfxVolume);
         }
 
         [Test]
@@ -102,6 +105,16 @@ namespace HotPatata.Tests
             Assert.AreEqual(0.2f, Settings.FlashReduction(tuning));
             Assert.AreEqual(80f, Settings.FieldOfView(tuning));
             Assert.IsFalse(Settings.InvertY);
+            Assert.AreEqual(1f, Settings.SfxVolume);
+        }
+
+        [Test]
+        public void MixerVolume_IsZeroDecibelsAtFull_AndSilentAtZero()
+        {
+            Assert.AreEqual(0f, AudioVolumes.ToDecibels(1f), 1e-4f);
+            Assert.AreEqual(-6.02f, AudioVolumes.ToDecibels(0.5f), 0.01f);
+            Assert.AreEqual(-80f, AudioVolumes.ToDecibels(0f));
+            Assert.AreEqual(-80f, AudioVolumes.ToDecibels(0.00001f), "never below the mixer floor");
         }
 
         [Test]

@@ -195,6 +195,7 @@ MonoBehaviour:
   warnEmission: {r: 1.6, g: 1.3, b: 0.5, a: 1}
   warnSeconds: 0.5
   toneVolume: 0.7
+  output: {fileID: 8474959280630313522, guid: 76df18f77795c6840806660333edcf41, type: 2}
 --- !u!114 &4914274438639152127
 MonoBehaviour:
   m_ObjectHideFlags: 0
