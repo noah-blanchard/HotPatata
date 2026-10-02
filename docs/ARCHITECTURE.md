@@ -974,6 +974,7 @@ and on the host):
 | Bomb position | host physics | server-authoritative `NetworkTransform`; while held, each client attaches it to the carrier's hand locally |
 | Run state, checkpoint, section clock | host | `NetworkRunState`; the section clock start is a server time, so platforms match everywhere |
 | Lock / teleport on reset | host | `NetworkPlayer.locked` variable; `TeleportOwner` RPC (owners move themselves) |
+| Player name | host sanitises (`PlayerNames.Sanitize`) | owner sends its menu name on spawn (`SubmitName`); `NetworkPlayer.displayName` variable, so late joiners get it too. In the lobby, before players spawn, the name travels as the session player property `name` |
 
 Remote clients never simulate the bomb (kinematic, collider off) and never run zone / checkpoint / finish logic.
 `PlayerSpawner` builds the offline two-player rig, or on the host spawns one player per connection into the

@@ -15,6 +15,7 @@
 | `FlightHistoryTests` | EditMode | the host's flight record used for lag-compensated catches |
 | `MovingPlatformTests` | EditMode | `MovingPlatform.Evaluate`, the pure clock-to-position maths |
 | `SessionServiceTests` | EditMode | M4: code cleanup and player-facing error wording |
+| `PlayerNamesTests` | EditMode | M6: player-name cleanup (trim, length, control characters, "Player N" fallback) |
 | `BombStateTests` | PlayMode | bomb state machine plus catch / world-contact / fuse rules (M1.4–M1.8) |
 | `RunAndThrowTests` | PlayMode | throw by input (M1.5) and fast, clean section reset (M1.10) |
 | `MovementTests` | PlayMode | accel/brake, jump, coyote time, jump buffer (M1.2) |
@@ -86,6 +87,7 @@ change, run `CourseTests` / `FactoryCourseTests`.
 | `-patataScene <name>` | level to load (e.g. `PassSandbox`) |
 | `-patataAutoStart <n>` | session host starts the level when n players are in |
 | `-patataCheckpoint <id>` | the run starts at that checkpoint (host / local; `RunOptions.StartCheckpoint`) |
+| `-patataName <name>` | player name for this process instead of the saved one (two instances on one PC share `PlayerPrefs`); bots keep "Player N" without it |
 | `-patataBot` | the local player is a bot (`PlayerBot`) |
 | `-patataLatency <ms>` | Network Simulator latency (Editor / dev builds only) |
 | `-patataQuit <s>` / `-patataLeaveAfter <s>` | quit / leave the session after s seconds |
@@ -100,7 +102,7 @@ client stays listed by the service for a while, but the host lobby shows only pl
    `unity command build --target StandaloneWindows64 --outputPath <abs>/Builds/HotPatata/HotPatata.exe --options '["Development"]' --confirm true`,
    then poll `build_status`.
 2. Open `Bootstrap` in the Editor, press Play, then `eval`
-   `HotPatata.PlayerBot.Enabled = true; HotPatata.NetworkBootstrap.Instance.StartHost();`.
+   `HotPatata.PlayerBot.Enabled = true; HotPatata.NetworkBootstrap.Instance.StartHostDirect();`.
 3. Launch `HotPatata.exe -batchmode -nographics -patataJoin 127.0.0.1 -patataBot -patataQuit 60 -logFile <abs>/client.log`.
 4. The bots pass the bomb back and forth. Compare the `[Bomb]` / `[Run]` logs on both sides.
 

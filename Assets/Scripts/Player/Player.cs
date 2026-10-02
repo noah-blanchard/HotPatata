@@ -129,8 +129,14 @@ namespace HotPatata
         /// <summary>Standard identity for a slot (name, colour and shape from <see cref="GameTuning"/>, GameObject name), the same offline and online.</summary>
         public void ConfigureSlot(int slot)
         {
-            Configure(slot, "Player " + (slot + 1), PlayerIdentity.ColorFor(tuning, slot));
+            Configure(slot, PlayerNames.Default(slot), PlayerIdentity.ColorFor(tuning, slot));
             gameObject.name = "Player_" + (slot + 1);
+        }
+
+        /// <summary>The name chosen by the player (already sanitised; online it comes from the host).</summary>
+        public void SetDisplayName(string name)
+        {
+            if (!string.IsNullOrEmpty(name)) displayName = name;
         }
 
         /// <summary>Authority only. Online this is replicated to the owning client.</summary>
