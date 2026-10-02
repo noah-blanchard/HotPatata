@@ -102,7 +102,7 @@ client stays listed by the service for a while, but the host lobby shows only pl
    `unity command build --target StandaloneWindows64 --outputPath <abs>/Builds/HotPatata/HotPatata.exe --options '["Development"]' --confirm true`,
    then poll `build_status`.
 2. Open `Bootstrap` in the Editor, press Play, then `eval`
-   `HotPatata.PlayerBot.Enabled = true; HotPatata.NetworkBootstrap.Instance.StartHost();`.
+   `HotPatata.PlayerBot.Enabled = true; HotPatata.NetworkBootstrap.Instance.StartHostDirect();`.
 3. Launch `HotPatata.exe -batchmode -nographics -patataJoin 127.0.0.1 -patataBot -patataQuit 60 -logFile <abs>/client.log`.
 4. The bots pass the bomb back and forth. Compare the `[Bomb]` / `[Run]` logs on both sides.
 
