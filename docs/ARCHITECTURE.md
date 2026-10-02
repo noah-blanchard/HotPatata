@@ -1389,8 +1389,13 @@ they were, only the look does.
 - **One look per role** (`KitRole`, `CourseKit.Look`): ground green platforms, walls neutral (white) blocks, movers
   (moving platforms, elevators, pistons, bridges, lifts) blue platforms, falling platforms yellow, belts blue arrows,
   slides green arrows, hazards red blocks with stripes (never colour alone, spec §19), gates and hoops yellow blocks.
-  Tube and cannon parts keep their slot colour (`Tube_Slot_N`) on KayKit pipes and blocks. Launch pads are a squat
-  KayKit spring pad. Zones, pads, signs and beams keep their own materials.
+  Launch pads are a squat KayKit spring pad. Zones, pads, signs and beams keep their own materials.
+- **Tubes and cannons** are KayKit pipes (`pipe_end`, `pipe_90_A`, `pipe_straight`, 1 m radius) in their slot colour
+  (`Tube_Pipe_N`: the pack's texture through `_SuitTint`, so grey and white bands stay). A mouth is a flange whose rim
+  lies on the collision ring; `ConfigureTube` routes the pipe up behind the mouth and overhead into the exit (two
+  elbows) when the exit is high and far enough, else low then up (one elbow), else straight; the exit is a flange
+  along the launch direction. Straight runs carry a capsule never wider than they are long (a short one would overhang
+  the exit arc), elbows a box. The cannon barrel is a pipe with a flange at the muzzle.
 - **Materials:** `KayKit_Toon`, `KayKit_Hazard`, `KayKit_Belt` are `HotPatata/Toon` with the pack's palette texture
   (mipmaps off, so the colour columns never blend), a lighter shade tint than the greybox, no fake bevel.
 - **Rebuilding:** menu **HotPatata/Course/Build KayKit Kit** (palette, materials, the hand-made classic prefabs, the

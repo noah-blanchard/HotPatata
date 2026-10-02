@@ -369,22 +369,82 @@ namespace HotPatata.Editor
 
         static GameTuning Tuning => AssetDatabase.LoadAssetAtPath<GameTuning>(TuningPath);
 
-        /// <summary>A ring of <paramref name="segments"/> blocks in the local XY plane (facing Z), colliders on <paramref name="layer"/>.</summary>
-        static List<Renderer> Ring(Transform parent, float radius, int segments, float thickness, Material mat, string layer)
+        /// <summary>A ring of <paramref name="segments"/> collision blocks in the local XY plane (facing Z), on <paramref name="layer"/>.</summary>
+        static void Ring(Transform parent, float radius, int segments, float thickness, string layer)
         {
-            var renderers = new List<Renderer>();
             float segLength = 2f * Mathf.PI * radius / segments * 1.1f;
             for (int i = 0; i < segments; i++)
             {
                 var seg = new GameObject($"Ring_{i + 1}").transform;
                 seg.SetParent(parent, false);
                 seg.localRotation = Quaternion.Euler(0f, 0f, i * 360f / segments);
-                var visual = Cube("Visual", seg, new Vector3(0f, radius, 0f), new Vector3(segLength, thickness, thickness), mat, layer);
-                Skin(visual, KitShape.Barrier, KitColor.Neutral, mat);   // KayKit blocks in the slot's own colour
-                renderers.Add(visual.GetComponent<Renderer>());
                 Box("Collision", seg, new Vector3(0f, radius, 0f), new Vector3(segLength, thickness, thickness), layer);
             }
-            return renderers;
+        }
+
+        // ------------------------------------------------------------------ KayKit pipes (ARCHITECTURE §25.1)
+
+        /// <summary>
+        /// Pipe pieces at this scale have a 1 m radius: the pipe_end flange (0.85..1.15 m) then lines up with a tube mouth's
+        /// collision ring (0.9..1.2 m), and a pipe_90 elbow turns in 2 m along and 2 m across.
+        /// </summary>
+        public const float PipeScale = 1f;
+        const float FlangeLength = 1f, ElbowReach = 2f;
+
+        /// <summary>A single KayKit pipe model (pipe_end, pipe_90_A) in a slot's pipe material; <paramref name="localRot"/> turns the model's +Y.</summary>
+        static GameObject PipeModel(string name, string model, Transform parent, Vector3 localPos, Quaternion localRot, float scale, Material mat,
+                                    string layer, bool collider)
+        {
+            var mesh = KayKitKitBuilder.ModelMesh(model, KitColor.Blue);
+            var go = new GameObject(name) { layer = Layer(layer) };
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = localPos;
+            go.transform.localRotation = localRot;
+            go.transform.localScale = Vector3.one * scale;
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            go.AddComponent<MeshRenderer>().sharedMaterial = mat;
+            if (collider)
+            {
+                var box = go.AddComponent<BoxCollider>();
+                box.center = mesh.bounds.center;
+                box.size = mesh.bounds.size;
+            }
+            return go;
+        }
+
+        /// <summary>A straight pipe run (KayKit pipe_straight pieces along its Y), with a capsule collider; placed by <see cref="PlaceStraight"/>.</summary>
+        static GameObject PipeStraight(string name, Transform parent, Material mat)
+        {
+            var go = new GameObject(name) { layer = Layer("Environment") };
+            go.transform.SetParent(parent, false);
+            go.AddComponent<MeshFilter>();
+            go.AddComponent<MeshRenderer>().sharedMaterial = mat;
+            go.AddComponent<CapsuleCollider>();   // radius 0.5, height 2 along Y: the cylinder box, scaled
+            Skin(go, KitShape.Pipe, KitColor.Blue, mat, CylinderBox);
+            return go;
+        }
+
+        static void PlaceStraight(Transform straight, Vector3 from, Vector3 to)
+        {
+            float length = Vector3.Distance(from, to);
+            bool used = length > 0.05f;
+            straight.gameObject.SetActive(used);
+            if (!used) return;
+            straight.SetPositionAndRotation((from + to) / 2f, Quaternion.FromToRotation(Vector3.up, (to - from) / length));
+            straight.localScale = new Vector3(2f * PipeScale, length / 2f, 2f * PipeScale);
+            // A capsule shorter than its diameter turns into a ball that overhangs the run (and the exit arc): never wider
+            // than the run is long. The elbows cover the joints.
+            var capsule = straight.GetComponent<CapsuleCollider>();
+            capsule.radius = Mathf.Min(0.5f, length / (4f * PipeScale));
+        }
+
+        /// <summary>Places a pipe_90 elbow entering at <paramref name="entry"/> along <paramref name="dirIn"/>; returns where it comes out (along <paramref name="dirOut"/>).</summary>
+        static Vector3 PlaceElbow(Transform elbow, bool used, Vector3 entry, Vector3 dirIn, Vector3 dirOut)
+        {
+            elbow.gameObject.SetActive(used);
+            if (!used) return entry;
+            elbow.SetPositionAndRotation(entry, Quaternion.LookRotation(dirOut, dirIn));   // the model enters along +Y, leaves along +Z
+            return entry + (dirIn + dirOut) * ElbowReach * PipeScale;
         }
 
         /// <summary>The receiver pad on the floor: a disc in the slot's colour with its pip symbol (collider-free).</summary>
@@ -462,27 +522,35 @@ namespace HotPatata.Editor
             var lamps = new List<Renderer>();
             for (int s = 1; s <= TubeSlots; s++)
             {
-                var slotMat = Mat($"Tube_Slot_{s}");
+                var pipeMat = Mat($"Tube_Pipe_{s}");
                 var mouth = new GameObject($"Mouth_{s}").transform;
                 mouth.SetParent(root.transform, false);
                 AddMouth(mouth, transit, s - 1, new Vector3(2.2f, 2.2f, 1.6f), new Vector3(0f, 0f, -0.5f));
-                Ring(mouth, 1.05f, 12, 0.3f, slotMat, "Environment");
+                Ring(mouth, 1.05f, 12, 0.3f, "Environment");
+                // The flange's rim sits on the ring, facing the thrower; the pipe leaves from its base, 1 m behind.
+                PipeModel("Flange", "pipe_end", mouth, new Vector3(0f, 0f, FlangeLength * PipeScale), Quaternion.Euler(-90f, 0f, 0f), PipeScale,
+                          pipeMat, "Environment", collider: false);
                 Shape("Sign", PrimitiveType.Quad, mouth, new Vector3(0f, 1.9f, -0.2f), Quaternion.identity, Vector3.one * 1.1f, Mat($"Icon_Pips{s}"), "Default");
                 var hold = new GameObject("Hold").transform;
                 hold.SetParent(mouth, false);
                 hold.localPosition = new Vector3(0f, 0f, 1.2f);
                 holds[s - 1] = hold;
 
-                var pipe = Shape($"Pipe_{s}", PrimitiveType.Cylinder, root.transform, Vector3.zero, Quaternion.identity, Vector3.one, slotMat, "Environment");
-                pipe.AddComponent<CapsuleCollider>();
-                Skin(pipe, KitShape.Pipe, KitColor.Neutral, slotMat, CylinderBox);
+                // The route: straight, elbow, straight, elbow, straight (ConfigureTube switches off what a route does not use).
+                var pipe = new GameObject($"Pipe_{s}").transform;
+                pipe.SetParent(root.transform, false);
+                PipeStraight("Straight_1", pipe, pipeMat);
+                PipeModel("Elbow_1", "pipe_90_A", pipe, Vector3.zero, Quaternion.identity, PipeScale, pipeMat, "Environment", collider: true);
+                PipeStraight("Straight_2", pipe, pipeMat);
+                PipeModel("Elbow_2", "pipe_90_A", pipe, Vector3.zero, Quaternion.identity, PipeScale, pipeMat, "Environment", collider: true);
+                PipeStraight("Straight_3", pipe, pipeMat);
 
                 var exit = new GameObject($"Exit_{s}").transform;
                 exit.SetParent(root.transform, false);
-                var nozzle = Shape("Nozzle", PrimitiveType.Cylinder, exit, Vector3.zero, Quaternion.Euler(90f, 0f, 0f), new Vector3(1.2f, 0.35f, 1.2f), slotMat, "Environment");
-                Skin(nozzle, KitShape.Pipe, KitColor.Neutral, slotMat, CylinderBox);
-                lamps.Add(Shape("Lamp", PrimitiveType.Cylinder, exit, new Vector3(0f, 0f, 0.36f), Quaternion.Euler(90f, 0f, 0f), new Vector3(1.3f, 0.04f, 1.3f), Mat("Tube_Lamp"), "Default").GetComponent<Renderer>());
-                Shape("Sign", PrimitiveType.Quad, exit, new Vector3(0f, 1.2f, 0f), Quaternion.identity, Vector3.one * 0.9f, Mat($"Icon_Pips{s}"), "Default");
+                PipeModel("Nozzle", "pipe_end", exit, Vector3.zero, Quaternion.Euler(90f, 0f, 0f), PipeScale, pipeMat, "Environment", collider: false);
+                lamps.Add(Shape("Lamp", PrimitiveType.Cylinder, exit, new Vector3(0f, 0f, 0.97f * FlangeLength * PipeScale), Quaternion.Euler(90f, 0f, 0f),
+                                new Vector3(1.7f * PipeScale, 0.04f, 1.7f * PipeScale), Mat("Tube_Lamp"), "Default").GetComponent<Renderer>());
+                Shape("Sign", PrimitiveType.Quad, exit, new Vector3(0f, 1.9f, 0.5f), Quaternion.identity, Vector3.one * 0.9f, Mat($"Icon_Pips{s}"), "Default");
                 var muzzle = new GameObject("Muzzle").transform;
                 muzzle.SetParent(exit, false);
                 muzzle.localPosition = new Vector3(0f, 0f, 0.9f);
@@ -519,8 +587,10 @@ namespace HotPatata.Editor
         }
 
         /// <summary>
-        /// Lays out a tube's routes (1..3; the other slots are switched off): mouth, straight pipe from the mouth to the
-        /// exit, exit nozzle turned along the launch direction of its fixed arc, and the receiver pad.
+        /// Lays out a tube's routes (1..3; the other slots are switched off): mouth, KayKit pipe from the mouth to the exit,
+        /// exit flange turned along the launch direction of its fixed arc, and the receiver pad. The pipe climbs straight up
+        /// behind the mouth and runs overhead to the exit (two elbows) when the exit is high and far enough; else it runs
+        /// low, then climbs into the exit (one elbow); else it is one straight pipe.
         /// </summary>
         public static void ConfigureTube(GameObject tube, IList<TubeSlot> slots)
         {
@@ -545,13 +615,58 @@ namespace HotPatata.Editor
                 Vector3 v = BombTransit.ExitVelocity(slot.Exit, aim, g, slot.FlightTime);
                 exit.SetPositionAndRotation(slot.Exit - v.normalized * 0.9f, Quaternion.LookRotation(v.normalized));   // muzzle lands on slot.Exit
 
-                Vector3 from = mouth.TransformPoint(new Vector3(0f, 0f, 0.4f)), to = exit.position;
-                var pipe = t.Find($"Pipe_{s}");
-                pipe.SetPositionAndRotation((from + to) / 2f, Quaternion.FromToRotation(Vector3.up, (to - from).normalized));
-                pipe.localScale = new Vector3(1.1f, Vector3.Distance(from, to) / 2f, 1.1f);
+                RoutePipe(t.Find($"Pipe_{s}"), mouth, exit.position);
 
                 SetField(transit, "exits", p => p.GetArrayElementAtIndex(s - 1).FindPropertyRelative("flightTime").floatValue = slot.FlightTime);
             }
+        }
+
+        /// <summary>The pipe from a mouth's flange base to an exit (see <see cref="ConfigureTube"/>).</summary>
+        static void RoutePipe(Transform pipe, Transform mouth, Vector3 exit)
+        {
+            float reach = ElbowReach * PipeScale;
+            Vector3 start = mouth.TransformPoint(new Vector3(0f, 0f, FlangeLength * PipeScale));
+            Vector3 along = mouth.forward;
+            along.y = 0f;
+            along.Normalize();
+            float rise = exit.y - start.y;
+            Vector3 riser = start + along * reach;   // where a riser right behind the mouth would stand
+            Vector3 over = exit - riser;
+            over.y = 0f;
+            Transform s1 = pipe.Find("Straight_1"), e1 = pipe.Find("Elbow_1"), s2 = pipe.Find("Straight_2"),
+                      e2 = pipe.Find("Elbow_2"), s3 = pipe.Find("Straight_3");
+
+            if (rise >= 2f * reach && over.magnitude >= reach)
+            {
+                // Up behind the mouth, then overhead into the exit.
+                Vector3 toward = over.normalized;
+                PlaceStraight(s1, start, start);
+                Vector3 up0 = PlaceElbow(e1, true, start, along, Vector3.up);
+                Vector3 up1 = new Vector3(up0.x, exit.y - reach, up0.z);
+                PlaceStraight(s2, up0, up1);
+                Vector3 run0 = PlaceElbow(e2, true, up1, Vector3.up, toward);
+                PlaceStraight(s3, run0, exit);
+                return;
+            }
+            Vector3 flatToExit = exit - start;
+            flatToExit.y = 0f;
+            if (rise >= reach && flatToExit.magnitude >= reach)
+            {
+                // Low along the floor, then up into the exit.
+                Vector3 toward = flatToExit.normalized;
+                Vector3 bend = new Vector3(exit.x, start.y, exit.z) - toward * reach;
+                PlaceStraight(s1, start, bend);
+                Vector3 up0 = PlaceElbow(e1, true, bend, toward, Vector3.up);
+                PlaceStraight(s2, up0, exit);
+                PlaceElbow(e2, false, exit, Vector3.up, toward);
+                PlaceStraight(s3, exit, exit);
+                return;
+            }
+            PlaceStraight(s1, start, exit);
+            PlaceElbow(e1, false, start, along, Vector3.up);
+            PlaceStraight(s2, exit, exit);
+            PlaceElbow(e2, false, exit, Vector3.up, along);
+            PlaceStraight(s3, exit, exit);
         }
 
         /// <summary>
@@ -584,10 +699,13 @@ namespace HotPatata.Editor
 
             var exit = new GameObject("Exit_1").transform;
             exit.SetParent(t, false);
-            var barrel = Shape("Barrel", PrimitiveType.Cylinder, exit, new Vector3(0f, 0f, -1.1f), Quaternion.Euler(90f, 0f, 0f), new Vector3(1f, 1.1f, 1f), Mat("Tube_Slot_1"), "Environment");
+            // A KayKit pipe barrel (1 m across) ending in a flange at the muzzle.
+            var pipeMat = Mat("Tube_Pipe_1");
+            var barrel = Shape("Barrel", PrimitiveType.Cylinder, exit, new Vector3(0f, 0f, -1.1f), Quaternion.Euler(90f, 0f, 0f), new Vector3(1f, 1.1f, 1f), pipeMat, "Environment");
             barrel.AddComponent<CapsuleCollider>();
-            Skin(barrel, KitShape.Pipe, KitColor.Neutral, Mat("Tube_Slot_1"), CylinderBox);
-            var lamp = Shape("Lamp", PrimitiveType.Cylinder, exit, new Vector3(0f, 0f, 0.02f), Quaternion.Euler(90f, 0f, 0f), new Vector3(1.15f, 0.04f, 1.15f), Mat("Tube_Lamp"), "Default");
+            Skin(barrel, KitShape.Pipe, KitColor.Blue, pipeMat, CylinderBox);
+            PipeModel("Flange", "pipe_end", exit, Vector3.zero, Quaternion.Euler(90f, 0f, 0f), 0.5f, pipeMat, "Environment", collider: false);
+            var lamp = Shape("Lamp", PrimitiveType.Cylinder, exit, new Vector3(0f, 0f, 0.48f), Quaternion.Euler(90f, 0f, 0f), new Vector3(0.85f, 0.04f, 0.85f), Mat("Tube_Lamp"), "Default");
             var muzzle = new GameObject("Muzzle").transform;
             muzzle.SetParent(exit, false);
             muzzle.localPosition = new Vector3(0f, 0f, 0.7f);
@@ -652,12 +770,31 @@ namespace HotPatata.Editor
                 Color c = slotColors[s - 1];
                 MakeMaterial($"Tube_Slot_{s}", "Greybox_Hazard", c, Color.Lerp(c, Color.white, 0.3f), 0, Color.black, 1f, 0f);
                 MakeUnlitMaterial($"Icon_Pips{s}", Color.Lerp(c, Color.white, 0.25f), Icon($"Pips{s}"), false);
+                PipeMaterial($"Tube_Pipe_{s}", c);
             }
             MakeMaterial("Tube_Lamp", "Greybox_Hazard", new Color(0.95f, 0.92f, 0.8f), Color.white, 0, Color.black, 1f, 0f);
             // Pressure plates: yellow and dark checker, reads as "step here" next to the plain floor.
             MakeMaterial("Pad_Plate", "Greybox_Hazard", new Color(1f, 0.83f, 0.25f), new Color(1f, 0.9f, 0.5f),
                          1, new Color(0.25f, 0.2f, 0.1f), 0.6f, 0.55f);
             AssetDatabase.SaveAssets();
+        }
+
+        /// <summary>
+        /// The KayKit pipe material of a slot: the pack's texture through the toon suit tint, so the pipe's coloured parts
+        /// take the slot colour and its grey and white bands stay (ARCHITECTURE §25.1).
+        /// </summary>
+        static void PipeMaterial(string name, Color color)
+        {
+            string path = MatDir + name + ".mat";
+            var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (mat == null)
+            {
+                AssetDatabase.CopyAsset(MatDir + KitMaterial + ".mat", path);
+                mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+            }
+            mat.SetColor("_BaseColor", color);
+            mat.SetFloat("_SuitTint", 1f);
+            EditorUtility.SetDirty(mat);
         }
 
         // ------------------------------------------------------------------ icons (drawn in code, saved as PNG)
