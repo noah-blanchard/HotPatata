@@ -344,13 +344,13 @@ Assets/
 │   ├── Shaders/          HotPatata/Toon, HotPatata/Particle, HotPatata/Sky, speed lines
 │   ├── Textures/Icons/   zone and tube icons drawn in code by BombObstacleKitBuilder
 │   └── VFX/              textures for particles and trails
-├── Audio/SFX/            optional real clips (see its README; procedural fallback otherwise)
+├── Audio/                HotPatataMixer (Master > SFX); SFX/ optional real clips (see its README; procedural fallback otherwise)
 ├── EditorTools/          CourseKit, CourseBuilder, PlaytestCourseBuilder, BombObstacleKitBuilder, PlayerAnimationSetup
 ├── Prefabs/              Bomb/ Gameplay/ Network/ Obstacles/ Platforms/ Player/ VFX/
 ├── Scenes/               Bootstrap, PassSandbox, PrototypeCourse, PlaytestCourse
 ├── ScriptableObjects/Tuning/GameTuning.asset
 ├── Scripts/
-│   ├── Core/             GameTuning, NetMode, SectionClock, IResettable, PatataLog
+│   ├── Core/             GameTuning, NetMode, SectionClock, IResettable, PatataLog, Settings, AudioVolumes
 │   ├── Networking/       NetworkBootstrap, BootstrapEntry, SessionService, NetworkPlayer/Bomb/RunState/FallingPlatform,
 │   │                     NetworkBombGate/SignalActuator/BombTransit
 │   ├── Player/           Player, PlayerMotor, PlayerLook, PlayerThrower, PlayerCatcher, PlayerCatchVolume,
@@ -413,7 +413,15 @@ once at the game's entry. Until then (tests, a gameplay scene played directly) a
 first-launch defaults and tests still drive the tuning. The shared asset is never written at runtime. A settings
 screen edits `Settings.Editable(tuning)` and commits with `Settings.Save(data, tuning)`, which clamps, applies
 (`AudioListener.volume`, vsync/frame cap, and resolution/window mode outside the Editor), writes the file and raises
-`Settings.Changed`. SFX/music/UI volumes wait for the AudioMixer.
+`Settings.Changed`. `Settings.Preview(data, tuning)` does the same without writing the file, so a settings screen can
+apply every slider step live and `Save` once; display changes are only re-applied when they differ from the screen.
+
+**Audio volumes.** `Assets/Audio/HotPatataMixer.mixer` has `Master > SFX` (music and UI groups come with #47/#48),
+with `MasterVolume` and `SfxVolume` exposed. The master slider (`masterVolume`) is `AudioListener.volume`, so it
+reaches every sound, routed or not. Each group has its own setting (`sfxVolume` now), applied as decibels by
+`AudioVolumes` (on the persistent `NetworkManager` prefab, from `Start` and on `Settings.Changed`). Every gameplay
+sound plays through the SFX group: the bomb's `AudioSource` (`BombAudio`) and the tube/cannon tone
+(`TransitPresentation.output`, set by `BombObstacleKitBuilder`). A new sound source must be routed to a group too.
 
 **Key rebinding (#18).** `InputRebinding` lists the bindings a player may change per device (every button, plus the
 WASD parts; sticks and mouse delta stay as authored). It runs the interactive rebind (`PerformInteractiveRebinding`,
@@ -626,7 +634,7 @@ Responsibilities:
 - catch sound;
 - explosion sound.
 
-Should consume bomb state; should not control bomb state.
+Should consume bomb state; should not control bomb state. Its `AudioSource` outputs to the mixer's SFX group (§6.1).
 
 ### 8.6 `BombPresentation`
 
