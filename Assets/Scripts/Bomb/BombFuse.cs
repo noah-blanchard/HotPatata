@@ -29,6 +29,11 @@ namespace HotPatata
         /// <summary>Hold time in seconds: the tuning value, unless the current checkpoint overrides it.</summary>
         public float Duration => durationOverride > 0f ? durationOverride : tuning.holdFuseDuration;
         public float Remaining => remaining;
+        /// <summary>
+        /// How fast the fuse burns right now (1 = normal, 2 in a hot zone, 0.5 in a cold one; PROJECT_SPEC §7.3). Set by
+        /// <see cref="BombController"/> on the host, mirrored on clients; presentation reads it.
+        /// </summary>
+        public float Rate { get; private set; } = 1f;
         /// <summary>0 = full fuse, 1 = about to explode.</summary>
         public float Consumed01 => Mathf.Clamp01(1f - remaining / Duration);
         public bool InWarningPhase => remaining <= tuning.warningDuration;
@@ -61,6 +66,8 @@ namespace HotPatata
             tuning = value;
             Refresh();
         }
+
+        public void SetRate(float rate) => Rate = rate;
 
         public void Refresh()
         {

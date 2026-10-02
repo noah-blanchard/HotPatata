@@ -9,14 +9,16 @@ namespace HotPatata
         Thrown,
         CaughtGrace,
         Exploding,
-        Resetting
+        Resetting,
+        InTransit   // carried by a tube or cannon (PROJECT_SPEC §5): no fuse, no collision, not catchable
     }
 
     public enum BombFailReason
     {
         HoldFuseExpired,
         WorldContact,
-        KillZone
+        KillZone,
+        ForbiddenZone   // carrier in a forbidden fuse zone, or a flying bomb through a laser curtain (PROJECT_SPEC §7.3)
     }
 
     /// <summary>
@@ -24,6 +26,7 @@ namespace HotPatata
     /// (PROJECT_SPEC §5). All gameplay decisions about the bomb end up here, exactly once.
     ///
     ///   Resetting --EndReset--> Held --TryThrow--> Thrown --AcceptCatch--> CaughtGrace --grace--> Held
+    ///   Thrown --EnterTransit--> InTransit --delay--> Thrown (tubes and cannons, nobody is the thrower)
     ///   Held / Thrown --Explode--> Exploding --BeginReset--> Resetting
     /// Online, a lethal contact while Thrown may be held for a fraction of a second (still Thrown, frozen in place)
     /// so a remote receiver's lag-compensated catch can win; see <see cref="CatchResolver"/>.
@@ -48,6 +51,8 @@ namespace HotPatata
         float pendingExplosionAt = -1f;   // a lethal contact held for a late (lag-compensated) catch
         BombFailReason pendingReason;
         string pendingDetail;
+        BombTransit transit;   // host: the tube or cannon carrying the bomb while InTransit
+        int transitExit;
 
         public static BombController Instance { get; private set; }
 
@@ -100,15 +105,41 @@ namespace HotPatata
             switch (State)
             {
                 case BombState.Held:
-                    fuse.Tick(Time.deltaTime);
+                    if (InForbiddenZone()) break;
+                    fuse.Tick(Time.deltaTime * fuse.Rate);
                     break;
                 case BombState.Thrown:
+                    fuse.SetRate(1f);
                     if (ExplosionPending && Time.time >= pendingExplosionAt) Explode(pendingReason, pendingDetail);
                     break;
                 case BombState.CaughtGrace:
+                    if (InForbiddenZone()) break;   // a catch made inside a forbidden zone explodes at once
                     if (Time.time >= graceEndTime) Transition(BombState.Held);
                     break;
+                case BombState.InTransit:
+                    fuse.SetRate(1f);
+                    if (transit != null && NetMode.ServerTime >= transit.ReleaseAt) LeaveTransit();
+                    break;
+                default:
+                    fuse.SetRate(1f);
+                    break;
             }
+        }
+
+        /// <summary>
+        /// Updates the fuse rate from the fuse zones the carrier stands in (PROJECT_SPEC §7.3) and explodes the bomb if
+        /// one of them is forbidden. Returns true when it exploded.
+        /// </summary>
+        bool InForbiddenZone()
+        {
+            float rate = FuseZone.RateFor(Carrier, tuning);
+            if (!float.IsPositiveInfinity(rate))
+            {
+                fuse.SetRate(rate);
+                return false;
+            }
+            Explode(BombFailReason.ForbiddenZone, $"carrier={Carrier} in a forbidden zone");
+            return true;
         }
 
         // ------------------------------------------------------------------ throw / catch
@@ -149,6 +180,53 @@ namespace HotPatata
             return true;
         }
 
+        // ------------------------------------------------------------------ transit (tubes and cannons)
+
+        /// <summary>
+        /// A flying bomb entered a transit mouth (<see cref="TransitMouth"/>, found by the host's sweep): the level takes it
+        /// (PROJECT_SPEC §5 <c>InTransit</c>). It waits, inert and fuse-less, at the exit's hold point until the transit's
+        /// delay is over. Authority only.
+        /// </summary>
+        public bool EnterTransit(BombTransit into, int exit)
+        {
+            if (!NetMode.IsAuthority || State != BombState.Thrown || ExplosionPending || into == null) return false;
+
+            transit = into;
+            transitExit = exit;
+            IntendedReceiver = null;
+            bombPhysics.EnterInert();
+            var hold = into.GetExit(exit).hold;
+            if (hold != null) transform.position = hold.position;
+            into.SetTransit(exit, NetMode.ServerTime + into.Delay);
+            Transition(BombState.InTransit);
+            PatataLog.Bomb($"Thrown -> InTransit {into.name} exit={exit} delay={into.Delay:F2}s");
+            return true;
+        }
+
+        /// <summary>The transit's delay is over: the bomb leaves the exit on its fixed arc, Thrown again, with no thrower.</summary>
+        void LeaveTransit()
+        {
+            var from = transit;
+            int exit = transitExit;
+            transit = null;
+            from.SetTransit(-1, -1.0);
+
+            Vector3 origin = from.GetExit(exit).muzzle.position;
+            Vector3 velocity = from.LaunchVelocity(exit);
+            LastThrower = null;   // anyone may catch the exit arc, including whoever threw it in
+            IntendedReceiver = PickIntendedReceiver(null, origin, velocity);
+            Transition(BombState.Thrown);
+            bombPhysics.EnterThrown(origin, velocity);
+            PatataLog.Bomb($"InTransit -> Thrown {from.name} exit={exit} speed={velocity.magnitude:F1}");
+            BombThrown?.Invoke(null);
+        }
+
+        void ClearTransit()
+        {
+            if (transit != null) transit.SetTransit(-1, -1.0);
+            transit = null;
+        }
+
         /// <summary>The player the (pure ballistic) arc passes closest to, within <see cref="IntendedReceiverReach"/>.</summary>
         Player PickIntendedReceiver(Player thrower, Vector3 origin, Vector3 velocity)
         {
@@ -178,6 +256,16 @@ namespace HotPatata
             if (!NetMode.IsAuthority || State != BombState.Thrown) return;
             LethalContact(BombFailReason.WorldContact,
                 $"object={other.name} layer={LayerMask.LayerToName(other.gameObject.layer)}");
+        }
+
+        /// <summary>
+        /// A flying bomb crossed a zone it may not cross (<see cref="BombBarrier"/>, found by <see cref="BombZoneSweep"/>).
+        /// Lethal like world contact, including the hold for a late catch. Authority only.
+        /// </summary>
+        public void ReportZoneContact(string detail)
+        {
+            if (!NetMode.IsAuthority || State != BombState.Thrown) return;
+            LethalContact(BombFailReason.ForbiddenZone, detail);
         }
 
         /// <summary>
@@ -227,6 +315,7 @@ namespace HotPatata
 
             var from = State;
             pendingExplosionAt = -1f;
+            ClearTransit();
             LastFailReason = reason;
             IntendedReceiver = null;
             bombPhysics.EnterInert();
@@ -243,6 +332,7 @@ namespace HotPatata
             bombPhysics.EnterInert();
             transform.SetParent(null, true);
             pendingExplosionAt = -1f;
+            ClearTransit();
             IntendedReceiver = null;
             LastThrower = null;
             SetCarrier(null);

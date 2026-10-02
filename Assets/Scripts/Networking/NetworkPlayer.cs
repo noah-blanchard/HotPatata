@@ -1,3 +1,4 @@
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -9,6 +10,7 @@ namespace HotPatata
     /// teleports on reset) is requested from, or pushed by, the host:
     ///   client --RequestThrow/RequestCatch/ClaimCatch--> host validates and applies
     ///   host --Locked / TeleportOwner--> owning client
+    ///   owner --SubmitName--> host sanitises it --displayName--> everyone (late joiners included)
     /// Offline (not spawned) this component does nothing and Player behaves exactly as before.
     /// </summary>
     [RequireComponent(typeof(Player))]
@@ -20,6 +22,7 @@ namespace HotPatata
 
         readonly NetworkVariable<int> slot = new NetworkVariable<int>(-1);   // server-written
         readonly NetworkVariable<bool> locked = new NetworkVariable<bool>(false);   // server-written
+        readonly NetworkVariable<FixedString64Bytes> displayName = new NetworkVariable<FixedString64Bytes>();   // server-written, sanitised
         readonly NetworkVariable<float> pitch = new NetworkVariable<float>(0f,
             NetworkVariableBase.DefaultReadPerm, NetworkVariableWritePermission.Owner);   // owner-written
         readonly NetworkVariable<byte> moveState = new NetworkVariable<byte>((byte)MoveState.Ground,
@@ -44,9 +47,14 @@ namespace HotPatata
 
             slot.OnValueChanged += (_, s) => ApplySlot(s);
             locked.OnValueChanged += (_, l) => OnLockedChanged(l);
+            displayName.OnValueChanged += (_, n) => player.SetDisplayName(n.ToString());
             ApplySlot(slot.Value);
 
-            if (IsOwner) BecomeLocal();
+            if (IsOwner)
+            {
+                BecomeLocal();
+                SubmitNameRpc(PlayerNames.Shared);
+            }
             PatataLog.Run($"Player spawned slot={slot.Value} owner={OwnerClientId} local={IsOwner}");
         }
 
@@ -55,6 +63,7 @@ namespace HotPatata
         void ApplySlot(int s)
         {
             if (s >= 0) player.ConfigureSlot(s);
+            player.SetDisplayName(displayName.Value.ToString());   // ConfigureSlot resets the name to "Player N"
         }
 
         void BecomeLocal()
@@ -174,6 +183,14 @@ namespace HotPatata
             if ((origin - eye).sqrMagnitude > MaxReleaseDistance * MaxReleaseDistance) return;   // the release point must be near the thrower
 
             player.Thrower.ThrowFromRequest(origin, velocity);
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+        void SubmitNameRpc(string raw)
+        {
+            string name = PlayerNames.Sanitize(raw, slot.Value);   // at most 16 UTF-16 units: always fits 61 UTF-8 bytes
+            displayName.Value = new FixedString64Bytes(name);
+            PatataLog.Run($"Player slot={slot.Value} owner={OwnerClientId} is named '{name}'");
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]

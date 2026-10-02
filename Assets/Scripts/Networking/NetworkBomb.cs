@@ -47,6 +47,7 @@ namespace HotPatata
 
         readonly NetworkVariable<Snapshot> snapshot = new NetworkVariable<Snapshot>();   // server-written
         readonly NetworkVariable<float> fuseConsumed = new NetworkVariable<float>();     // server-written
+        readonly NetworkVariable<float> fuseRate = new NetworkVariable<float>(1f);       // server-written (fuse zones)
 
         BombController bomb;
         int sequence;
@@ -128,10 +129,12 @@ namespace HotPatata
                     lastSentFuse = c;
                     fuseConsumed.Value = c;
                 }
+                if (fuseRate.Value != bomb.Fuse.Rate) fuseRate.Value = bomb.Fuse.Rate;
             }
             else
             {
                 bomb.Fuse.MirrorConsumed(fuseConsumed.Value);
+                bomb.Fuse.SetRate(fuseRate.Value);
                 // The carrier may have spawned after the snapshot arrived: keep trying to resolve them.
                 var s = snapshot.Value;
                 if (s.Carrier >= 0 && bomb.Carrier == null) Apply(s);
@@ -192,7 +195,7 @@ namespace HotPatata
             if (state == BombState.Thrown) sawThrown = true;
 
             bool outcome = state == BombState.CaughtGrace || state == BombState.Exploding || state == BombState.Resetting ||
-                           (sawThrown && state == BombState.Held);
+                           state == BombState.InTransit || (sawThrown && state == BombState.Held);
             bool rejected = !sawThrown && state == BombState.Held && Time.time - predictedStart > RejectedAfter;
             bool lostIt = !sawThrown && bomb.Carrier != predictedThrower;
             if (outcome || rejected || lostIt || Time.time - predictedStart > PredictionHorizon + RejectedAfter)

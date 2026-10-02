@@ -180,9 +180,13 @@ namespace HotPatata.Editor
                 driverSo.ApplyModifiedPropertiesWithoutUndo();
 
                 var presentation = root.GetComponent<PlayerPresentation>();
-                var renderer = mannequin.GetComponentInChildren<Renderer>(true);
+                // Every mannequin part takes the slot colour, not only the first one found.
+                Renderer[] parts = mannequin.GetComponentsInChildren<Renderer>(true);
                 var presentationSo = new SerializedObject(presentation);
-                presentationSo.FindProperty("bodyRenderer").objectReferenceValue = renderer;
+                var bodyRenderers = presentationSo.FindProperty("bodyRenderers");
+                bodyRenderers.arraySize = parts.Length;
+                for (int i = 0; i < parts.Length; i++)
+                    bodyRenderers.GetArrayElementAtIndex(i).objectReferenceValue = parts[i];
                 presentationSo.ApplyModifiedPropertiesWithoutUndo();
 
                 PrefabUtility.SaveAsPrefabAsset(root, PlayerPrefabPath);

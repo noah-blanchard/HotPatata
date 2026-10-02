@@ -53,6 +53,23 @@ namespace HotPatata
             return Make("catch", d);
         }
 
+        /// <summary>A rising sweep of <paramref name="length"/> seconds: "it's coming out here" (tube and cannon exits).</summary>
+        public static AudioClip Rise(float length)
+        {
+            int n = (int)(SampleRate * Mathf.Max(0.1f, length));
+            var d = new float[n];
+            float phase = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                float k = i / (float)n;
+                float f = Mathf.Lerp(330f, 1180f, k * k);
+                phase += 2f * Mathf.PI * f / SampleRate;
+                float env = Mathf.Clamp01(i / 200f) * Mathf.Clamp01((n - i) / 400f) * Mathf.Lerp(0.4f, 1f, k);
+                d[i] = (Mathf.Sin(phase) + 0.3f * Mathf.Sin(2f * phase)) * env * 0.45f;
+            }
+            return Make("rise", d);
+        }
+
         /// <summary>Short falling whoosh.</summary>
         public static AudioClip Throw()
         {
