@@ -14,7 +14,8 @@ namespace HotPatata
     /// <summary>
     /// Reads one player's input from a private clone of the HotPatataControls asset, restricted to the
     /// devices of the selected <see cref="InputSource"/>. Several players can therefore coexist in
-    /// one scene, each fed by a different device (or by none).
+    /// one scene, each fed by a different device (or by none). The clone carries the player's saved key
+    /// bindings (<see cref="InputRebinding"/>) and picks up new ones when the settings are saved.
     /// </summary>
     public class PlayerInputReader : MonoBehaviour
     {
@@ -82,6 +83,7 @@ namespace HotPatata
         void Awake()
         {
             actions = Instantiate(actionsAsset);
+            InputRebinding.ApplySaved(actions);
             var map = actions.FindActionMap("Player", true);
             move = map.FindAction("Move", true);
             look = map.FindAction("Look", true);
@@ -96,9 +98,16 @@ namespace HotPatata
         {
             SetSource(initialSource, gamepadIndex);   // restrict devices first, so nothing resolves against all of them
             actions.Enable();
+            Settings.Changed += OnSettingsChanged;
         }
 
-        void OnDisable() => actions.Disable();
+        void OnDisable()
+        {
+            Settings.Changed -= OnSettingsChanged;
+            actions.Disable();
+        }
+
+        void OnSettingsChanged() => InputRebinding.ApplySaved(actions);
 
         void OnDestroy()
         {

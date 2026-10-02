@@ -31,6 +31,9 @@ namespace HotPatata
         public bool invertY;
         public float fieldOfView;
 
+        // Controls: InputActionAsset.SaveBindingOverridesAsJson of HotPatataControls ("" = authored bindings), see InputRebinding
+        public string bindingOverrides = "";
+
         // Audio (SFX / music / UI volumes come with the AudioMixer)
         public float masterVolume = 1f;
 
@@ -66,6 +69,7 @@ namespace HotPatata
             stickLookSpeed = Clamp(stickLookSpeed, MinStickLookSpeed, MaxStickLookSpeed, defaults.stickLookSpeed);
             fieldOfView = Clamp(fieldOfView, MinFieldOfView, MaxFieldOfView, defaults.fieldOfView);
             masterVolume = Clamp(masterVolume, 0f, 1f, defaults.masterVolume);
+            bindingOverrides ??= "";
 
             if (fullScreenMode != Unset && !Enum.IsDefined(typeof(FullScreenMode), fullScreenMode)) fullScreenMode = Unset;
             if (resolutionWidth <= 0 || resolutionHeight <= 0) resolutionWidth = resolutionHeight = Unset;
