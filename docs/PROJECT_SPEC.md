@@ -911,8 +911,8 @@ At minimum:
 - beep urgency must also have visual feedback;
 - do not rely on red/green distinction alone;
 - use pulse speed / icon / shape / brightness;
-- expose camera shake setting before broader testing (`viewEffectsStrength` in `GameTuning` scales every first-person camera effect, 0 = perfectly steady; to be surfaced in a settings menu);
-- expose flash reduction before broader testing (`flashReduction` in `GameTuning` dims every flash; to be surfaced in a settings menu, MVP_TASKS M6.5);
+- expose camera shake setting before broader testing (`viewEffectsStrength` scales every first-person camera effect, 0 = perfectly steady; the `GameTuning` value is the default, the player's own value is saved by `Settings`; to be surfaced in a settings menu);
+- expose flash reduction before broader testing (`flashReduction` dims every flash; same default/player split; to be surfaced in a settings menu, MVP_TASKS M6.5);
 - lethal hazards are striped, not only red; the fuse stage reads through pulse speed, sparks and beep cadence;
 - use the Input System so rebinding remains possible.
 

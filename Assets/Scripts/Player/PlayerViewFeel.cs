@@ -133,7 +133,7 @@ namespace HotPatata
                 return;
             }
 
-            float strength = t.viewEffectsStrength;
+            float strength = Settings.ViewEffectsStrength(t);
 
             // ---- landing and take-off
             if (grounded && !wasGrounded)

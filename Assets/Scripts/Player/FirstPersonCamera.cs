@@ -50,7 +50,7 @@ namespace HotPatata
             if (target == null) return;
 
             float fovOffset = target.Feel != null ? target.Feel.FovOffset : 0f;
-            cam.fieldOfView = tuning.fieldOfView + fovOffset;
+            cam.fieldOfView = Settings.FieldOfView(tuning) + fovOffset;
             transform.SetPositionAndRotation(target.CameraTarget.position, target.CameraTarget.rotation);
         }
     }

@@ -335,6 +335,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: HotPatata::HotPatata.BootstrapEntry
   networkPrefab: {fileID: 5564819347932985297, guid: cd9b06122ef465b4ca950873534875ca, type: 3}
+  tuning: {fileID: 11400000, guid: 35604efc4188ead42afe90813d44683f, type: 2}
 --- !u!4 &1498981423
 Transform:
   m_ObjectHideFlags: 0

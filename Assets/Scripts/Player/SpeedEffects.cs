@@ -74,7 +74,7 @@ namespace HotPatata
             var feel = target != null ? target.Feel : null;
 
             float dt = Time.deltaTime;
-            float strength = tuning != null ? tuning.viewEffectsStrength : 1f;
+            float strength = tuning != null ? Settings.ViewEffectsStrength(tuning) : 1f;
             float motion = feel != null ? feel.MotionFraction : 0f;
             float over = Mathf.Clamp01((motion - 1.1f) / 1.4f);   // 0 at run speed, 1 at a fast slide
             bool sliding = target != null && target.Motor.IsSliding;
