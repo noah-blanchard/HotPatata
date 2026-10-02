@@ -9,7 +9,7 @@
 
 | Suite | Mode | Covers |
 |---|---|---|
-| `ConfigurationTests` | EditMode | M0 baseline: tuning defaults, layers, collision matrix |
+| `ConfigurationTests` | EditMode | M0 baseline: tuning defaults, layers, collision matrix, player colours/shapes and their indicator meshes |
 | `BombFuseTests` | EditMode | fuse maths: refresh, expiry, warning phase, stage bands |
 | `AimAssistTests` | EditMode | release-time aim assist and arc maths (spec §8.3) |
 | `FlightHistoryTests` | EditMode | the host's flight record used for lag-compensated catches |
@@ -17,6 +17,7 @@
 | `SessionServiceTests` | EditMode | M4: code cleanup and player-facing error wording |
 | `SettingsTests` | EditMode | M6.5: player settings layer (tuning defaults, JSON parsing, clamping, fallback) |
 | `InputRebindingTests` | EditMode | #18: rebindable bindings per device, conflicts, saved overrides reaching a player's copy, reset |
+| `PlayerNamesTests` | EditMode | M6: player-name cleanup (trim, length, control characters, "Player N" fallback) |
 | `BombStateTests` | PlayMode | bomb state machine plus catch / world-contact / fuse rules (M1.4–M1.8) |
 | `RunAndThrowTests` | PlayMode | throw by input (M1.5) and fast, clean section reset (M1.10) |
 | `MovementTests` | PlayMode | accel/brake, jump, coyote time, jump buffer (M1.2) |
@@ -26,9 +27,14 @@
 | `PrefabKitTests` | PlayMode | M2 greybox kit (moving/falling platforms, rotating bar, kill zone, checkpoint, finish) |
 | `CourseTests` | PlayMode | M5 course Act 1: structure, checkpoints, finish, rematch, start checkpoint, launch pad |
 | `FactoryCourseTests` | PlayMode | course Acts 2–3: belts, elevators, sweepers, crushers, mega slide |
+| `ZoneRuleTests` | EditMode | #68 pure rules: fuse-zone severity, flight-sweep geometry, actuator motion, transit exit arc |
+| `BombObstacleTests` | PlayMode | #68 kit on the PassSandbox floor: fuse zones, curtains and windows, gates, plates, doors, arch checkpoint, tubes |
+| `PlaytestCourseTests` | PlayMode | M10.4 `PlaytestCourse`: every beat wired, nine checkpoints with two arches, the podium gate, finish and rematch |
 
 EditMode tests live in `Assets/Tests/EditMode/`. PlayMode tests live in `Assets/Tests/PlayMode/`: they load
-`PassSandbox` (or `PrototypeCourse`) through `SandboxTestBase` and drive players through `PlayerInputReader.Scripted`.
+`PassSandbox` (or `PrototypeCourse`, `PlaytestCourse`) through `SandboxTestBase` and drive players through
+`PlayerInputReader.Scripted`. After touching the bomb obstacles run `ZoneRuleTests`, `BombObstacleTests` and
+`BombStateTests`; after a course builder change, the tests of that course.
 
 ### Running them
 
@@ -83,6 +89,7 @@ change, run `CourseTests` / `FactoryCourseTests`.
 | `-patataScene <name>` | level to load (e.g. `PassSandbox`) |
 | `-patataAutoStart <n>` | session host starts the level when n players are in |
 | `-patataCheckpoint <id>` | the run starts at that checkpoint (host / local; `RunOptions.StartCheckpoint`) |
+| `-patataName <name>` | player name for this process instead of the saved one (two instances on one PC share `PlayerPrefs`); bots keep "Player N" without it |
 | `-patataBot` | the local player is a bot (`PlayerBot`) |
 | `-patataLatency <ms>` | Network Simulator latency (Editor / dev builds only) |
 | `-patataQuit <s>` / `-patataLeaveAfter <s>` | quit / leave the session after s seconds |
@@ -97,7 +104,7 @@ client stays listed by the service for a while, but the host lobby shows only pl
    `unity command build --target StandaloneWindows64 --outputPath <abs>/Builds/HotPatata/HotPatata.exe --options '["Development"]' --confirm true`,
    then poll `build_status`.
 2. Open `Bootstrap` in the Editor, press Play, then `eval`
-   `HotPatata.PlayerBot.Enabled = true; HotPatata.NetworkBootstrap.Instance.StartHost();`.
+   `HotPatata.PlayerBot.Enabled = true; HotPatata.NetworkBootstrap.Instance.StartHostDirect();`.
 3. Launch `HotPatata.exe -batchmode -nographics -patataJoin 127.0.0.1 -patataBot -patataQuit 60 -logFile <abs>/client.log`.
 4. The bots pass the bomb back and forth. Compare the `[Bomb]` / `[Run]` logs on both sides.
 
@@ -141,12 +148,29 @@ instability).
 
 ## 4. CI and releases
 
-`.github/workflows/build-windows.yml` builds StandaloneWindows64 (Mono) with GameCI on GitHub-hosted Ubuntu.
+`.github/workflows/build.yml` builds the player for Windows, Linux and macOS (Mono) with GameCI on GitHub-hosted
+Ubuntu, one job per platform, and releases only from tags. Pushes to `main` do not build.
 
-- A push to `main` uploads a zipped build as a workflow artifact.
-- A `v*` tag on a commit that is on `main` publishes a GitHub Release with `HotPatata-Windows-<version>.zip`. The
-  version comes from the tag: `git tag v0.2.0 && git push origin v0.2.0`.
-- A pull request only builds when it changes the workflow itself.
+| Tag (on a commit on `main`) | Builds |
+|---|---|
+| `v0.4.0` (global) | Windows, Linux and macOS |
+| `v0.4.0-linux` | Linux only |
+| `v0.4.0-linux-macos` | several platforms (tokens: `windows`, `linux`, `macos`) |
+| `v0.4.0-rc1-linux` | other tokens stay in the version (`0.4.0-rc1`); an unknown word such as `html5` is part of the version, not a platform |
+
+- Each tag publishes one GitHub Release named after the tag, with `HotPatata-<Windows|Linux|macOS>-<version>.zip`:
+  `git tag v0.4.0 && git push origin v0.4.0`.
+- When the repo variable `ITCH_TARGET` is set (`<itch user>/<game>`), each zip is also pushed to its itch.io channel
+  (`windows`, `linux`, `osx`; user version = the tag's version). It needs the secret `BUTLER_API_KEY`
+  (itch.io → Settings → API keys). Without `ITCH_TARGET` the step is skipped; with it but no key, the publish job fails
+  after the GitHub Release. butler is downloaded from itch.io, not from a third-party action.
+- A platform that fails does not stop the others: the release publishes what built, and the failed job keeps the
+  run red.
+- macOS builds are **not signed or notarized** (owner decision, for now): players open the app with right-click → Open
+  the first time. Linux builds also run on the Steam Deck.
+- **Actions → Build → Run workflow** builds on demand (input `platforms`: `all` or e.g. `windows linux`) and keeps the zips
+  as workflow artifacts for 7 days, without publishing.
+- A pull request builds every platform when it changes the workflow itself.
 - Required repo secrets: `UNITY_LICENSE` (the contents of `C:\ProgramData\Unity\Unity_lic.ulf`), `UNITY_EMAIL`,
   `UNITY_PASSWORD`.
 

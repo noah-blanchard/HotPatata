@@ -23,6 +23,8 @@ namespace HotPatata
         [SerializeField] Color criticalEmission = new Color(1f, 0.9f, 0.7f);
         [SerializeField, Tooltip("Overall emission multiplier: the pulse should glow through bloom, not white the potato out.")]
         float emissionScale = 0.3f;
+        [SerializeField, Tooltip("Glow tint while the fuse burns slower (a cold zone, PROJECT_SPEC §7.3).")]
+        Color frostEmission = new Color(0.45f, 0.85f, 1f);
 
         [Header("VFX (optional)")]
         [SerializeField, Tooltip("Sparks at the wick tip; rate per fuse stage from GameTuning.fuseSparkRates.")]
@@ -116,6 +118,7 @@ namespace HotPatata
 
             float intensity = Baseline[s] + pulse * PulsePeak[s] + catchPop * 3f;
             Color tint = Color.Lerp(baseEmission, criticalEmission, s / 3f);
+            if (bomb.Fuse.Rate < 0.999f) tint = Color.Lerp(tint, frostEmission, 0.7f);   // frosted in a cold zone
             Color emission = tint * (intensity * emissionScale);
 
             block ??= new MaterialPropertyBlock();   // survives a script reload during Play Mode
@@ -140,7 +143,9 @@ namespace HotPatata
                 float rate = tuning != null && tuning.fuseSparkRates != null && tuning.fuseSparkRates.Length > s ? tuning.fuseSparkRates[s] : 20f;
                 // The carrier sees the wick up close: fewer sparks in their own face.
                 bool inMyFace = bomb.Carrier != null && FirstPersonCamera.Instance != null && FirstPersonCamera.Instance.Target == bomb.Carrier;
-                emission.rateOverTime = live ? rate * (inMyFace ? 0.5f : 1f) : 0f;
+                // A fuse zone changes the burn rate: sparks fly faster in a hot zone, slower in a cold one (spec §7.3).
+                float zone = Mathf.Clamp(bomb.Fuse.Rate, 0.25f, 4f);
+                emission.rateOverTime = live ? rate * zone * (inMyFace ? 0.5f : 1f) : 0f;
             }
             if (trail != null && trail.emitting && trailCalm != null && trailCritical != null)
                 trail.colorGradient = s >= 2 ? trailCritical : trailCalm;

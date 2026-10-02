@@ -130,6 +130,12 @@ namespace HotPatata
         [Tooltip("After a catch the bomb is inert for this long before it counts as Held again.")]
         [Min(0f)] public float caughtGraceDuration = 0.35f;
 
+        [Header("Bomb - fuse zones (PROJECT_SPEC §7.3; forbidden zones explode)")]
+        [Tooltip("Fuse rate multiplier while the carrier stands in a hot zone.")]
+        [Min(1f)] public float hotZoneFuseRate = 2f;
+        [Tooltip("Fuse rate multiplier while the carrier stands in a cold zone: a breather, never a pause.")]
+        [Range(0.05f, 1f)] public float coldZoneFuseRate = 0.5f;
+
         [Header("Bomb - throw")]
         [Tooltip("Launch speed of a tap (no charge). Sets the shortest pass.")]
         [Min(0f)] public float throwSpeedMin = 14f;
@@ -222,6 +228,15 @@ namespace HotPatata
         public float[] fuseSparkRates = { 14f, 30f, 60f, 130f };
         [Tooltip("Smoke puffs left per metre of flight.")]
         [Min(0f)] public float flightPuffsPerMetre = 1.6f;
+
+        [Header("Players - identity (spec §19: never colour alone)")]
+        [Tooltip("Body colour per slot. Chosen to stay distinct under protanopia, deuteranopia and tritanopia, and away from hazard red, the potato orange and the carrier yellow (ARCHITECTURE §25).")]
+        public Color[] playerColors =
+        {
+            new Color(0.1f, 0.32f, 1f), new Color(0f, 0.75f, 1f), new Color(0.6f, 0f, 0.4f), new Color(0.95f, 0.95f, 0.95f)
+        };
+        [Tooltip("Shape per slot, shown next to the colour wherever a player is identified (lobby, results).")]
+        public PlayerShape[] playerShapes = { PlayerShape.Circle, PlayerShape.Triangle, PlayerShape.Square, PlayerShape.Diamond };
 
         [Header("Run")]
         [Tooltip("Seconds between an explosion and the section being playable again.")]

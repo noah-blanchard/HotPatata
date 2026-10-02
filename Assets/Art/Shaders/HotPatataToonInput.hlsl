@@ -9,6 +9,7 @@
 CBUFFER_START(UnityPerMaterial)
     float4 _BaseMap_ST;
     half4 _BaseColor;
+    half _SuitTint;
     half4 _ShadeColor;
     half4 _TopColor;
     half _TopBlend;

@@ -28,27 +28,6 @@ namespace HotPatata.Tests
 
         // ------------------------------------------------------------------ helpers
 
-        void Give(Player p)
-        {
-            bomb.BeginReset();
-            bomb.EndReset(p);
-        }
-
-        /// <summary>Velocity that carries a projectile from origin to target in `time` seconds under bomb gravity.</summary>
-        Vector3 VelocityToHit(Vector3 origin, Vector3 target, float time)
-        {
-            Vector3 g = Physics.gravity * tuning.bombGravityScale;
-            return (target - origin) / time - 0.5f * g * time;
-        }
-
-        Vector3 CatchPoint(Player p) => p.CatchVolume.CatchCenter;
-
-        void ThrowAt(Player from, Player to, float time = 0.5f)
-        {
-            Vector3 origin = from.ThrowOrigin.position;
-            Assert.IsTrue(bomb.TryThrow(from, origin, VelocityToHit(origin, CatchPoint(to), time)));
-        }
-
         void UseShortFuse(float seconds)
         {
             var clone = Object.Instantiate(tuning);

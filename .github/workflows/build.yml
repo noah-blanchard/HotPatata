@@ -1,0 +1,225 @@
+# Builds the desktop player with GameCI for every platform a tag asks for, then publishes one release.
+#   tag vX.Y.Z               -> Windows, Linux and macOS (global release)
+#   tag vX.Y.Z-linux         -> only that platform; several can be combined: vX.Y.Z-linux-macos
+#                               platform tokens: windows, linux, macos
+#   Tags must point to a commit on main. Each tag publishes a GitHub Release with one zip per platform
+#   (HotPatata-<Windows|Linux|macOS>-<version>.zip) and, when the repo variable ITCH_TARGET is set, pushes each
+#   zip to its itch.io channel (windows, linux, osx).
+#   Pushes to main do not build (CI minutes). Actions -> Build -> Run workflow builds on demand.
+#   A pull request builds every platform when it changes this workflow.
+# Required repo secrets: UNITY_LICENSE (contents of Unity_lic.ulf), UNITY_EMAIL, UNITY_PASSWORD.
+# itch.io (optional): repo variable ITCH_TARGET = "<itch user>/<game>", secret BUTLER_API_KEY.
+name: Build
+
+on:
+  push:
+    tags: ['v*']
+  pull_request:
+    paths: ['.github/workflows/**']
+  workflow_dispatch:
+    inputs:
+      platforms:
+        description: 'Platforms to build: "all" or a list of windows, linux, macos (e.g. "windows linux")'
+        default: all
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  plan:
+    name: Plan
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.plan.outputs.version }}
+      matrix: ${{ steps.plan.outputs.matrix }}
+      publish: ${{ steps.plan.outputs.publish }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve version and platforms
+        id: plan
+        shell: bash
+        env:
+          REQUESTED: ${{ inputs.platforms }}
+        run: |
+          picked=()
+          publish=false
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            git fetch origin main
+            if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+              echo "::error::Tag ${GITHUB_REF_NAME} points to a commit that is not on main."
+              exit 1
+            fi
+            # v0.4.0 -> version 0.4.0, every platform; v0.4.0-rc1-linux -> version 0.4.0-rc1, Linux only.
+            IFS='-' read -ra parts <<< "${GITHUB_REF_NAME#v}"
+            version=""
+            for p in "${parts[@]}"; do
+              case "$p" in
+                windows|linux|macos) picked+=("$p") ;;
+                *) version="${version:+$version-}$p" ;;
+              esac
+            done
+            publish=true
+          else
+            version="0.0.0-${GITHUB_SHA::7}"
+            if [[ -n "$REQUESTED" && "$REQUESTED" != "all" ]]; then
+              read -ra picked <<< "${REQUESTED//,/ }"
+            fi
+          fi
+          [[ ${#picked[@]} -eq 0 ]] && picked=(windows linux macos)
+
+          # target = GameCI targetPlatform (also the build/<target> output folder); label = zip name.
+          entries=()
+          for p in "${picked[@]}"; do
+            case "$p" in
+              windows) entries+=('{"target":"StandaloneWindows64","label":"Windows"}') ;;
+              linux)   entries+=('{"target":"StandaloneLinux64","label":"Linux"}') ;;
+              macos)   entries+=('{"target":"StandaloneOSX","label":"macOS"}') ;;
+              *) echo "::error::Unknown platform '$p' (use windows, linux, macos)."; exit 1 ;;
+            esac
+          done
+          matrix="{\"include\":[$(IFS=,; echo "${entries[*]}")]}"
+
+          echo "Version $version, platforms: ${picked[*]}, publish: $publish"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: ${{ matrix.target }}
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false   # one platform failing never stops the others (the release publishes what built)
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: false
+          swap-storage: false
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # LFS objects are cached so each build does not spend the private repo's LFS bandwidth.
+      - name: List LFS objects
+        run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
+
+      - name: Restore LFS cache
+        uses: actions/cache@v4
+        with:
+          path: .git/lfs
+          key: lfs-${{ hashFiles('.lfs-assets-id') }}
+
+      - name: Pull LFS objects
+        run: git lfs pull
+
+      - name: Restore Library cache
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: library-${{ matrix.target }}-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: library-${{ matrix.target }}-
+
+      - name: Build
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          targetPlatform: ${{ matrix.target }}
+          buildName: HotPatata
+          versioning: Custom
+          version: ${{ needs.plan.outputs.version }}
+
+      - name: Zip build
+        id: zip
+        shell: bash
+        run: |
+          name="HotPatata-${{ matrix.label }}-${{ needs.plan.outputs.version }}.zip"
+          sudo chown -R "$(id -u)" build
+          # zip keeps the Unix permissions, so the Linux and macOS executables stay executable.
+          (cd "build/${{ matrix.target }}" && zip -qr "$GITHUB_WORKSPACE/$name" . -x '*_BurstDebugInformation_DoNotShip/*' '*_BackUpThisFolder_ButDontShipItWithYourGame/*')
+          echo "file=$name" >> "$GITHUB_OUTPUT"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HotPatata-${{ matrix.label }}-${{ needs.plan.outputs.version }}
+          path: ${{ steps.zip.outputs.file }}
+          retention-days: 7
+
+  release:
+    name: Publish
+    needs: [plan, build]
+    # Runs even if a platform failed, so the others still ship; the failed build keeps the workflow red.
+    if: ${{ !cancelled() && needs.plan.outputs.publish == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download builds
+        uses: actions/download-artifact@v4
+        with:
+          pattern: HotPatata-*
+          path: dist
+          merge-multiple: true
+
+      - name: Check builds
+        shell: bash
+        run: |
+          shopt -s nullglob
+          files=(dist/*.zip)
+          if [[ ${#files[@]} -eq 0 ]]; then
+            echo "::error::No platform built, nothing to publish."
+            exit 1
+          fi
+          printf 'Publishing %s\n' "${files[@]}"
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.zip
+          generate_release_notes: true
+
+      # butler comes straight from itch.io (no third-party action). butler reads the zips and uploads only what
+      # changed since the last push of each channel.
+      - name: Publish to itch.io
+        if: ${{ vars.ITCH_TARGET != '' }}
+        shell: bash
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+          ITCH_TARGET: ${{ vars.ITCH_TARGET }}
+          VERSION: ${{ needs.plan.outputs.version }}
+        run: |
+          if [[ -z "$BUTLER_API_KEY" ]]; then
+            echo "::error::ITCH_TARGET is set but the BUTLER_API_KEY secret is missing."
+            exit 1
+          fi
+          curl -sSfL -o butler.zip https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default
+          unzip -q butler.zip -d butler-bin
+          chmod +x butler-bin/butler
+          butler-bin/butler -V
+
+          status=0
+          for f in dist/*.zip; do
+            case "$(basename "$f")" in
+              HotPatata-Windows-*) channel=windows ;;
+              HotPatata-Linux-*)   channel=linux ;;
+              HotPatata-macOS-*)   channel=osx ;;
+              *) echo "::warning::No itch.io channel for $f"; continue ;;
+            esac
+            butler-bin/butler push "$f" "$ITCH_TARGET:$channel" --userversion "$VERSION" || status=1
+          done
+          exit $status

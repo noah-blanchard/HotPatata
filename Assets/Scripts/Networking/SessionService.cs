@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Unity.Services.Authentication;
@@ -88,22 +89,44 @@ namespace HotPatata
                 await AuthenticationService.Instance.SignInAnonymouslyAsync();
         }
 
-        public async Task<ISession> HostAsync()
+        /// <summary>The name shown for a lobby player: their <see cref="PlayerNames.SessionProperty"/>, sanitised.</summary>
+        public static string NameOf(IReadOnlyPlayer player, int index)
+        {
+            string raw = player?.Properties != null && player.Properties.TryGetValue(PlayerNames.SessionProperty, out var p) ? p.Value : null;
+            return PlayerNames.Sanitize(raw, index);
+        }
+
+        /// <summary>The typed name as a session player property, or none (the lobby then shows "Player N").</summary>
+        static Dictionary<string, PlayerProperty> NameProperties(string playerName)
+        {
+            var properties = new Dictionary<string, PlayerProperty>();
+            if (!string.IsNullOrWhiteSpace(playerName))
+                properties[PlayerNames.SessionProperty] = new PlayerProperty(playerName, VisibilityPropertyOptions.Member);
+            return properties;
+        }
+
+        public async Task<ISession> HostAsync(string playerName = null)
         {
             await EnsureSignedInAsync();
-            var options = new SessionOptions { Name = "HotPatata", MaxPlayers = MaxPlayers }.WithRelayNetwork();
+            var options = new SessionOptions
+            {
+                Name = "HotPatata",
+                MaxPlayers = MaxPlayers,
+                PlayerProperties = NameProperties(playerName)
+            }.WithRelayNetwork();
             var session = await MultiplayerService.Instance.CreateSessionAsync(options);
             Attach(session);
             return session;
         }
 
-        public async Task<ISession> JoinAsync(string rawCode)
+        public async Task<ISession> JoinAsync(string rawCode, string playerName = null)
         {
             string code = NormalizeCode(rawCode);
             if (!IsPlausibleCode(code)) throw new ArgumentException($"A game code has {CodeLength} letters or digits.");
 
             await EnsureSignedInAsync();
-            var session = await MultiplayerService.Instance.JoinSessionByCodeAsync(code);
+            var options = new JoinSessionOptions { PlayerProperties = NameProperties(playerName) };
+            var session = await MultiplayerService.Instance.JoinSessionByCodeAsync(code, options);
             Attach(session);
             return session;
         }
