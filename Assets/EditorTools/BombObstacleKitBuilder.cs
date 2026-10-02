@@ -53,11 +53,11 @@ namespace HotPatata.Editor
             MakePrefab(GateArch + ".prefab", true, BuildGateArch);
             MakePrefab(Plate + ".prefab", true, BuildPlate);
             MakePrefab(Door + ".prefab", true, () => BuildActuator("Actuator_Door", DoorSize, new Vector3(0f, DoorSize.y + 0.4f, 0f),
-                                                                   0.8f, Mat("Greybox_Hazard"), "Hazard", lethal: true));
+                                                                   0.8f, KitRole.Hazard, "Hazard", lethal: true));
             MakePrefab(Bridge + ".prefab", true, () => BuildActuator("Actuator_Bridge", new Vector3(3f, 0.5f, 8f), new Vector3(0f, 0f, 8f),
-                                                                     1.2f, Mat("Greybox_Moving"), "Environment", lethal: false));
+                                                                     1.2f, KitRole.Mover, "Environment", lethal: false));
             MakePrefab(Lift + ".prefab", true, () => BuildActuator("Actuator_Lift", new Vector3(3f, 0.5f, 3f), new Vector3(0f, 4f, 0f),
-                                                                   2f, Mat("Greybox_Moving"), "Environment", lethal: false));
+                                                                   2f, KitRole.Mover, "Environment", lethal: false));
             MakePrefab(Tube + ".prefab", true, BuildTube);
             MakePrefab(Cannon + ".prefab", true, BuildCannon);
             EnsureBombComponents();
@@ -176,10 +176,9 @@ namespace HotPatata.Editor
             root.AddComponent<BombBarrier>();
 
             var t = root.transform;
-            var hazard = Mat("Greybox_Hazard");
-            Cube("Post_L", t, Vector3.zero, Vector3.one, hazard, "Environment", keepCollider: true);
-            Cube("Post_R", t, Vector3.zero, Vector3.one, hazard, "Environment", keepCollider: true);
-            Cube("Lintel", t, Vector3.zero, Vector3.one, hazard, "Environment", keepCollider: true);
+            Cube("Post_L", t, Vector3.zero, Vector3.one, KitRole.Hazard, "Environment", keepCollider: true);
+            Cube("Post_R", t, Vector3.zero, Vector3.one, KitRole.Hazard, "Environment", keepCollider: true);
+            Cube("Lintel", t, Vector3.zero, Vector3.one, KitRole.Hazard, "Environment", keepCollider: true);
             var beam = Mat("Laser_Beam");
             for (int i = 0; i < CurtainBeams; i++)
                 Shape($"Beam_{i + 1}", PrimitiveType.Cylinder, t, Vector3.zero, Quaternion.Euler(0f, 0f, 90f), Vector3.one, beam, "Default");
@@ -255,14 +254,13 @@ namespace HotPatata.Editor
             KinematicBody(root);
             var gate = AddGate(root, new Vector3(radius * 1.4f, radius * 1.4f, 0.6f), Vector3.zero, 8f);
             var lamps = new List<Renderer>();
-            var mat = Mat("Greybox_Gate");
             float segLength = 2f * Mathf.PI * radius / segments * 1.08f;
             for (int i = 0; i < segments; i++)
             {
                 var seg = new GameObject($"Segment_{i + 1}").transform;
                 seg.SetParent(root.transform, false);
                 seg.localRotation = Quaternion.Euler(0f, 0f, i * 360f / segments);
-                lamps.Add(Cube("Visual", seg, new Vector3(0f, radius, 0f), new Vector3(segLength, 0.3f, 0.3f), mat, "Environment").GetComponent<Renderer>());
+                lamps.Add(Cube("Visual", seg, new Vector3(0f, radius, 0f), new Vector3(segLength, 0.3f, 0.3f), KitRole.Gate, "Environment").GetComponent<Renderer>());
                 Box("Collision", seg, new Vector3(0f, radius, 0f), new Vector3(segLength, 0.3f, 0.3f), "Environment");
             }
             AddIndicator(root, gate, lamps);
@@ -281,7 +279,7 @@ namespace HotPatata.Editor
             const float post = 0.4f;
             var root = new GameObject("BombGate_Arch") { layer = Layer("Trigger") };
             var gate = AddGate(root, new Vector3(ArchWidth, ArchHeight, 0.6f), new Vector3(0f, ArchHeight / 2f, 0f), 0f);
-            var mat = Mat("Greybox_Gate");
+            const KitRole mat = KitRole.Gate;
             var t = root.transform;
             var lamps = new List<Renderer>
             {
@@ -317,13 +315,13 @@ namespace HotPatata.Editor
         /// SignalActuator root / Platform (kinematic) / Visual + Collision (+ a lethal lower edge for doors, armed only
         /// while closing), Waypoint_Closed at the root, Waypoint_Open at <paramref name="travel"/>. Replicated.
         /// </summary>
-        static GameObject BuildActuator(string name, Vector3 size, Vector3 travel, float seconds, Material mat, string layer, bool lethal)
+        static GameObject BuildActuator(string name, Vector3 size, Vector3 travel, float seconds, KitRole role, string layer, bool lethal)
         {
             var root = new GameObject(name);
             var platform = new GameObject("Platform");
             platform.transform.SetParent(root.transform, false);
             KinematicBody(platform);
-            Cube("Visual", platform.transform, Vector3.zero, size, mat, layer);
+            Cube("Visual", platform.transform, Vector3.zero, size, role, layer);
             Box("Collision", platform.transform, Vector3.zero, size, layer);
             BoxCollider kill = null;
             if (lethal)
@@ -381,7 +379,9 @@ namespace HotPatata.Editor
                 var seg = new GameObject($"Ring_{i + 1}").transform;
                 seg.SetParent(parent, false);
                 seg.localRotation = Quaternion.Euler(0f, 0f, i * 360f / segments);
-                renderers.Add(Cube("Visual", seg, new Vector3(0f, radius, 0f), new Vector3(segLength, thickness, thickness), mat, layer).GetComponent<Renderer>());
+                var visual = Cube("Visual", seg, new Vector3(0f, radius, 0f), new Vector3(segLength, thickness, thickness), mat, layer);
+                Skin(visual, KitShape.Barrier, KitColor.Neutral, mat);   // KayKit blocks in the slot's own colour
+                renderers.Add(visual.GetComponent<Renderer>());
                 Box("Collision", seg, new Vector3(0f, radius, 0f), new Vector3(segLength, thickness, thickness), layer);
             }
             return renderers;
@@ -475,10 +475,12 @@ namespace HotPatata.Editor
 
                 var pipe = Shape($"Pipe_{s}", PrimitiveType.Cylinder, root.transform, Vector3.zero, Quaternion.identity, Vector3.one, slotMat, "Environment");
                 pipe.AddComponent<CapsuleCollider>();
+                Skin(pipe, KitShape.Pipe, KitColor.Neutral, slotMat, CylinderBox);
 
                 var exit = new GameObject($"Exit_{s}").transform;
                 exit.SetParent(root.transform, false);
-                Shape("Nozzle", PrimitiveType.Cylinder, exit, Vector3.zero, Quaternion.Euler(90f, 0f, 0f), new Vector3(1.2f, 0.35f, 1.2f), slotMat, "Environment");
+                var nozzle = Shape("Nozzle", PrimitiveType.Cylinder, exit, Vector3.zero, Quaternion.Euler(90f, 0f, 0f), new Vector3(1.2f, 0.35f, 1.2f), slotMat, "Environment");
+                Skin(nozzle, KitShape.Pipe, KitColor.Neutral, slotMat, CylinderBox);
                 lamps.Add(Shape("Lamp", PrimitiveType.Cylinder, exit, new Vector3(0f, 0f, 0.36f), Quaternion.Euler(90f, 0f, 0f), new Vector3(1.3f, 0.04f, 1.3f), Mat("Tube_Lamp"), "Default").GetComponent<Renderer>());
                 Shape("Sign", PrimitiveType.Quad, exit, new Vector3(0f, 1.2f, 0f), Quaternion.identity, Vector3.one * 0.9f, Mat($"Icon_Pips{s}"), "Default");
                 var muzzle = new GameObject("Muzzle").transform;
@@ -562,17 +564,16 @@ namespace HotPatata.Editor
             const float basket = 2.4f, wall = 0.25f, rim = 0.8f;
             var root = new GameObject("Obstacle_Cannon");
             var transit = AddTransit(root, 0.35f);
-            var gateMat = Mat("Greybox_Gate");
             var t = root.transform;
 
             var mouth = new GameObject("Basket").transform;
             mouth.SetParent(t, false);
             AddMouth(mouth, transit, 0, new Vector3(basket, 2.6f, basket), new Vector3(0f, rim + 1.1f, 0f));
-            Cube("Floor", mouth, new Vector3(0f, 0.1f, 0f), new Vector3(basket + 2f * wall, 0.2f, basket + 2f * wall), Mat("Greybox_Wall"), "Environment", keepCollider: true);
+            Cube("Floor", mouth, new Vector3(0f, 0.1f, 0f), new Vector3(basket + 2f * wall, 0.2f, basket + 2f * wall), KitRole.Wall, "Environment", keepCollider: true);
             for (int i = 0; i < 4; i++)
             {
                 var side = Quaternion.Euler(0f, i * 90f, 0f);
-                var w = Cube($"Wall_{i + 1}", mouth, side * new Vector3(0f, rim / 2f, (basket + wall) / 2f), new Vector3(basket + 2f * wall, rim, wall), gateMat, "Environment", keepCollider: true);
+                var w = Cube($"Wall_{i + 1}", mouth, side * new Vector3(0f, rim / 2f, (basket + wall) / 2f), new Vector3(basket + 2f * wall, rim, wall), KitRole.Gate, "Environment", keepCollider: true);
                 w.transform.localRotation = side;
             }
             Shape("Sign", PrimitiveType.Quad, mouth, new Vector3(0f, rim + 2.4f, 0f), Quaternion.identity, Vector3.one * 1.1f, Mat("Icon_Pips1"), "Default");
@@ -583,7 +584,9 @@ namespace HotPatata.Editor
 
             var exit = new GameObject("Exit_1").transform;
             exit.SetParent(t, false);
-            Shape("Barrel", PrimitiveType.Cylinder, exit, new Vector3(0f, 0f, -1.1f), Quaternion.Euler(90f, 0f, 0f), new Vector3(1f, 1.1f, 1f), Mat("Tube_Slot_1"), "Environment").AddComponent<CapsuleCollider>();
+            var barrel = Shape("Barrel", PrimitiveType.Cylinder, exit, new Vector3(0f, 0f, -1.1f), Quaternion.Euler(90f, 0f, 0f), new Vector3(1f, 1.1f, 1f), Mat("Tube_Slot_1"), "Environment");
+            barrel.AddComponent<CapsuleCollider>();
+            Skin(barrel, KitShape.Pipe, KitColor.Neutral, Mat("Tube_Slot_1"), CylinderBox);
             var lamp = Shape("Lamp", PrimitiveType.Cylinder, exit, new Vector3(0f, 0f, 0.02f), Quaternion.Euler(90f, 0f, 0f), new Vector3(1.15f, 0.04f, 1.15f), Mat("Tube_Lamp"), "Default");
             var muzzle = new GameObject("Muzzle").transform;
             muzzle.SetParent(exit, false);

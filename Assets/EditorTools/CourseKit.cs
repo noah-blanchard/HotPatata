@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using HotPatata;
 using UnityEditor;
 using UnityEngine;
@@ -7,6 +8,9 @@ using Random = System.Random;
 
 namespace HotPatata.Editor
 {
+    /// <summary>What a kit box is for; each role has one KayKit look (<see cref="CourseKit.Look"/>, ARCHITECTURE §25.1).</summary>
+    public enum KitRole { Ground, Wall, Mover, Falling, Belt, Slide, Hazard, Gate }
+
     /// <summary>
     /// Shared editor helpers for the course and kit builders (<see cref="CourseBuilder"/>,
     /// <c>PlaytestCourseBuilder</c>, <c>BombObstacleKitBuilder</c>): placing kit prefabs, sizing movers,
@@ -45,12 +49,13 @@ namespace HotPatata.Editor
             return go;
         }
 
-        /// <summary>A Platform_Basic box: pivot at its centre, scale = size.</summary>
-        public static GameObject Block(Transform parent, string name, Vector3 center, Vector3 size, Material mat, Quaternion? rotation = null)
+        /// <summary>A Platform_Basic box: pivot at its centre, scale = size, drawn in the KayKit pieces of <paramref name="role"/>.</summary>
+        public static GameObject Block(Transform parent, string name, Vector3 center, Vector3 size, KitRole role, Quaternion? rotation = null,
+                                       bool flip = false)
         {
             var go = Place(parent, PlatformsDir + "Platform_Basic", name, center, rotation ?? Quaternion.identity);
             go.transform.localScale = size;
-            if (mat != null) go.GetComponentInChildren<Renderer>().sharedMaterial = mat;
+            if (role != KitRole.Ground || flip) Skin(go.transform.Find("Visual").gameObject, role, flip);
             return go;
         }
 
@@ -68,6 +73,7 @@ namespace HotPatata.Editor
             var go = Place(parent, PlatformsDir + "Platform_Conveyor", name, center, Quaternion.identity);
             go.transform.localScale = size;
             SetField(go.GetComponent<Conveyor>(), "speed", p => p.floatValue = speed);
+            Skin(go.transform.Find("Visual").gameObject, KitRole.Belt, flip: speed > 0f);   // the chevrons point the way it carries
             return go;
         }
 
@@ -149,6 +155,186 @@ namespace HotPatata.Editor
         }
 
         public static void SetReference(Object target, string field, Object value) => SetField(target, field, p => p.objectReferenceValue = value);
+
+        // ------------------------------------------------------------------ course pieces (bomb obstacles, #68)
+
+        public const float Window = 2.4f, WindowBottom = 1f, WindowTop = 3f;   // the standard throw window in a wall
+        public const float Passage = 3f, PassageHeight = 3.5f;                  // a laser-curtain passage for runners (curtain + posts)
+
+        public static GameObject Zone(Transform parent, string prefab, string name, Vector3 floorCenter, Vector3 size)
+        {
+            var go = Place(parent, prefab, name, floorCenter, Quaternion.identity);
+            BombObstacleKitBuilder.ResizeZone(go, size);
+            return go;
+        }
+
+        /// <summary>A bomb-gate ring centred at <paramref name="height"/> above <paramref name="floor"/>, on a thin pillar.</summary>
+        public static BombGate Gate(Transform parent, string name, Vector3 floor, float height, float holdSeconds)
+        {
+            var gate = Place(parent, BombObstacleKitBuilder.GateRing, name, floor + Vector3.up * height, Quaternion.identity).GetComponent<BombGate>();
+            SetField(gate, "holdSeconds", p => p.floatValue = holdSeconds);
+            float pillar = height - 1.45f;   // up to the underside of the ring
+            if (pillar > 0.1f)
+                Block(parent, name + "_Pillar", floor + Vector3.up * (pillar / 2f), new Vector3(0.35f, pillar, 0.35f), KitRole.Gate);
+            return gate;
+        }
+
+        public static GameObject Actuator(Transform parent, string prefab, string name, Vector3 closedCenter, Vector3 size, Vector3 travel, MonoBehaviour source)
+        {
+            var go = Place(parent, prefab, name, closedCenter, Quaternion.identity);
+            BombObstacleKitBuilder.ResizeActuator(go, size, travel);
+            BombObstacleKitBuilder.Wire(go, source);
+            return go;
+        }
+
+        public static void ArchCheckpoint(Transform parent, string name, int id, Vector3 pad, float fuse, Vector3 archFloor)
+        {
+            var cp = AddCheckpoint(parent, name, id, pad, fuse).GetComponent<Checkpoint>();
+            var arch = Place(parent, BombObstacleKitBuilder.GateArch, name + "_Arch", archFloor, Quaternion.identity).GetComponent<BombGate>();
+            SetReference(cp, "claimGate", arch);
+        }
+
+        /// <summary>An opening in a wall, in wall space: x across the course, y above the wall's floor.</summary>
+        public struct Hole
+        {
+            public float X0, X1, Y0, Y1;
+
+            public Hole(float x0, float x1, float y0, float y1)
+            {
+                X0 = x0;
+                X1 = x1;
+                Y0 = y0;
+                Y1 = y1;
+            }
+        }
+
+        /// <summary>A 1 m thick wall across the course at <paramref name="z"/>, from x0 to x1, with rectangular holes.</summary>
+        public static void Wall(Transform parent, string name, float z, float floorY, float height, float x0, float x1, IList<Hole> holes)
+        {
+            var xs = new List<float> { x0, x1 };
+            foreach (var h in holes)
+            {
+                xs.Add(h.X0);
+                xs.Add(h.X1);
+            }
+            xs.Sort();
+            int piece = 0;
+            for (int i = 0; i + 1 < xs.Count; i++)
+            {
+                float a = xs[i], b = xs[i + 1];
+                if (b - a < 0.01f) continue;
+                float mid = (a + b) / 2f;
+                Hole? hole = null;
+                foreach (var h in holes)
+                    if (mid > h.X0 && mid < h.X1) hole = h;
+                void Piece(float y0, float y1)
+                {
+                    if (y1 - y0 < 0.01f) return;
+                    Block(parent, $"{name}_{++piece}", new Vector3(mid, floorY + (y0 + y1) / 2f, z), new Vector3(b - a, y1 - y0, 1f), KitRole.Wall);
+                }
+                if (hole == null) Piece(0f, height);
+                else
+                {
+                    Piece(0f, hole.Value.Y0);
+                    Piece(hole.Value.Y1, height);
+                }
+            }
+        }
+
+        /// <summary>
+        /// A wall with a throw window (or a spinning hoop in a bigger opening) and laser-curtain passages for the runners
+        /// (PROJECT_SPEC §13.13). It reaches 3 m past the 16 m court on each side so going round is no easier than the window.
+        /// </summary>
+        public static void LaserWall(Transform parent, string name, float z, float floorY, float height, float? windowX, float[] passages, bool hoop = false)
+        {
+            var holes = new List<Hole>();
+            if (windowX.HasValue)
+            {
+                float w = hoop ? 3.6f : Window;
+                holes.Add(hoop ? new Hole(windowX.Value - w / 2f, windowX.Value + w / 2f, 0.6f, 4.2f)
+                               : new Hole(windowX.Value - w / 2f, windowX.Value + w / 2f, WindowBottom, WindowTop));
+            }
+            foreach (float x in passages) holes.Add(new Hole(x - Passage / 2f, x + Passage / 2f, 0f, PassageHeight));
+            Wall(parent, name, z, floorY, height, -11f, 11f, holes);
+
+            for (int i = 0; i < passages.Length; i++)
+            {
+                var curtain = Place(parent, BombObstacleKitBuilder.LaserCurtain, $"{name}_Curtain_{i + 1}", new Vector3(passages[i], floorY, z), Quaternion.identity);
+                BombObstacleKitBuilder.ResizeCurtain(curtain, Passage - 0.6f, PassageHeight - 0.3f);
+            }
+            if (hoop && windowX.HasValue)
+                AddRotator(parent, ObstaclesDir + "Obstacle_Hoop", name + "_Hoop", new Vector3(windowX.Value, floorY + 2.4f, z), 0f, 70f, 90f);
+        }
+
+        // ------------------------------------------------------------------ KayKit skin (ARCHITECTURE §25.1)
+
+        /// <summary>A cylinder primitive's box in its own space (the unit box of a skinned cylinder).</summary>
+        public static readonly Vector3 CylinderBox = new Vector3(1f, 2f, 1f);
+
+        /// <summary>KayKit chevrons point to -Z; a flipped Arrow skin points them to +Z (belts and slides running forward).</summary>
+        public const bool SlideFlip = true;
+
+        public const string PalettePath = "Assets/ScriptableObjects/Kit/KayKitPalette.asset";
+        public const string KitMaterial = "KayKit_Toon", KitHazardMaterial = "KayKit_Hazard", KitBeltMaterial = "KayKit_Belt";
+
+        /// <summary>One look per role of the course: the piece family, the KayKit colour and the material.</summary>
+        public static (KitShape shape, KitColor color, string material) Look(KitRole role) => role switch
+        {
+            KitRole.Ground => (KitShape.Platform, KitColor.Green, KitMaterial),
+            KitRole.Wall => (KitShape.Barrier, KitColor.Neutral, KitMaterial),
+            KitRole.Mover => (KitShape.Platform, KitColor.Blue, KitMaterial),
+            KitRole.Falling => (KitShape.Platform, KitColor.Yellow, KitMaterial),
+            KitRole.Belt => (KitShape.Arrow, KitColor.Blue, KitBeltMaterial),
+            KitRole.Slide => (KitShape.Arrow, KitColor.Green, KitMaterial),
+            KitRole.Hazard => (KitShape.Barrier, KitColor.Red, KitHazardMaterial),
+            KitRole.Gate => (KitShape.Barrier, KitColor.Yellow, KitMaterial),
+            _ => throw new ArgumentOutOfRangeException(nameof(role))
+        };
+
+        public static KitPalette Palette =>
+            AssetDatabase.LoadAssetAtPath<KitPalette>(PalettePath) ?? throw new InvalidOperationException("missing " + PalettePath + " (run HotPatata/Course/Build KayKit Kit)");
+
+        /// <summary>Draws <paramref name="visual"/>'s box (its scale times <paramref name="unitBox"/>) in the pieces of <paramref name="role"/>.</summary>
+        public static void Skin(GameObject visual, KitRole role, bool flip = false, Vector3? unitBox = null)
+        {
+            var (shape, color, material) = Look(role);
+            Skin(visual, shape, color, Mat(material), unitBox, flip);
+        }
+
+        /// <summary>
+        /// Swaps a primitive visual for a <see cref="KitSkin"/>: the mesh filter is emptied (the skin fills it at run time,
+        /// unsaved), the renderer takes <paramref name="mat"/>. Written through serialized properties, so on a prefab instance
+        /// it is a plain override. <paramref name="unitBox"/> is the visual's box in its own space ((1,2,1) for a cylinder).
+        /// </summary>
+        public static KitSkin Skin(GameObject visual, KitShape shape, KitColor color, Material mat, Vector3? unitBox = null, bool flip = false)
+        {
+            bool instance = PrefabUtility.IsPartOfPrefabInstance(visual);
+            var filter = visual.GetComponent<MeshFilter>() ?? visual.AddComponent<MeshFilter>();
+            if (!instance) filter.sharedMesh = null;
+            var renderer = visual.GetComponent<MeshRenderer>() ?? visual.AddComponent<MeshRenderer>();
+            if (renderer.sharedMaterial != mat) renderer.sharedMaterial = mat;
+            if (instance) PrefabUtility.RecordPrefabInstancePropertyModifications(renderer);
+            var skin = visual.GetComponent<KitSkin>() ?? visual.AddComponent<KitSkin>();
+            var palette = Palette;
+            var box = unitBox ?? Vector3.one;
+            var so = new SerializedObject(skin);
+            so.FindProperty("palette").objectReferenceValue = palette;
+            so.FindProperty("shape").enumValueIndex = (int)shape;
+            so.FindProperty("color").enumValueIndex = (int)color;
+            so.FindProperty("unitBox").vector3Value = box;
+            so.FindProperty("flip").boolValue = flip;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            skin.Rebuild();
+            return skin;
+        }
+
+        /// <summary>A collider-optional cube (see <see cref="Cube(string,Transform,Vector3,Vector3,Material,string,bool)"/>) drawn in the pieces of <paramref name="role"/>.</summary>
+        public static GameObject Cube(string name, Transform parent, Vector3 localPos, Vector3 scale, KitRole role, string layer, bool keepCollider = false)
+        {
+            var go = Cube(name, parent, localPos, scale, Mat(Look(role).material), layer, keepCollider);
+            Skin(go, role);
+            return go;
+        }
 
         // ------------------------------------------------------------------ materials
 

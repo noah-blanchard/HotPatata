@@ -277,8 +277,8 @@ The playtest course for the bomb obstacles: one straight course along +Z (~820 m
 generated **entirely** by `Assets/EditorTools/PlaytestCourseBuilder.cs` (menu **HotPatata/Course/Build Playtest
 Course**). The scene was created as a copy of `PrototypeCourse` (run manager, bomb, lighting, look, spawner, test rig,
 start spawns on `SectionRoot`); every build rebuilds `SectionRoot/Course` (one group per act), the backdrop, the kill
-zone and the finish. Rebuild it after rebuilding the kit (**HotPatata/Course/Build Bomb Obstacle Prefabs**). It is
-first in the Bootstrap level list. Each new obstacle is taught alone, then combined, then twisted.
+zone and the finish. Rebuild it after rebuilding the kit (**HotPatata/Course/Build KayKit Kit**). It is second in the
+Bootstrap level list, after `PatataPark`. Each new obstacle is taught alone, then combined, then twisted.
 
 **Act 1: Warm-up** (the classic kit, floor 0 → 3.8 m)
 
@@ -330,6 +330,62 @@ first in the Bootstrap level list. Each new obstacle is taught alone, then combi
 Tests: `PlaytestCourseTests`. PassSandbox also has a small `KitDemo/BombObstacles` corner (menu **HotPatata/Course/Build
 Sandbox Bomb Obstacles**) to try the zones, curtains and a ring-driven lift with the F4 bot.
 
+### `PatataPark` (the KayKit course)
+
+The first course built for the KayKit look (§25.1) and first in the Bootstrap level list: one course along +Z (~680 m,
+9 checkpoints, 4 acts) laid out on the KayKit grid (floors in whole metres, mostly 4 and 6 m tiles, 1 m steps), with
+the classic kit and the #68 obstacles in new combinations. Generated **entirely** by
+`Assets/EditorTools/PatataParkBuilder.cs` (menu **HotPatata/Course/Build Patata Park**). The scene was created as a
+copy of `PlaytestCourse` (run manager, bomb, lighting, look, spawner, test rig, start spawns on `SectionRoot`); every
+build rebuilds `SectionRoot/Course`, the kill zone and the backdrop (floating KayKit islands at |x| >= 34 m, no
+colliders, plus clouds), and keeps the scene in the build and first in `NetworkBootstrap.gameplayScenes`.
+
+**Act 1: Block Hop** (classic kit, floor 0 → 6 m)
+
+| Beat | z (m) | What it asks |
+|---|---|---|
+| A Start | -6–18 | a wide court, the pair starts 6 m apart |
+| B Island Hop | 21–58 | three 6 m islands zig-zag up 1 m each, then a landing: teammates stand on different islands, so pass |
+| C Ramp | 58–82 | 4 m up over 12 m (18°) to the first plateau |
+| Checkpoint 1 | 76 | |
+| D Falling Run | 82–106 | four falling platforms zig-zag over a 24 m pit |
+| E Piston Wave | 118–154 | five floor tiles rise and fall 3 m in a wave; a raised tile blocks the pass |
+| Checkpoint 2 | 161 | |
+| F Windmill Wall | 167–199 | a sweeper, then an 8 m wall: the bomb through the windmill's hole, the runners through a tunnel under a crusher |
+| Checkpoint 3 | 194 | |
+
+**Act 2: Hot & Cold** (floor 6 → 10 m)
+
+| Beat | z (m) | What it asks |
+|---|---|---|
+| G Forbidden Bridges | 199–243 | two bridges over a pit, each with a staggered no-carry strip: the bomb crosses the 6 m gap twice |
+| H Laser Slalom | 243–291 | three laser walls, the window alternates sides, the last window is a spinning hoop |
+| Checkpoint 4 | 287 | |
+| I Hot Climb | 291–319 | three 1 m steps under a hot zone (x2), a cold pocket at the top, a sweeper |
+
+**Act 3: Switchboard** (floor 10 → 16 m)
+
+| Beat | z (m) | What it asks |
+|---|---|---|
+| J Ring Bridge | 315–331 | a pass through a ring extends a bridge over a 12 m gap for 8 s |
+| K The Lock | 331–367 | a plate holds the door (a curtain) open, the bomb takes the window; the plate holder climbs 1 m stairs and mantles over the wall (no carrying on top) while the catcher waits in a cold pocket |
+| Checkpoint 5 | 362 | |
+| Checkpoint 6 (arch) | 377 | throw through the arch across a 4 m gap to a teammate on the pad |
+| M Lift Chain | 387–437 | ring 1 raises a lift up a 6 m cliff (12 s), ring 2 extends the next bridge (8 s) |
+| Checkpoint 7 | 427 | |
+
+**Act 4: Sky Finale** (tubes, cannon, slide; fuse 5 s from checkpoint 8)
+
+| Beat | z (m) | What it asks |
+|---|---|---|
+| N Tube Junction | 437–509 | three lanes the bomb cannot cross (falling platforms, a sweeper, a reverse belt), one tube mouth per lane |
+| Checkpoint 8 | 487 | fuse 5 s |
+| O Cannon Canyon | 503–557 | the cannon fires the bomb 44 m onto the far pad while the team rides two shuttles; a cold pocket by the cannon |
+| P Sky Slide | 557–594 | 12 m down at 18°, two lanes, hoops over the divider, a hot zone on the lower half |
+| Q Finale | 594–674 | belt through two piston gates, checkpoint 9 (arch, fuse 5 s), a last ring opens the podium door, `FinishZone` at z 667 |
+
+Tests: `PatataParkTests`.
+
 ---
 
 ## 5. Project folders
@@ -340,15 +396,16 @@ As built:
 Assets/
 ├── Art/
 │   ├── Materials/        kit materials (Greybox_*, Pad_*), toon materials
-│   ├── Models/           Bomb/ (potato.glb), Player/ (mannequin + animations)
+│   ├── Models/           Bomb/ (potato.glb), Player/ (mannequin + animations), Map/ (KayKit Platformer Pack, CC0)
 │   ├── Shaders/          HotPatata/Toon, HotPatata/Particle, HotPatata/Sky, speed lines
 │   ├── Textures/Icons/   zone and tube icons drawn in code by BombObstacleKitBuilder
 │   └── VFX/              textures for particles and trails
 ├── Audio/SFX/            optional real clips (see its README; procedural fallback otherwise)
-├── EditorTools/          CourseKit, CourseBuilder, PlaytestCourseBuilder, BombObstacleKitBuilder, PlayerAnimationSetup
+├── EditorTools/          CourseKit, CourseBuilder, PlaytestCourseBuilder, PatataParkBuilder, BombObstacleKitBuilder,
+│                         KayKitKitBuilder, PlayerAnimationSetup
 ├── Prefabs/              Bomb/ Gameplay/ Network/ Obstacles/ Platforms/ Player/ VFX/
-├── Scenes/               Bootstrap, PassSandbox, PrototypeCourse, PlaytestCourse
-├── ScriptableObjects/Tuning/GameTuning.asset
+├── Scenes/               Bootstrap, PassSandbox, PrototypeCourse, PlaytestCourse, PatataPark
+├── ScriptableObjects/    Tuning/GameTuning.asset, Kit/KayKitPalette.asset (generated)
 ├── Scripts/
 │   ├── Core/             GameTuning, NetMode, SectionClock, IResettable, PatataLog
 │   ├── Networking/       NetworkBootstrap, BootstrapEntry, SessionService, NetworkPlayer/Bomb/RunState/FallingPlatform,
@@ -359,6 +416,7 @@ Assets/
 │   │                     ThrowBallistics, BombAudio, BombPresentation, ExplosionFx, ProceduralSfx
 │   ├── Run/              RunManager, Checkpoint, KillZone, FinishZone, PlayerZone, PlayerSpawner, PlayerSpawn
 │   ├── Obstacles/        MovingPlatform, RotatingObstacle, FallingPlatform, Conveyor, LaunchPad, IPlatformCarrier
+│   ├── Kit/              KitSkin, KitPalette (KayKit visuals, §25.1)
 │   ├── Zones/            Zone, IBombZoneEffect, BombZoneSweep, FuseZone, BombBarrier, BombGate, PressurePlate,
 │   │                     ISignalSource, SignalActuator, SignalIndicator, BombTransit, TransitMouth, TransitPresentation
 │   ├── UI/               AimReticle, RunResultsUI
@@ -738,6 +796,9 @@ PrefabName
 ├── Logic      (only if useful)
 └── Gizmos / Waypoints / Anchors
 ```
+
+`Visual` holds no mesh of its own: a `KitSkin` draws its box in KayKit pieces (§25.1). Builders and resize helpers size
+`Visual` and `Collision` exactly as before.
 
 ### 10.2 Reusable MVP prefabs
 
@@ -1308,3 +1369,30 @@ Soft, bright party-game toon style.
   spins, in the carrier yellow); the lobby and results show the glyph in the slot colour. Simulated swatches:
   [`images/player-palette.png`](images/player-palette.png); four players in PassSandbox, raw and simulated:
   [`images/player-lineup.png`](images/player-lineup.png).
+
+### 25.1 KayKit kit
+
+The level kit is drawn with the **KayKit Platformer Pack 1.0** (Kay Lousberg, CC0, `Assets/Art/Models/Map/`; credit
+is optional but welcome in the credits). Gameplay never changes: colliders, sizes, layers and resize helpers stay as
+they were, only the look does.
+
+- **`KitSkin`** (`Assets/Scripts/Kit`, presentation only) sits on a kit `Visual`. Its box is the object's scale times
+  `unitBox` (a unit cube, or `(1,2,1)` for a cylinder), tiled with the best-fitting piece of one family (least stretch,
+  plus a small cost per piece) and drawn as one combined mesh through the object's own `MeshRenderer`, so belt scroll
+  and gate lamps keep working. The mesh is built on enable and cached per size; the `MeshFilter` is serialized empty
+  and never saved with a mesh. Off-grid boxes stretch the pieces a few percent; boxes on the KayKit grid use them
+  unstretched. A platform box standing on edge (a piston gate, a door) is drawn with blocks.
+- **Families** (`KitShape`): `Platform` (coloured top over grey sides), `Barrier` (rounded blocks one metre deep),
+  `Arrow` (platforms with a chevron, pointing -Z unless flipped), `Pipe` (tubes along Y). The meshes are listed in
+  `KitPalette` (`Assets/ScriptableObjects/Kit/KayKitPalette.asset`), generated from the pack; they are imported
+  readable because the skin combines them at run time.
+- **One look per role** (`KitRole`, `CourseKit.Look`): ground green platforms, walls neutral (white) blocks, movers
+  (moving platforms, elevators, pistons, bridges, lifts) blue platforms, falling platforms yellow, belts blue arrows,
+  slides green arrows, hazards red blocks with stripes (never colour alone, spec §19), gates and hoops yellow blocks.
+  Tube and cannon parts keep their slot colour (`Tube_Slot_N`) on KayKit pipes and blocks. Launch pads are a squat
+  KayKit spring pad. Zones, pads, signs and beams keep their own materials.
+- **Materials:** `KayKit_Toon`, `KayKit_Hazard`, `KayKit_Belt` are `HotPatata/Toon` with the pack's palette texture
+  (mipmaps off, so the colour columns never blend), a lighter shade tint than the greybox, no fake bevel.
+- **Rebuilding:** menu **HotPatata/Course/Build KayKit Kit** (palette, materials, the hand-made classic prefabs, the
+  generated prefabs, and the hand-placed boxes of PrototypeCourse Act 1 and PassSandbox), then **HotPatata/Course/Rebuild
+  All Courses**. Builders place boxes with `CourseKit.Block(..., KitRole)`.

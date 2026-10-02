@@ -122,9 +122,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: HotPatata::HotPatata.NetworkBootstrap
   menuScene: Bootstrap
   gameplayScenes:
+  - PatataPark
   - PlaytestCourse
   - PrototypeCourse
   - PassSandbox
-  sceneCheckpoints: 090000000700000001000000
+  sceneCheckpoints: 09000000090000000700000001000000
   port: 7777
   tuning: {fileID: 11400000, guid: 35604efc4188ead42afe90813d44683f, type: 2}

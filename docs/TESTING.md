@@ -30,6 +30,8 @@
 | `ZoneRuleTests` | EditMode | #68 pure rules: fuse-zone severity, flight-sweep geometry, actuator motion, transit exit arc |
 | `BombObstacleTests` | PlayMode | #68 kit on the PassSandbox floor: fuse zones, curtains and windows, gates, plates, doors, arch checkpoint, tubes |
 | `PlaytestCourseTests` | PlayMode | M10.4 `PlaytestCourse`: every beat wired, nine checkpoints with two arches, the podium gate, finish and rematch |
+| `KitSkinTests` | EditMode | KayKit kit (ARCHITECTURE §25.1): palette families, exact box tiling, unstretched pieces on the grid, edge-standing platforms as blocks |
+| `PatataParkTests` | PlayMode | `PatataPark`: every beat wired and drawn in KayKit pieces, nine checkpoints with two arches, the podium gate, finish and rematch |
 
 EditMode tests live in `Assets/Tests/EditMode/`. PlayMode tests live in `Assets/Tests/PlayMode/`: they load
 `PassSandbox` (or `PrototypeCourse`, `PlaytestCourse`) through `SandboxTestBase` and drive players through
@@ -48,7 +50,8 @@ unity command test_status                                      # results also in
 
 Run only the suites for the system you touched, not the whole project every time. After any throw/catch tuning
 change, run `PassFeelTests`. After a movement change, run `SprintSlideTests` and `MovementTests`. After a course
-change, run `CourseTests` / `FactoryCourseTests`.
+change, run `CourseTests` / `FactoryCourseTests`. After a kit look change (`KitSkin`, `KayKitKitBuilder`), run
+`KitSkinTests` and the course suites.
 
 ### Rules for writing tests
 
