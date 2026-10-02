@@ -4,15 +4,16 @@ namespace HotPatata
 {
     /// <summary>
     /// Purely visual: body colour and the carrier indicator. Reads state, never changes it.
-    /// The indicator is a bobbing diamond above the head, so "who has the bomb" never depends on
-    /// colour alone.
+    /// The indicator bobs above the carrier's head in the carrier yellow, shaped like the carrier's slot
+    /// (<see cref="PlayerShapeMesh"/>), so neither "who has the bomb" nor "which player" depends on colour alone.
     /// </summary>
     [RequireComponent(typeof(Player))]
     public class PlayerPresentation : MonoBehaviour
     {
         static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
 
-        [SerializeField] Renderer bodyRenderer;
+        [SerializeField, Tooltip("Every part of the character that shows the slot colour (the suit material uses the toon shader's Suit Tint).")]
+        Renderer[] bodyRenderers;
         [SerializeField] Transform carrierIndicator;
         [SerializeField] float bobHeight = 0.12f;
         [SerializeField] float bobSpeed = 4f;
@@ -20,10 +21,14 @@ namespace HotPatata
 
         Player player;
         BombController bomb;
+        MeshFilter indicatorMesh;
         MaterialPropertyBlock block;
         Vector3 indicatorBase;
         float indicatorBaseScale;
         float catchPulse;
+
+        /// <summary>The mesh the carrier indicator shows (the slot's shape).</summary>
+        public Mesh IndicatorMesh => indicatorMesh != null ? indicatorMesh.sharedMesh : null;
 
         void Awake()
         {
@@ -33,9 +38,10 @@ namespace HotPatata
             {
                 indicatorBase = carrierIndicator.localPosition;
                 indicatorBaseScale = carrierIndicator.localScale.x;
+                indicatorMesh = carrierIndicator.GetComponent<MeshFilter>();
                 carrierIndicator.gameObject.SetActive(false);
             }
-            ApplyColor();
+            ApplyIdentity();
         }
 
         void Update()
@@ -89,13 +95,19 @@ namespace HotPatata
             if (receiver == player) PulseCatch();
         }
 
-        public void ApplyColor()
+        /// <summary>The slot's colour on the body and the slot's shape on the carrier indicator.</summary>
+        public void ApplyIdentity()
         {
-            if (bodyRenderer == null) return;
+            if (indicatorMesh != null && player != null) indicatorMesh.sharedMesh = PlayerShapeMesh.For(player.Shape);
+            if (bodyRenderers == null) return;
             block ??= new MaterialPropertyBlock();
-            bodyRenderer.GetPropertyBlock(block);
-            block.SetColor(BaseColor, player != null ? player.Color : Color.white);
-            bodyRenderer.SetPropertyBlock(block);
+            foreach (var body in bodyRenderers)
+            {
+                if (body == null) continue;
+                body.GetPropertyBlock(block);
+                block.SetColor(BaseColor, player != null ? player.Color : Color.white);
+                body.SetPropertyBlock(block);
+            }
         }
 
         public void SetCarrier(bool isCarrier)

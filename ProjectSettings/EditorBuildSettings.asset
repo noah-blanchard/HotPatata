@@ -14,6 +14,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/PassSandbox.unity
     guid: d8e6413f27b16634bb059f6e9c9ed9aa
-  m_configObjects:
-    com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  - enabled: 1
+    path: Assets/Scenes/PlaytestCourse.unity
+    guid: 851abf550f6012b43a7d475e0af941c7
+  m_configObjects: {}
   m_UseUCBPForAssetBundles: 0

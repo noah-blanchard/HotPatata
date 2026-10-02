@@ -76,13 +76,16 @@ namespace HotPatata
             var stage = bomb.Fuse.Stage;
             source.PlayOneShot(BeepClip(stage), tuning.beepVolume);
             Beeped?.Invoke(stage);
-            nextBeepTime = Time.time + tuning.beepIntervals[(int)stage];
+            // A fuse zone changes the burn rate: the beep speeds up in a hot zone and slows in a cold one (spec §7.3).
+            nextBeepTime = Time.time + tuning.beepIntervals[(int)stage] / Mathf.Clamp(bomb.Fuse.Rate, 0.25f, 4f);
         }
 
         void OnStateChanged(BombState from, BombState to)
         {
             // Give a fresh bomb a beat of silence before its first beep.
             if (from == BombState.Resetting) nextBeepTime = Time.time + 0.4f;
+            // Swallowed by a tube or cannon: a low "thunk" (the exit's rising tone is TransitPresentation's).
+            if (to == BombState.InTransit) source.PlayOneShot(Pick(catchClip, ref placeholderCatch, ProceduralSfx.Catch), 0.5f);
         }
 
         void OnCaught(Player receiver) => source.PlayOneShot(Pick(catchClip, ref placeholderCatch, ProceduralSfx.Catch), 1f);

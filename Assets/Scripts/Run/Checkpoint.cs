@@ -4,8 +4,9 @@ using UnityEngine;
 namespace HotPatata
 {
     /// <summary>
-    /// Activates once ALL players are inside its trigger volume. After that, a section reset returns the
-    /// team to this checkpoint's spawn slots and hands the bomb to <see cref="CarrierSlot"/>.
+    /// Activates once ALL players are inside its trigger volume (and, for an arch checkpoint, once the bomb has flown
+    /// through its <see cref="claimGate"/> during this section attempt; PROJECT_SPEC §12.3). After that, a section reset
+    /// returns the team to this checkpoint's spawn slots and hands the bomb to <see cref="CarrierSlot"/>.
     /// </summary>
     public class Checkpoint : MonoBehaviour
     {
@@ -16,6 +17,8 @@ namespace HotPatata
         [SerializeField, Range(0, 3), Tooltip("Which player slot holds the bomb after a reset to this checkpoint.")] int carrierSlot;
         [SerializeField, Min(0f), Tooltip("Hold time for the bomb from this checkpoint onward (0 = normal). Used for the faster final sprint.")]
         float holdFuseOverride;
+        [SerializeField, Tooltip("Arch checkpoint: the gate the bomb must fly through before this checkpoint can activate (empty = normal checkpoint).")]
+        BombGate claimGate;
         [SerializeField] Renderer padRenderer;
         [SerializeField] Color inactiveColor = new Color(0.55f, 0.6f, 0.55f);
         [SerializeField] Color activeColor = new Color(0.25f, 0.9f, 0.35f);
@@ -29,6 +32,7 @@ namespace HotPatata
         public int CarrierSlot => carrierSlot;
         public float HoldFuseOverride => holdFuseOverride;
         public Transform BombAnchor => bombAnchor;
+        public BombGate ClaimGate => claimGate;
         public bool Activated { get; private set; }
 
         void Awake() => Paint(inactiveColor);
@@ -54,6 +58,7 @@ namespace HotPatata
             var run = RunManager.Instance;
             if (!NetMode.IsAuthority || Activated || run == null || run.State != RunState.Playing) return;
 
+            if (claimGate != null && !claimGate.PassedThisSection) return;
             if (PlayerZone.Collect(trigger, inside) >= run.Players.Count)
             {
                 Activated = true;

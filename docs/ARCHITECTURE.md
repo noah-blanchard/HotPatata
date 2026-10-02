@@ -271,11 +271,70 @@ PrototypeCourse
 └── Environment
 ```
 
+### `PlaytestCourse` (M10, #68)
+
+The playtest course for the bomb obstacles: one straight course along +Z (~820 m, about 10 minutes, 9 checkpoints),
+generated **entirely** by `Assets/EditorTools/PlaytestCourseBuilder.cs` (menu **HotPatata/Course/Build Playtest
+Course**). The scene was created as a copy of `PrototypeCourse` (run manager, bomb, lighting, look, spawner, test rig,
+start spawns on `SectionRoot`); every build rebuilds `SectionRoot/Course` (one group per act), the backdrop, the kill
+zone and the finish. Rebuild it after rebuilding the kit (**HotPatata/Course/Build Bomb Obstacle Prefabs**). It is
+first in the Bootstrap level list. Each new obstacle is taught alone, then combined, then twisted.
+
+**Act 1: Warm-up** (the classic kit, floor 0 → 3.8 m)
+
+| Beat | z (m) | What it asks |
+|---|---|---|
+| A Start Court | -2–30 | flat and wide, the pair starts 6 m apart |
+| B First Gap | 30–50 | 4.5 m pit, broad landing |
+| C Stair Relay | 50–74 | two 1.2 m steps, a 1.4 m mantle |
+| Checkpoint 1 | 80 | |
+| D Moving Pair | 86–98 | two platforms sliding across in opposite phase |
+| E Conveyor Hall | 110–146 | side belts forward, centre belt back, hurdles |
+| Checkpoint 2 | 152 | |
+| F Sweeper Pit | 158–188 | two knee-high lethal sweepers turning opposite ways |
+
+**Act 2: Hot & Cold** (fuse zones and laser curtains, §13.13–§13.14)
+
+| Beat | z (m) | What it asks |
+|---|---|---|
+| H Forbidden Strips | 196–232 | a 4 m then a 6 m strip the carrier may not cross: walk over, throw across |
+| I Laser Window | 232–266 | a wall with a window; runners go through the curtains on both sides |
+| Checkpoint 3 | 260 | |
+| J Hot Corridor | 266–314 | a 32 m hot zone (x2) with two sweepers; two cold pockets (x0.5) on side ledges |
+| K Laser Slalom | 314–362 | three walls, the window alternates sides; the last window is a spinning hoop |
+| Checkpoint 4 | 368 | |
+
+**Act 3: Switchboard** (gates, plates, actuators, §13.15, §13.17)
+
+| Beat | z (m) | What it asks |
+|---|---|---|
+| L Gate Bridge | 374–396 | a pass through a ring extends a bridge over a 12 m gap for 8 s |
+| M The Lock | 396–434 | a plate holds a door open; the doorway is a curtain, so the bomb goes through the window; the plate holder climbs over the wall (no carrying on top) while the catcher waits in a cold pocket |
+| Checkpoint 5 | 428 | |
+| N Shutter and Crusher | 434–470 | the window's shutter opens on a rhythm; runners slide under a crusher in a tunnel |
+| Checkpoint 6 (arch) | 480 | throw through the arch across a 4 m gap to a teammate on the pad |
+| O Switch Chain | 474–540 | ring 1 raises a lift up a 5 m cliff (12 s), ring 2 extends the next bridge (8 s) |
+| Checkpoint 7 | 530 | |
+
+**Act 4: Grand Finale** (tubes and cannon, §13.16; fuse 5 s from checkpoint 8)
+
+| Beat | z (m) | What it asks |
+|---|---|---|
+| P Tube Intro | 540–582 | the bomb goes through a tube, the runners through a curtain |
+| Q Tube Junction | 582–624 | three lanes the bomb cannot cross (falling platforms, a sweeper, a reverse belt); three mouths, one per lane, each landing on that lane's pad |
+| Checkpoint 8 | 632 | fuse 5 s |
+| R Cannon Canyon | 624–702 | the cannon fires the bomb 44 m onto the far pad while the team rides two shuttles; a cold pocket beside the cannon |
+| S Mega Slide | 702–739 | 12 m down at 18°, two lanes, hoops over the divider, a hot zone on the lower half |
+| T Finale | 739–822 | belt through two piston gates, checkpoint 9 (arch, fuse 5 s), a last ring opens the podium door, `FinishZone` at z 815 |
+
+Tests: `PlaytestCourseTests`. PassSandbox also has a small `KitDemo/BombObstacles` corner (menu **HotPatata/Course/Build
+Sandbox Bomb Obstacles**) to try the zones, curtains and a ring-driven lift with the F4 bot.
+
 ---
 
 ## 5. Project folders
 
-As built (the Unity template leftovers `TutorialInfo/` and `Scenes/SampleScene.unity` are unused):
+As built:
 
 ```text
 Assets/
@@ -283,21 +342,25 @@ Assets/
 │   ├── Materials/        kit materials (Greybox_*, Pad_*), toon materials
 │   ├── Models/           Bomb/ (potato.glb), Player/ (mannequin + animations)
 │   ├── Shaders/          HotPatata/Toon, HotPatata/Particle, HotPatata/Sky, speed lines
+│   ├── Textures/Icons/   zone and tube icons drawn in code by BombObstacleKitBuilder
 │   └── VFX/              textures for particles and trails
 ├── Audio/SFX/            optional real clips (see its README; procedural fallback otherwise)
-├── EditorTools/          CourseBuilder, PlayerAnimationSetup (HotPatata.EditorTools)
+├── EditorTools/          CourseKit, CourseBuilder, PlaytestCourseBuilder, BombObstacleKitBuilder, PlayerAnimationSetup
 ├── Prefabs/              Bomb/ Gameplay/ Network/ Obstacles/ Platforms/ Player/ VFX/
-├── Scenes/               Bootstrap, PassSandbox, PrototypeCourse
+├── Scenes/               Bootstrap, PassSandbox, PrototypeCourse, PlaytestCourse
 ├── ScriptableObjects/Tuning/GameTuning.asset
 ├── Scripts/
 │   ├── Core/             GameTuning, NetMode, SectionClock, IResettable, PatataLog
-│   ├── Networking/       NetworkBootstrap, BootstrapEntry, SessionService, NetworkPlayer/Bomb/RunState/FallingPlatform
+│   ├── Networking/       NetworkBootstrap, BootstrapEntry, SessionService, NetworkPlayer/Bomb/RunState/FallingPlatform,
+│   │                     NetworkBombGate/SignalActuator/BombTransit
 │   ├── Player/           Player, PlayerMotor, PlayerLook, PlayerThrower, PlayerCatcher, PlayerCatchVolume,
 │   │                     FirstPersonCamera, PlayerViewFeel, SpeedEffects, PlayerPresentation, PlayerAnimator, ...
 │   ├── Bomb/             BombController, BombFuse, BombPhysics, CatchResolver, FlightHistory, AimAssist,
 │   │                     ThrowBallistics, BombAudio, BombPresentation, ExplosionFx, ProceduralSfx
 │   ├── Run/              RunManager, Checkpoint, KillZone, FinishZone, PlayerZone, PlayerSpawner, PlayerSpawn
 │   ├── Obstacles/        MovingPlatform, RotatingObstacle, FallingPlatform, Conveyor, LaunchPad, IPlatformCarrier
+│   ├── Zones/            Zone, IBombZoneEffect, BombZoneSweep, FuseZone, BombBarrier, BombGate, PressurePlate,
+│   │                     ISignalSource, SignalActuator, SignalIndicator, BombTransit, TransitMouth, TransitPresentation
 │   ├── UI/               AimReticle, RunResultsUI
 │   ├── Debug/            DebugHud, LocalPlayerSwitcher, PlayerBot
 │   └── DebugTools/       Editor/dev-build only: LatencySimulator, ThrowDebugOverlay, ThrowTelemetry, PassPartner
@@ -471,7 +534,11 @@ Thrown
 CaughtGrace
 Exploding
 Resetting
+InTransit   // #68: carried by a tube or cannon, Thrown -> InTransit -> Thrown (PROJECT_SPEC §5)
 ```
+
+It also applies the fuse zones (§10.6): while the bomb is Held it ticks the fuse at `FuseZone.RateFor(carrier)` and
+explodes it (`BombFailReason.ForbiddenZone`) when the carrier stands in a forbidden zone, also during `CaughtGrace`.
 
 Responsibilities:
 
@@ -673,6 +740,9 @@ Obstacles/
 - Obstacle_Sweeper    (knee-high lethal RotatingObstacle bar)
 - Obstacle_Windmill   (lethal blades turning in a wall's plane)
 - Obstacle_Hoop       (spinning ring: a moving pass window)
+- Obstacle_Tube       (#68: up to three mouth/exit/pad routes)
+- Obstacle_Cannon     (#68: basket + barrel, one long exit arc)
+- Actuator_Door       (#68: signal-driven portcullis, lethal lower edge while closing)
 
 Gameplay/
 - PlayerSpawn
@@ -681,7 +751,14 @@ Gameplay/
 - KillZone
 - FinishZone
 - LaunchPad            (prefab lives in Obstacles/)
+- Zone_Forbidden / Zone_Hot / Zone_Cold, LaserCurtain   (#68 fuse zones)
+- BombGate_Ring, BombGate_Arch, PressurePlate           (#68 signal sources)
+
+Platforms/ (#68): Actuator_Bridge, Actuator_Lift (signal-driven)
 ```
+
+The #68 kit is generated by `BombObstacleKitBuilder` (menu **HotPatata/Course/Build Bomb Obstacle Prefabs**); its
+`Resize*`/`Configure*` helpers size placed instances with property overrides only.
 
 ### 10.3 `MovingPlatform`
 
@@ -725,6 +802,35 @@ Expose:
 - reset behavior.
 
 Must support checkpoint reset.
+
+### 10.6 Zones, signals and transit (#68)
+
+Composition, not inheritance: a `Zone` (a trigger `BoxCollider` on the `Trigger` layer, self-registering) plus one
+or more effect components on the same object.
+
+- **Players in a zone:** `Zone.CollectPlayers` → `PlayerZone.Collect` (box zones are tested as oriented boxes).
+- **The flying bomb in a zone:** `BombZoneSweep` (on the Bomb, host only) sweeps, every physics step, the stretch the
+  Thrown bomb is about to fly (cut at the first Environment/Hazard hit) against `Zone.All` and calls each touched
+  zone's `IBombZoneEffect.OnBombPassed`, nearest first. Effects are idempotent (a deep zone is reported on several
+  steps). Trigger events are never used for the bomb.
+- **`FuseZone`** (carrier): forbidden ∞ / hot x2 / cold x0.5 (`GameTuning.hotZoneFuseRate`, `coldZoneFuseRate`); the
+  most severe zone wins. `BombFuse.Rate` is set by `BombController`, mirrored by `NetworkBomb`, and shown by
+  `BombPresentation` (sparks x rate, frost tint) and `BombAudio` (beep interval / rate).
+- **`BombBarrier`** (flight): crossing is a lethal contact (`BombController.ReportZoneContact`, same late-catch hold
+  as world contact). `LaserCurtain` = forbidden `FuseZone` + `BombBarrier` + striped posts, beams and signs.
+- **Signals:** `ISignalSource` is a `BombGate` (flight effect; records the server time of the last pass, active for
+  `holdSeconds`, 0 = latched until reset) or a `PressurePlate` (any player on it). A `SignalActuator` (door, bridge,
+  lift; `IPlatformCarrier`, `IResettable`) has exactly one source. The host records only the moment the direction
+  changes (time, progress, opening); `SignalActuator.Progress` derives the motion from the server clock.
+  `NetworkBombGate` and `NetworkSignalActuator` replicate those few numbers. A door's `KillZone` edge is armed only
+  while it closes. `SignalIndicator` lights gates, plates and arches (pulsing before a timed gate closes).
+- **Checkpoint arch:** `Checkpoint.claimGate` (a latched `BombGate_Arch`) must have been passed this section.
+- **Transit:** `TransitMouth` (flight effect, the only safe volume) → `BombTransit.Capture` →
+  `BombController.EnterTransit`: the bomb is inert at the exit's hold point (inside the pipe, or in the cannon's
+  basket) until `ReleaseAt`, then `LeaveTransit` throws it from the muzzle with `BombTransit.ExitVelocity`, the arc
+  that reaches catch height above the exit's pad after `flightTime`. `LastThrower` is null, `BombThrown(null)` is
+  raised. `NetworkBombTransit` replicates the active exit and release time for `TransitPresentation` (exit lamp ramp,
+  rising tone). Resets and explosions clear a transit.
 
 ---
 
@@ -1163,11 +1269,23 @@ Soft, bright party-game toon style.
   HLSL (not Shader Graph) that reuses URP's ShadowCaster/DepthOnly/DepthNormals passes. Features: a two-band ramp with a
   tinted `_ShadeColor`, `_TopColor` on upward faces, rim, an optional spec blob, emission always added
   (MaterialPropertyBlock friendly), a fake bevel on scaled unit cubes (`_EdgeWidth`), world checker/stripes (`_Pattern`;
-  hazards are striped so they do not rely on red alone), and `_VERTEX_COLOR` for particle meshes. Particles, trails and
+  hazards are striped so they do not rely on red alone), `_VERTEX_COLOR` for particle meshes, and `_SuitTint` (players:
+  the texture's coloured swatches take `_BaseColor`, greys, whites and the face stay as painted; 0 = the usual multiply). Particles, trails and
   flashes use `HotPatata/Particle`.
 - **Materials:** the kit materials kept their names (`Greybox_*`, `Pad_*`) and were switched to the toon shader in
-  place, so prefab references did not change. The mannequin's FBX material is remapped to `Toon_Mannequin`.
+  place, so prefab references did not change. The mannequin's FBX material is remapped to `Toon_Mannequin` (`_SuitTint` = 1).
 - **Sky and grading:** skybox `HotPatata/Sky` (`Sky_HotPatata`), gradient ambient, linear fog matched to the horizon,
   and a global `LookVolume` (`Assets/Settings/Look/HotPatata_Look.asset`: Neutral tonemapping, bloom, saturation, warm
   balance) in every scene. `PC_RPAsset` uses MSAA 4x.
 - **Backdrop:** see §4 (`PrototypeCourse/Backdrop`, |x| >= 25 m, no colliders).
+- **Player identity:** one colour and one shape per slot, both in `GameTuning` (`playerColors`, `playerShapes`) and
+  read through `PlayerIdentity`. Slots 1–4: royal blue ●, sky blue ▲, plum ■, white ◆. The palette was chosen by
+  simulating protanopia, deuteranopia and tritanopia (Machado 2009, full severity) and measuring CIEDE2000: every
+  pair stays at least 23 apart in all four visions (the old orange/cyan/green/pink palette fell to 8.7 in tritanopia),
+  and every colour stays at least 18.7 from hazard red, the potato orange and glow, and the carrier yellow. Warm hues
+  are left to the bomb and hazards. Spec §19 (never colour alone): in game the whole suit takes the slot colour
+  (`PlayerPresentation.bodyRenderers`, every mannequin part, through `_SuitTint`) and the carrier indicator takes the
+  slot's shape (`PlayerShapeMesh`: sphere, pyramid, cube, octahedron, each reading as its glyph from any side while it
+  spins, in the carrier yellow); the lobby and results show the glyph in the slot colour. Simulated swatches:
+  [`images/player-palette.png`](images/player-palette.png); four players in PassSandbox, raw and simulated:
+  [`images/player-lineup.png`](images/player-lineup.png).
