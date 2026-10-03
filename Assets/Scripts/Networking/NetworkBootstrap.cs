@@ -262,8 +262,7 @@ namespace HotPatata
 
                 directMode = false;
                 autoStartPlayers = 0;
-                Cursor.lockState = CursorLockMode.None;
-                Cursor.visible = true;
+                CursorPolicy.SetGameplayLock(false);
                 mode = Mode.Menu;
                 message = reason ?? "";
                 PatataLog.Run($"[Session] left{(string.IsNullOrEmpty(reason) ? "" : ": " + reason)}");

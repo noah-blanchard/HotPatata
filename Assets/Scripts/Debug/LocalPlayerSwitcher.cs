@@ -6,7 +6,8 @@ namespace HotPatata
     /// <summary>
     /// Offline pass-sandbox test rig: a single keyboard/mouse drives ONE player at a time and the camera
     /// follows that player. Tab hands control to the next player, so one person can throw to the other
-    /// player, switch, and throw back. Esc releases the mouse cursor. Not part of the shipped game.
+    /// player, switch, and throw back. Esc releases the mouse cursor (through <see cref="CursorPolicy"/>, and not while a
+    /// UI screen is open: Esc is that screen's Back). Not part of the shipped game.
     /// Online, each machine controls only its own player, so this only handles the cursor.
     /// </summary>
     [DefaultExecutionOrder(50)]   // after the spawner has built the local rig
@@ -27,7 +28,7 @@ namespace HotPatata
         {
             if (SuppressAutoFocus || NetMode.IsNetworked) return;
             Focus(0);
-            SetCursor(lockCursor);
+            CursorPolicy.SetGameplayLock(lockCursor);
         }
 
         void Update()
@@ -37,7 +38,7 @@ namespace HotPatata
 
             if (!NetMode.IsNetworked && kb.tabKey.wasPressedThisFrame && Player.All.Count > 0)
                 Focus((focused + 1) % Player.All.Count);
-            if (kb.escapeKey.wasPressedThisFrame) SetCursor(Cursor.lockState != CursorLockMode.Locked);
+            if (kb.escapeKey.wasPressedThisFrame && !ScreenStack.AnyOpen) CursorPolicy.SetGameplayLock(!CursorPolicy.GameplayWantsLock);
         }
 
         public void Focus(int index)
@@ -50,12 +51,6 @@ namespace HotPatata
                 players[i].Input.SetSource(i == focused ? InputSource.KeyboardMouse : InputSource.None);
 
             if (cam != null) cam.Target = players[focused];
-        }
-
-        static void SetCursor(bool locked)
-        {
-            Cursor.lockState = locked ? CursorLockMode.Locked : CursorLockMode.None;
-            Cursor.visible = !locked;
         }
     }
 }

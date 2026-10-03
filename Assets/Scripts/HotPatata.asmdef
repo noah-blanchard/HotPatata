@@ -3,6 +3,7 @@
     "rootNamespace": "HotPatata",
     "references": [
         "Unity.InputSystem",
+        "UnityEngine.UI",
         "Unity.Netcode.Runtime",
         "Unity.Networking.Transport",
         "Unity.Collections",

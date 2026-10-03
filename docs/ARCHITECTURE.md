@@ -419,13 +419,16 @@ Assets/
 │   ├── Kit/              KitSkin, KitPalette (KayKit visuals, §25.1)
 │   ├── Zones/            Zone, IBombZoneEffect, BombZoneSweep, FuseZone, BombBarrier, BombGate, PressurePlate,
 │   │                     ISignalSource, SignalActuator, SignalIndicator, BombTransit, TransitMouth, TransitPresentation
-│   ├── UI/               AimReticle, RunResultsUI
+│   ├── UI/               ScreenStack, UIScreen, CursorPolicy (UI Toolkit base, §6.2), AimReticle, RunResultsUI
 │   ├── Debug/            DebugHud, LocalPlayerSwitcher, PlayerBot
-│   └── DebugTools/       Editor/dev-build only: LatencySimulator, ThrowDebugOverlay, ThrowTelemetry, PassPartner
+│   └── DebugTools/       Editor/dev-build only: LatencySimulator, ThrowDebugOverlay, ThrowTelemetry, PassPartner,
+│                         UISampleScreen
 ├── Settings/             URP assets (PC_RPAsset, PC_Renderer), Look/HotPatata_Look.asset
-└── Tests/
-    ├── EditMode/
-    └── PlayMode/
+├── Tests/
+│   ├── EditMode/
+│   └── PlayMode/
+└── UI/                   UI Toolkit (§6.2): Screens/ (UXML), Styles/ (HotPatata.uss, HotPatataTheme.tss), Fonts/,
+                          Resources/HotPatataPanel.asset (PanelSettings)
 ```
 
 Keep folder naming boring and predictable.
@@ -487,6 +490,31 @@ limited to the device, Esc / Start cancels), reports conflicts on the same contr
 The overrides are saved as `SettingsData.bindingOverrides` (`SaveBindingOverridesAsJson`). Each `PlayerInputReader`
 applies them to its own copy of HotPatataControls on creation and again on `Settings.Changed`, so a rebind works
 immediately. A screen edits `InputRebinding.CreateEditableCopy(asset)` and commits with `InputRebinding.Commit`.
+
+### 6.2 UI: screens and HUD (#14)
+
+**Decision (owner):** UI Toolkit for menus, screens and the HUD; uGUI only for world-space UI. IMGUI (`OnGUI`) stays
+for dev tools only, and the remaining IMGUI screens (menu and lobby #15, results #23, HUD #24) migrate onto this base.
+
+- **Panel and theme.** One `PanelSettings`, `Assets/UI/Resources/HotPatataPanel.asset` (scale with screen size from
+  1920x1080, match 0.5, sort order 100), with the theme `Assets/UI/Styles/HotPatataTheme.tss` = Unity's runtime theme +
+  `HotPatata.uss`. Screens style themselves with its `hp-*` classes: `hp-overlay` (dimmed, centred), `hp-panel`,
+  `hp-title`, `hp-hint`, `hp-button` (+ `hp-button--secondary`), `hp-toggle`, `hp-slider`. Focus shows as a yellow
+  ring. The font is Unity's default until a licensed toon font is chosen (`Assets/UI/Fonts`).
+- **`ScreenStack`** (`Assets/Scripts/UI`): the screen router, created on first use (`ScreenStack.Get()`) as a
+  persistent `UIRoot` object, so it works from Bootstrap and in a gameplay scene played directly. `Push` /
+  `Pop` / `Clear` / `Back`. Only the top screen shows. Focus goes to the screen's first element (or the one with
+  `hp-first-focus`) and returns to where it was when the screen above closes. Back is the UI Cancel action (Esc,
+  gamepad B) and goes to the top screen's `OnBack` (a root menu sets `CanGoBack` to false).
+- **`UIScreen`**: one screen, its tree built in code or from a UXML template in `Assets/UI/Screens`
+  (`FromTemplate`); `ReleasesCursor` (menus: yes), `CanGoBack`, `OnShow` / `OnHide` / `OnBack`, `FirstFocus`.
+- **Navigation.** UI Toolkit reads keyboard and gamepad through an `EventSystem` with the Input System
+  `InputSystemUIInputModule` and its default UI actions (arrows / WASD / stick / d-pad, Enter / A, Esc / B). The stack
+  creates one under `UIRoot` if the scene has none. The mouse works directly.
+- **Cursor.** `CursorPolicy` is the only code that sets `Cursor.lockState`: gameplay asks for a lock
+  (`SetGameplayLock`: the local rig, `NetworkPlayer`, leaving a game), a screen on top that releases the cursor wins
+  over it, and closing the screen gives the lock back. `LocalPlayerSwitcher` leaves Esc alone while a screen is open.
+- **Dev check.** F6 or gamepad Select opens `UISampleScreen` (dev builds only) in any scene.
 
 ---
 
