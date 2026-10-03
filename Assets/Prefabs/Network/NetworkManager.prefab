@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 1251900119693681603}
   - component: {fileID: 497166794128288140}
   - component: {fileID: 4806769454715036340}
+  - component: {fileID: 8943435544806325941}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -129,3 +130,16 @@ MonoBehaviour:
   sceneCheckpoints: 09000000090000000700000001000000
   port: 7777
   tuning: {fileID: 11400000, guid: 35604efc4188ead42afe90813d44683f, type: 2}
+--- !u!114 &8943435544806325941
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5564819347932985297}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 92f5ec58921848647a4f4a54aa6ecbb3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: HotPatata::HotPatata.AudioVolumes
+  mixer: {fileID: 24100000, guid: 76df18f77795c6840806660333edcf41, type: 2}

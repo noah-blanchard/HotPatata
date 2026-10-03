@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Audio;
 
 namespace HotPatata
 {
@@ -17,6 +18,8 @@ namespace HotPatata
         [SerializeField, ColorUsage(false, true)] Color warnEmission = new Color(1.6f, 1.3f, 0.5f);
         [SerializeField, Min(0.05f)] float warnSeconds = 0.5f;
         [SerializeField, Range(0f, 1f)] float toneVolume = 0.7f;
+        [SerializeField, Tooltip("Mixer group of the tone (HotPatataMixer SFX), so the effects volume applies.")]
+        AudioMixerGroup output;
 
         BombTransit transit;
         MaterialPropertyBlock block;
@@ -48,8 +51,20 @@ namespace HotPatata
                 warnedFor = transit.ReleaseAt;
                 var muzzle = transit.GetExit(active).muzzle;
                 riseClip ??= ProceduralSfx.Rise(warnSeconds);
-                if (muzzle != null) AudioSource.PlayClipAtPoint(riseClip, muzzle.position, toneVolume);
+                if (muzzle != null) PlayAt(riseClip, muzzle.position);
             }
+        }
+
+        /// <summary>Like AudioSource.PlayClipAtPoint, but through <see cref="output"/>.</summary>
+        void PlayAt(AudioClip clip, Vector3 position)
+        {
+            var go = new GameObject("TransitTone");
+            go.transform.position = position;
+            var source = go.AddComponent<AudioSource>();
+            source.outputAudioMixerGroup = output;
+            source.spatialBlend = 1f;
+            source.PlayOneShot(clip, toneVolume);
+            Destroy(go, clip.length + 0.1f);
         }
     }
 }

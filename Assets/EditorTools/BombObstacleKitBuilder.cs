@@ -35,6 +35,7 @@ namespace HotPatata.Editor
         public const string Tube = ObstaclesDir + "Obstacle_Tube";
         public const string Cannon = ObstaclesDir + "Obstacle_Cannon";
         const string TuningPath = "Assets/ScriptableObjects/Tuning/GameTuning.asset";
+        const string MixerPath = "Assets/Audio/HotPatataMixer.mixer";
         public const int TubeSlots = 3;
 
         public static readonly Vector3 DoorSize = new Vector3(4f, 3.6f, 0.5f);
@@ -369,6 +370,16 @@ namespace HotPatata.Editor
 
         static GameTuning Tuning => AssetDatabase.LoadAssetAtPath<GameTuning>(TuningPath);
 
+        /// <summary>The mixer's SFX group, so the transit tone follows the effects volume.</summary>
+        static UnityEngine.Audio.AudioMixerGroup SfxGroup
+        {
+            get
+            {
+                var groups = AssetDatabase.LoadAssetAtPath<UnityEngine.Audio.AudioMixer>(MixerPath)?.FindMatchingGroups("Master/SFX");
+                return groups != null && groups.Length > 0 ? groups[0] : null;
+            }
+        }
+
         /// <summary>A ring of <paramref name="segments"/> collision blocks in the local XY plane (facing Z), on <paramref name="layer"/>.</summary>
         static void Ring(Transform parent, float radius, int segments, float thickness, string layer)
         {
@@ -463,7 +474,8 @@ namespace HotPatata.Editor
             var transit = root.AddComponent<BombTransit>();
             SetField(transit, "delay", p => p.floatValue = delay);
             SetReference(transit, "tuning", Tuning);
-            root.AddComponent<TransitPresentation>();
+            var presentation = root.AddComponent<TransitPresentation>();
+            SetReference(presentation, "output", SfxGroup);
             root.AddComponent<NetworkObject>();
             root.AddComponent<NetworkBombTransit>();
             return transit;
