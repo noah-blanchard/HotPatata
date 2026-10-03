@@ -143,6 +143,15 @@ namespace HotPatata
             Changed?.Invoke(Index);
         }
 
+        /// <summary>Replaces the choices (e.g. the spawn points of another level) and selects <paramref name="index"/>, without notifying.</summary>
+        public void SetOptions(IList<string> choices, int index)
+        {
+            options.Clear();
+            options.AddRange(choices);
+            Index = Mathf.Clamp(index, 0, Mathf.Max(0, options.Count - 1));
+            valueLabel.text = options.Count > 0 ? options[Index] : "";
+        }
+
         public void SetIndexWithoutNotify(int index)
         {
             if (options.Count == 0) return;

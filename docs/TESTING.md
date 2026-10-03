@@ -77,6 +77,8 @@ change, run `CourseTests` / `FactoryCourseTests`. After a kit look change (`KitS
 
 - **F6** or gamepad **Select** opens the `UISampleScreen` (UI Toolkit base, #14) to check the theme, focus and
   mouse / keyboard / gamepad navigation in any scene.
+- The main menu and the lobby are UI Toolkit screens (#15), navigable with the mouse, the keyboard and a gamepad.
+  Batch-mode runs (the bots below) create no UI: the command line drives the session flow.
 - **Esc** or gamepad **Start** opens the pause menu (#16; offline it freezes the game), with Settings (#17) inside;
   the main menu has a Settings button too. **F10** still leaves a networked game at once.
 - **F3** toggles `ThrowDebugOverlay`: raw and assisted aim, assist cone, arcs, catch reach, last flight.

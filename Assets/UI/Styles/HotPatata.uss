@@ -234,3 +234,77 @@
     margin-left: 12px;
     min-width: 220px;
 }
+
+/* Main menu and lobby (#15): a compact column over the menu scene. */
+.hp-overlay--menu {
+    background-color: rgba(10, 14, 28, 0.35);
+}
+
+.hp-panel--menu {
+    width: 680px;
+    max-height: 96%;
+    padding: 24px 36px;
+}
+
+.hp-panel--menu .hp-button {
+    height: 50px;
+    margin: 4px 0;
+    font-size: 22px;
+}
+
+.hp-panel--menu .hp-row {
+    min-height: 50px;
+}
+
+.hp-field {
+    margin: 4px 0;
+    min-height: 50px;
+    padding: 2px 12px;
+    border-radius: var(--hp-radius);
+    border-width: 4px;
+    border-color: rgba(0, 0, 0, 0);
+    background-color: rgba(255, 255, 255, 0.04);
+    align-items: center;
+}
+
+.hp-field:focus {
+    border-color: var(--hp-accent);
+}
+
+.hp-field .unity-base-field__label {
+    min-width: 200px;
+    font-size: 22px;
+    color: var(--hp-ink);
+}
+
+.hp-field .unity-base-text-field__input {
+    font-size: 22px;
+    min-height: 38px;
+    color: #10141F;
+    background-color: var(--hp-ink);
+    border-radius: 8px;
+}
+
+.hp-group {
+    margin: 2px 0 2px 16px;
+}
+
+.hp-error {
+    color: #FF8A7A;
+    margin-top: 8px;
+}
+
+.hp-code {
+    font-size: 64px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    letter-spacing: 8px;
+    color: var(--hp-accent);
+    margin: 0 0 8px 0;
+}
+
+.hp-player {
+    font-size: 24px;
+    color: var(--hp-ink);
+    margin: 2px 0;
+}

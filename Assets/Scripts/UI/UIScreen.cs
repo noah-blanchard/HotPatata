@@ -48,10 +48,14 @@ namespace HotPatata
             return element;
         }
 
+        static bool KeyboardHeld => UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.anyKey.isPressed;
+
         void OnNavigate(NavigationMoveEvent e)
         {
             int step = e.direction == NavigationMoveEvent.Direction.Up ? -1 : e.direction == NavigationMoveEvent.Direction.Down ? 1 : 0;
             if (step == 0) return;
+            // Typing in a text field: the keyboard's arrows and WASD belong to the text (Tab still moves on); a gamepad navigates.
+            if (KeyboardHeld && (e.target as VisualElement)?.GetFirstOfType<TextField>() != null) return;
             int from = navigation.FindIndex(n => n.focusController != null && n.focusController.focusedElement == n);
             for (int i = 1; i <= navigation.Count; i++)
             {

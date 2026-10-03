@@ -125,13 +125,14 @@ Bootstrap
 
 As built: the `Bootstrap` scene holds `BootstrapEntry`, which instantiates the persistent `NetworkManager` prefab
 (`Assets/Prefabs/Network`: `NetworkManager` + `UnityTransport` + `NetworkBootstrap`) exactly once. `NetworkBootstrap`
-draws the menu (Host Online / Join with code / Play Local / Direct IP, choose Course or Sandbox via `gameplayScenes`)
-and the lobby; `SessionService` wraps Multiplayer Services. See §13.1.
+runs the session flow (Host Online / Join with code / Play Local / Direct IP, the level from `gameplayScenes`) and
+`SessionService` wraps Multiplayer Services (§13.1); the menu and the lobby are UI Toolkit screens drawn by `MenuView`
+(§6.2).
 
 ### `Lobby`
 
-As built: **not a separate scene.** The lobby is a UI state of `Bootstrap`, drawn by `NetworkBootstrap` (session code,
-player list with host marker, Start for the host). The menu and the host's lobby also pick the **spawn point**
+As built: **not a separate scene.** The lobby is a phase of `NetworkBootstrap` in `Bootstrap`, shown by
+`LobbyScreen` (session code, player list with host marker, Start for the host; §6.2). The menu and the host's lobby also pick the **spawn point**
 (`Start` or `CP1`..`CPn`, stored in `RunOptions.StartCheckpoint`): `RunManager` begins the run, and every rematch, as
 if the team had just reached that checkpoint (its spawns, carrier slot and fuse; earlier checkpoints count as reached).
 It is a practice aid; only the authority's choice matters. The original plan follows.
@@ -420,7 +421,7 @@ Assets/
 │   ├── Kit/              KitSkin, KitPalette (KayKit visuals, §25.1)
 │   ├── Zones/            Zone, IBombZoneEffect, BombZoneSweep, FuseZone, BombBarrier, BombGate, PressurePlate,
 │   │                     ISignalSource, SignalActuator, SignalIndicator, BombTransit, TransitMouth, TransitPresentation
-│   ├── UI/               ScreenStack, UIScreen, CursorPolicy (UI Toolkit base, §6.2), PauseMenu, SettingsScreen,
+│   ├── UI/               ScreenStack, UIScreen, CursorPolicy (UI Toolkit base, §6.2), MenuView, PauseMenu, SettingsScreen,
 │   │                     SettingRows, ConfirmScreen, AimReticle, RunResultsUI
 │   ├── Debug/            DebugHud, LocalPlayerSwitcher, PlayerBot
 │   └── DebugTools/       Editor/dev-build only: LatencySimulator, ThrowDebugOverlay, ThrowTelemetry, PassPartner,
@@ -496,7 +497,7 @@ immediately. A screen edits `InputRebinding.CreateEditableCopy(asset)` and commi
 ### 6.2 UI: screens and HUD (#14)
 
 **Decision (owner):** UI Toolkit for menus, screens and the HUD; uGUI only for world-space UI. IMGUI (`OnGUI`) stays
-for dev tools only, and the remaining IMGUI screens (menu and lobby #15, results #23, HUD #24) migrate onto this base.
+for dev tools only; the menu and the lobby moved onto this base (#15), the results (#23) and the HUD (#24) follow.
 
 - **Panel and theme.** One `PanelSettings`, `Assets/UI/Resources/HotPatataPanel.asset` (scale with screen size from
   1920x1080, match 0.5, sort order 100), with the theme `Assets/UI/Styles/HotPatataTheme.tss` = Unity's runtime theme +
@@ -519,7 +520,23 @@ for dev tools only, and the remaining IMGUI screens (menu and lobby #15, results
   over it, and closing the screen gives the lock back. Esc belongs to the pause menu, not to the cursor.
 - **Dev check.** F6 or gamepad Select opens `UISampleScreen` (dev builds only) in any scene.
 
-**Screens built on it (#16, #17).**
+**Screens built on it (#15, #16, #17).**
+
+- **Main menu and lobby** (`MenuView`, `Assets/Scripts/UI/MenuView.cs`, #15). `NetworkBootstrap` is logic only (the
+  session flow, the command line, no drawing); it exposes its phase (`Menu`, `Working`, `Lobby`, `InGame`), status,
+  last message, selected level and spawn point, and the lobby list. `MenuView`, which `NetworkBootstrap` adds outside
+  batch mode (headless bots run without UI), shows the matching screen and clears the stack when the phase changes:
+
+  | Phase | Screen | What it holds |
+  |---|---|---|
+  | Menu | `MainMenuScreen` (root, Back does nothing) | your name, level and spawn point, Host Online, game code + Join with code, Play Local, Settings, Direct connection toggle (address, Join IP, Host), the last error |
+  | Working | `WorkingScreen` | "Creating your game...", "Joining ...", "Connecting..." |
+  | Lobby | `LobbyScreen` | the game code (Copy code), players with slot colour and shape, (host) and (you) tags, the host's level / spawn / Start, else "Waiting for the host to start...", Leave; Back asks before leaving |
+  | InGame | none | the level owns the screen (pause menu) |
+
+  The screens re-read the bootstrap's state every 200 ms (messages, the lobby list) and call its public methods
+  (`HostOnlineAsync`, `JoinCodeAsync`, `PlayLocal`, `StartHostDirect`, `StartClientDirect`, `StartLevel`,
+  `LeaveAsync`). Text fields keep the keyboard's arrows and WASD while you type; a gamepad still moves between rows.
 
 - **Pause menu** (`PauseScreen`, `PauseMenu`, `Assets/Scripts/UI/PauseMenu.cs`): Resume, Settings, Leave to menu
   (behind a `ConfirmScreen` whose safe answer, Cancel, has the focus).
@@ -537,8 +554,7 @@ for dev tools only, and the remaining IMGUI screens (menu and lobby #15, results
   - Leave goes through `NetworkBootstrap.LeaveAsync` (in session mode `SessionService.LeaveAsync`, never
     `NetworkManager.Shutdown`); a course played directly in the Editor loads the entry scene (build index 0). The
     IMGUI in-game Leave button is gone; F10 still leaves, as a dev shortcut.
-- **Settings screen** (`SettingsScreen`, #17), reachable from the main menu (IMGUI Settings button, the menu hides
-  while a screen is open) and the pause menu. Sections and rows:
+- **Settings screen** (`SettingsScreen`, #17), reachable from the main menu and the pause menu. Sections and rows:
 
   | Section | Rows (stored in `SettingsData`) |
   |---|---|

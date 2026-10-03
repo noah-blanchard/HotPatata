@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using UnityEngine;
@@ -8,7 +9,9 @@ namespace HotPatata
 {
     /// <summary>
     /// Session startup and the lobby (Milestone 4). Lives on the NetworkManager object, which persists across
-    /// scenes, so there is exactly one of them.
+    /// scenes, so there is exactly one of them. This is the logic only: the menu and the lobby are drawn by
+    /// <see cref="MenuView"/> (UI Toolkit, #15), which reads the state below and calls the public methods. In batch mode
+    /// (headless bots) there is no view; the command line drives everything.
     ///
     ///   Menu  --Host Online--> Lobby (code + player list + Start, host only)
     ///         --Join code----> Lobby (waits for the host)          --host Start--> everybody loads the level
@@ -28,7 +31,8 @@ namespace HotPatata
     [DefaultExecutionOrder(-1000)]
     public class NetworkBootstrap : MonoBehaviour
     {
-        enum Mode { Menu, Working, Lobby, InGame }
+        /// <summary>Menu: the main menu. Working: creating or joining a game. Lobby: in an online lobby. InGame: in a level.</summary>
+        public enum Mode { Menu, Working, Lobby, InGame }
 
         public static NetworkBootstrap Instance { get; private set; }
 
@@ -46,11 +50,8 @@ namespace HotPatata
         Mode mode = Mode.Menu;
         int sceneIndex;
         string ip = "127.0.0.1";
-        string codeInput = "";
-        string nameInput = "";
         string message = "";
         string status = "";
-        bool showDirect;
         bool directMode;       // LAN / testing: the level loads as soon as the host starts
         bool leaving;
         int autoStartPlayers;
@@ -59,6 +60,32 @@ namespace HotPatata
         int SceneCheckpoints => sceneIndex >= 0 && sceneIndex < sceneCheckpoints.Length ? sceneCheckpoints[sceneIndex] : 0;
 
         public bool InSession => mode == Mode.InGame;
+        public Mode Phase => mode;
+        /// <summary>What a Working phase is doing ("Creating your game...").</summary>
+        public string Status => status;
+        public GameTuning Tuning => tuning;
+        public IReadOnlyList<string> GameplayScenes => gameplayScenes;
+
+        /// <summary>The level the menu / host lobby has selected; the spawn point is clamped to its checkpoints.</summary>
+        public int SceneIndex
+        {
+            get => sceneIndex;
+            set
+            {
+                sceneIndex = Mathf.Clamp(value, 0, gameplayScenes.Length - 1);
+                RunOptions.StartCheckpoint = Mathf.Clamp(RunOptions.StartCheckpoint, 0, SceneCheckpoints);
+            }
+        }
+
+        /// <summary>Highest checkpoint of the selected level (its spawn choices are Start and CP1..CPn).</summary>
+        public int SceneCheckpointCount => SceneCheckpoints;
+
+        /// <summary>The address for a direct (LAN / testing) connection.</summary>
+        public string DirectAddress
+        {
+            get => ip;
+            set => ip = value;
+        }
         public string SessionCode => sessions.Current?.Code;
         public int LobbyPlayerCount => sessions.Current == null ? 0
             : nm.IsServer ? Mathf.Min(sessions.Current.PlayerCount, nm.ConnectedClientsIds.Count) : sessions.Current.PlayerCount;
@@ -83,6 +110,7 @@ namespace HotPatata
         void Start()
         {
             if (Instance != this) return;
+            if (!Application.isBatchMode) gameObject.AddComponent<MenuView>();   // headless bots need no UI
 
             nm.OnServerStarted += OnServerStarted;
             nm.OnClientDisconnectCallback += OnClientDisconnected;
@@ -90,7 +118,6 @@ namespace HotPatata
             sessions.Ended += reason => { if (!leaving) _ = LeaveAsync(reason); };
 
             ParseCommandLine();
-            nameInput = PlayerNames.Local;
         }
 
         void OnDestroy()
@@ -299,137 +326,48 @@ namespace HotPatata
         /// <summary>Debug only: delay every packet this side sends by <paramref name="milliseconds"/>.</summary>
         public void SimulateLatency(int milliseconds) => LatencyRequested?.Invoke(gameObject, milliseconds);
 
-        // ------------------------------------------------------------------ UI (utilitarian on purpose)
+        // ------------------------------------------------------------------ state for the menu view (MenuView, ARCHITECTURE §6.2)
 
-        GUIStyle big, error, rich;
-
-        void OnGUI()
+        /// <summary>One line of the lobby list: the coloured slot glyph and name (rich text), and the host / you tags.</summary>
+        public readonly struct LobbyPlayer
         {
-            big ??= new GUIStyle(GUI.skin.label) { fontSize = 34, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
-            error ??= new GUIStyle(GUI.skin.label) { wordWrap = true, normal = { textColor = new Color(1f, 0.45f, 0.4f) } };
-            rich ??= new GUIStyle(GUI.skin.label) { richText = true };
+            public readonly string Label;
+            public readonly bool IsHost, IsYou;
 
-            if (ScreenStack.AnyOpen) return;   // a UI Toolkit screen (settings) is on top of the menu
-
-            switch (mode)
+            public LobbyPlayer(string label, bool isHost, bool isYou)
             {
-                case Mode.InGame: break;   // leaving a game: the pause menu (Esc / Start), or F10 in a dev pinch
-                case Mode.Menu: DrawMenu(); break;
-                case Mode.Working: DrawPanel("HotPatata", () => GUILayout.Label(status)); break;
-                case Mode.Lobby: DrawLobby(); break;
+                Label = label;
+                IsHost = isHost;
+                IsYou = isYou;
             }
         }
 
-        void DrawPanel(string title, Action content, float height = 320f)
+        public bool HasLobby => sessions.Current != null;
+        public string LobbyCode => sessions.Current?.Code;
+        public bool IsLobbyHost => sessions.Current != null && sessions.Current.IsHost;
+        public int LobbyMaxPlayers => sessions.Current?.MaxPlayers ?? 0;
+
+        /// <summary>The lobby list in slot order (level slots are handed out in connection order, so usually the slot each player gets).</summary>
+        public List<LobbyPlayer> LobbyPlayers()
         {
-            const float w = 360f;
-            var box = new Rect((Screen.width - w) * 0.5f, Screen.height * 0.18f, w, height);
-            GUI.Box(box, title);
-            GUILayout.BeginArea(new Rect(box.x + 16, box.y + 30, w - 32, height - 40));
-            content();
-            GUILayout.EndArea();
-        }
-
-        void DrawMenu()
-        {
-            DrawPanel("HotPatata", () =>
-            {
-                GUILayout.BeginHorizontal();
-                GUILayout.Label("Your name", GUILayout.Width(80));
-                string typed = GUILayout.TextField(nameInput, PlayerNames.MaxLength, GUILayout.Height(24));
-                GUILayout.EndHorizontal();
-                if (typed != nameInput) PlayerNames.Local = nameInput = typed;   // saved locally; the host cleans it up when shared
-                GUILayout.Space(4);
-
-                GUILayout.Label("Level");
-                sceneIndex = GUILayout.SelectionGrid(sceneIndex, gameplayScenes, gameplayScenes.Length, GUILayout.Height(26));
-                DrawStartCheckpoint(26f);
-                GUILayout.Space(8);
-
-                if (GUILayout.Button("Host Online  (get a game code)", GUILayout.Height(32))) _ = HostOnlineAsync();
-                GUILayout.Space(6);
-                GUILayout.BeginHorizontal();
-                codeInput = SessionService.NormalizeCode(GUILayout.TextField(codeInput, SessionService.CodeLength, GUILayout.Width(150), GUILayout.Height(32)));
-                if (GUILayout.Button("Join with code", GUILayout.Height(32))) _ = JoinCodeAsync(codeInput);
-                GUILayout.EndHorizontal();
-                GUILayout.Space(6);
-                if (GUILayout.Button("Play Local  (2 players, one keyboard)", GUILayout.Height(28))) PlayLocal();
-                GUILayout.Space(6);
-                if (GUILayout.Button("Settings", GUILayout.Height(28))) ScreenStack.Get().Push(new SettingsScreen(tuning));
-
-                GUILayout.Space(6);
-                showDirect = GUILayout.Toggle(showDirect, "Direct connection (LAN / testing)");
-                if (showDirect)
-                {
-                    GUILayout.BeginHorizontal();
-                    ip = GUILayout.TextField(ip, GUILayout.Width(150), GUILayout.Height(24));
-                    if (GUILayout.Button("Join IP")) StartClientDirect(ip);
-                    if (GUILayout.Button("Host")) StartHostDirect();
-                    GUILayout.EndHorizontal();
-                }
-
-                if (!string.IsNullOrEmpty(message)) GUILayout.Label(message, error);
-            }, showDirect ? 470f : 440f);
-        }
-
-        void DrawLobby()
-        {
+            var list = new List<LobbyPlayer>();
             var session = sessions.Current;
-            if (session == null)
-            {
-                DrawPanel("HotPatata", () => GUILayout.Label("Connecting..."));
-                return;
-            }
-
-            DrawPanel("Lobby", () =>
-            {
-                GUILayout.Label("Game code", GUILayout.Height(18));
-                GUILayout.Label(session.Code, big, GUILayout.Height(46));
-                if (GUILayout.Button("Copy code")) GUIUtility.systemCopyBuffer = session.Code;
-                GUILayout.Space(8);
-
-                // The service keeps a crashed player listed for a while; the host knows who is really connected.
-                var players = session.Players;
-                int shown = session.IsHost && nm.IsServer ? Mathf.Min(players.Count, nm.ConnectedClientsIds.Count) : players.Count;
-                GUILayout.Label($"Players ({shown}/{session.MaxPlayers})");
-                for (int i = 0; i < shown; i++)
-                {
-                    string tag = players[i].Id == session.Host ? "  (host)" : "";
-                    string you = players[i].Id == session.CurrentPlayer.Id ? "  (you)" : "";
-                    // Level slots are handed out in connection order, so the list index is usually the slot the
-                    // player gets in the level (not guaranteed after someone leaves the lobby).
-                    GUILayout.Label($"   {PlayerIdentity.RichLabel(tuning, i, SessionService.NameOf(players[i], i))}{tag}{you}", rich);
-                }
-                GUILayout.Space(8);
-
-                if (session.IsHost)
-                {
-                    GUILayout.Label("Level");
-                    sceneIndex = GUILayout.SelectionGrid(sceneIndex, gameplayScenes, gameplayScenes.Length, GUILayout.Height(24));
-                    DrawStartCheckpoint(24f);
-                    if (GUILayout.Button("Start", GUILayout.Height(32))) StartLevel();
-                }
-                else
-                {
-                    GUILayout.Label("Waiting for the host to start...");
-                }
-
-                if (GUILayout.Button("Leave", GUILayout.Height(26))) _ = LeaveAsync(null);
-            }, session.IsHost ? 450f : 400f);
+            if (session == null) return list;
+            // The service keeps a crashed player listed for a while; the host knows who is really connected.
+            var players = session.Players;
+            int shown = session.IsHost && nm.IsServer ? Mathf.Min(players.Count, nm.ConnectedClientsIds.Count) : players.Count;
+            for (int i = 0; i < shown; i++)
+                list.Add(new LobbyPlayer(PlayerIdentity.RichLabel(tuning, i, SessionService.NameOf(players[i], i)),
+                                         players[i].Id == session.Host, players[i].Id == session.CurrentPlayer.Id));
+            return list;
         }
 
-        /// <summary>Where the run starts: the beginning or one of the level's checkpoints (<see cref="RunOptions"/>).</summary>
-        void DrawStartCheckpoint(float height)
+        /// <summary>The spawn choices of the selected level: Start, then CP1..CPn (<see cref="RunOptions.StartCheckpoint"/>).</summary>
+        public static List<string> SpawnLabels(int checkpoints)
         {
-            int count = SceneCheckpoints;
-            RunOptions.StartCheckpoint = Mathf.Clamp(RunOptions.StartCheckpoint, 0, count);
-            if (count == 0) return;
-
-            var labels = new string[count + 1];
-            labels[0] = "Start";
-            for (int i = 1; i <= count; i++) labels[i] = "CP" + i;
-            GUILayout.Label("Spawn at");
-            RunOptions.StartCheckpoint = GUILayout.SelectionGrid(RunOptions.StartCheckpoint, labels, labels.Length, GUILayout.Height(height));
+            var labels = new List<string> { "Start" };
+            for (int i = 1; i <= checkpoints; i++) labels.Add("CP" + i);
+            return labels;
         }
 
         static class Keys
