@@ -65,8 +65,8 @@ namespace HotPatata.Editor
 
         static void BuildAct2(Transform act)
         {
-            var floor = Mat("Greybox_Floor");
-            var wall = Mat("Greybox_Wall");
+            const KitRole floor = KitRole.Ground;
+            const KitRole wall = KitRole.Wall;
 
             // CP4 on the old finish platform (G_Finish, top 8.4).
             AddCheckpoint(act, "CP_04", 4, new Vector3(0f, 8.4f, 291.6f), 0f);
@@ -123,8 +123,8 @@ namespace HotPatata.Editor
 
         static void BuildAct3(Transform act)
         {
-            var plat = Mat("Greybox_Platform");
-            var wall = Mat("Greybox_Wall");
+            const KitRole plat = KitRole.Ground;
+            const KitRole wall = KitRole.Wall;
 
             // --- L Elevator Tower: 9.6 -> 30.6 with the team (and the bomb) together.
             Block(act, "L_Base", new Vector3(0f, 8.6f, 491f), new Vector3(16f, 2f, 16f), plat);             // z 483..499
@@ -163,9 +163,8 @@ namespace HotPatata.Editor
             Vector3 top0 = new Vector3(0f, topY, startZ);
             Vector3 OnSlope(float x, float along, float height) => top0 + Vector3.right * x + fwd * along + up * height;
 
-            var slideMat = Mat("Greybox_Slide");
-            Block(act, "M_Lane_L", OnSlope(-2.5f, length / 2f, -0.5f), new Vector3(4f, 1f, length), slideMat, rot);
-            Block(act, "M_Lane_R", OnSlope(2.5f, length / 2f, -0.5f), new Vector3(4f, 1f, length), slideMat, rot);
+            Block(act, "M_Lane_L", OnSlope(-2.5f, length / 2f, -0.5f), new Vector3(4f, 1f, length), KitRole.Slide, rot, flip: SlideFlip);
+            Block(act, "M_Lane_R", OnSlope(2.5f, length / 2f, -0.5f), new Vector3(4f, 1f, length), KitRole.Slide, rot, flip: SlideFlip);
             Block(act, "M_Divider", OnSlope(0f, length / 2f, -0.2f), new Vector3(1f, 1.6f, length), wall, rot);          // 0.6 m above the lanes
             Block(act, "M_Rail_L", OnSlope(-4.75f, length / 2f, 0f), new Vector3(0.5f, 2.4f, length), wall, rot);        // 1.2 m rails
             Block(act, "M_Rail_R", OnSlope(4.75f, length / 2f, 0f), new Vector3(0.5f, 2.4f, length), wall, rot);
@@ -228,9 +227,9 @@ namespace HotPatata.Editor
             BuildMaterials();
             MakePrefab(PlatformsDir + "Platform_Conveyor.prefab", overwrite, BuildConveyorPrefab);
             MakePrefab(PlatformsDir + "Platform_Elevator.prefab", overwrite,
-                       () => BuildMoverPrefab("Platform_Elevator", new Vector3(3f, 0.5f, 3f), new Vector3(0f, 7f, 0f), Mat("Greybox_Moving"), 2.3f, 0.3f));
+                       () => BuildMoverPrefab("Platform_Elevator", new Vector3(3f, 0.5f, 3f), new Vector3(0f, 7f, 0f), KitRole.Mover, 2.3f, 0.3f));
             MakePrefab(ObstaclesDir + "Obstacle_Piston.prefab", overwrite,
-                       () => BuildMoverPrefab("Obstacle_Piston", new Vector3(8f, 1f, 6f), new Vector3(0f, 3f, 0f), Mat("Greybox_Moving"), 1.2f, 0.4f));
+                       () => BuildMoverPrefab("Obstacle_Piston", new Vector3(8f, 1f, 6f), new Vector3(0f, 3f, 0f), KitRole.Mover, 1.2f, 0.4f));
             MakePrefab(ObstaclesDir + "Obstacle_Crusher.prefab", overwrite, BuildCrusherPrefab);
             MakePrefab(ObstaclesDir + "Obstacle_Sweeper.prefab", overwrite, BuildSweeperPrefab);
             MakePrefab(ObstaclesDir + "Obstacle_Windmill.prefab", overwrite, BuildWindmillPrefab);
@@ -243,7 +242,8 @@ namespace HotPatata.Editor
             var root = new GameObject("Platform_Conveyor") { layer = Layer("Environment") };
             root.AddComponent<BoxCollider>();
             root.transform.localScale = new Vector3(4f, 1f, 12f);
-            var visual = Cube("Visual", root.transform, Vector3.zero, Vector3.one, Mat("Greybox_Conveyor"), "Environment");
+            var visual = Cube("Visual", root.transform, Vector3.zero, Vector3.one, KitRole.Belt, "Environment");
+            Skin(visual, KitRole.Belt, flip: true);   // the default belt carries forward (+Z)
             var conveyor = root.AddComponent<Conveyor>();
             SetField(conveyor, "beltRenderers", p =>
             {
@@ -254,13 +254,13 @@ namespace HotPatata.Editor
         }
 
         /// <summary>MovingPlatform root / Platform (kinematic) / Visual + Collision, Waypoint_A at the root, Waypoint_B at <paramref name="travel"/>.</summary>
-        public static GameObject BuildMoverPrefab(string name, Vector3 size, Vector3 travel, Material mat, float speed, float dwell, string layer = "Environment")
+        public static GameObject BuildMoverPrefab(string name, Vector3 size, Vector3 travel, KitRole role, float speed, float dwell, string layer = "Environment")
         {
             var root = new GameObject(name);
             var platform = new GameObject("Platform");
             platform.transform.SetParent(root.transform, false);
             KinematicBody(platform);
-            Cube("Visual", platform.transform, Vector3.zero, size, mat, layer);
+            Cube("Visual", platform.transform, Vector3.zero, size, role, layer);
             Box("Collision", platform.transform, Vector3.zero, size, layer);
             var a = new GameObject("Waypoint_A").transform;
             a.SetParent(root.transform, false);
@@ -282,7 +282,7 @@ namespace HotPatata.Editor
         {
             // Waypoint_A = up (open), Waypoint_B = down (1.45 m clearance). Striped: it is lethal.
             var root = BuildMoverPrefab("Obstacle_Crusher", new Vector3(6.9f, 1.5f, 4f), new Vector3(0f, -2.75f, 0f),
-                                        Mat("Greybox_Hazard"), 2f, 0.45f, "Hazard");
+                                        KitRole.Hazard, 2f, 0.45f, "Hazard");
             var platform = root.transform.Find("Platform");
             var kill = Box("Kill", platform, new Vector3(0f, -0.8f, 0f), new Vector3(6.7f, 0.3f, 3.8f), "Trigger", trigger: true);
             kill.gameObject.AddComponent<KillZone>();
@@ -294,8 +294,7 @@ namespace HotPatata.Editor
             // Pivot on the floor; the bar sits 0.2..0.7 m up (a jump clears it, a slide does not).
             var root = new GameObject("Obstacle_Sweeper");
             KinematicBody(root);
-            var hazard = Mat("Greybox_Hazard");
-            Cube("Visual", root.transform, new Vector3(0f, 0.45f, 0f), new Vector3(13.6f, 0.5f, 0.5f), hazard, "Hazard");
+            Cube("Visual", root.transform, new Vector3(0f, 0.45f, 0f), new Vector3(13.6f, 0.5f, 0.5f), KitRole.Hazard, "Hazard");
             Box("Collision", root.transform, new Vector3(0f, 0.45f, 0f), new Vector3(13.6f, 0.5f, 0.5f), "Hazard");
             var kill = Box("Kill", root.transform, new Vector3(0f, 0.45f, 0f), new Vector3(13.8f, 0.7f, 0.7f), "Trigger", trigger: true);
             kill.gameObject.AddComponent<KillZone>();
@@ -305,7 +304,7 @@ namespace HotPatata.Editor
             hub.transform.SetParent(root.transform, false);
             hub.transform.localPosition = new Vector3(0f, 0.45f, 0f);
             hub.transform.localScale = new Vector3(1f, 0.45f, 1f);
-            hub.GetComponent<Renderer>().sharedMaterial = Mat("Greybox_Gate");
+            Skin(hub, KitRole.Gate, unitBox: CylinderBox);
             var rot = root.AddComponent<RotatingObstacle>();
             SetField(rot, "axis", p => p.vector3Value = Vector3.up);
             SetField(rot, "degreesPerSecond", p => p.floatValue = 90f);
@@ -317,7 +316,6 @@ namespace HotPatata.Editor
             // Three lethal blades on a hub, turning in the wall's plane (axis = forward).
             var root = new GameObject("Obstacle_Windmill");
             KinematicBody(root);
-            var hazard = Mat("Greybox_Hazard");
             var hub = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             hub.name = "Hub";
             hub.layer = Layer("Hazard");
@@ -325,14 +323,14 @@ namespace HotPatata.Editor
             hub.transform.SetParent(root.transform, false);
             hub.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
             hub.transform.localScale = new Vector3(0.8f, 0.25f, 0.8f);
-            hub.GetComponent<Renderer>().sharedMaterial = Mat("Greybox_Gate");
+            Skin(hub, KitRole.Gate, unitBox: CylinderBox);
             Box("HubCollision", root.transform, Vector3.zero, new Vector3(0.8f, 0.8f, 0.5f), "Hazard");
             for (int i = 0; i < 3; i++)
             {
                 var arm = new GameObject($"Blade_{i + 1}").transform;
                 arm.SetParent(root.transform, false);
                 arm.localRotation = Quaternion.Euler(0f, 0f, i * 120f);
-                Cube("Visual", arm, new Vector3(0f, 1.1f, 0f), new Vector3(0.7f, 1.6f, 0.3f), hazard, "Hazard");
+                Cube("Visual", arm, new Vector3(0f, 1.1f, 0f), new Vector3(0.7f, 1.6f, 0.3f), KitRole.Hazard, "Hazard");
                 Box("Collision", arm, new Vector3(0f, 1.1f, 0f), new Vector3(0.7f, 1.6f, 0.3f), "Hazard");
                 var kill = Box("Kill", arm, new Vector3(0f, 1.1f, 0f), new Vector3(0.9f, 1.8f, 0.6f), "Trigger", trigger: true);
                 kill.gameObject.AddComponent<KillZone>();
@@ -351,7 +349,6 @@ namespace HotPatata.Editor
             const float radius = 1.6f;
             var root = new GameObject("Obstacle_Hoop");
             KinematicBody(root);
-            var mat = Mat("Greybox_Gate");
             float segLength = 2f * Mathf.PI * radius / segments * 1.08f;
             for (int i = 0; i < segments; i++)
             {
@@ -359,7 +356,7 @@ namespace HotPatata.Editor
                 var seg = new GameObject($"Segment_{i + 1}").transform;
                 seg.SetParent(root.transform, false);
                 seg.localRotation = Quaternion.Euler(-a, 0f, 0f);
-                Cube("Visual", seg, new Vector3(0f, radius, 0f), new Vector3(0.25f, 0.3f, segLength), mat, "Environment");
+                Cube("Visual", seg, new Vector3(0f, radius, 0f), new Vector3(0.25f, 0.3f, segLength), KitRole.Gate, "Environment");
                 Box("Collision", seg, new Vector3(0f, radius, 0f), new Vector3(0.25f, 0.3f, segLength), "Environment");
             }
             var rot = root.AddComponent<RotatingObstacle>();

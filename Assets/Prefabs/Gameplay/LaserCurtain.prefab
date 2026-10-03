@@ -639,9 +639,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1032463089591044408}
-  - component: {fileID: 5350417477376064772}
+  - component: {fileID: 3728418825255204606}
   - component: {fileID: 4444231991917184247}
   - component: {fileID: 8622855972413438142}
+  - component: {fileID: 352300897009722644}
   m_Layer: 11
   m_Name: Post_L
   m_TagString: Untagged
@@ -664,14 +665,14 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1007797455555163906}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!33 &5350417477376064772
+--- !u!33 &3728418825255204606
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5726011469656143666}
-  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  m_Mesh: {fileID: 0}
 --- !u!65 &4444231991917184247
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -718,7 +719,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 75d498710dac6a2409e95eff6d76af7a, type: 2}
+  - {fileID: 2100000, guid: ff3132e504e6ce144b8935a03ebfd29a, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -742,6 +743,23 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &352300897009722644
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5726011469656143666}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8143b2a7cd2826842bf94e94506814c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: HotPatata::HotPatata.KitSkin
+  palette: {fileID: 11400000, guid: 121ba3d8752f561439b72d6934385be3, type: 2}
+  shape: 1
+  color: 2
+  unitBox: {x: 1, y: 1, z: 1}
+  flip: 0
 --- !u!1 &5943504133805445880
 GameObject:
   m_ObjectHideFlags: 0
@@ -1021,9 +1039,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5374541275621748276}
-  - component: {fileID: 244026348949293226}
+  - component: {fileID: 5829604234212122219}
   - component: {fileID: 2287494706198210525}
   - component: {fileID: 6400905115832301282}
+  - component: {fileID: 1707428834328964343}
   m_Layer: 11
   m_Name: Post_R
   m_TagString: Untagged
@@ -1046,14 +1065,14 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1007797455555163906}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!33 &244026348949293226
+--- !u!33 &5829604234212122219
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7268094437032580145}
-  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  m_Mesh: {fileID: 0}
 --- !u!65 &2287494706198210525
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1100,7 +1119,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 75d498710dac6a2409e95eff6d76af7a, type: 2}
+  - {fileID: 2100000, guid: ff3132e504e6ce144b8935a03ebfd29a, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1124,6 +1143,23 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &1707428834328964343
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7268094437032580145}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8143b2a7cd2826842bf94e94506814c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: HotPatata::HotPatata.KitSkin
+  palette: {fileID: 11400000, guid: 121ba3d8752f561439b72d6934385be3, type: 2}
+  shape: 1
+  color: 2
+  unitBox: {x: 1, y: 1, z: 1}
+  flip: 0
 --- !u!1 &7469461497177997323
 GameObject:
   m_ObjectHideFlags: 0
@@ -1331,9 +1367,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8122042998892396225}
-  - component: {fileID: 3627128793334299658}
+  - component: {fileID: 4179260429674448901}
   - component: {fileID: 6587942596141544633}
   - component: {fileID: 56417976641956774}
+  - component: {fileID: 7343683697134608517}
   m_Layer: 11
   m_Name: Lintel
   m_TagString: Untagged
@@ -1356,14 +1393,14 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1007797455555163906}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!33 &3627128793334299658
+--- !u!33 &4179260429674448901
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 9187158691738411290}
-  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  m_Mesh: {fileID: 0}
 --- !u!65 &6587942596141544633
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1410,7 +1447,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 75d498710dac6a2409e95eff6d76af7a, type: 2}
+  - {fileID: 2100000, guid: ff3132e504e6ce144b8935a03ebfd29a, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1434,3 +1471,20 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &7343683697134608517
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9187158691738411290}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8143b2a7cd2826842bf94e94506814c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: HotPatata::HotPatata.KitSkin
+  palette: {fileID: 11400000, guid: 121ba3d8752f561439b72d6934385be3, type: 2}
+  shape: 1
+  color: 2
+  unitBox: {x: 1, y: 1, z: 1}
+  flip: 0

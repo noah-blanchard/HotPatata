@@ -1,0 +1,423 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ae4b2258a4c31824f86844f28f845b22, type: 3}
+  m_Name: KayKitPalette
+  m_EditorClassIdentifier: HotPatata::HotPatata.KitPalette
+  pieces:
+  - shape: 1
+    color: 0
+    mesh: {fileID: 4592748540916789049, guid: 19af4196aee5df04b9f3a1d7f1dd3e90, type: 3}
+  - shape: 1
+    color: 0
+    mesh: {fileID: 8115239464357950911, guid: 7bb986371edc84b458ad6a141f569946, type: 3}
+  - shape: 1
+    color: 0
+    mesh: {fileID: 6931729542740124808, guid: 24e1fef9f11328e43990234638605457, type: 3}
+  - shape: 1
+    color: 0
+    mesh: {fileID: 3728724539066494926, guid: e2f5cce71cceedb48a277c81b9d7c685, type: 3}
+  - shape: 1
+    color: 0
+    mesh: {fileID: 4255172329872125702, guid: c50166019347cb441b53cd455efcbe59, type: 3}
+  - shape: 1
+    color: 0
+    mesh: {fileID: -7373951536532851598, guid: a00d745d17a463e4aaf14d045f24cfbe, type: 3}
+  - shape: 1
+    color: 0
+    mesh: {fileID: -3823488250480100133, guid: 0bdfd8ec0ffce9e4d9de9aadde3e0694, type: 3}
+  - shape: 1
+    color: 0
+    mesh: {fileID: -5806631413248067062, guid: d88ae92957e2a9743905a640efd70c12, type: 3}
+  - shape: 1
+    color: 0
+    mesh: {fileID: -6534827130649162122, guid: 274f30ed7b6a71d4ca58f78ac7d5dcea, type: 3}
+  - shape: 1
+    color: 0
+    mesh: {fileID: 875513186010985855, guid: 55dadf77e33b31e429b66df881cdf5e8, type: 3}
+  - shape: 1
+    color: 0
+    mesh: {fileID: -3098628894710161050, guid: 102a0d9a17e585446885fbc3c6c0b17e, type: 3}
+  - shape: 1
+    color: 0
+    mesh: {fileID: -9018151878157885864, guid: 0e24ac888278ca64c96a46dac345278d, type: 3}
+  - shape: 3
+    color: 0
+    mesh: {fileID: 6339939403779862447, guid: 177d857e1c2ac6d488bdf804ee684e33, type: 3}
+  - shape: 0
+    color: 0
+    mesh: {fileID: 2615119951089428721, guid: 622826bd2dbe0e241a3ecc4e67fd71fd, type: 3}
+  - shape: 0
+    color: 0
+    mesh: {fileID: 6769526901297381089, guid: 3e1a0049cb84f76478e459f1a4ca2b49, type: 3}
+  - shape: 0
+    color: 0
+    mesh: {fileID: -6738011233485570623, guid: c45f1293a1848424384f7e38a979048f, type: 3}
+  - shape: 0
+    color: 0
+    mesh: {fileID: 5311615812630301631, guid: fe6aaf48702b7ed4da6b9bd33ea5195d, type: 3}
+  - shape: 0
+    color: 0
+    mesh: {fileID: -5938353693120976014, guid: 5d9bf4b71d9bf1c418f20ada28b04701, type: 3}
+  - shape: 0
+    color: 0
+    mesh: {fileID: -1819659692436805828, guid: 415a48ec82bbe0d45a2e58531cbf5060, type: 3}
+  - shape: 0
+    color: 0
+    mesh: {fileID: 4215993300228733297, guid: 31a9084576dba6a4f9dbfbd9752d98c6, type: 3}
+  - shape: 0
+    color: 0
+    mesh: {fileID: -6561376362416260718, guid: a84614adde251674f8545a4ee20c4dba, type: 3}
+  - shape: 0
+    color: 0
+    mesh: {fileID: 5684827795428279759, guid: a18ed599d44ed3c41a55b69b15780449, type: 3}
+  - shape: 0
+    color: 0
+    mesh: {fileID: 4836168181443275541, guid: b92e1378837114b4aaa431b95a77cee7, type: 3}
+  - shape: 0
+    color: 0
+    mesh: {fileID: -8509769527618508198, guid: 7452ad13383b8ea4497524b9e98573ba, type: 3}
+  - shape: 0
+    color: 0
+    mesh: {fileID: -7408184498242634295, guid: 9298e9067a86ed24397a5438efbc5262, type: 3}
+  - shape: 0
+    color: 0
+    mesh: {fileID: 3844869943852726035, guid: 479f8ac357bfb4e4f9a71b78bb73e66e, type: 3}
+  - shape: 0
+    color: 0
+    mesh: {fileID: -5002206334143091076, guid: 675889823540ea24eae542c1e4e06bc3, type: 3}
+  - shape: 0
+    color: 0
+    mesh: {fileID: 2696811676918220183, guid: b719552f3b8029e4085abefd54ebceed, type: 3}
+  - shape: 0
+    color: 0
+    mesh: {fileID: 786331449089971925, guid: eedebf2de95a8864896cfc63de9f3d62, type: 3}
+  - shape: 2
+    color: 0
+    mesh: {fileID: 4589261707079725142, guid: 5b1f82850e4a6484bba5da038aa48d4e, type: 3}
+  - shape: 2
+    color: 0
+    mesh: {fileID: 8848004104600935857, guid: a94304a62e349e142bee4fb77b2cf739, type: 3}
+  - shape: 1
+    color: 1
+    mesh: {fileID: -1829404120059528602, guid: a2041f8eebb312e49aff325fb94bbcce, type: 3}
+  - shape: 1
+    color: 1
+    mesh: {fileID: -7613532702018564648, guid: 7699c2cf7b72fbb48afd3dab2475a8f1, type: 3}
+  - shape: 1
+    color: 1
+    mesh: {fileID: -6728609069848228696, guid: 03c61655c2aa3a240adca6f747b6fd5c, type: 3}
+  - shape: 1
+    color: 1
+    mesh: {fileID: 7722723920867732605, guid: 06616c76d87f8cb44a02666d56edd0a2, type: 3}
+  - shape: 1
+    color: 1
+    mesh: {fileID: -3720635507829125247, guid: ebc84788fd98d2a429ed8bbea9662b88, type: 3}
+  - shape: 1
+    color: 1
+    mesh: {fileID: -4835273446675191929, guid: 22173ef2a9c45934c96e72a874a5e9d4, type: 3}
+  - shape: 1
+    color: 1
+    mesh: {fileID: 1598866990008927227, guid: 1146df84e62da6b4e92b0536aff78cd9, type: 3}
+  - shape: 1
+    color: 1
+    mesh: {fileID: -5108572276500282904, guid: 7a4a467c06071d4428576cb07bd6a8e0, type: 3}
+  - shape: 1
+    color: 1
+    mesh: {fileID: 6829759482637985464, guid: 406cb1eafbd088e4a9d4093fb17f9da2, type: 3}
+  - shape: 1
+    color: 1
+    mesh: {fileID: -4860695137740163402, guid: 46dda5fbebdaf794db01d2516929773f, type: 3}
+  - shape: 1
+    color: 1
+    mesh: {fileID: 4426606599303660815, guid: 8b068e61333116d4fab32dab6b6325cf, type: 3}
+  - shape: 1
+    color: 1
+    mesh: {fileID: 4813240530576164737, guid: c56336daf40594c42965e6d90ecda18d, type: 3}
+  - shape: 3
+    color: 1
+    mesh: {fileID: 762560205663179263, guid: 009664f5ac70e0e4b9290ad3197ab0e1, type: 3}
+  - shape: 0
+    color: 1
+    mesh: {fileID: 6815096600776473597, guid: 03fe4b35e9db75c4aae88abf138ac05b, type: 3}
+  - shape: 0
+    color: 1
+    mesh: {fileID: -1909679206975678800, guid: 278074cf2352217449b2b5b53485c483, type: 3}
+  - shape: 0
+    color: 1
+    mesh: {fileID: 6230952842580731343, guid: 6cb5f91416a3103438ab672d8b5d166f, type: 3}
+  - shape: 0
+    color: 1
+    mesh: {fileID: -4670351403496379088, guid: 2893c5e47fa1f024db7eb09aed871ddf, type: 3}
+  - shape: 0
+    color: 1
+    mesh: {fileID: -7061510365685412830, guid: 7303cf45764ace243a147acfc388fce8, type: 3}
+  - shape: 0
+    color: 1
+    mesh: {fileID: 1808709100521142897, guid: 9370c1b8c09c0324b9e06b0bed3c8127, type: 3}
+  - shape: 0
+    color: 1
+    mesh: {fileID: -7143937869670882805, guid: 28fd5d9c2db2403478d32cefc09d2d7d, type: 3}
+  - shape: 0
+    color: 1
+    mesh: {fileID: -3232879097065719557, guid: cf069a037c3b6cf4e9de58602ff60c44, type: 3}
+  - shape: 0
+    color: 1
+    mesh: {fileID: -2047091123211963812, guid: f3ed42d90ee610a4ea7d44bcd683f5e5, type: 3}
+  - shape: 0
+    color: 1
+    mesh: {fileID: -5975728165562918018, guid: 84d0d087b38c25141931189bacc8c1f2, type: 3}
+  - shape: 0
+    color: 1
+    mesh: {fileID: 6971096976375655115, guid: 66e98e7a63d4c554c90d51aadadda052, type: 3}
+  - shape: 0
+    color: 1
+    mesh: {fileID: -9174953906500689169, guid: 8590a57a2bd04bf44aafd8c536e2c447, type: 3}
+  - shape: 0
+    color: 1
+    mesh: {fileID: 1408683300519122776, guid: 310e641b3972cc049ba6e47e713813c9, type: 3}
+  - shape: 0
+    color: 1
+    mesh: {fileID: 763821393150611639, guid: 5f087381bc5d9e14a9897d05c69e92f6, type: 3}
+  - shape: 0
+    color: 1
+    mesh: {fileID: -6152982814342910036, guid: 4ad755c622743ff419b6efaa3a396744, type: 3}
+  - shape: 0
+    color: 1
+    mesh: {fileID: 7271806162800648989, guid: 89f1941d341e2ce4e819c538a8691ead, type: 3}
+  - shape: 2
+    color: 1
+    mesh: {fileID: 6055999699108965885, guid: 14616a1d17cf7654e80aa5069e54d07e, type: 3}
+  - shape: 2
+    color: 1
+    mesh: {fileID: 555730892368650640, guid: ec5b178670b6d57409f264c9f09678ba, type: 3}
+  - shape: 1
+    color: 2
+    mesh: {fileID: 8618641842506181427, guid: a5b4f6adce92adb4aaa7960be06429b9, type: 3}
+  - shape: 1
+    color: 2
+    mesh: {fileID: 6005439815182339887, guid: f0f8023463acdf04fb96cfc9efa200f5, type: 3}
+  - shape: 1
+    color: 2
+    mesh: {fileID: -9071415967840790465, guid: dd15fe974c7414e43878841cdba6681d, type: 3}
+  - shape: 1
+    color: 2
+    mesh: {fileID: -96756696872241804, guid: 0cea9a68ea5dfe64a9fbd7d8d8d4b7c8, type: 3}
+  - shape: 1
+    color: 2
+    mesh: {fileID: 6064208488895320008, guid: 4c34cb84e573a9e49b306b7df7b0cef6, type: 3}
+  - shape: 1
+    color: 2
+    mesh: {fileID: -1150475779773274907, guid: 28b42b7e6ee618c449352568dbfccdc2, type: 3}
+  - shape: 1
+    color: 2
+    mesh: {fileID: -6153954149451103903, guid: 88129267438755a41afa3aadfaa4391c, type: 3}
+  - shape: 1
+    color: 2
+    mesh: {fileID: 502203257355454800, guid: 949d9411c288a1d4f8074e78f032e680, type: 3}
+  - shape: 1
+    color: 2
+    mesh: {fileID: 3022466695395076868, guid: a127aff4490116d40845e3489e67e4c2, type: 3}
+  - shape: 1
+    color: 2
+    mesh: {fileID: 8682609194881292600, guid: e21956ac096d80e4395962f435d0f286, type: 3}
+  - shape: 1
+    color: 2
+    mesh: {fileID: -6758418153201817761, guid: d73a42a862eceaa4589b36c7ab30d446, type: 3}
+  - shape: 1
+    color: 2
+    mesh: {fileID: 2568112583503215864, guid: dc5da49c080fb514f82a74c6d38407fb, type: 3}
+  - shape: 3
+    color: 2
+    mesh: {fileID: 2753883728660093716, guid: 03a39cbda21543c47957056408fde4d7, type: 3}
+  - shape: 0
+    color: 2
+    mesh: {fileID: -5147658499765349091, guid: f9e5db8d77f8b1743b361cebce29960e, type: 3}
+  - shape: 0
+    color: 2
+    mesh: {fileID: -2211979480838308764, guid: e389f4d26bcebf54c9aea933f2d82a08, type: 3}
+  - shape: 0
+    color: 2
+    mesh: {fileID: -5914453006166274364, guid: 92e2c0e940625f4488677f0d36b768b2, type: 3}
+  - shape: 0
+    color: 2
+    mesh: {fileID: 8933486315014478940, guid: 79bd47b97f43be347ba2c66e4d41b0a1, type: 3}
+  - shape: 0
+    color: 2
+    mesh: {fileID: 1479327052440148022, guid: 450fe0e08e19cfb41af253eb0e90a9b1, type: 3}
+  - shape: 0
+    color: 2
+    mesh: {fileID: 5858986624061238989, guid: d3e268fd9c3deb24cb5b6550a306a6bf, type: 3}
+  - shape: 0
+    color: 2
+    mesh: {fileID: 5643135456884426131, guid: 0b49f1069f2ee34469e984b7b92516e0, type: 3}
+  - shape: 0
+    color: 2
+    mesh: {fileID: -8429176666158540852, guid: 54968c01e10bbbc4bb2a82eba05f3fc1, type: 3}
+  - shape: 0
+    color: 2
+    mesh: {fileID: -3018768473826780311, guid: e32ea86dbd60166418e1c4391fd83ce4, type: 3}
+  - shape: 0
+    color: 2
+    mesh: {fileID: -1154314244863035050, guid: 0e9b85fedab48a646957135ef468e061, type: 3}
+  - shape: 0
+    color: 2
+    mesh: {fileID: 2357341334864778032, guid: 971e8143f6844a248b94632cbb227da7, type: 3}
+  - shape: 0
+    color: 2
+    mesh: {fileID: 4770480664074928464, guid: cd15ffeecad250b4e8db42a0a0d5f6d8, type: 3}
+  - shape: 0
+    color: 2
+    mesh: {fileID: -8031442031503982167, guid: 5db8587c47bbd614d88355f5af01f528, type: 3}
+  - shape: 0
+    color: 2
+    mesh: {fileID: -8555705234957281550, guid: bc5dfb15aa4dc514591ebde48da69b70, type: 3}
+  - shape: 0
+    color: 2
+    mesh: {fileID: 3648116745652595068, guid: 2a4342fb76fa4604dbcbc1210d4f0627, type: 3}
+  - shape: 0
+    color: 2
+    mesh: {fileID: 5467181070271732027, guid: ca9c6b221b2e56945ba631147b2f07a0, type: 3}
+  - shape: 2
+    color: 2
+    mesh: {fileID: 5355951758805487014, guid: ca6f7a9602be7ea41bd950eb0090d487, type: 3}
+  - shape: 2
+    color: 2
+    mesh: {fileID: 9031962575426005248, guid: dfc24140f94cb674b89a0cb1f40bca50, type: 3}
+  - shape: 1
+    color: 3
+    mesh: {fileID: 2314385955751880812, guid: 3c0091b72d816d242a8dbbae7920a407, type: 3}
+  - shape: 1
+    color: 3
+    mesh: {fileID: 9129127764199268916, guid: f88758c9841b92142bfe74ba02e9ad4b, type: 3}
+  - shape: 1
+    color: 3
+    mesh: {fileID: 6955657153134628197, guid: 049eef5aa70b8ac4e8bbc20bd98e5bfa, type: 3}
+  - shape: 1
+    color: 3
+    mesh: {fileID: -1167829392666003194, guid: 743af436a9c5f5e46804eaea79455b76, type: 3}
+  - shape: 1
+    color: 3
+    mesh: {fileID: 442252244214875172, guid: 7d0f1331965740a4c90bf67e6212094b, type: 3}
+  - shape: 1
+    color: 3
+    mesh: {fileID: -4202212736278065764, guid: 7b942a99096daa94abd5ed989ecbd390, type: 3}
+  - shape: 1
+    color: 3
+    mesh: {fileID: -6062230430506019080, guid: f0be0fc3f450e91428de57d7df084a22, type: 3}
+  - shape: 1
+    color: 3
+    mesh: {fileID: -1794247729290323818, guid: 8cd21c90ca961a4428fd3373154568a2, type: 3}
+  - shape: 1
+    color: 3
+    mesh: {fileID: 657217485606656007, guid: 09f83ce733fb6f34e9c08757b04b03db, type: 3}
+  - shape: 1
+    color: 3
+    mesh: {fileID: 3109882067983102348, guid: c4f982311c56bd940b1bfa556d64b54f, type: 3}
+  - shape: 1
+    color: 3
+    mesh: {fileID: -2513208361482393858, guid: 1d542ca89f38b1046b30a19b1c63a9ae, type: 3}
+  - shape: 1
+    color: 3
+    mesh: {fileID: -3296591916040970024, guid: f7d8a9af8a5e0fb41b4255a517d49bb4, type: 3}
+  - shape: 3
+    color: 3
+    mesh: {fileID: -4739094812530273556, guid: ee92f8df388ab7941afd63794d3cb974, type: 3}
+  - shape: 0
+    color: 3
+    mesh: {fileID: -1931704145112810663, guid: 611b7c12646c7be42a7b3c869e171943, type: 3}
+  - shape: 0
+    color: 3
+    mesh: {fileID: -3016173665729987855, guid: b909c062120f3274b9b60edbe2284456, type: 3}
+  - shape: 0
+    color: 3
+    mesh: {fileID: 1534317610335488732, guid: 403b14c32431e884b98262ad9efa3fff, type: 3}
+  - shape: 0
+    color: 3
+    mesh: {fileID: -2106297249262760423, guid: d98b5a5b134a60d4ba3b8f743447a45a, type: 3}
+  - shape: 0
+    color: 3
+    mesh: {fileID: -2954509374124428509, guid: 76153f80409991543a26ff88fb70713d, type: 3}
+  - shape: 0
+    color: 3
+    mesh: {fileID: 7634546626008784586, guid: ed5b15f8c48d4ef4fb8b28a5f512d7cd, type: 3}
+  - shape: 0
+    color: 3
+    mesh: {fileID: -6774675067954618292, guid: a569229d6b5eb00419a6c3123d085384, type: 3}
+  - shape: 0
+    color: 3
+    mesh: {fileID: -4784702970469430835, guid: 8535f7c915c52a446a4954a9236eb4b8, type: 3}
+  - shape: 0
+    color: 3
+    mesh: {fileID: 8889551885138348302, guid: ec3de36ab2f7ea848a51c8ff53bc29a9, type: 3}
+  - shape: 0
+    color: 3
+    mesh: {fileID: -5308403187502085178, guid: aa9c4c60ba8e2db489d8c868dbcbc4b0, type: 3}
+  - shape: 0
+    color: 3
+    mesh: {fileID: 1611203769080095057, guid: db133bb45978ea0438c1f6ed907b7ab7, type: 3}
+  - shape: 0
+    color: 3
+    mesh: {fileID: -5807823077804407235, guid: b51d002a74929204da957c98701287f3, type: 3}
+  - shape: 0
+    color: 3
+    mesh: {fileID: -5280615418899014413, guid: 89c0987caa8ecff46819fa1a2a458c1e, type: 3}
+  - shape: 0
+    color: 3
+    mesh: {fileID: 5399845611737071365, guid: 87fba7cd26e8aa64c87c6a095950f946, type: 3}
+  - shape: 0
+    color: 3
+    mesh: {fileID: 3559666986007003842, guid: 6e56d985fabe3364292b091ecf806d00, type: 3}
+  - shape: 0
+    color: 3
+    mesh: {fileID: 7705928261581848653, guid: c75b8bf8b4f22e64a8b285426f4ee8a9, type: 3}
+  - shape: 2
+    color: 3
+    mesh: {fileID: -8681208541755549475, guid: 0ca07e2b473dd2847bc6e0914c7a5728, type: 3}
+  - shape: 2
+    color: 3
+    mesh: {fileID: -6337322995828789942, guid: aa7ea7f38a57b4e4aa49f0f4e1de8ac9, type: 3}
+  - shape: 1
+    color: 4
+    mesh: {fileID: -1584010622080219284, guid: ae6eb60076ba750409314ba32252a719, type: 3}
+  - shape: 1
+    color: 4
+    mesh: {fileID: -5025387755794243377, guid: adea0415021b9254f98c89b2a052cd46, type: 3}
+  - shape: 1
+    color: 4
+    mesh: {fileID: -1415214952354094270, guid: 6c301bb080b6b2d48a1fd2c9e3a4ad2c, type: 3}
+  - shape: 1
+    color: 4
+    mesh: {fileID: -6105458340262746342, guid: e3daf0d23c424544bb0e534299ce403e, type: 3}
+  - shape: 1
+    color: 4
+    mesh: {fileID: 4802610421109919466, guid: 9903ae635dd19b440b8b00ed1ed53d5a, type: 3}
+  - shape: 1
+    color: 4
+    mesh: {fileID: -4129950859137804643, guid: 8dd1374514d31e24fbf55e898327c2c6, type: 3}
+  - shape: 1
+    color: 4
+    mesh: {fileID: -6952644724623835460, guid: aac86cefb200f374185bf09cd01aa062, type: 3}
+  - shape: 1
+    color: 4
+    mesh: {fileID: 6272213937894375541, guid: d8b0c14eb29c160469ed1a97d76d44b1, type: 3}
+  - shape: 1
+    color: 4
+    mesh: {fileID: -398298455824198667, guid: 41472891f7e0c8547854c5bada8f9505, type: 3}
+  - shape: 1
+    color: 4
+    mesh: {fileID: -1061633616115750071, guid: 98d408270a80690429708cbb7d605b04, type: 3}
+  - shape: 1
+    color: 4
+    mesh: {fileID: 9115172109859626295, guid: fffeca4d387ef1d42b856324965fb11e, type: 3}
+  - shape: 1
+    color: 4
+    mesh: {fileID: -4066416835259905032, guid: 0060b7c8c2ec48e49b4c653949b7a955, type: 3}
