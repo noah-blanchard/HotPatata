@@ -22,10 +22,7 @@ namespace HotPatata.Editor
         public const string ScenePath = "Assets/Scenes/PlaytestCourse.unity";
         const string SourceScene = "Assets/Scenes/PrototypeCourse.unity";
 
-        const float Window = 2.4f, WindowBottom = 1f, WindowTop = 3f;   // the standard throw window in a wall
-        const float Passage = 3f, PassageHeight = 3.5f;                  // a laser-curtain passage for runners (curtain + posts)
-
-        static Material floorMat, wallMat, platMat;
+        const KitRole floorMat = KitRole.Ground, wallMat = KitRole.Wall, platMat = KitRole.Ground;
 
         [MenuItem("HotPatata/Course/Build Playtest Course")]
         public static void Build()
@@ -34,10 +31,6 @@ namespace HotPatata.Editor
             if (AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath) == null && !AssetDatabase.CopyAsset(SourceScene, ScenePath))
                 throw new InvalidOperationException("could not create " + ScenePath);
             var scene = EditorSceneManager.OpenScene(ScenePath);
-
-            floorMat = Mat("Greybox_Floor");
-            wallMat = Mat("Greybox_Wall");
-            platMat = Mat("Greybox_Platform");
 
             var section = GameObject.Find("SectionRoot")?.transform ?? throw new InvalidOperationException("no SectionRoot");
             RebuildGroup(section, "Course", course =>
@@ -257,9 +250,8 @@ namespace HotPatata.Editor
             Vector3 upAxis = rot * Vector3.up, fwd = rot * Vector3.forward;
             Vector3 top0 = new Vector3(0f, y, startZ);
             Vector3 OnSlope(float x, float along, float height) => top0 + Vector3.right * x + fwd * along + upAxis * height;
-            var slideMat = Mat("Greybox_Slide");
-            Block(act, "S_Lane_L", OnSlope(-2.5f, length / 2f, -0.5f), new Vector3(4f, 1f, length), slideMat, rot);
-            Block(act, "S_Lane_R", OnSlope(2.5f, length / 2f, -0.5f), new Vector3(4f, 1f, length), slideMat, rot);
+            Block(act, "S_Lane_L", OnSlope(-2.5f, length / 2f, -0.5f), new Vector3(4f, 1f, length), KitRole.Slide, rot, flip: SlideFlip);
+            Block(act, "S_Lane_R", OnSlope(2.5f, length / 2f, -0.5f), new Vector3(4f, 1f, length), KitRole.Slide, rot, flip: SlideFlip);
             Block(act, "S_Divider", OnSlope(0f, length / 2f, -0.2f), new Vector3(1f, 1.6f, length), wallMat, rot);
             Block(act, "S_Rail_L", OnSlope(-4.75f, length / 2f, 0f), new Vector3(0.5f, 2.4f, length), wallMat, rot);
             Block(act, "S_Rail_R", OnSlope(4.75f, length / 2f, 0f), new Vector3(0.5f, 2.4f, length), wallMat, rot);
@@ -291,112 +283,7 @@ namespace HotPatata.Editor
         // ------------------------------------------------------------------ helpers
 
         /// <summary>A floor slab 2 m thick whose top is at <paramref name="top"/>, from z0 to z1.</summary>
-        static GameObject Floor(Transform parent, string name, float z0, float z1, float top, float width = 16f, Material mat = null, float x = 0f) =>
-            Block(parent, name, new Vector3(x, top - 1f, (z0 + z1) / 2f), new Vector3(width, 2f, z1 - z0), mat ?? floorMat);
-
-        static GameObject Zone(Transform parent, string prefab, string name, Vector3 floorCenter, Vector3 size)
-        {
-            var go = Place(parent, prefab, name, floorCenter, Quaternion.identity);
-            ResizeZone(go, size);
-            return go;
-        }
-
-        /// <summary>A bomb-gate ring centred at <paramref name="height"/> above <paramref name="floor"/>, on a thin pillar.</summary>
-        static BombGate Gate(Transform parent, string name, Vector3 floor, float height, float holdSeconds)
-        {
-            var gate = Place(parent, GateRing, name, floor + Vector3.up * height, Quaternion.identity).GetComponent<BombGate>();
-            SetField(gate, "holdSeconds", p => p.floatValue = holdSeconds);
-            float pillar = height - 1.45f;   // up to the underside of the ring
-            if (pillar > 0.1f)
-                Block(parent, name + "_Pillar", floor + Vector3.up * (pillar / 2f), new Vector3(0.35f, pillar, 0.35f), Mat("Greybox_Gate"));
-            return gate;
-        }
-
-        static GameObject Actuator(Transform parent, string prefab, string name, Vector3 closedCenter, Vector3 size, Vector3 travel, MonoBehaviour source)
-        {
-            var go = Place(parent, prefab, name, closedCenter, Quaternion.identity);
-            ResizeActuator(go, size, travel);
-            Wire(go, source);
-            return go;
-        }
-
-        static void ArchCheckpoint(Transform parent, string name, int id, Vector3 pad, float fuse, Vector3 archFloor)
-        {
-            var cp = AddCheckpoint(parent, name, id, pad, fuse).GetComponent<Checkpoint>();
-            var arch = Place(parent, GateArch, name + "_Arch", archFloor, Quaternion.identity).GetComponent<BombGate>();
-            SetReference(cp, "claimGate", arch);
-        }
-
-        /// <summary>An opening in a wall, in wall space: x across the course, y above the wall's floor.</summary>
-        struct Hole
-        {
-            public float X0, X1, Y0, Y1;
-
-            public Hole(float x0, float x1, float y0, float y1)
-            {
-                X0 = x0;
-                X1 = x1;
-                Y0 = y0;
-                Y1 = y1;
-            }
-        }
-
-        /// <summary>A 1 m thick wall across the course at <paramref name="z"/>, from x0 to x1, with rectangular holes.</summary>
-        static void Wall(Transform parent, string name, float z, float floorY, float height, float x0, float x1, IList<Hole> holes)
-        {
-            var xs = new List<float> { x0, x1 };
-            foreach (var h in holes)
-            {
-                xs.Add(h.X0);
-                xs.Add(h.X1);
-            }
-            xs.Sort();
-            int piece = 0;
-            for (int i = 0; i + 1 < xs.Count; i++)
-            {
-                float a = xs[i], b = xs[i + 1];
-                if (b - a < 0.01f) continue;
-                float mid = (a + b) / 2f;
-                Hole? hole = null;
-                foreach (var h in holes)
-                    if (mid > h.X0 && mid < h.X1) hole = h;
-                void Piece(float y0, float y1)
-                {
-                    if (y1 - y0 < 0.01f) return;
-                    Block(parent, $"{name}_{++piece}", new Vector3(mid, floorY + (y0 + y1) / 2f, z), new Vector3(b - a, y1 - y0, 1f), wallMat);
-                }
-                if (hole == null) Piece(0f, height);
-                else
-                {
-                    Piece(0f, hole.Value.Y0);
-                    Piece(hole.Value.Y1, height);
-                }
-            }
-        }
-
-        /// <summary>
-        /// A wall with a throw window (or a spinning hoop in a bigger opening) and laser-curtain passages for the runners
-        /// (PROJECT_SPEC §13.13). It reaches 3 m past the 16 m court on each side so going round is no easier than the window.
-        /// </summary>
-        static void LaserWall(Transform parent, string name, float z, float floorY, float height, float? windowX, float[] passages, bool hoop = false)
-        {
-            var holes = new List<Hole>();
-            if (windowX.HasValue)
-            {
-                float w = hoop ? 3.6f : Window;
-                holes.Add(hoop ? new Hole(windowX.Value - w / 2f, windowX.Value + w / 2f, 0.6f, 4.2f)
-                               : new Hole(windowX.Value - w / 2f, windowX.Value + w / 2f, WindowBottom, WindowTop));
-            }
-            foreach (float x in passages) holes.Add(new Hole(x - Passage / 2f, x + Passage / 2f, 0f, PassageHeight));
-            Wall(parent, name, z, floorY, height, -11f, 11f, holes);
-
-            for (int i = 0; i < passages.Length; i++)
-            {
-                var curtain = Place(parent, LaserCurtain, $"{name}_Curtain_{i + 1}", new Vector3(passages[i], floorY, z), Quaternion.identity);
-                ResizeCurtain(curtain, Passage - 0.6f, PassageHeight - 0.3f);
-            }
-            if (hoop && windowX.HasValue)
-                AddRotator(parent, ObstaclesDir + "Obstacle_Hoop", name + "_Hoop", new Vector3(windowX.Value, floorY + 2.4f, z), 0f, 70f, 90f);
-        }
+        static GameObject Floor(Transform parent, string name, float z0, float z1, float top, float width = 16f, KitRole mat = floorMat, float x = 0f) =>
+            Block(parent, name, new Vector3(x, top - 1f, (z0 + z1) / 2f), new Vector3(width, 2f, z1 - z0), mat);
     }
 }
