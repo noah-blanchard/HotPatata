@@ -37,8 +37,20 @@ namespace HotPatata
         /// <summary>True while any screen is open: gameplay keys such as Esc must leave it alone.</summary>
         public static bool AnyOpen => instance != null && instance.screens.Count > 0;
 
+        /// <summary>The top screen takes the local player's gameplay input (<see cref="UIScreen.BlocksGameplay"/>).</summary>
+        public static bool BlocksGameplay => instance != null && instance.Top != null && instance.Top.BlocksGameplay;
+
+        /// <summary>
+        /// The frame of the last push or pop. One key can mean both "back" (the UI Cancel action) and "pause" (gameplay):
+        /// whoever sees it second on that frame leaves it alone, so Esc never closes and reopens a menu at once.
+        /// </summary>
+        public int LastChangeFrame { get; private set; } = -1;
+
         public int Count => screens.Count;
         public UIScreen Top => screens.Count > 0 ? screens[screens.Count - 1] : null;
+
+        /// <summary>Is a screen of this kind open anywhere in the stack?</summary>
+        public bool Has<T>() where T : UIScreen => screens.Exists(s => s is T);
         public UIDocument Document => document;
 
         /// <summary>The stack, created (with its panel and, if needed, an EventSystem) on first use.</summary>
@@ -98,6 +110,7 @@ namespace HotPatata
         void OnDestroy()
         {
             if (instance != this) return;
+            Clear();   // closing screens undo what they did (the pause menu's freeze, the settings' unsaved edits)
             instance = null;
             CursorPolicy.SetScreenWantsCursor(false);
         }
@@ -119,6 +132,7 @@ namespace HotPatata
             screens.Add(screen);
             if (below != null) below.OnHide();
             screen.OnShow();
+            LastChangeFrame = Time.frameCount;
             Refresh();
             FocusLater(screen.FirstFocus());
             Changed?.Invoke();
@@ -136,6 +150,7 @@ namespace HotPatata
             focusBelow.TryGetValue(top, out var restore);
             focusBelow.Remove(top);
             if (below != null) below.OnShow();
+            LastChangeFrame = Time.frameCount;
             Refresh();
             if (below != null) FocusLater(restore ?? below.FirstFocus());
             Changed?.Invoke();

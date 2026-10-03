@@ -30,7 +30,7 @@ namespace HotPatata.Tests
         public void Entries_KeyboardMouse_AreTheButtonsAndTheWasdParts()
         {
             var labels = InputRebinding.Entries(copy, InputSource.KeyboardMouse).Select(e => e.Label).ToList();
-            CollectionAssert.IsSubsetOf(new[] { "Jump", "Throw", "Catch", "Sprint", "Crouch", "Move Up", "Move Down", "Move Left", "Move Right" }, labels);
+            CollectionAssert.IsSubsetOf(new[] { "Jump", "Throw", "Catch", "Sprint", "Crouch", "Pause", "Move Up", "Move Down", "Move Left", "Move Right" }, labels);
             CollectionAssert.DoesNotContain(labels, "Look", "mouse delta is not a button");
         }
 
@@ -39,7 +39,7 @@ namespace HotPatata.Tests
         {
             var entries = InputRebinding.Entries(copy, InputSource.Gamepad);
             var labels = entries.Select(e => e.Label).ToList();
-            CollectionAssert.IsSubsetOf(new[] { "Jump", "Throw", "Catch", "Sprint", "Crouch" }, labels);
+            CollectionAssert.IsSubsetOf(new[] { "Jump", "Throw", "Catch", "Sprint", "Crouch", "Pause" }, labels);
             CollectionAssert.DoesNotContain(labels, "Move", "sticks stay as authored");
             CollectionAssert.DoesNotContain(labels, "Look");
             Assert.IsTrue(entries.All(e => e.Binding.path.StartsWith("<Gamepad>")));

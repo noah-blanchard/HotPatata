@@ -6,9 +6,9 @@ namespace HotPatata
     /// <summary>
     /// Offline pass-sandbox test rig: a single keyboard/mouse drives ONE player at a time and the camera
     /// follows that player. Tab hands control to the next player, so one person can throw to the other
-    /// player, switch, and throw back. Esc releases the mouse cursor (through <see cref="CursorPolicy"/>, and not while a
-    /// UI screen is open: Esc is that screen's Back). Not part of the shipped game.
-    /// Online, each machine controls only its own player, so this only handles the cursor.
+    /// player, switch, and throw back. It asks <see cref="CursorPolicy"/> for a locked cursor; Esc opens the pause menu
+    /// (<see cref="PauseMenu"/>), which frees the cursor while it is open. Not part of the shipped game.
+    /// Online, each machine controls only its own player, so this only locks the cursor.
     /// </summary>
     [DefaultExecutionOrder(50)]   // after the spawner has built the local rig
     public class LocalPlayerSwitcher : MonoBehaviour
@@ -38,7 +38,6 @@ namespace HotPatata
 
             if (!NetMode.IsNetworked && kb.tabKey.wasPressedThisFrame && Player.All.Count > 0)
                 Focus((focused + 1) % Player.All.Count);
-            if (kb.escapeKey.wasPressedThisFrame && !ScreenStack.AnyOpen) CursorPolicy.SetGameplayLock(!CursorPolicy.GameplayWantsLock);
         }
 
         public void Focus(int index)

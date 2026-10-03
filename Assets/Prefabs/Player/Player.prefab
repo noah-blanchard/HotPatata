@@ -274,6 +274,7 @@ GameObject:
   - component: {fileID: 7486448212569010210}
   - component: {fileID: 762283682691296354}
   - component: {fileID: 3078918953258715066}
+  - component: {fileID: 4960783038463028235}
   m_Layer: 8
   m_Name: Player
   m_TagString: Untagged
@@ -569,6 +570,18 @@ MonoBehaviour:
   dust: {fileID: 5643421583945608288}
   dustColor: {r: 1, g: 0.95, b: 0.85, a: 1}
   sprintPuffEvery: 2.4
+--- !u!114 &4960783038463028235
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8153791677947162974}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 036f60ee19aa7fb4b815216861cf7d94, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: HotPatata::HotPatata.PlayerPause
 --- !u!1 &8469958796228216096
 GameObject:
   m_ObjectHideFlags: 0

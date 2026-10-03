@@ -318,10 +318,11 @@ namespace HotPatata.Tests
         {
             yield return null;
             foreach (var r in p1.GetComponentsInChildren<Renderer>())
-                if (r.GetComponentInParent<BombController>() == null)
+                if (r.GetComponentInParent<BombController>() == null && !(r is ParticleSystemRenderer))   // your own dust stays visible (M9.3)
                     Assert.AreEqual(UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly, r.shadowCastingMode, r.name + " of the local player");
             foreach (var r in p2.GetComponentsInChildren<Renderer>())
-                Assert.AreEqual(UnityEngine.Rendering.ShadowCastingMode.On, r.shadowCastingMode, r.name + " of the remote player");
+                if (!(r is ParticleSystemRenderer))   // dust puffs never cast shadows
+                    Assert.AreEqual(UnityEngine.Rendering.ShadowCastingMode.On, r.shadowCastingMode, r.name + " of the remote player");
             Assert.AreEqual(UnityEngine.Rendering.ShadowCastingMode.On, bomb.GetComponentInChildren<Renderer>().shadowCastingMode, "the held bomb must stay visible");
         }
 

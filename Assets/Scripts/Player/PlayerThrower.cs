@@ -66,7 +66,8 @@ namespace HotPatata
             bool pressed = player.Input.ThrowPressed;
             bool released = player.Input.ThrowReleased;
 
-            bool mayThrow = bomb != null && !player.ControlLocked && bomb.Carrier == player
+            // A menu on top (pause, settings) cancels a charge: closing it must never throw by itself.
+            bool mayThrow = bomb != null && !player.ControlLocked && !player.Input.Blocked && bomb.Carrier == player
                             && (bomb.State == BombState.Held || bomb.State == BombState.CaughtGrace);
             if (!mayThrow)
             {

@@ -43,7 +43,7 @@ namespace HotPatata
         public int resolutionWidth = Unset;
         public int resolutionHeight = Unset;
         public int vSyncCount = Unset;       // 0 = off, 1 = every frame
-        public int targetFrameRate = Unset;  // with vsync off; -1 = platform default
+        public int targetFrameRate = Unset;  // frame cap with vsync off; Unset (-1) = no cap (the platform default)
 
         /// <summary>First launch (and any field missing from an older file): the designer values from the tuning asset.</summary>
         public static SettingsData FromTuning(GameTuning t)
@@ -99,7 +99,10 @@ namespace HotPatata
         /// <summary>Raised after <see cref="Save"/>, so systems that cache a value can refresh.</summary>
         public static event Action Changed;
 
-        static string FilePath => Path.Combine(Application.persistentDataPath, FileName);
+        /// <summary>The folder of settings.json (default: persistentDataPath). Tests point it at a temporary folder so they never touch the player's file.</summary>
+        public static string Folder { get; set; }
+
+        static string FilePath => Path.Combine(Folder ?? Application.persistentDataPath, FileName);
 
         /// <summary>True once <see cref="LoadOnce"/> has read the file in this play session.</summary>
         static bool loaded;
@@ -112,6 +115,7 @@ namespace HotPatata
             Current = null;
             Changed = null;
             loaded = false;
+            Folder = null;
         }
 
         // ------------------------------------------------------------------ reads (fall back to the tuning asset)
@@ -211,7 +215,7 @@ namespace HotPatata
             AudioListener.volume = s.masterVolume;
 
             if (s.vSyncCount != SettingsData.Unset) QualitySettings.vSyncCount = s.vSyncCount;
-            if (s.targetFrameRate != SettingsData.Unset) Application.targetFrameRate = s.targetFrameRate;
+            Application.targetFrameRate = s.targetFrameRate;   // Unset (-1) is Unity's own "no cap"
 
             if (Application.isEditor) return;   // the Game view owns resolution and window mode in the Editor
             // Only when something differs: Preview runs on every slider step, and a needless mode switch flickers.

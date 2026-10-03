@@ -37,7 +37,7 @@ namespace HotPatata
         [SerializeField, Tooltip("Highest checkpoint id of each gameplay scene (same order), offered as a start point.")]
         int[] sceneCheckpoints = { 9, 9, 7, 1 };
         [SerializeField] ushort port = 7777;
-        [SerializeField, Tooltip("Player colours and shapes for the lobby list.")] GameTuning tuning;
+        [SerializeField, Tooltip("Player colours and shapes for the lobby list, and the defaults of the settings screen.")] GameTuning tuning;
 
         NetworkManager nm;
         UnityTransport transport;
@@ -309,11 +309,11 @@ namespace HotPatata
             error ??= new GUIStyle(GUI.skin.label) { wordWrap = true, normal = { textColor = new Color(1f, 0.45f, 0.4f) } };
             rich ??= new GUIStyle(GUI.skin.label) { richText = true };
 
+            if (ScreenStack.AnyOpen) return;   // a UI Toolkit screen (settings) is on top of the menu
+
             switch (mode)
             {
-                case Mode.InGame:
-                    if (GUI.Button(new Rect(Screen.width - 130, 10, 120, 26), "Leave (F10)")) _ = LeaveAsync(null);
-                    break;
+                case Mode.InGame: break;   // leaving a game: the pause menu (Esc / Start), or F10 in a dev pinch
                 case Mode.Menu: DrawMenu(); break;
                 case Mode.Working: DrawPanel("HotPatata", () => GUILayout.Label(status)); break;
                 case Mode.Lobby: DrawLobby(); break;
@@ -354,6 +354,8 @@ namespace HotPatata
                 GUILayout.EndHorizontal();
                 GUILayout.Space(6);
                 if (GUILayout.Button("Play Local  (2 players, one keyboard)", GUILayout.Height(28))) PlayLocal();
+                GUILayout.Space(6);
+                if (GUILayout.Button("Settings", GUILayout.Height(28))) ScreenStack.Get().Push(new SettingsScreen(tuning));
 
                 GUILayout.Space(6);
                 showDirect = GUILayout.Toggle(showDirect, "Direct connection (LAN / testing)");
@@ -367,7 +369,7 @@ namespace HotPatata
                 }
 
                 if (!string.IsNullOrEmpty(message)) GUILayout.Label(message, error);
-            }, showDirect ? 430f : 400f);
+            }, showDirect ? 470f : 440f);
         }
 
         void DrawLobby()
