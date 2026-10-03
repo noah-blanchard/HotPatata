@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine.UIElements;
 
 namespace HotPatata
@@ -20,6 +21,11 @@ namespace HotPatata
         /// <summary>Back (Esc / gamepad B) closes this screen. A root menu with nowhere to go back to says no.</summary>
         public virtual bool CanGoBack => true;
 
+        /// <summary>While this screen is on top the local player's gameplay input is ignored (menus do; a HUD would not).</summary>
+        public virtual bool BlocksGameplay => true;
+
+        readonly List<VisualElement> navigation = new List<VisualElement>();
+
         protected abstract VisualElement Build();
 
         internal VisualElement Create()
@@ -27,7 +33,35 @@ namespace HotPatata
             if (Root != null) return Root;
             Root = Build();
             Root.AddToClassList("hp-screen");
+            if (navigation.Count > 0) Root.RegisterCallback<NavigationMoveEvent>(OnNavigate);
             return Root;
+        }
+
+        /// <summary>
+        /// Puts <paramref name="element"/> in the screen's up/down order (call in <see cref="Build"/>, top to bottom).
+        /// Up / down (arrows, d-pad, stick) then walk this list, skipping disabled entries; left / right are left to the
+        /// element (a setting row changes its value). Without it, focus moves in UI Toolkit's default order.
+        /// </summary>
+        protected T Navigable<T>(T element) where T : VisualElement
+        {
+            navigation.Add(element);
+            return element;
+        }
+
+        void OnNavigate(NavigationMoveEvent e)
+        {
+            int step = e.direction == NavigationMoveEvent.Direction.Up ? -1 : e.direction == NavigationMoveEvent.Direction.Down ? 1 : 0;
+            if (step == 0) return;
+            int from = navigation.FindIndex(n => n.focusController != null && n.focusController.focusedElement == n);
+            for (int i = 1; i <= navigation.Count; i++)
+            {
+                var next = navigation[((from < 0 ? (step > 0 ? -1 : 0) : from) + step * i + navigation.Count * 2) % navigation.Count];
+                if (!next.enabledInHierarchy || !next.canGrabFocus || next.resolvedStyle.display == DisplayStyle.None) continue;
+                next.Focus();
+                break;
+            }
+            Root.focusController?.IgnoreEvent(e);
+            e.StopPropagation();
         }
 
         public virtual void OnShow() { }

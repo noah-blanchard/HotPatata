@@ -16,6 +16,8 @@ namespace HotPatata
     /// devices of the selected <see cref="InputSource"/>. Several players can therefore coexist in
     /// one scene, each fed by a different device (or by none). The clone carries the player's saved key
     /// bindings (<see cref="InputRebinding"/>) and picks up new ones when the settings are saved.
+    /// While a menu is on top (<see cref="ScreenStack.BlocksGameplay"/>) every gameplay value reads as neutral (no move,
+    /// no look, no presses), scripted input included; only Pause still reads, so Start can close the pause menu.
     /// </summary>
     public class PlayerInputReader : MonoBehaviour
     {
@@ -24,7 +26,7 @@ namespace HotPatata
         [SerializeField] int gamepadIndex;
 
         InputActionAsset actions;
-        InputAction move, look, jump, throwAction, catchAction, sprint, crouch;
+        InputAction move, look, jump, throwAction, catchAction, sprint, crouch, pause;
 
         /// <summary>
         /// Programmatic input that completely replaces device input while assigned. Used by automated
@@ -69,16 +71,23 @@ namespace HotPatata
         public InputSource Source { get; private set; }
         public bool Active => Scripted != null || Source != InputSource.None;
 
-        public Vector2 Move => Scripted != null ? Scripted.Move : Source != InputSource.None ? move.ReadValue<Vector2>() : Vector2.zero;
-        public Vector2 Look => Scripted != null ? Scripted.Look : Source != InputSource.None ? look.ReadValue<Vector2>() : Vector2.zero;
+        /// <summary>A menu has the local player's gameplay input (the pause menu, settings): every gameplay value reads neutral.</summary>
+        public bool Blocked => ScreenStack.BlocksGameplay;
+
+        // Edges are always consumed (so nothing fires late when the menu closes), then dropped while blocked.
+        public Vector2 Move => Blocked ? Vector2.zero : Scripted != null ? Scripted.Move : Source != InputSource.None ? move.ReadValue<Vector2>() : Vector2.zero;
+        public Vector2 Look => Blocked ? Vector2.zero : Scripted != null ? Scripted.Look : Source != InputSource.None ? look.ReadValue<Vector2>() : Vector2.zero;
         /// <summary>Mouse look is a per-frame delta; stick look is a rate. Callers scale them differently.</summary>
         public bool LookIsMouse => Scripted == null && Source == InputSource.KeyboardMouse;
-        public bool JumpPressed => Scripted != null ? Scripted.ConsumeJump() : Source != InputSource.None && jump.WasPressedThisFrame();
-        public bool ThrowPressed => Scripted != null ? Scripted.ConsumeThrowPress() : Source != InputSource.None && throwAction.WasPressedThisFrame();
-        public bool ThrowReleased => Scripted != null ? Scripted.ConsumeThrowRelease() : Source != InputSource.None && throwAction.WasReleasedThisFrame();
-        public bool CatchPressed => Scripted != null ? Scripted.ConsumeCatch() : Source != InputSource.None && catchAction.WasPressedThisFrame();
-        public bool SprintHeld => Scripted != null ? Scripted.Sprint : Source != InputSource.None && sprint.IsPressed();
-        public bool CrouchHeld => Scripted != null ? Scripted.Crouch : Source != InputSource.None && crouch.IsPressed();
+        public bool JumpPressed => (Scripted != null ? Scripted.ConsumeJump() : Source != InputSource.None && jump.WasPressedThisFrame()) && !Blocked;
+        public bool ThrowPressed => (Scripted != null ? Scripted.ConsumeThrowPress() : Source != InputSource.None && throwAction.WasPressedThisFrame()) && !Blocked;
+        public bool ThrowReleased => (Scripted != null ? Scripted.ConsumeThrowRelease() : Source != InputSource.None && throwAction.WasReleasedThisFrame()) && !Blocked;
+        public bool CatchPressed => (Scripted != null ? Scripted.ConsumeCatch() : Source != InputSource.None && catchAction.WasPressedThisFrame()) && !Blocked;
+        public bool SprintHeld => !Blocked && (Scripted != null ? Scripted.Sprint : Source != InputSource.None && sprint.IsPressed());
+        public bool CrouchHeld => !Blocked && (Scripted != null ? Scripted.Crouch : Source != InputSource.None && crouch.IsPressed());
+
+        /// <summary>Esc / gamepad Start (rebindable): open or close the pause menu. Device input only; read even while blocked.</summary>
+        public bool PausePressed => Scripted == null && Source != InputSource.None && pause.WasPressedThisFrame();
 
         void Awake()
         {
@@ -92,6 +101,7 @@ namespace HotPatata
             catchAction = map.FindAction("Catch", true);
             sprint = map.FindAction("Sprint", true);
             crouch = map.FindAction("Crouch", true);
+            pause = map.FindAction("Pause", true);
         }
 
         void OnEnable()

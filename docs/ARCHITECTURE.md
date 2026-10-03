@@ -411,7 +411,8 @@ Assets/
 │   ├── Networking/       NetworkBootstrap, BootstrapEntry, SessionService, NetworkPlayer/Bomb/RunState/FallingPlatform,
 │   │                     NetworkBombGate/SignalActuator/BombTransit
 │   ├── Player/           Player, PlayerMotor, PlayerLook, PlayerThrower, PlayerCatcher, PlayerCatchVolume,
-│   │                     FirstPersonCamera, PlayerViewFeel, SpeedEffects, PlayerPresentation, PlayerAnimator, ...
+│   │                     FirstPersonCamera, PlayerViewFeel, SpeedEffects, PlayerPresentation, PlayerAnimator,
+│   │                     PlayerPause, ...
 │   ├── Bomb/             BombController, BombFuse, BombPhysics, CatchResolver, FlightHistory, AimAssist,
 │   │                     ThrowBallistics, BombAudio, BombPresentation, ExplosionFx, ProceduralSfx
 │   ├── Run/              RunManager, Checkpoint, KillZone, FinishZone, PlayerZone, PlayerSpawner, PlayerSpawn
@@ -419,7 +420,8 @@ Assets/
 │   ├── Kit/              KitSkin, KitPalette (KayKit visuals, §25.1)
 │   ├── Zones/            Zone, IBombZoneEffect, BombZoneSweep, FuseZone, BombBarrier, BombGate, PressurePlate,
 │   │                     ISignalSource, SignalActuator, SignalIndicator, BombTransit, TransitMouth, TransitPresentation
-│   ├── UI/               ScreenStack, UIScreen, CursorPolicy (UI Toolkit base, §6.2), AimReticle, RunResultsUI
+│   ├── UI/               ScreenStack, UIScreen, CursorPolicy (UI Toolkit base, §6.2), PauseMenu, SettingsScreen,
+│   │                     SettingRows, ConfirmScreen, AimReticle, RunResultsUI
 │   ├── Debug/            DebugHud, LocalPlayerSwitcher, PlayerBot
 │   └── DebugTools/       Editor/dev-build only: LatencySimulator, ThrowDebugOverlay, ThrowTelemetry, PassPartner,
 │                         UISampleScreen
@@ -471,8 +473,8 @@ display (window mode, resolution, vsync, frame cap). `Settings` (`Assets/Scripts
 `Settings.ViewEffectsStrength(tuning)` and similar, never the tuning field directly. `BootstrapEntry` loads the file
 once at the game's entry. Until then (tests, a gameplay scene played directly) and until the player saves anything,
 `Settings.Current` is null and every accessor returns the `GameTuning` value, so the designer values are the
-first-launch defaults and tests still drive the tuning. The shared asset is never written at runtime. A settings
-screen edits `Settings.Editable(tuning)` and commits with `Settings.Save(data, tuning)`, which clamps, applies
+first-launch defaults and tests still drive the tuning. The shared asset is never written at runtime. The settings
+screen (§6.2) edits `Settings.Editable(tuning)` and commits with `Settings.Save(data, tuning)`, which clamps, applies
 (`AudioListener.volume`, vsync/frame cap, and resolution/window mode outside the Editor), writes the file and raises
 `Settings.Changed`. `Settings.Preview(data, tuning)` does the same without writing the file, so a settings screen can
 apply every slider step live and `Save` once; display changes are only re-applied when they differ from the screen.
@@ -507,14 +509,52 @@ for dev tools only, and the remaining IMGUI screens (menu and lobby #15, results
   `hp-first-focus`) and returns to where it was when the screen above closes. Back is the UI Cancel action (Esc,
   gamepad B) and goes to the top screen's `OnBack` (a root menu sets `CanGoBack` to false).
 - **`UIScreen`**: one screen, its tree built in code or from a UXML template in `Assets/UI/Screens`
-  (`FromTemplate`); `ReleasesCursor` (menus: yes), `CanGoBack`, `OnShow` / `OnHide` / `OnBack`, `FirstFocus`.
+  (`FromTemplate`); `ReleasesCursor` (menus: yes), `CanGoBack`, `BlocksGameplay` (menus: yes), `OnShow` / `OnHide` /
+  `OnBack`, `FirstFocus`, `Navigable` (the up/down order).
 - **Navigation.** UI Toolkit reads keyboard and gamepad through an `EventSystem` with the Input System
   `InputSystemUIInputModule` and its default UI actions (arrows / WASD / stick / d-pad, Enter / A, Esc / B). The stack
   creates one under `UIRoot` if the scene has none. The mouse works directly.
 - **Cursor.** `CursorPolicy` is the only code that sets `Cursor.lockState`: gameplay asks for a lock
   (`SetGameplayLock`: the local rig, `NetworkPlayer`, leaving a game), a screen on top that releases the cursor wins
-  over it, and closing the screen gives the lock back. `LocalPlayerSwitcher` leaves Esc alone while a screen is open.
+  over it, and closing the screen gives the lock back. Esc belongs to the pause menu, not to the cursor.
 - **Dev check.** F6 or gamepad Select opens `UISampleScreen` (dev builds only) in any scene.
+
+**Screens built on it (#16, #17).**
+
+- **Pause menu** (`PauseScreen`, `PauseMenu`, `Assets/Scripts/UI/PauseMenu.cs`): Resume, Settings, Leave to menu
+  (behind a `ConfirmScreen` whose safe answer, Cancel, has the focus).
+  - Opened and closed by the **Pause** action of HotPatataControls (Esc, gamepad Start; rebindable like every button,
+    #18), read by `PlayerPause` on the local player; Back (Esc / B) closes it too. `PauseMenu.Toggle` ignores a frame
+    on which a screen already opened or closed (`ScreenStack.LastChangeFrame`): Esc is both the UI's Back and the
+    gameplay Pause, so it never closes and reopens the menu at once. With another screen on top (settings, a
+    question), Pause leaves it to that screen's Back.
+  - **Offline the game freezes** (`Time.timeScale` 0 while a `PauseScreen` is anywhere in the stack, settings
+    included). **Online nothing pauses**, for anyone: a carrier who opens the menu keeps the bomb while its fuse
+    burns, as the rules say, and the menu says so.
+  - While a menu is on top (`UIScreen.BlocksGameplay`, true for every menu) `PlayerInputReader.Blocked` makes every
+    gameplay value read neutral (no move, no look, presses dropped, scripted input included), and `PlayerThrower`
+    cancels a charge, so closing a menu never throws by itself. Only Pause still reads, so Start closes the menu.
+  - Leave goes through `NetworkBootstrap.LeaveAsync` (in session mode `SessionService.LeaveAsync`, never
+    `NetworkManager.Shutdown`); a course played directly in the Editor loads the entry scene (build index 0). The
+    IMGUI in-game Leave button is gone; F10 still leaves, as a dev shortcut.
+- **Settings screen** (`SettingsScreen`, #17), reachable from the main menu (IMGUI Settings button, the menu hides
+  while a screen is open) and the pause menu. Sections and rows:
+
+  | Section | Rows (stored in `SettingsData`) |
+  |---|---|
+  | Accessibility | camera effects (`viewEffectsStrength`), flash reduction (`flashReduction`), fuse warning volume (`beepVolume`) |
+  | Look | mouse sensitivity, stick sensitivity, invert Y, field of view |
+  | Audio | master volume (`AudioListener.volume`), effects volume (the mixer's SFX group, `AudioVolumes`) |
+  | Display | window mode (fullscreen, borderless, windowed), resolution, vertical sync, frame cap (30-240 or none, with vsync off) |
+
+  It edits `Settings.Editable(tuning)`: every change applies at once (`Settings.Preview`) and the file is written once
+  when the screen closes (`Settings.Save`, in `OnHide`). **Reset to defaults** goes back to the `GameTuning` values
+  (keeping the key bindings). The `GameTuning` asset is only read. Window mode and resolution apply in a build only
+  (the Game view owns them in the Editor; the screen says so). Key bindings get their own page with #18.
+- **Setting rows** (`SettingRows.cs`): `SliderRow`, `ToggleRow`, `ChoiceRow` are one focusable line each (`hp-row`)
+  with a label; the inner field only takes the mouse. Up / down walk the rows (`UIScreen.Navigable`: an explicit
+  order, skipping disabled rows, so the d-pad never gets lost), left / right change the focused row, Enter / A
+  toggles or steps forward. A focused row scrolls into view.
 
 ---
 

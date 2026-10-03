@@ -123,3 +123,114 @@
     font-size: 22px;
     min-width: 220px;
 }
+
+.hp-button--danger {
+    background-color: #7A2E3A;
+}
+
+.hp-button--danger:hover,
+.hp-button--danger:focus {
+    background-color: #95384A;
+}
+
+/* Settings (#17): a wide panel, a scrolling list of sections and rows, a footer with the buttons. */
+.hp-panel--wide {
+    width: 1040px;
+    max-width: 92%;
+    max-height: 90%;
+}
+
+.hp-scroll {
+    flex-shrink: 1;
+    max-height: 720px;
+    margin-bottom: 12px;
+}
+
+.hp-section {
+    font-size: 26px;
+    -unity-font-style: bold;
+    color: var(--hp-accent);
+    margin: 18px 0 6px 4px;
+}
+
+.hp-row {
+    flex-direction: row;
+    align-items: center;
+    min-height: 58px;
+    margin: 3px 0;
+    padding: 4px 16px;
+    border-radius: var(--hp-radius);
+    border-width: 4px;
+    border-color: rgba(0, 0, 0, 0);
+    background-color: rgba(255, 255, 255, 0.04);
+}
+
+.hp-row:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.hp-row:focus {
+    border-color: var(--hp-accent);
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.hp-row:disabled {
+    opacity: 0.4;
+}
+
+.hp-row__label {
+    width: 440px;
+    font-size: 22px;
+    color: var(--hp-ink);
+    white-space: normal;
+}
+
+.hp-row__field {
+    flex-grow: 1;
+    margin: 0 12px;
+}
+
+.hp-row__value {
+    width: 90px;
+    font-size: 22px;
+    -unity-text-align: middle-right;
+    color: var(--hp-ink-dim);
+}
+
+.hp-row__toggle {
+    flex-grow: 1;
+    margin: 0 12px;
+}
+
+.hp-choice {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.hp-choice__value {
+    flex-grow: 1;
+    font-size: 22px;
+    -unity-text-align: middle-center;
+    color: var(--hp-ink);
+}
+
+.hp-choice__arrow {
+    width: 44px;
+    height: 40px;
+    font-size: 26px;
+    color: var(--hp-ink);
+    background-color: var(--hp-button);
+    border-radius: 10px;
+    border-width: 0;
+}
+
+.hp-footer {
+    flex-direction: row;
+    justify-content: flex-end;
+}
+
+.hp-footer .hp-button {
+    margin-left: 12px;
+    min-width: 220px;
+}

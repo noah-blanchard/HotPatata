@@ -19,6 +19,8 @@
 | `InputRebindingTests` | EditMode | #18: rebindable bindings per device, conflicts, saved overrides reaching a player's copy, reset |
 | `CursorPolicyTests` | EditMode | #14: the cursor is locked only while gameplay wants it and no screen needs the mouse |
 | `PlayerNamesTests` | EditMode | M6: player-name cleanup (trim, length, control characters, "Player N" fallback) |
+| `DisplayOptionsTests` | EditMode | #17: settings display choices (window modes, resolutions without duplicates, frame caps) |
+| `PauseAndSettingsTests` | PlayMode | #16/#17: pause freezes offline, takes the input and frees the cursor; a carrier keeps the bomb and loses the charge; Esc never closes and reopens on one frame; Leave asks first; settings preview live, save on close, reset, never write `GameTuning` |
 | `ScreenStackTests` | PlayMode | #14 UI Toolkit base: themed panel and navigation module, stack/focus/back, navigation and submit events, cursor hand-over |
 | `BombStateTests` | PlayMode | bomb state machine plus catch / world-contact / fuse rules (M1.4–M1.8) |
 | `RunAndThrowTests` | PlayMode | throw by input (M1.5) and fast, clean section reset (M1.10) |
@@ -75,6 +77,8 @@ change, run `CourseTests` / `FactoryCourseTests`. After a kit look change (`KitS
 
 - **F6** or gamepad **Select** opens the `UISampleScreen` (UI Toolkit base, #14) to check the theme, focus and
   mouse / keyboard / gamepad navigation in any scene.
+- **Esc** or gamepad **Start** opens the pause menu (#16; offline it freezes the game), with Settings (#17) inside;
+  the main menu has a Settings button too. **F10** still leaves a networked game at once.
 - **F3** toggles `ThrowDebugOverlay`: raw and assisted aim, assist cone, arcs, catch reach, last flight.
 - Each throw logs one `[Throw]` line (`ThrowTelemetry`, `HotPatata.DebugTools` assembly).
 - **Offline only:** F4 turns the idle player into a catch/throw-back bot (`PassPartner`), and F5 cycles its movement.

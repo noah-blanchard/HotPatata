@@ -21,7 +21,7 @@ playtest and cannot be closed by code.
 | M3 Network proof | done (host authority, lag-compensated catch) | M3.7: test on two physical machines |
 | M4 Session and lobby | done, verified with real Relay sessions | |
 | M5 First greybox course | done, then extended to Acts 2–3 (~680 m, 7 checkpoints) | group playtest of the full course |
-| M6 UX and readability | partly covered by earlier work (see each task); UI Toolkit base in place (#14) | verify M6.1/M6.2 at range, player-facing progress UI, settings menu, ping only if needed |
+| M6 UX and readability | partly covered by earlier work (see each task); UI Toolkit base (#14), pause menu (#16) and settings screen (#17) in place | verify M6.1/M6.2 at range, player-facing progress UI, ping only if needed |
 | M7 Test and harden | not started (bot latency runs cover part of M7.3) | all |
 | M8 Post-validation polish | gated on M7.4; some pulled forward through M9 | |
 | M9 Movement and look pass | done (pulled forward by the owner) | |
@@ -1017,13 +1017,14 @@ At minimum prepare:
 - bomb warning volume;
 - visual warning independent of color alone.
 
-> **Status (partial):** in `GameTuning`, `viewEffectsStrength` scales every camera effect (shake, bob, roll, FOV),
-> `flashReduction` dims every flash, and `beepVolume` sets the bomb warning volume. The fuse warning uses pulse speed,
-> sparks and beep cadence, and hazards are striped, so neither relies on colour alone. There is no player-facing
-> settings menu yet. The per-player layer exists (`Settings`, ARCHITECTURE §6.1): the values are saved per machine and
-> read instead of the shared asset, so the menu (#17, after the UI Toolkit base #14 and the pause menu #16) only has to
-> edit and save them. The AudioMixer exists (`HotPatataMixer`, Master > SFX): `sfxVolume` drives the SFX group through
-> `AudioVolumes`, and every gameplay sound is routed to it, so the menu gets a working effects slider.
+> **Status (done, to check in play):** in `GameTuning`, `viewEffectsStrength` scales every camera effect (shake, bob,
+> roll, FOV), `flashReduction` dims every flash, and `beepVolume` sets the bomb warning volume. The fuse warning uses
+> pulse speed, sparks and beep cadence, and hazards are striped, so neither relies on colour alone. The per-player layer
+> (`Settings`, ARCHITECTURE §6.1) saves the values per machine and is read instead of the shared asset. The settings
+> screen (#17, ARCHITECTURE §6.2), reachable from the main menu and the pause menu (#16), exposes all of them plus
+> look, audio (master, effects through the `HotPatataMixer` SFX group) and display: each change applies at once and is
+> saved when the screen closes. Still to check by hand: effects 0 = a steady camera and flash reduction 1 = dimmed
+> flashes, in play; every setting survives a restart.
 
 ---
 
