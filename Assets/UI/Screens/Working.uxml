@@ -1,0 +1,8 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <ui:VisualElement class="hp-overlay hp-overlay--menu">
+        <ui:VisualElement class="hp-panel hp-panel--menu">
+            <ui:Label text="HotPatata" class="hp-title" />
+            <ui:Label name="status" text="Connecting..." class="hp-hint" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

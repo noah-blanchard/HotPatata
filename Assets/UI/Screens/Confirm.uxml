@@ -1,0 +1,10 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <ui:VisualElement class="hp-overlay">
+        <ui:VisualElement class="hp-panel">
+            <ui:Label name="title" text="Are you sure?" class="hp-title" />
+            <ui:Label name="message" text="The question's details." class="hp-hint" />
+            <ui:Button name="cancel" text="Cancel" class="hp-button" />
+            <ui:Button name="confirm" text="Confirm" class="hp-button hp-button--danger" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

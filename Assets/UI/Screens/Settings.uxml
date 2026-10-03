@@ -1,0 +1,31 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:hp="HotPatata" editor-extension-mode="False">
+    <ui:VisualElement class="hp-overlay">
+        <ui:VisualElement class="hp-panel hp-panel--wide">
+            <ui:Label text="Settings" class="hp-title" />
+            <ui:ScrollView name="scroll" mode="Vertical" class="hp-scroll">
+                <ui:Label text="Accessibility" class="hp-section" />
+                <hp:SliderRow name="view-effects" label="Camera effects (shake, bob, roll, FOV kick)" />
+                <hp:SliderRow name="flash-reduction" label="Flash reduction" />
+                <hp:SliderRow name="beep-volume" label="Fuse warning volume" />
+                <ui:Label text="Look" class="hp-section" />
+                <hp:SliderRow name="mouse-sensitivity" label="Mouse sensitivity" />
+                <hp:SliderRow name="stick-sensitivity" label="Stick sensitivity" />
+                <hp:ToggleRow name="invert-y" label="Invert Y" />
+                <hp:SliderRow name="field-of-view" label="Field of view" />
+                <ui:Label text="Audio" class="hp-section" />
+                <hp:SliderRow name="master-volume" label="Master volume" />
+                <hp:SliderRow name="sfx-volume" label="Effects volume" />
+                <ui:Label text="Display" class="hp-section" />
+                <hp:ChoiceRow name="window-mode" label="Window mode" />
+                <hp:ChoiceRow name="resolution" label="Resolution" />
+                <hp:ToggleRow name="vsync" label="Vertical sync" />
+                <hp:ChoiceRow name="frame-cap" label="Frame cap (vsync off)" />
+                <ui:Label name="editor-note" text="Window mode and resolution apply in the built game (the Game view owns them in the Editor)." class="hp-hint" />
+            </ui:ScrollView>
+            <ui:VisualElement class="hp-footer">
+                <ui:Button name="reset" text="Reset to defaults" class="hp-button hp-button--secondary" />
+                <ui:Button name="back" text="Back" class="hp-button" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

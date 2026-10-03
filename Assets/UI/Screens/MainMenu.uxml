@@ -1,0 +1,22 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:hp="HotPatata" editor-extension-mode="False">
+    <ui:VisualElement class="hp-overlay hp-overlay--menu">
+        <ui:VisualElement class="hp-panel hp-panel--menu">
+            <ui:Label text="HotPatata" class="hp-title" />
+            <ui:TextField name="name-field" label="Your name" class="hp-field" />
+            <hp:ChoiceRow name="level" label="Level" />
+            <hp:ChoiceRow name="spawn" label="Spawn at" />
+            <ui:Button name="host-online" text="Host Online  (get a game code)" class="hp-button" />
+            <ui:TextField name="code-field" label="Game code" class="hp-field" />
+            <ui:Button name="join-code" text="Join with code" class="hp-button" />
+            <ui:Button name="play-local" text="Play Local  (2 players, one keyboard)" class="hp-button" />
+            <ui:Button name="settings" text="Settings" class="hp-button hp-button--secondary" />
+            <hp:ToggleRow name="direct-toggle" label="Direct connection (LAN / testing)" />
+            <ui:VisualElement name="direct-group" class="hp-group">
+                <ui:TextField name="direct-address" label="Address" class="hp-field" />
+                <ui:Button name="join-ip" text="Join IP" class="hp-button hp-button--secondary" />
+                <ui:Button name="host-direct" text="Host (direct)" class="hp-button hp-button--secondary" />
+            </ui:VisualElement>
+            <ui:Label name="error" class="hp-hint hp-error" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

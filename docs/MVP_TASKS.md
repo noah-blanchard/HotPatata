@@ -21,7 +21,7 @@ playtest and cannot be closed by code.
 | M3 Network proof | done (host authority, lag-compensated catch) | M3.7: test on two physical machines |
 | M4 Session and lobby | done, verified with real Relay sessions | |
 | M5 First greybox course | done, then extended to Acts 2–3 (~680 m, 7 checkpoints) | group playtest of the full course |
-| M6 UX and readability | partly covered by earlier work (see each task); UI Toolkit base (#14), main menu and lobby (#15), pause menu (#16) and settings screen (#17) in place | verify M6.1/M6.2 at range, player-facing progress UI, ping only if needed |
+| M6 UX and readability | partly covered by earlier work (see each task); UI Toolkit base (#14), main menu and lobby (#15), pause menu (#16) and settings screen (#17) in place, their layouts in UXML editable in UI Builder (#76) | verify M6.1/M6.2 at range, player-facing progress UI, ping only if needed |
 | M7 Test and harden | not started (bot latency runs cover part of M7.3) | all |
 | M8 Post-validation polish | gated on M7.4; some pulled forward through M9 | |
 | M9 Movement and look pass | done (pulled forward by the owner) | |

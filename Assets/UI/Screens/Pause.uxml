@@ -1,0 +1,11 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <ui:VisualElement class="hp-overlay">
+        <ui:VisualElement class="hp-panel">
+            <ui:Label name="title" text="Paused" class="hp-title" />
+            <ui:Label name="hint" text="The game is paused." class="hp-hint" />
+            <ui:Button name="resume" text="Resume" class="hp-button" />
+            <ui:Button name="settings" text="Settings" class="hp-button" />
+            <ui:Button name="leave" text="Leave to menu" class="hp-button hp-button--secondary" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

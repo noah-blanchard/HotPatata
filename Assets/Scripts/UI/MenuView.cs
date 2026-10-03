@@ -43,72 +43,38 @@ namespace HotPatata
     static class MenuParts
     {
         public const int RefreshMs = 200;   // how often a screen re-reads the bootstrap's state (messages, lobby list)
+        public const int AddressMaxLength = 64;
 
-        public static VisualElement Panel(VisualElement root, string title)
+        /// <summary>A text field of the layout: its value, its length limit, and typed (not delayed) changes.</summary>
+        public static TextField Field(TextField field, string value, int maxLength)
         {
-            root.AddToClassList("hp-overlay");
-            root.AddToClassList("hp-overlay--menu");
-            var panel = new VisualElement();
-            panel.AddToClassList("hp-panel");
-            panel.AddToClassList("hp-panel--menu");
-            root.Add(panel);
-            var heading = new Label(title);
-            heading.AddToClassList("hp-title");
-            panel.Add(heading);
-            return panel;
-        }
-
-        public static Button Button(VisualElement parent, string text, System.Action onClick, string extraClass = null)
-        {
-            var button = new Button(onClick) { text = text };
-            button.AddToClassList("hp-button");
-            if (extraClass != null) button.AddToClassList(extraClass);
-            parent.Add(button);
-            return button;
-        }
-
-        public static TextField Field(VisualElement parent, string label, string value, int maxLength)
-        {
-            var field = new TextField(label) { maxLength = maxLength, isDelayed = false };
+            field.maxLength = maxLength;
+            field.isDelayed = false;
             field.SetValueWithoutNotify(value ?? "");
-            field.AddToClassList("hp-field");
-            parent.Add(field);
             return field;
         }
 
-        public static Label Hint(VisualElement parent, string text, string extraClass = null)
-        {
-            var label = new Label(text);
-            label.AddToClassList("hp-hint");
-            if (extraClass != null) label.AddToClassList(extraClass);
-            parent.Add(label);
-            return label;
-        }
-
         /// <summary>The level and spawn-point choices (main menu and the host's lobby); the spawn list follows the level.</summary>
-        public static void LevelChoices(VisualElement parent, NetworkBootstrap bootstrap, out ChoiceRow level, out ChoiceRow spawn)
+        public static void LevelChoices(ChoiceRow level, ChoiceRow spawn, NetworkBootstrap bootstrap)
         {
-            var spawnRow = new ChoiceRow("Spawn at", NetworkBootstrap.SpawnLabels(bootstrap.SceneCheckpointCount), RunOptions.StartCheckpoint);
-            var levelRow = new ChoiceRow("Level", bootstrap.GameplayScenes.ToList(), bootstrap.SceneIndex);
-            levelRow.Changed += i =>
+            void ShowSpawn() => spawn.style.display = bootstrap.SceneCheckpointCount > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            level.SetOptions(bootstrap.GameplayScenes.ToList(), bootstrap.SceneIndex);
+            spawn.SetOptions(NetworkBootstrap.SpawnLabels(bootstrap.SceneCheckpointCount), RunOptions.StartCheckpoint);
+            level.Changed += i =>
             {
                 bootstrap.SceneIndex = i;
-                spawnRow.SetOptions(NetworkBootstrap.SpawnLabels(bootstrap.SceneCheckpointCount), RunOptions.StartCheckpoint);
-                spawnRow.style.display = bootstrap.SceneCheckpointCount > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+                spawn.SetOptions(NetworkBootstrap.SpawnLabels(bootstrap.SceneCheckpointCount), RunOptions.StartCheckpoint);
+                ShowSpawn();
             };
-            spawnRow.Changed += i => RunOptions.StartCheckpoint = i;
-            spawnRow.style.display = bootstrap.SceneCheckpointCount > 0 ? DisplayStyle.Flex : DisplayStyle.None;
-            parent.Add(levelRow);
-            parent.Add(spawnRow);
-            level = levelRow;
-            spawn = spawnRow;
+            spawn.Changed += i => RunOptions.StartCheckpoint = i;
+            ShowSpawn();
         }
     }
 
     /// <summary>
-    /// The main menu (parity with the old IMGUI one): your name, level and spawn point, Host Online (get a game code),
-    /// Join with code, Play Local, Settings, and the direct connection (LAN / testing) behind a toggle. Errors from the
-    /// session flow show under it. It is the root: Back does nothing.
+    /// The main menu (parity with the old IMGUI one; layout Assets/UI/Screens/MainMenu.uxml): your name, level and spawn
+    /// point, Host Online (get a game code), Join with code, Play Local, Settings, and the direct connection (LAN /
+    /// testing) behind a toggle. Errors from the session flow show under it. It is the root: Back does nothing.
     /// </summary>
     public class MainMenuScreen : UIScreen
     {
@@ -125,41 +91,39 @@ namespace HotPatata
 
         protected override VisualElement Build()
         {
-            var root = new VisualElement();
-            var panel = MenuParts.Panel(root, "HotPatata");
+            var root = FromTemplate(Templates.mainMenu);
 
-            NameField = Navigable(MenuParts.Field(panel, "Your name", PlayerNames.Local, PlayerNames.MaxLength));
+            NameField = Navigable(MenuParts.Field(Require<TextField>("name-field"), PlayerNames.Local, PlayerNames.MaxLength));
             NameField.RegisterValueChangedCallback(e => PlayerNames.Local = e.newValue);   // saved here; the host cleans it up when shared
 
-            MenuParts.LevelChoices(panel, bootstrap, out var level, out var spawn);
-            Navigable(level);
-            Navigable(spawn);
+            var level = Navigable(Require<ChoiceRow>("level"));
+            var spawn = Navigable(Require<ChoiceRow>("spawn"));
+            MenuParts.LevelChoices(level, spawn, bootstrap);
 
-            var host = Navigable(MenuParts.Button(panel, "Host Online  (get a game code)", () => _ = bootstrap.HostOnlineAsync()));
+            var host = Navigable(Require<Button>("host-online"));
+            host.clicked += () => _ = bootstrap.HostOnlineAsync();
             host.AddToClassList(FirstFocusClass);
-            CodeField = Navigable(MenuParts.Field(panel, "Game code", "", SessionService.CodeLength));
+            CodeField = Navigable(MenuParts.Field(Require<TextField>("code-field"), "", SessionService.CodeLength));
             CodeField.RegisterValueChangedCallback(e =>
             {
                 string normalized = SessionService.NormalizeCode(e.newValue);
                 if (normalized != e.newValue) CodeField.SetValueWithoutNotify(normalized);
             });
-            Navigable(MenuParts.Button(panel, "Join with code", () => _ = bootstrap.JoinCodeAsync(CodeField.value)));
-            Navigable(MenuParts.Button(panel, "Play Local  (2 players, one keyboard)", bootstrap.PlayLocal));
-            Navigable(MenuParts.Button(panel, "Settings", () => Stack.Push(new SettingsScreen(bootstrap.Tuning)), "hp-button--secondary"));
+            Navigable(Require<Button>("join-code")).clicked += () => _ = bootstrap.JoinCodeAsync(CodeField.value);
+            Navigable(Require<Button>("play-local")).clicked += bootstrap.PlayLocal;
+            Navigable(Require<Button>("settings")).clicked += () => Stack.Push(new SettingsScreen(bootstrap.Tuning));
 
-            var direct = new VisualElement();
-            direct.AddToClassList("hp-group");
-            var toggle = Navigable(new ToggleRow("Direct connection (LAN / testing)", false));
-            panel.Add(toggle);
-            panel.Add(direct);
-            var ip = Navigable(MenuParts.Field(direct, "Address", bootstrap.DirectAddress, 64));
+            var direct = Require<VisualElement>("direct-group");
+            var toggle = Navigable(Require<ToggleRow>("direct-toggle"));
+            toggle.SetValueWithoutNotify(false);
+            var ip = Navigable(MenuParts.Field(Require<TextField>("direct-address"), bootstrap.DirectAddress, MenuParts.AddressMaxLength));
             ip.RegisterValueChangedCallback(e => bootstrap.DirectAddress = e.newValue.Trim());
-            Navigable(MenuParts.Button(direct, "Join IP", () => bootstrap.StartClientDirect(bootstrap.DirectAddress), "hp-button--secondary"));
-            Navigable(MenuParts.Button(direct, "Host (direct)", bootstrap.StartHostDirect, "hp-button--secondary"));
-            direct.style.display = DisplayStyle.None;
-            toggle.Changed += on => direct.style.display = on ? DisplayStyle.Flex : DisplayStyle.None;
+            Navigable(Require<Button>("join-ip")).clicked += () => bootstrap.StartClientDirect(bootstrap.DirectAddress);
+            Navigable(Require<Button>("host-direct")).clicked += bootstrap.StartHostDirect;
+            Show(direct, false);
+            toggle.Changed += on => Show(direct, on);
 
-            error = MenuParts.Hint(panel, "", "hp-error");
+            error = Require<Label>("error");
             root.schedule.Execute(Refresh).Every(MenuParts.RefreshMs);
             Refresh();
             return root;
@@ -185,9 +149,8 @@ namespace HotPatata
 
         protected override VisualElement Build()
         {
-            var root = new VisualElement();
-            var panel = MenuParts.Panel(root, "HotPatata");
-            status = MenuParts.Hint(panel, "");
+            var root = FromTemplate(Templates.working);
+            status = Require<Label>("status");
             root.schedule.Execute(Refresh).Every(MenuParts.RefreshMs);
             Refresh();
             return root;
@@ -197,9 +160,9 @@ namespace HotPatata
     }
 
     /// <summary>
-    /// The online lobby (parity with the old IMGUI one): the game code (Copy code), the player list with each slot's
-    /// colour and shape and the host / you tags, then for the host the level, spawn point and Start, for the others a
-    /// waiting line, and Leave. Back asks before leaving.
+    /// The online lobby (parity with the old IMGUI one; layout Assets/UI/Screens/Lobby.uxml): the game code (Copy code),
+    /// the player list with each slot's colour and shape and the host / you tags, then for the host the level, spawn
+    /// point and Start, for the others a waiting line, and Leave. Back asks before leaving.
     /// </summary>
     public class LobbyScreen : UIScreen
     {
@@ -212,35 +175,29 @@ namespace HotPatata
 
         protected override VisualElement Build()
         {
-            var root = new VisualElement();
-            var panel = MenuParts.Panel(root, "Lobby");
+            var root = FromTemplate(Templates.lobby);
 
-            MenuParts.Hint(panel, "Game code");
-            var code = new Label(bootstrap.LobbyCode ?? "");
-            code.AddToClassList("hp-code");
-            panel.Add(code);
-            Navigable(MenuParts.Button(panel, "Copy code", () => GUIUtility.systemCopyBuffer = bootstrap.LobbyCode ?? "", "hp-button--secondary"));
+            Require<Label>("code").text = bootstrap.LobbyCode ?? "";
+            Navigable(Require<Button>("copy-code")).clicked += () => GUIUtility.systemCopyBuffer = bootstrap.LobbyCode ?? "";
 
-            playersTitle = new Label();
-            playersTitle.AddToClassList("hp-section");
-            panel.Add(playersTitle);
-            playerList = new VisualElement();
-            playerList.AddToClassList("hp-group");
-            panel.Add(playerList);
+            playersTitle = Require<Label>("players-title");
+            playerList = Require<VisualElement>("player-list");
+            playerList.Clear();   // anything the layout shows there is a preview
 
-            if (bootstrap.IsLobbyHost)
+            // The host picks the level and starts; the others wait.
+            bool host = bootstrap.IsLobbyHost;
+            Show(Require<VisualElement>("host-controls"), host);
+            Show(Require<Label>("waiting"), !host);
+            if (host)
             {
-                MenuParts.LevelChoices(panel, bootstrap, out var level, out var spawn);
-                Navigable(level);
-                Navigable(spawn);
-                var start = Navigable(MenuParts.Button(panel, "Start", bootstrap.StartLevel));
+                var level = Navigable(Require<ChoiceRow>("level"));
+                var spawn = Navigable(Require<ChoiceRow>("spawn"));
+                MenuParts.LevelChoices(level, spawn, bootstrap);
+                var start = Navigable(Require<Button>("start"));
+                start.clicked += bootstrap.StartLevel;
                 start.AddToClassList(FirstFocusClass);
             }
-            else
-            {
-                MenuParts.Hint(panel, "Waiting for the host to start...");
-            }
-            Navigable(MenuParts.Button(panel, "Leave", () => _ = bootstrap.LeaveAsync(null), "hp-button--secondary"));
+            Navigable(Require<Button>("leave")).clicked += () => _ = bootstrap.LeaveAsync(null);
 
             root.schedule.Execute(Refresh).Every(MenuParts.RefreshMs);
             Refresh();

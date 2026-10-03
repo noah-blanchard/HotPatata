@@ -6,7 +6,8 @@ using UnityEngine.UIElements;
 namespace HotPatata
 {
     /// <summary>
-    /// The settings screen (#17, spec §19, ARCHITECTURE §6.2), reachable from the main menu and the pause menu. Four
+    /// The settings screen (#17, spec §19, ARCHITECTURE §6.2; layout Assets/UI/Screens/Settings.uxml, the rows' labels
+    /// and order included), reachable from the main menu and the pause menu. Four
     /// sections: accessibility (camera effects, flash reduction, warning beep), look (mouse and stick sensitivity,
     /// invert Y, field of view), audio (master, effects) and display (window mode, resolution, vsync, frame cap).
     /// It edits a copy of the player's <see cref="Settings"/>: every change applies at once (<see cref="Settings.Preview"/>)
@@ -23,6 +24,7 @@ namespace HotPatata
         ToggleRow invertY, vSync;
         ChoiceRow windowMode, resolution, frameCap;
         List<Vector2Int> resolutions;
+        ScrollView scroll;
 
         public SettingsScreen(GameTuning tuning) => this.tuning = tuning;
 
@@ -32,111 +34,80 @@ namespace HotPatata
         protected override VisualElement Build()
         {
             data = Settings.Editable(tuning);
-            var root = new VisualElement();
-            root.AddToClassList("hp-overlay");
-            var panel = new VisualElement();
-            panel.AddToClassList("hp-panel");
-            panel.AddToClassList("hp-panel--wide");
-            root.Add(panel);
-            var title = new Label("Settings");
-            title.AddToClassList("hp-title");
-            panel.Add(title);
+            var root = FromTemplate(Templates.settings);
+            scroll = Require<ScrollView>("scroll");
 
-            var scroll = new ScrollView(ScrollViewMode.Vertical);
-            scroll.AddToClassList("hp-scroll");
-            panel.Add(scroll);
-
-            Section(scroll, "Accessibility");
-            effects = Row(scroll, new SliderRow("Camera effects (shake, bob, roll, FOV kick)", 0f, 1f, data.viewEffectsStrength, 0.05f, SliderRow.Percent),
-                          v => data.viewEffectsStrength = v);
+            effects = SliderSetting("view-effects", 0f, 1f, data.viewEffectsStrength, 0.05f, SliderRow.Percent, v => data.viewEffectsStrength = v);
             effects.AddToClassList(FirstFocusClass);
-            flashes = Row(scroll, new SliderRow("Flash reduction", 0f, 1f, data.flashReduction, 0.05f, SliderRow.Percent), v => data.flashReduction = v);
-            beep = Row(scroll, new SliderRow("Fuse warning volume", 0f, 1f, data.beepVolume, 0.05f, SliderRow.Percent), v => data.beepVolume = v);
+            flashes = SliderSetting("flash-reduction", 0f, 1f, data.flashReduction, 0.05f, SliderRow.Percent, v => data.flashReduction = v);
+            beep = SliderSetting("beep-volume", 0f, 1f, data.beepVolume, 0.05f, SliderRow.Percent, v => data.beepVolume = v);
 
-            Section(scroll, "Look");
-            mouse = Row(scroll, new SliderRow("Mouse sensitivity", SettingsData.MinMouseSensitivity, SettingsData.MaxMouseSensitivity,
-                                              data.mouseSensitivity, 0.01f, v => v.ToString("0.00")), v => data.mouseSensitivity = v);
-            stick = Row(scroll, new SliderRow("Stick sensitivity", SettingsData.MinStickLookSpeed, SettingsData.MaxStickLookSpeed,
-                                              data.stickLookSpeed, 10f, v => Mathf.RoundToInt(v).ToString()), v => data.stickLookSpeed = v);
-            invertY = Row(scroll, new ToggleRow("Invert Y", data.invertY), v => data.invertY = v);
-            fov = Row(scroll, new SliderRow("Field of view", SettingsData.MinFieldOfView, SettingsData.MaxFieldOfView,
-                                            data.fieldOfView, 1f, v => Mathf.RoundToInt(v) + "°"), v => data.fieldOfView = Mathf.Round(v));
+            mouse = SliderSetting("mouse-sensitivity", SettingsData.MinMouseSensitivity, SettingsData.MaxMouseSensitivity,
+                           data.mouseSensitivity, 0.01f, v => v.ToString("0.00"), v => data.mouseSensitivity = v);
+            stick = SliderSetting("stick-sensitivity", SettingsData.MinStickLookSpeed, SettingsData.MaxStickLookSpeed,
+                           data.stickLookSpeed, 10f, v => Mathf.RoundToInt(v).ToString(), v => data.stickLookSpeed = v);
+            invertY = ToggleSetting("invert-y", data.invertY, v => data.invertY = v);
+            fov = SliderSetting("field-of-view", SettingsData.MinFieldOfView, SettingsData.MaxFieldOfView,
+                         data.fieldOfView, 1f, v => Mathf.RoundToInt(v) + "°", v => data.fieldOfView = Mathf.Round(v));
 
-            Section(scroll, "Audio");
-            master = Row(scroll, new SliderRow("Master volume", 0f, 1f, data.masterVolume, 0.05f, SliderRow.Percent), v => data.masterVolume = v);
-            sfx = Row(scroll, new SliderRow("Effects volume", 0f, 1f, data.sfxVolume, 0.05f, SliderRow.Percent), v => data.sfxVolume = v);
+            master = SliderSetting("master-volume", 0f, 1f, data.masterVolume, 0.05f, SliderRow.Percent, v => data.masterVolume = v);
+            sfx = SliderSetting("sfx-volume", 0f, 1f, data.sfxVolume, 0.05f, SliderRow.Percent, v => data.sfxVolume = v);
 
-            Section(scroll, "Display");
-            windowMode = Row(scroll, new ChoiceRow("Window mode", DisplayOptions.WindowModeNames, DisplayOptions.WindowModeIndex(CurrentMode())),
-                             i => data.fullScreenMode = (int)DisplayOptions.WindowModes[i]);
+            windowMode = ChoiceSetting("window-mode", DisplayOptions.WindowModeNames, DisplayOptions.WindowModeIndex(CurrentMode()),
+                                i => data.fullScreenMode = (int)DisplayOptions.WindowModes[i]);
             resolutions = DisplayOptions.Resolutions(Screen.resolutions.Select(r => new Vector2Int(r.width, r.height)), CurrentResolution());
-            resolution = Row(scroll, new ChoiceRow("Resolution", resolutions.Select(r => $"{r.x} x {r.y}").ToList(), resolutions.IndexOf(CurrentResolution())),
-                             i =>
-                             {
-                                 data.resolutionWidth = resolutions[i].x;
-                                 data.resolutionHeight = resolutions[i].y;
-                             });
-            vSync = Row(scroll, new ToggleRow("Vertical sync", CurrentVSync()), v =>
+            resolution = ChoiceSetting("resolution", resolutions.Select(r => $"{r.x} x {r.y}").ToList(), resolutions.IndexOf(CurrentResolution()),
+                                i =>
+                                {
+                                    data.resolutionWidth = resolutions[i].x;
+                                    data.resolutionHeight = resolutions[i].y;
+                                });
+            vSync = ToggleSetting("vsync", CurrentVSync(), v =>
             {
                 data.vSyncCount = v ? 1 : 0;
                 frameCap.SetEnabled(!v);
             });
-            frameCap = Row(scroll, new ChoiceRow("Frame cap (vsync off)", DisplayOptions.FrameCapNames, DisplayOptions.FrameCapIndex(data.targetFrameRate)),
-                           i => data.targetFrameRate = DisplayOptions.FrameCaps[i]);
+            frameCap = ChoiceSetting("frame-cap", DisplayOptions.FrameCapNames, DisplayOptions.FrameCapIndex(data.targetFrameRate),
+                              i => data.targetFrameRate = DisplayOptions.FrameCaps[i]);
             frameCap.SetEnabled(!vSync.Value);
-            if (Application.isEditor)
-            {
-                var note = new Label("Window mode and resolution apply in the built game (the Game view owns them in the Editor).");
-                note.AddToClassList("hp-hint");
-                scroll.Add(note);
-            }
+            Show(Require<Label>("editor-note"), Application.isEditor);
 
-            var footer = new VisualElement();
-            footer.AddToClassList("hp-footer");
-            panel.Add(footer);
-            var reset = Navigable(new Button(ResetToDefaults) { text = "Reset to defaults" });
-            reset.AddToClassList("hp-button");
-            reset.AddToClassList("hp-button--secondary");
-            footer.Add(reset);
-            var back = Navigable(new Button(() => Stack.Pop()) { text = "Back" });
-            back.AddToClassList("hp-button");
-            footer.Add(back);
+            Navigable(Require<Button>("reset")).clicked += ResetToDefaults;
+            Navigable(Require<Button>("back")).clicked += () => Stack.Pop();
             return root;
         }
 
-        static void Section(VisualElement parent, string text)
+        // Each row: found in the layout, given its range / choices and value, in the up/down walk, scrolled into view
+        // when focused, and every change previewed.
+        SliderRow SliderSetting(string name, float min, float max, float value, float step, System.Func<float, string> format, System.Action<float> write)
         {
-            var label = new Label(text);
-            label.AddToClassList("hp-section");
-            parent.Add(label);
-        }
-
-        // Each row: in the up/down order, scrolled into view when focused, and every change previewed.
-        SliderRow Row(ScrollView scroll, SliderRow row, System.Action<float> write)
-        {
-            AddRow(scroll, row);
+            var row = AddRow(Require<SliderRow>(name));
+            row.Setup(min, max, value, step, format);
             row.Changed += v => Apply(() => write(v));
             return row;
         }
 
-        ToggleRow Row(ScrollView scroll, ToggleRow row, System.Action<bool> write)
+        ToggleRow ToggleSetting(string name, bool value, System.Action<bool> write)
         {
-            AddRow(scroll, row);
+            var row = AddRow(Require<ToggleRow>(name));
+            row.SetValueWithoutNotify(value);
             row.Changed += v => Apply(() => write(v));
             return row;
         }
 
-        ChoiceRow Row(ScrollView scroll, ChoiceRow row, System.Action<int> write)
+        ChoiceRow ChoiceSetting(string name, IList<string> options, int index, System.Action<int> write)
         {
-            AddRow(scroll, row);
+            var row = AddRow(Require<ChoiceRow>(name));
+            row.SetOptions(options, index);
             row.Changed += v => Apply(() => write(v));
             return row;
         }
 
-        void AddRow(ScrollView scroll, SettingRow row)
+        T AddRow<T>(T row) where T : SettingRow
         {
-            scroll.Add(Navigable(row));
+            Navigable(row);
             row.RegisterCallback<FocusInEvent>(_ => scroll.ScrollTo(row));
+            return row;
         }
 
         void Apply(System.Action change)

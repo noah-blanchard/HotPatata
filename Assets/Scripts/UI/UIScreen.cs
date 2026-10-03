@@ -1,11 +1,14 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine.UIElements;
 
 namespace HotPatata
 {
     /// <summary>
-    /// One UI Toolkit screen on the <see cref="ScreenStack"/> (ARCHITECTURE §6.2): it builds its visual tree once (in
-    /// code, or from a UXML template) and styles it with the shared theme's classes (<c>hp-*</c>, Assets/UI/Styles).
+    /// One UI Toolkit screen on the <see cref="ScreenStack"/> (ARCHITECTURE §6.2): its layout is a UXML file in
+    /// Assets/UI/Screens (<see cref="FromTemplate"/>), styled only with the shared theme's classes (<c>hp-*</c>,
+    /// Assets/UI/Styles); the code finds the named elements once (<see cref="Require{T}"/>) and wires behaviour.
     /// </summary>
     public abstract class UIScreen
     {
@@ -25,7 +28,10 @@ namespace HotPatata
         public virtual bool BlocksGameplay => true;
 
         readonly List<VisualElement> navigation = new List<VisualElement>();
+        VisualElement tree;
+        string templateName;
 
+        /// <summary>Builds the screen: <see cref="FromTemplate"/> its layout, <see cref="Require{T}"/> the named elements, wire behaviour.</summary>
         protected abstract VisualElement Build();
 
         internal VisualElement Create()
@@ -33,19 +39,46 @@ namespace HotPatata
             if (Root != null) return Root;
             Root = Build();
             Root.AddToClassList("hp-screen");
+            SortNavigationByTree();
             if (navigation.Count > 0) Root.RegisterCallback<NavigationMoveEvent>(OnNavigate);
             return Root;
         }
 
+        /// <summary>The screens' layouts (Resources/HotPatataScreens).</summary>
+        protected UIScreenCatalog Templates => (Stack != null ? Stack : ScreenStack.Get()).Catalog;
+
         /// <summary>
-        /// Puts <paramref name="element"/> in the screen's up/down order (call in <see cref="Build"/>, top to bottom).
-        /// Up / down (arrows, d-pad, stick) then walk this list, skipping disabled entries; left / right are left to the
-        /// element (a setting row changes its value). Without it, focus moves in UI Toolkit's default order.
+        /// Puts <paramref name="element"/> in the screen's up/down walk (call in <see cref="Build"/>). The walk follows
+        /// the elements' order in the tree, so reordering them in UI Builder reorders it too. Up / down (arrows, d-pad,
+        /// stick) walk this list, skipping disabled or hidden entries; left / right are left to the element (a setting row
+        /// changes its value). Without it, focus moves in UI Toolkit's default order.
         /// </summary>
         protected T Navigable<T>(T element) where T : VisualElement
         {
             navigation.Add(element);
             return element;
+        }
+
+        // Tree order (depth first); an element outside the tree keeps its call order, after the others.
+        void SortNavigationByTree()
+        {
+            if (navigation.Count < 2) return;
+            var order = new Dictionary<VisualElement, int>();
+            IndexTree(Root, order);
+            var sorted = navigation
+                .Select((element, call) => (element, call))
+                .OrderBy(p => order.TryGetValue(p.element, out int index) ? index : int.MaxValue)
+                .ThenBy(p => p.call)
+                .Select(p => p.element)
+                .ToList();
+            navigation.Clear();
+            navigation.AddRange(sorted);
+        }
+
+        static void IndexTree(VisualElement e, Dictionary<VisualElement, int> order)
+        {
+            order[e] = order.Count;
+            for (int i = 0; i < e.hierarchy.childCount; i++) IndexTree(e.hierarchy[i], order);
         }
 
         static bool KeyboardHeld => UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.anyKey.isPressed;
@@ -96,12 +129,34 @@ namespace HotPatata
             return null;
         }
 
-        /// <summary>Builds the screen from a UXML template (the template's root is wrapped in a full-screen container).</summary>
-        protected static VisualElement FromTemplate(VisualTreeAsset template)
+        /// <summary>
+        /// Builds the screen from its UXML layout (Assets/UI/Screens, the template's root wrapped in a full-screen
+        /// container). <see cref="Require{T}"/> then finds the named elements in it.
+        /// </summary>
+        protected VisualElement FromTemplate(VisualTreeAsset template)
         {
+            if (template == null)
+                throw new InvalidOperationException($"[UI] {GetType().Name}: no UXML template (assign it in Assets/UI/Resources/{ScreenStack.CatalogResource})");
             var root = template.Instantiate();
             root.style.flexGrow = 1;
+            tree = root;
+            templateName = template.name;
             return root;
         }
+
+        /// <summary>
+        /// The element of this screen's layout named <paramref name="name"/> (kebab-case, set in UXML). A renamed or
+        /// deleted element fails at once, naming the screen and the element, so a broken UXML never half-works.
+        /// </summary>
+        protected T Require<T>(string name) where T : VisualElement
+        {
+            if (tree == null) throw new InvalidOperationException($"[UI] {GetType().Name}: Require(\"{name}\") before FromTemplate");
+            return tree.Q<T>(name) ?? throw new InvalidOperationException(
+                $"[UI] {GetType().Name} ({templateName}.uxml): no {typeof(T).Name} named \"{name}\"");
+        }
+
+        /// <summary>Shows or hides an element (behaviour that the layout leaves to the code, e.g. the host-only controls).</summary>
+        protected static void Show(VisualElement element, bool visible) =>
+            element.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
     }
 }

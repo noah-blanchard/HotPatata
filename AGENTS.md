@@ -96,7 +96,8 @@ same PR. Code comments cite doc sections (e.g. `PROJECT_SPEC §8.3`), so never r
   - Zones use `PlayerZone.Collect`.
   - Anything a player rides implements `IPlatformCarrier`.
 - **UI.** Screens and the HUD are UI Toolkit on the `ScreenStack` (ARCHITECTURE §6.2), uGUI only for world space,
-  IMGUI only for dev tools. Only `CursorPolicy` sets the cursor lock. A menu on top blocks the local player's gameplay
+  IMGUI only for dev tools. A screen's layout is one UXML in `Assets/UI/Screens` (`hp-*` classes only, listed in
+  `UIScreenCatalog`); its code finds kebab-case named elements with `Require<T>` and never builds layout. Only `CursorPolicy` sets the cursor lock. A menu on top blocks the local player's gameplay
   input through `PlayerInputReader` (read input there, never from devices directly). Online, a menu never pauses the
   game; offline the pause menu freezes it.
 - **Input System only** (never the legacy input manager). **No third-party packages** unless the built-in stack

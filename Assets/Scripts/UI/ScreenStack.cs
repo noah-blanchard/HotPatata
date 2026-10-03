@@ -9,7 +9,7 @@ namespace HotPatata
 {
     /// <summary>
     /// The UI Toolkit screen router (ARCHITECTURE §6.2): one persistent panel (Resources/<see cref="PanelResource"/>, the
-    /// shared theme) holding a stack of <see cref="UIScreen"/>s. Only the top screen shows and takes input. Back (the UI
+    /// shared theme) holding a stack of <see cref="UIScreen"/>s, whose layouts come from the <see cref="Catalog"/>. Only the top screen shows and takes input. Back (the UI
     /// Cancel action: Esc, gamepad B) goes to the top screen; focus moves to a screen's first element when it appears
     /// and comes back where it was when the screen above closes. Keyboard and gamepad navigation come through an
     /// <see cref="EventSystem"/> with the Input System UI module (created if the scene has none). While a screen that
@@ -19,6 +19,7 @@ namespace HotPatata
     public class ScreenStack : MonoBehaviour
     {
         public const string PanelResource = "HotPatataPanel";
+        public const string CatalogResource = "HotPatataScreens";
         public const int SortingOrder = 100;   // above any world/HUD panel
 
         static ScreenStack instance;
@@ -52,6 +53,20 @@ namespace HotPatata
         /// <summary>Is a screen of this kind open anywhere in the stack?</summary>
         public bool Has<T>() where T : UIScreen => screens.Exists(s => s is T);
         public UIDocument Document => document;
+
+        /// <summary>The screens' UXML layouts (Resources/<see cref="CatalogResource"/>), loaded on first use.</summary>
+        public UIScreenCatalog Catalog
+        {
+            get
+            {
+                if (catalog != null) return catalog;
+                catalog = Resources.Load<UIScreenCatalog>(CatalogResource);
+                if (catalog == null) Debug.LogError($"[UI] missing Resources/{CatalogResource} (Assets/UI/Resources)");
+                return catalog;
+            }
+        }
+
+        UIScreenCatalog catalog;
 
         /// <summary>The stack, created (with its panel and, if needed, an EventSystem) on first use.</summary>
         public static ScreenStack Get()
@@ -120,7 +135,6 @@ namespace HotPatata
         {
             if (screen == null || screens.Contains(screen)) return;
             var below = Top;
-            if (below != null) focusBelow[screen] = Focused();
             screen.Stack = this;
             var host = EnsureLayer();
             if (host == null)
@@ -128,7 +142,9 @@ namespace HotPatata
                 Debug.LogError("[UI] the screen stack has no panel yet");
                 return;
             }
-            host.Add(screen.Create());
+            var root = screen.Create();   // first: a broken layout throws here and leaves the stack as it was
+            if (below != null) focusBelow[screen] = Focused();
+            host.Add(root);
             screens.Add(screen);
             if (below != null) below.OnHide();
             screen.OnShow();
