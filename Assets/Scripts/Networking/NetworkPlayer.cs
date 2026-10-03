@@ -76,8 +76,7 @@ namespace HotPatata
             else
             {
                 player.Input.SetSource(InputSource.KeyboardMouse);
-                Cursor.lockState = CursorLockMode.Locked;
-                Cursor.visible = false;
+                CursorPolicy.SetGameplayLock(true);
             }
 
             if (FirstPersonCamera.Instance != null) FirstPersonCamera.Instance.Target = player;

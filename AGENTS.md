@@ -91,6 +91,8 @@ same PR. Code comments cite doc sections (e.g. `PROJECT_SPEC §8.3`), so never r
   - Stateful objects implement `IResettable`.
   - Zones use `PlayerZone.Collect`.
   - Anything a player rides implements `IPlatformCarrier`.
+- **UI.** Screens and the HUD are UI Toolkit on the `ScreenStack` (ARCHITECTURE §6.2), uGUI only for world space,
+  IMGUI only for dev tools. Only `CursorPolicy` sets the cursor lock.
 - **Input System only** (never the legacy input manager). **No third-party packages** unless the built-in stack
   clearly cannot do the job.
 - "Beep" (`beepIntervals`, `BombAudio.Beeped`) is a gameplay term for the fuse sound, not the old project name. Keep it.

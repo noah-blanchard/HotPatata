@@ -1,0 +1,125 @@
+/* HotPatata UI theme (ARCHITECTURE §6.2). Placeholder art direction: soft navy panels, warm white text, a sunny
+   yellow focus ring that reads at a glance on keyboard and gamepad. Every screen builds on these hp-* classes. */
+
+:root {
+    --hp-ink: #F7F3EA;
+    --hp-ink-dim: #C9C3D9;
+    --hp-panel: rgba(20, 26, 46, 0.94);
+    --hp-scrim: rgba(10, 14, 28, 0.55);
+    --hp-button: #2F3B60;
+    --hp-button-hover: #3D4C7A;
+    --hp-button-active: #253050;
+    --hp-secondary: #474258;
+    --hp-accent: #FFCB3D;
+    --hp-radius: 14px;
+    -unity-font-style: normal;
+    color: var(--hp-ink);
+}
+
+/* The stack fills the screen; each screen fills the stack. */
+.hp-stack {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.hp-screen {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+/* A dimmed full-screen overlay that centres its panel. */
+.hp-overlay {
+    flex-grow: 1;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--hp-scrim);
+}
+
+.hp-panel {
+    min-width: 520px;
+    max-width: 760px;
+    padding: 32px 40px;
+    border-radius: var(--hp-radius);
+    background-color: var(--hp-panel);
+    border-width: 2px;
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.hp-title {
+    font-size: 44px;
+    -unity-font-style: bold;
+    color: var(--hp-ink);
+    margin-bottom: 8px;
+}
+
+.hp-hint {
+    font-size: 20px;
+    color: var(--hp-ink-dim);
+    white-space: normal;
+    margin-bottom: 14px;
+}
+
+/* Buttons: big targets, a clear yellow ring when focused (keyboard / gamepad) or hovered. */
+.hp-button {
+    height: 60px;
+    margin: 6px 0;
+    padding: 0 24px;
+    font-size: 26px;
+    -unity-font-style: bold;
+    color: var(--hp-ink);
+    background-color: var(--hp-button);
+    border-radius: var(--hp-radius);
+    border-width: 4px;
+    border-color: rgba(0, 0, 0, 0);
+    transition-property: scale, background-color, border-color;
+    transition-duration: 0.08s;
+}
+
+.hp-button:hover {
+    background-color: var(--hp-button-hover);
+}
+
+.hp-button:focus {
+    border-color: var(--hp-accent);
+    background-color: var(--hp-button-hover);
+    scale: 1.03 1.03;
+}
+
+.hp-button:active {
+    background-color: var(--hp-button-active);
+    scale: 0.98 0.98;
+}
+
+.hp-button--secondary {
+    background-color: var(--hp-secondary);
+}
+
+/* Fields (toggles, sliders): readable labels, the same focus ring. */
+.hp-toggle,
+.hp-slider {
+    min-height: 52px;
+    margin: 6px 0;
+    padding: 4px 12px;
+    border-radius: var(--hp-radius);
+    border-width: 4px;
+    border-color: rgba(0, 0, 0, 0);
+    font-size: 22px;
+}
+
+.hp-toggle:focus,
+.hp-slider:focus {
+    border-color: var(--hp-accent);
+}
+
+.hp-toggle .unity-base-field__label,
+.hp-slider .unity-base-field__label {
+    color: var(--hp-ink);
+    font-size: 22px;
+    min-width: 220px;
+}
