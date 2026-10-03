@@ -151,6 +151,7 @@ namespace HotPatata
         {
             var root = FromTemplate(Templates.working);
             status = Require<Label>("status");
+            UIParts.Wobble(Require<VisualElement>("spinner"));
             root.schedule.Execute(Refresh).Every(MenuParts.RefreshMs);
             Refresh();
             return root;
@@ -187,7 +188,8 @@ namespace HotPatata
             // The host picks the level and starts; the others wait.
             bool host = bootstrap.IsLobbyHost;
             Show(Require<VisualElement>("host-controls"), host);
-            Show(Require<Label>("waiting"), !host);
+            Show(Require<VisualElement>("waiting"), !host);
+            UIParts.Wobble(Require<VisualElement>("waiting-spinner"));
             if (host)
             {
                 var level = Navigable(Require<ChoiceRow>("level"));
@@ -207,21 +209,40 @@ namespace HotPatata
         public override void OnBack() =>
             Stack.Push(new ConfirmScreen("Leave the lobby?", "You leave this game and go back to the menu.", "Leave", () => _ = bootstrap.LeaveAsync(null)));
 
-        /// <summary>The player list, rebuilt only when it changed (join, leave, name).</summary>
+        /// <summary>
+        /// The player cards, rebuilt only when the list changed (join, leave, name): each player's slot chip, name and
+        /// HOST / YOU badges, then an empty card per free seat.
+        /// </summary>
         void Refresh()
         {
             var players = bootstrap.LobbyPlayers();
-            string signature = string.Join("|", players.Select(p => p.Label + p.IsHost + p.IsYou));
+            string signature = string.Join("|", players.Select(p => p.Label + p.IsHost + p.IsYou)) + "/" + bootstrap.LobbyMaxPlayers;
             if (signature == listed) return;
             listed = signature;
-            playersTitle.text = $"Players ({players.Count}/{bootstrap.LobbyMaxPlayers})";
+            playersTitle.text = $"{players.Count} / {bootstrap.LobbyMaxPlayers}";
             playerList.Clear();
             foreach (var p in players)
             {
-                string tags = (p.IsHost ? "  (host)" : "") + (p.IsYou ? "  (you)" : "");
-                var line = new Label(p.Label + tags) { enableRichText = true };
-                line.AddToClassList("hp-player");
-                playerList.Add(line);
+                var card = new VisualElement();
+                card.AddToClassList("hp-slot");
+                card.Add(UIParts.Chip(bootstrap.Tuning, p.Slot));
+                var name = new Label(p.Name);
+                name.AddToClassList("hp-slot__name");
+                card.Add(name);
+                if (p.IsHost) card.Add(UIParts.Badge("HOST", "crown"));
+                if (p.IsYou) card.Add(UIParts.Badge("YOU", "star", "hp-badge--you"));
+                playerList.Add(card);
+            }
+            for (int i = players.Count; i < bootstrap.LobbyMaxPlayers; i++)
+            {
+                var seat = new VisualElement();
+                seat.AddToClassList("hp-slot");
+                seat.AddToClassList("hp-slot--empty");
+                seat.Add(UIParts.EmptyChip());
+                var waiting = new Label("Waiting for a player...");
+                waiting.AddToClassList("hp-slot__name");
+                seat.Add(waiting);
+                playerList.Add(seat);
             }
         }
     }

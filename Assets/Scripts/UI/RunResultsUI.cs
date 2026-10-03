@@ -1,47 +1,40 @@
-using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace HotPatata
 {
     /// <summary>
-    /// End-of-course screen: completion, the team (shape + colour + name), run time and reset count, plus rematch. Shown to everyone from the
-    /// replicated run state; only the host (or an offline player) can restart, with R.
+    /// Shows the <see cref="ResultsScreen"/> (#23) while the run is complete, from the replicated run state, so every
+    /// player sees it; closes it when the run starts again. The host (or an offline player) can also rematch with R.
+    /// Placed in each course scene; it draws nothing itself.
     /// </summary>
     public class RunResultsUI : MonoBehaviour
     {
-        GUIStyle title, body, team;
+        ResultsScreen shown;
 
         void Update()
         {
             var run = RunManager.Instance;
-            if (run == null || run.State != RunState.Completed || !NetMode.IsAuthority) return;
-            if (Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame) run.Restart();
+            bool completed = run != null && run.State == RunState.Completed;
+            if (completed && shown == null)
+            {
+                shown = new ResultsScreen(run);
+                ScreenStack.Get().Push(shown);
+            }
+            else if (!completed && shown != null)
+            {
+                var stack = ScreenStack.Existing;
+                if (stack != null && stack.Top == shown) stack.Pop();
+                shown = null;
+            }
+
+            if (completed && NetMode.IsAuthority && Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame) run.Restart();
         }
 
-        void OnGUI()
+        void OnDestroy()
         {
-            var run = RunManager.Instance;
-            if (run == null || run.State != RunState.Completed) return;
-
-            title ??= new GUIStyle(GUI.skin.label) { fontSize = 34, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter, normal = { textColor = new Color(1f, 0.85f, 0.2f) } };
-            body ??= new GUIStyle(GUI.skin.label) { fontSize = 20, alignment = TextAnchor.MiddleCenter, normal = { textColor = Color.white } };
-            team ??= new GUIStyle(body) { richText = true };
-
-            float w = 460f, h = 264f;
-            var box = new Rect((Screen.width - w) * 0.5f, (Screen.height - h) * 0.5f, w, h);
-            GUI.Box(box, GUIContent.none);
-
-            int minutes = (int)(run.RunTime / 60f);
-            float seconds = run.RunTime - minutes * 60f;
-            GUI.Label(new Rect(box.x, box.y + 16, w, 50), "COURSE COMPLETE!", title);
-            string players = string.Join("   ", Player.All.OrderBy(p => p.PlayerId)
-                .Select(p => PlayerIdentity.RichLabel(p.Tuning, p.PlayerId, p.DisplayName)));
-            GUI.Label(new Rect(box.x, box.y + 78, w, 32), players, team);
-            GUI.Label(new Rect(box.x, box.y + 112, w, 32), $"Time  {minutes}:{seconds:00.0}", body);
-            GUI.Label(new Rect(box.x, box.y + 146, w, 32), $"Explosions / resets  {run.ResetCount}", body);
-            GUI.Label(new Rect(box.x, box.y + 202, w, 32),
-                NetMode.IsAuthority ? "Press R to play again" : "Waiting for the host to restart...", body);
+            var stack = ScreenStack.Existing;
+            if (shown != null && stack != null && stack.Top == shown) stack.Pop();
         }
     }
 }

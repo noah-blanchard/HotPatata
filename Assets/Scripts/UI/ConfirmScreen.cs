@@ -23,6 +23,9 @@ namespace HotPatata
         public Button Cancel { get; private set; }
         public Button Confirm { get; private set; }
 
+        /// <summary>The confirm button's text (the caller's answer, in capitals like every button).</summary>
+        public Label ConfirmLabel { get; private set; }
+
         protected override VisualElement Build()
         {
             var root = FromTemplate(Templates.confirm);
@@ -33,7 +36,8 @@ namespace HotPatata
             Cancel.clicked += () => Stack.Pop();
             Cancel.AddToClassList(FirstFocusClass);
             Confirm = Navigable(Require<Button>("confirm"));
-            Confirm.text = confirmText;
+            ConfirmLabel = Require<Label>("confirm-label");
+            ConfirmLabel.text = confirmText.ToUpperInvariant();
             Confirm.clicked += () =>
             {
                 Stack.Pop();

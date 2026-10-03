@@ -15,6 +15,16 @@ namespace HotPatata
         /// <summary>USS class put on the element that takes focus when the screen is shown (else the first focusable one).</summary>
         public const string FirstFocusClass = "hp-first-focus";
 
+        /// <summary>On the root for one tick when the screen appears: the USS transitions pop its panel in from it.</summary>
+        public const string EnterClass = "hp-screen--enter";
+
+        /// <summary>On each navigable element during the entrance (plus <c>hp-stagger-N</c>, its delay), so they cascade in.</summary>
+        public const string StaggerClass = "hp-stagger";
+
+        const int MaxStagger = 8;        // hp-stagger-1..8 in HotPatata.uss
+        const int EnterTickMs = 20;      // long enough for the hidden state to be styled once
+        const int EntranceMs = 700;      // after this the stagger delays go, so hover and focus stay instant
+
         public VisualElement Root { get; private set; }
         public ScreenStack Stack { get; internal set; }
 
@@ -57,6 +67,33 @@ namespace HotPatata
         {
             navigation.Add(element);
             return element;
+        }
+
+        /// <summary>
+        /// The entrance (ARCHITECTURE §6.2): the root gets <see cref="EnterClass"/> for one tick and the navigable
+        /// elements a staggered delay, so the panel pops in and its buttons cascade. Played when the screen is pushed and
+        /// when it shows again under a closing one. Short, no flash and no shake.
+        /// </summary>
+        internal void PlayEntrance()
+        {
+            if (Root == null) return;
+            for (int i = 0; i < navigation.Count; i++)
+            {
+                navigation[i].AddToClassList(StaggerClass);
+                navigation[i].AddToClassList(StaggerClass + "-" + Math.Min(i + 1, MaxStagger));
+            }
+            Root.AddToClassList(EnterClass);
+            Root.schedule.Execute(() => Root.RemoveFromClassList(EnterClass)).StartingIn(EnterTickMs);
+            Root.schedule.Execute(EndEntrance).StartingIn(EntranceMs);
+        }
+
+        void EndEntrance()
+        {
+            for (int i = 0; i < navigation.Count; i++)
+            {
+                navigation[i].RemoveFromClassList(StaggerClass);
+                navigation[i].RemoveFromClassList(StaggerClass + "-" + Math.Min(i + 1, MaxStagger));
+            }
         }
 
         // Tree order (depth first); an element outside the tree keeps its call order, after the others.

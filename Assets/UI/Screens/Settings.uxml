@@ -1,30 +1,48 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:hp="HotPatata" editor-extension-mode="False">
     <ui:VisualElement class="hp-overlay">
         <ui:VisualElement class="hp-panel hp-panel--wide">
-            <ui:Label text="Settings" class="hp-title" />
-            <ui:ScrollView name="scroll" mode="Vertical" class="hp-scroll">
-                <ui:Label text="Accessibility" class="hp-section" />
-                <hp:SliderRow name="view-effects" label="Camera effects (shake, bob, roll, FOV kick)" />
-                <hp:SliderRow name="flash-reduction" label="Flash reduction" />
-                <hp:SliderRow name="beep-volume" label="Fuse warning volume" />
-                <ui:Label text="Look" class="hp-section" />
-                <hp:SliderRow name="mouse-sensitivity" label="Mouse sensitivity" />
-                <hp:SliderRow name="stick-sensitivity" label="Stick sensitivity" />
-                <hp:ToggleRow name="invert-y" label="Invert Y" />
-                <hp:SliderRow name="field-of-view" label="Field of view" />
-                <ui:Label text="Audio" class="hp-section" />
-                <hp:SliderRow name="master-volume" label="Master volume" />
-                <hp:SliderRow name="sfx-volume" label="Effects volume" />
-                <ui:Label text="Display" class="hp-section" />
-                <hp:ChoiceRow name="window-mode" label="Window mode" />
-                <hp:ChoiceRow name="resolution" label="Resolution" />
-                <hp:ToggleRow name="vsync" label="Vertical sync" />
-                <hp:ChoiceRow name="frame-cap" label="Frame cap (vsync off)" />
-                <ui:Label name="editor-note" text="Window mode and resolution apply in the built game (the Game view owns them in the Editor)." class="hp-hint" />
+            <ui:Label text="SETTINGS" class="hp-title" />
+            <ui:ScrollView name="scroll" mode="Vertical" horizontal-scroller-visibility="Hidden" class="hp-scroll">
+                <ui:VisualElement class="hp-settings-column hp-settings-column--left">
+                    <ui:VisualElement class="hp-card">
+                        <ui:Label text="ACCESSIBILITY" class="hp-section" />
+                        <hp:SliderRow name="view-effects" label="Camera effects (shake, bob, roll, FOV kick)" />
+                        <hp:SliderRow name="flash-reduction" label="Flash reduction" />
+                        <hp:SliderRow name="beep-volume" label="Fuse warning volume" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="hp-card">
+                        <ui:Label text="LOOK" class="hp-section" />
+                        <hp:SliderRow name="mouse-sensitivity" label="Mouse sensitivity" />
+                        <hp:SliderRow name="stick-sensitivity" label="Stick sensitivity" />
+                        <hp:ToggleRow name="invert-y" label="Invert Y" />
+                        <hp:SliderRow name="field-of-view" label="Field of view" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement class="hp-settings-column">
+                    <ui:VisualElement class="hp-card">
+                        <ui:Label text="AUDIO" class="hp-section" />
+                        <hp:SliderRow name="master-volume" label="Master volume" />
+                        <hp:SliderRow name="sfx-volume" label="Effects volume" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="hp-card">
+                        <ui:Label text="DISPLAY" class="hp-section" />
+                        <hp:ChoiceRow name="window-mode" label="Window mode" />
+                        <hp:ChoiceRow name="resolution" label="Resolution" />
+                        <hp:ToggleRow name="vsync" label="Vertical sync" />
+                        <hp:ChoiceRow name="frame-cap" label="Frame cap (vsync off)" />
+                    </ui:VisualElement>
+                    <ui:Label name="editor-note" text="Window mode and resolution apply in the built game (the Game view owns them in the Editor)." class="hp-hint" />
+                </ui:VisualElement>
             </ui:ScrollView>
             <ui:VisualElement class="hp-footer">
-                <ui:Button name="reset" text="Reset to defaults" class="hp-button hp-button--secondary" />
-                <ui:Button name="back" text="Back" class="hp-button" />
+                <ui:Button name="reset" class="hp-button hp-button--neutral hp-button--small">
+                    <ui:VisualElement class="hp-icon hp-icon--reset" />
+                    <ui:Label text="RESET TO DEFAULTS" class="hp-button__label" />
+                </ui:Button>
+                <ui:Button name="back" class="hp-button hp-button--small hp-button--wide">
+                    <ui:VisualElement class="hp-icon hp-icon--back" />
+                    <ui:Label text="BACK" class="hp-button__label" />
+                </ui:Button>
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>

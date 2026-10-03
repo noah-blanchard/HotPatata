@@ -238,7 +238,7 @@ namespace HotPatata.Tests
             stack.Push(confirm);
             yield return Frames();
             Assert.AreEqual("Leave?", confirm.Root.Q<Label>("title").text);
-            Assert.AreEqual("Go", confirm.Confirm.text);
+            Assert.AreEqual("GO", confirm.ConfirmLabel.text, "the caller's answer, in capitals like every button");
             Assert.AreSame(confirm.Cancel, Focused, "the safe answer has the focus");
             Assert.IsTrue(confirm.Root.ClassListContains("hp-screen"));
         }

@@ -146,6 +146,7 @@ namespace HotPatata
             if (below != null) focusBelow[screen] = Focused();
             host.Add(root);
             screens.Add(screen);
+            screen.PlayEntrance();
             if (below != null) below.OnHide();
             screen.OnShow();
             LastChangeFrame = Time.frameCount;
@@ -165,7 +166,11 @@ namespace HotPatata
             var below = Top;
             focusBelow.TryGetValue(top, out var restore);
             focusBelow.Remove(top);
-            if (below != null) below.OnShow();
+            if (below != null)
+            {
+                below.OnShow();
+                below.PlayEntrance();
+            }
             LastChangeFrame = Time.frameCount;
             Refresh();
             if (below != null) FocusLater(restore ?? below.FirstFocus());

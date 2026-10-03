@@ -24,10 +24,11 @@ namespace HotPatata
         protected override VisualElement Build()
         {
             var root = FromTemplate(Templates.pause);
-            Require<Label>("title").text = NetMode.IsNetworked ? "Menu" : "Paused";
-            Require<Label>("hint").text = NetMode.IsNetworked
-                ? "The game keeps running for everyone. If you hold the bomb, its fuse still burns."
-                : "The game is paused.";
+            // Online nothing pauses: the title says Menu and a note warns that the fuse still burns.
+            bool online = NetMode.IsNetworked;
+            Require<Label>("title").text = online ? "MENU" : "PAUSED";
+            Show(Require<Label>("hint"), !online);
+            Show(Require<VisualElement>("online-note"), online);
 
             Resume = Navigable(Require<Button>("resume"));
             Resume.clicked += () => Stack.Pop();

@@ -328,15 +328,21 @@ namespace HotPatata
 
         // ------------------------------------------------------------------ state for the menu view (MenuView, ARCHITECTURE §6.2)
 
-        /// <summary>One line of the lobby list: the coloured slot glyph and name (rich text), and the host / you tags.</summary>
+        /// <summary>
+        /// One line of the lobby list: the slot (its colour and shape through <see cref="PlayerIdentity"/>), the name,
+        /// the same as rich text (glyph + name), and the host / you tags.
+        /// </summary>
         public readonly struct LobbyPlayer
         {
-            public readonly string Label;
+            public readonly string Label, Name;
+            public readonly int Slot;
             public readonly bool IsHost, IsYou;
 
-            public LobbyPlayer(string label, bool isHost, bool isYou)
+            public LobbyPlayer(string label, string name, int slot, bool isHost, bool isYou)
             {
                 Label = label;
+                Name = name;
+                Slot = slot;
                 IsHost = isHost;
                 IsYou = isYou;
             }
@@ -357,8 +363,11 @@ namespace HotPatata
             var players = session.Players;
             int shown = session.IsHost && nm.IsServer ? Mathf.Min(players.Count, nm.ConnectedClientsIds.Count) : players.Count;
             for (int i = 0; i < shown; i++)
-                list.Add(new LobbyPlayer(PlayerIdentity.RichLabel(tuning, i, SessionService.NameOf(players[i], i)),
+            {
+                string name = SessionService.NameOf(players[i], i);
+                list.Add(new LobbyPlayer(PlayerIdentity.RichLabel(tuning, i, name), name, i,
                                          players[i].Id == session.Host, players[i].Id == session.CurrentPlayer.Id));
+            }
             return list;
         }
 

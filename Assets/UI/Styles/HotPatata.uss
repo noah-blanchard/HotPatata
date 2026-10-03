@@ -1,22 +1,40 @@
-/* HotPatata UI theme (ARCHITECTURE §6.2). Placeholder art direction: soft navy panels, warm white text, a sunny
-   yellow focus ring that reads at a glance on keyboard and gamepad. Every screen builds on these hp-* classes. */
+/* HotPatata UI theme, "Sunny toy box" (ARCHITECTURE §6.2): cream rounded panels, chunky buttons with a darker bottom
+   lip, outlined Lilita One titles, Nunito body text. Keyboard / gamepad focus fills a button with sun yellow and grows
+   it; rows and fields take a gold edge on a sun tint. Every screen builds on these hp-* classes; the values come from
+   the approved mock-up at the 1920x1080 reference resolution. */
 
 :root {
-    --hp-ink: #F7F3EA;
-    --hp-ink-dim: #C9C3D9;
-    --hp-panel: rgba(20, 26, 46, 0.94);
-    --hp-scrim: rgba(10, 14, 28, 0.55);
-    --hp-button: #2F3B60;
-    --hp-button-hover: #3D4C7A;
-    --hp-button-active: #253050;
-    --hp-secondary: #474258;
-    --hp-accent: #FFCB3D;
-    --hp-radius: 14px;
+    --hp-cream: #FFF6E5;
+    --hp-cream-edge: #E9D6B2;
+    --hp-card: rgba(255, 255, 255, 0.5);
+    --hp-ink: #24305E;
+    --hp-ink-dim: #555C82;
+    --hp-orange: #FF8A2A;
+    --hp-orange-lip: #C45A14;
+    --hp-orange-hi: #FF9D4D;
+    --hp-sky: #4AA8F0;
+    --hp-sky-lip: #2C74B4;
+    --hp-sky-hi: #66B8F5;
+    --hp-plum: #8C6BB1;
+    --hp-plum-lip: #5E4580;
+    --hp-plum-hi: #9E80C2;
+    --hp-red: #E5484D;
+    --hp-red-lip: #A32D33;
+    --hp-red-hi: #EE6266;
+    --hp-sun: #FFD23F;
+    --hp-sun-lip: #C99A00;
+    --hp-focus-edge: #E0AE00;
+    --hp-focus-tint: #FFF6CC;
+    --hp-sand: #E9D6B2;
+    --hp-scrim: rgba(36, 48, 94, 0.3);
+    --hp-radius: 22px;
+    -unity-font-definition: url("../Fonts/Nunito-Bold-SDF.asset");
     -unity-font-style: normal;
     color: var(--hp-ink);
 }
 
-/* The stack fills the screen; each screen fills the stack. */
+/* ------------------------------------------------------------------ stack, screens, entrance motion */
+
 .hp-stack {
     position: absolute;
     left: 0;
@@ -33,7 +51,43 @@
     bottom: 0;
 }
 
-/* A dimmed full-screen overlay that centres its panel. */
+/* A screen arrives with hp-screen--enter for one tick: its panel and logo pop in, its navigable elements cascade in
+   (hp-stagger-N, removed once the entrance is over so hover and focus stay instant). */
+.hp-screen--enter .hp-panel {
+    opacity: 0;
+    translate: 0 24px;
+    scale: 0.94 0.94;
+}
+
+.hp-screen--enter .hp-logo,
+.hp-screen--enter .hp-banner {
+    opacity: 0;
+    scale: 0.75 0.75;
+    rotate: -12deg;
+}
+
+.hp-screen--enter .hp-stagger {
+    opacity: 0;
+    translate: -22px 0;
+}
+
+.hp-stagger {
+    transition-property: opacity, translate;
+    transition-duration: 0.2s, 0.28s;
+    transition-timing-function: ease-out, ease-out-back;
+}
+
+.hp-stagger-1 { transition-delay: 0.09s, 0.09s; }
+.hp-stagger-2 { transition-delay: 0.125s, 0.125s; }
+.hp-stagger-3 { transition-delay: 0.16s, 0.16s; }
+.hp-stagger-4 { transition-delay: 0.195s, 0.195s; }
+.hp-stagger-5 { transition-delay: 0.23s, 0.23s; }
+.hp-stagger-6 { transition-delay: 0.265s, 0.265s; }
+.hp-stagger-7 { transition-delay: 0.3s, 0.3s; }
+.hp-stagger-8 { transition-delay: 0.335s, 0.335s; }
+
+/* ------------------------------------------------------------------ overlay and panel */
+
 .hp-overlay {
     flex-grow: 1;
     align-items: center;
@@ -41,66 +95,858 @@
     background-color: var(--hp-scrim);
 }
 
-.hp-panel {
-    min-width: 520px;
-    max-width: 760px;
-    padding: 32px 40px;
-    border-radius: var(--hp-radius);
-    background-color: var(--hp-panel);
-    border-width: 2px;
-    border-color: rgba(255, 255, 255, 0.08);
+.hp-overlay--soft {
+    background-color: rgba(36, 48, 94, 0.18);
 }
 
+.hp-overlay--strong {
+    background-color: rgba(36, 48, 94, 0.42);
+}
+
+/* The main menu docks left, so the 3D backdrop shows on the right. */
+.hp-overlay--menu {
+    background-color: rgba(36, 48, 94, 0);
+    align-items: flex-start;
+    padding-left: 120px;
+}
+
+.hp-panel {
+    padding: 32px 40px 16px 40px;
+    border-radius: 32px;
+    border-width: 4px;
+    border-bottom-width: 14px;
+    border-color: var(--hp-cream-edge);
+    background-color: var(--hp-cream);
+    transition-property: opacity, translate, scale;
+    transition-duration: 0.22s, 0.3s, 0.3s;
+    transition-timing-function: ease-out, ease-out-back, ease-out-back;
+}
+
+.hp-menu-column { width: 680px; }
+.hp-panel--menu { width: 100%; }
+.hp-panel--small { width: 640px; padding: 36px 44px 24px 44px; }
+.hp-panel--dialog { width: 720px; padding: 72px 44px 24px 44px; align-items: center; }
+.hp-panel--wide { width: 1500px; max-width: 94%; max-height: 94%; }
+.hp-panel--lobby { width: 1440px; max-width: 94%; flex-direction: row; padding: 36px 44px 20px 44px; }
+.hp-panel--results { width: 900px; padding: 56px 48px 24px 48px; }
+.hp-panel--working { flex-direction: row; align-items: center; padding: 28px 40px; }
+
+.hp-grow { flex-grow: 1; flex-shrink: 1; }
+.hp-col { flex-grow: 1; flex-basis: 0; }
+.hp-spacer { flex-grow: 1; }
+
+/* ------------------------------------------------------------------ text */
+
 .hp-title {
-    font-size: 44px;
-    -unity-font-style: bold;
-    color: var(--hp-ink);
-    margin-bottom: 8px;
+    -unity-font-definition: url("../Fonts/LilitaOne-SDF.asset");
+    font-size: 64px;
+    color: #FFFFFF;
+    letter-spacing: 1px;
+    -unity-text-outline-width: 3.5px;
+    -unity-text-outline-color: var(--hp-ink);
+    text-shadow: 0 6px 0 var(--hp-ink);
+    margin: 0 0 4px 0;
+    padding: 0;
+}
+
+.hp-title--center { -unity-text-align: middle-center; }
+.hp-title--big { font-size: 72px; }
+.hp-title--dialog { font-size: 60px; -unity-text-align: middle-center; }
+
+/* The logo: two tilted, outlined words. */
+.hp-logo {
+    rotate: -4deg;
+    transform-origin: left center;
+    margin: 0 0 26px 10px;
+    transition-property: opacity, scale, rotate;
+    transition-duration: 0.22s, 0.34s, 0.34s;
+    transition-timing-function: ease-out, ease-out-back, ease-out-back;
+}
+
+.hp-logo__word {
+    -unity-font-definition: url("../Fonts/LilitaOne-SDF.asset");
+    font-size: 118px;
+    letter-spacing: 2px;
+    -unity-text-outline-width: 5px;
+    -unity-text-outline-color: var(--hp-ink);
+    text-shadow: 0 10px 0 var(--hp-ink);
+    margin: -14px 0;
+    padding: 0;
+}
+
+.hp-logo__word--hot { color: var(--hp-orange); }
+.hp-logo__word--patata { color: var(--hp-sun); margin-left: 46px; }
+
+/* The results banner: COURSE / COMPLETE! over the panel. */
+.hp-banner {
+    align-items: center;
+    rotate: -3deg;
+    margin-bottom: -30px;
+    transition-property: opacity, scale, rotate;
+    transition-duration: 0.22s, 0.4s, 0.4s;
+    transition-timing-function: ease-out, ease-out-back, ease-out-back;
+}
+
+.hp-banner__line {
+    -unity-font-definition: url("../Fonts/LilitaOne-SDF.asset");
+    font-size: 84px;
+    color: #FFFFFF;
+    letter-spacing: 2px;
+    -unity-text-outline-width: 5px;
+    -unity-text-outline-color: var(--hp-ink);
+    text-shadow: 0 9px 0 var(--hp-ink);
+    margin: -10px 0;
+    padding: 0;
+}
+
+.hp-banner__line--big { font-size: 132px; color: var(--hp-sun); }
+
+.hp-section {
+    -unity-font-definition: url("../Fonts/LilitaOne-SDF.asset");
+    font-size: 30px;
+    color: var(--hp-orange);
+    letter-spacing: 1px;
+    -unity-text-outline-width: 2.5px;
+    -unity-text-outline-color: var(--hp-ink);
+    margin: 2px 0 2px 8px;
+    padding: 0;
 }
 
 .hp-hint {
-    font-size: 20px;
+    font-size: 22px;
     color: var(--hp-ink-dim);
     white-space: normal;
-    margin-bottom: 14px;
+    margin: 0;
+    padding: 0;
 }
 
-/* Buttons: big targets, a clear yellow ring when focused (keyboard / gamepad) or hovered. */
-.hp-button {
-    height: 60px;
-    margin: 6px 0;
-    padding: 0 24px;
-    font-size: 26px;
-    -unity-font-style: bold;
+.hp-hint--center { -unity-text-align: middle-center; }
+.hp-hint--big { font-size: 26px; }
+
+.hp-label {
+    -unity-font-definition: url("../Fonts/Nunito-Black-SDF.asset");
+    font-size: 18px;
+    letter-spacing: 2px;
+    color: var(--hp-ink-dim);
+    margin: 0;
+    padding: 0;
+}
+
+/* A sun-tinted note (the online pause warning, waiting lines); hp-note--error for session errors. */
+.hp-note {
+    flex-direction: row;
+    align-items: center;
+    padding: 14px 18px;
+    border-radius: 20px;
+    border-width: 4px;
+    border-color: #EBC23A;
+    background-color: #FFF0B8;
+}
+
+.hp-note__text {
+    -unity-font-definition: url("../Fonts/Nunito-Black-SDF.asset");
+    flex-shrink: 1;
+    flex-grow: 1;
+    font-size: 22px;
     color: var(--hp-ink);
-    background-color: var(--hp-button);
+    white-space: normal;
+    margin: 0 0 0 14px;
+    padding: 0;
+}
+
+.hp-note--error {
+    border-color: #E58F8A;
+    background-color: #FFE1DF;
+}
+
+.hp-error {
+    -unity-font-definition: url("../Fonts/Nunito-Black-SDF.asset");
+    font-size: 22px;
+    color: #A32D33;
+    white-space: normal;
+    padding: 12px 18px;
+    border-radius: 20px;
+    border-width: 4px;
+    border-color: #E58F8A;
+    background-color: #FFE1DF;
+}
+
+/* ------------------------------------------------------------------ icons (SVG, Assets/UI/Icons) */
+
+.hp-icon {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    -unity-background-scale-mode: scale-to-fit;
+    -unity-background-image-tint-color: #FFFFFF;
+}
+
+.hp-icon--play { background-image: url("../Icons/play.svg"); }
+.hp-icon--globe { background-image: url("../Icons/globe.svg"); }
+.hp-icon--join { background-image: url("../Icons/join.svg"); }
+.hp-icon--local { background-image: url("../Icons/local.svg"); }
+.hp-icon--gear { background-image: url("../Icons/gear.svg"); }
+.hp-icon--door { background-image: url("../Icons/door.svg"); }
+.hp-icon--copy { background-image: url("../Icons/copy.svg"); }
+.hp-icon--back { background-image: url("../Icons/back.svg"); }
+.hp-icon--reset { background-image: url("../Icons/reset.svg"); }
+.hp-icon--crown { background-image: url("../Icons/crown.svg"); }
+.hp-icon--star { background-image: url("../Icons/star.svg"); }
+.hp-icon--info { background-image: url("../Icons/info.svg"); }
+.hp-icon--ink { -unity-background-image-tint-color: var(--hp-ink); }
+.hp-icon--big { width: 44px; height: 44px; }
+
+.hp-potato {
+    width: 84px;
+    height: 92px;
+    flex-shrink: 0;
+    background-image: url("../Icons/potato.svg");
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+/* ------------------------------------------------------------------ buttons */
+
+/* A chunky toy button: Lilita One label (child hp-button__label), white with a navy outline, an icon on the left
+   (child hp-icon), and a darker bottom lip. Variants: --secondary (sky), --neutral (plum), --danger (red). */
+.hp-button {
+    --fill: var(--hp-orange);
+    --lip: var(--hp-orange-lip);
+    --hi: var(--hp-orange-hi);
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    height: 80px;
+    margin: 0;
+    padding: 0 32px;
     border-radius: var(--hp-radius);
     border-width: 4px;
-    border-color: rgba(0, 0, 0, 0);
-    transition-property: scale, background-color, border-color;
-    transition-duration: 0.08s;
+    border-bottom-width: 12px;
+    border-color: var(--lip);
+    background-color: var(--fill);
+    -unity-font-definition: url("../Fonts/LilitaOne-SDF.asset");
+    font-size: 32px;
+    color: #FFFFFF;
+    letter-spacing: 1px;
+    -unity-text-outline-width: 3px;
+    -unity-text-outline-color: var(--hp-ink);
+    transition-property: scale, translate, background-color, border-color;
+    transition-duration: 0.16s, 0.12s, 0.12s, 0.12s;
+    transition-timing-function: ease-out-back, ease-out, ease-out, ease-out;
 }
 
 .hp-button:hover {
-    background-color: var(--hp-button-hover);
+    background-color: var(--hi);
 }
 
 .hp-button:focus {
-    border-color: var(--hp-accent);
-    background-color: var(--hp-button-hover);
-    scale: 1.03 1.03;
+    background-color: var(--hp-sun);
+    border-color: var(--hp-sun-lip);
+    scale: 1.04 1.04;
 }
 
 .hp-button:active {
-    background-color: var(--hp-button-active);
+    border-bottom-width: 4px;
+    translate: 0 6px;
     scale: 0.98 0.98;
 }
 
-.hp-button--secondary {
-    background-color: var(--hp-secondary);
+.hp-button:disabled {
+    opacity: 0.45;
 }
 
-/* Fields (toggles, sliders): readable labels, the same focus ring. */
+.hp-button--secondary { --fill: var(--hp-sky); --lip: var(--hp-sky-lip); --hi: var(--hp-sky-hi); }
+.hp-button--neutral { --fill: var(--hp-plum); --lip: var(--hp-plum-lip); --hi: var(--hp-plum-hi); }
+.hp-button--danger { --fill: var(--hp-red); --lip: var(--hp-red-lip); --hi: var(--hp-red-hi); }
+
+.hp-button--big {
+    height: 100px;
+    font-size: 42px;
+    border-radius: 26px;
+}
+
+.hp-button--big .hp-icon { width: 44px; height: 44px; }
+
+.hp-button--small {
+    height: 64px;
+    font-size: 26px;
+    padding: 0 24px;
+    border-radius: 18px;
+    border-bottom-width: 10px;
+}
+
+.hp-button--small .hp-icon { width: 30px; height: 30px; }
+
+.hp-button .hp-icon { margin-right: 16px; }
+
+.hp-button__label {
+    margin: 0;
+    padding: 0;
+    -unity-text-align: middle-left;
+}
+
+
+/* Two-line button: title over a small caption. */
+.hp-button__text { align-items: flex-start; }
+.hp-button__text .hp-button__label { margin: 0; }
+
+.hp-button__sub {
+    -unity-font-definition: url("../Fonts/Nunito-Black-SDF.asset");
+    font-size: 18px;
+    letter-spacing: 0;
+    color: #FFFFFF;
+    -unity-text-outline-width: 0;
+    text-shadow: 0 2px 0 rgba(36, 48, 94, 0.55);
+    margin: 2px 0 0 0;
+    padding: 0;
+}
+
+/* ------------------------------------------------------------------ fields */
+
+.hp-field {
+    flex-direction: column;
+    align-items: stretch;
+    margin: 0;
+    padding: 0;
+}
+
+.hp-field .unity-base-field__label {
+    -unity-font-definition: url("../Fonts/Nunito-Black-SDF.asset");
+    min-width: 0;
+    font-size: 18px;
+    letter-spacing: 2px;
+    color: var(--hp-ink-dim);
+    margin: 0 0 6px 2px;
+    padding: 0;
+}
+
+.hp-field .unity-base-text-field__input {
+    height: 64px;
+    margin: 0;
+    padding: 0 20px;
+    border-radius: 18px;
+    border-width: 4px;
+    border-bottom-width: 7px;
+    border-color: var(--hp-ink);
+    background-color: #FFFFFF;
+    -unity-font-definition: url("../Fonts/Nunito-Black-SDF.asset");
+    font-size: 28px;
+    color: var(--hp-ink);
+    -unity-text-align: middle-left;
+}
+
+.hp-field:focus .unity-base-text-field__input,
+.hp-field .unity-base-text-field__input:focus {
+    border-color: var(--hp-focus-edge);
+    background-color: var(--hp-focus-tint);
+}
+
+.hp-field--code .unity-base-text-field__input {
+    -unity-font-definition: url("../Fonts/LilitaOne-SDF.asset");
+    letter-spacing: 6px;
+}
+
+/* A text field inside a row: label on the left, input filling the rest. */
+.hp-field--inline {
+    flex-direction: row;
+    align-items: center;
+    flex-grow: 1;
+}
+
+.hp-field--inline .unity-base-field__label {
+    -unity-font-definition: url("../Fonts/Nunito-Bold-SDF.asset");
+    font-size: 24px;
+    letter-spacing: 0;
+    color: var(--hp-ink);
+    margin: 0 18px 0 0;
+}
+
+.hp-field--inline .unity-base-text-field__input {
+    flex-grow: 1;
+    height: 52px;
+    font-size: 24px;
+}
+
+/* ------------------------------------------------------------------ setting rows (SettingRows.cs) */
+
+.hp-row {
+    flex-direction: row;
+    align-items: center;
+    min-height: 72px;
+    margin: 0;
+    padding: 6px 12px 6px 20px;
+    border-radius: 20px;
+    border-width: 4px;
+    border-bottom-width: 8px;
+    border-color: var(--hp-cream-edge);
+    background-color: #FFFFFF;
+    transition-property: background-color, border-color;
+    transition-duration: 0.12s, 0.12s;
+}
+
+.hp-row:hover { background-color: #FFFCF4; }
+
+.hp-row:focus {
+    border-color: var(--hp-focus-edge);
+    background-color: var(--hp-focus-tint);
+}
+
+.hp-row:disabled { opacity: 0.45; }
+
+.hp-row__label {
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: 0;
+    font-size: 22px;
+    color: var(--hp-ink);
+    white-space: normal;
+    margin: 0 16px 0 0;
+    padding: 0;
+}
+
+.hp-row__field {
+    flex-grow: 0;
+    flex-shrink: 0;
+    width: 220px;
+    margin: 0;
+}
+
+.hp-row__value {
+    width: 76px;
+    flex-shrink: 0;
+    -unity-font-definition: url("../Fonts/LilitaOne-SDF.asset");
+    font-size: 26px;
+    color: var(--hp-ink);
+    -unity-text-align: middle-right;
+    margin: 0;
+    padding: 0;
+}
+
+/* Slider: a sand track, an orange fill, a round white dragger. */
+.hp-row__field .unity-base-slider__drag-container {
+    height: 40px;
+}
+
+.hp-row__field .unity-base-slider__tracker {
+    height: 16px;
+    margin-top: -8px;
+    border-radius: 8px;
+    border-width: 0;
+    background-color: var(--hp-sand);
+}
+
+.hp-row__field .unity-base-slider__fill {
+    height: 16px;
+    border-radius: 8px;
+    background-color: var(--hp-orange);
+}
+
+.hp-row__field .unity-base-slider__dragger {
+    width: 36px;
+    height: 36px;
+    margin-top: -18px;
+    margin-left: -18px;
+    border-radius: 18px;
+    border-width: 5px;
+    border-color: var(--hp-ink);
+    background-color: #FFFFFF;
+}
+
+.hp-row__field .unity-base-slider__dragger-border {
+    display: none;
+}
+
+/* Toggle: a pill track (the input) and a round knob (the checkmark) that slides right when on. */
+.hp-row__toggle {
+    flex-grow: 0;
+    flex-shrink: 0;
+    margin: 0 0 0 auto;
+}
+
+.hp-row__toggle .unity-toggle__input {
+    width: 88px;
+    height: 48px;
+    padding: 4px;
+    border-radius: 24px;
+    border-width: 4px;
+    border-color: var(--hp-ink);
+    background-color: var(--hp-sand);
+    transition-property: background-color;
+    transition-duration: 0.15s;
+}
+
+.hp-row__toggle .unity-toggle__checkmark,
+.hp-row__toggle:checked .unity-toggle__checkmark,
+.hp-row__toggle:hover .unity-toggle__checkmark,
+.hp-row__toggle:checked:hover .unity-toggle__checkmark {
+    width: 32px;
+    height: 32px;
+    margin: 0;
+    border-radius: 16px;
+    border-width: 4px;
+    border-color: var(--hp-ink);
+    background-color: #FFFFFF;
+    background-image: none;
+    -unity-background-image-tint-color: rgba(0, 0, 0, 0);
+    transition-property: translate;
+    transition-duration: 0.2s;
+    transition-timing-function: ease-out-back;
+}
+
+.hp-row__toggle:checked .unity-toggle__input {
+    background-color: var(--hp-sky);
+}
+
+.hp-row__toggle:checked .unity-toggle__checkmark {
+    translate: 40px 0;
+}
+
+/* Choice: ‹ value › with round sky arrows. */
+.hp-choice {
+    flex-direction: row;
+    align-items: center;
+}
+
+.hp-row .hp-choice {
+    width: 296px;
+    flex-shrink: 0;
+}
+
+.hp-choice__value {
+    flex-grow: 1;
+    flex-shrink: 1;
+    -unity-font-definition: url("../Fonts/LilitaOne-SDF.asset");
+    font-size: 26px;
+    color: var(--hp-ink);
+    -unity-text-align: middle-center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin: 0 6px;
+    padding: 0;
+}
+
+.hp-choice__arrow {
+    width: 50px;
+    height: 50px;
+    flex-shrink: 0;
+    margin: 0;
+    padding: 0 0 4px 0;
+    border-radius: 25px;
+    border-width: 4px;
+    border-bottom-width: 8px;
+    border-color: var(--hp-sky-lip);
+    background-color: var(--hp-sky);
+    -unity-font-definition: url("../Fonts/LilitaOne-SDF.asset");
+    font-size: 30px;
+    color: #FFFFFF;
+    -unity-text-outline-width: 2.5px;
+    -unity-text-outline-color: var(--hp-ink);
+    -unity-text-align: middle-center;
+    transition-property: translate, background-color;
+    transition-duration: 0.12s, 0.12s;
+}
+
+.hp-choice__arrow:hover { background-color: var(--hp-sky-hi); }
+
+.hp-choice__arrow:active {
+    border-bottom-width: 4px;
+    translate: 0 3px;
+}
+
+/* ------------------------------------------------------------------ cards, groups, scroll */
+
+.hp-card {
+    padding: 12px 12px 4px 12px;
+    border-radius: 24px;
+    border-width: 4px;
+    border-color: var(--hp-cream-edge);
+    background-color: var(--hp-card);
+}
+
+
+
+.hp-scroll {
+    flex-shrink: 1;
+    margin: 0;
+}
+
+.hp-scroll .unity-scroll-view__content-container {
+    flex-direction: row;
+    align-items: flex-start;
+}
+
+.hp-scroll .unity-scroller--vertical {
+    width: 14px;
+    margin-left: 8px;
+}
+
+.hp-scroll .unity-scroller--vertical .unity-base-slider__tracker {
+    border-radius: 7px;
+    border-width: 0;
+    background-color: var(--hp-sand);
+}
+
+.hp-scroll .unity-scroller--vertical .unity-base-slider__dragger {
+    border-radius: 7px;
+    border-width: 0;
+    background-color: var(--hp-plum);
+}
+
+.hp-scroll .unity-scroller__low-button,
+.hp-scroll .unity-scroller__high-button {
+    display: none;
+}
+
+.hp-settings-column {
+    flex-grow: 1;
+    flex-basis: 0;
+}
+
+.hp-settings-column--left { margin-right: 24px; }
+
+
+
+.hp-footer {
+    flex-direction: row;
+    justify-content: flex-end;
+    margin-top: 18px;
+}
+
+
+/* ------------------------------------------------------------------ lobby */
+
+.hp-lobby-left {
+    width: 470px;
+    flex-shrink: 0;
+    margin-right: 44px;
+}
+
+
+.hp-lobby-right { flex-grow: 1; }
+
+/* The game code ticket: sun yellow, navy edge, two notches. */
+.hp-ticket {
+    align-items: center;
+    padding: 22px 28px 20px;
+    border-radius: 26px;
+    border-width: 4px;
+    border-bottom-width: 12px;
+    border-color: var(--hp-ink);
+    background-color: var(--hp-sun);
+}
+
+.hp-ticket__notch {
+    position: absolute;
+    top: 50%;
+    width: 40px;
+    height: 40px;
+    margin-top: -24px;
+    border-radius: 20px;
+    border-width: 4px;
+    border-color: var(--hp-ink);
+    background-color: var(--hp-cream);
+}
+
+.hp-ticket__notch--left { left: -24px; }
+.hp-ticket__notch--right { right: -24px; }
+
+.hp-code {
+    -unity-font-definition: url("../Fonts/LilitaOne-SDF.asset");
+    font-size: 96px;
+    color: #FFFFFF;
+    letter-spacing: 12px;
+    -unity-text-outline-width: 4.5px;
+    -unity-text-outline-color: var(--hp-ink);
+    text-shadow: 0 7px 0 var(--hp-ink);
+    -unity-text-align: middle-center;
+    margin: 0;
+    padding: 0;
+}
+
+.hp-players-head {
+    flex-direction: row;
+    align-items: center;
+}
+
+.hp-players-head .hp-label { margin-left: 16px; }
+
+/* One player card: chip, name, badges. hp-slot--empty is a free seat. */
+.hp-slot {
+    flex-direction: row;
+    align-items: center;
+    height: 92px;
+    padding: 0 20px 0 14px;
+    border-radius: 24px;
+    border-width: 4px;
+    border-bottom-width: 9px;
+    border-color: var(--hp-cream-edge);
+    background-color: #FFFFFF;
+}
+
+
+.hp-slot--empty {
+    border-bottom-width: 4px;
+    background-color: rgba(255, 255, 255, 0.25);
+}
+
+.hp-slot__name {
+    flex-grow: 1;
+    -unity-font-definition: url("../Fonts/Nunito-Black-SDF.asset");
+    font-size: 30px;
+    color: var(--hp-ink);
+    margin: 0 0 0 18px;
+    padding: 0;
+}
+
+.hp-slot--empty .hp-slot__name {
+    -unity-font-definition: url("../Fonts/Nunito-Bold-SDF.asset");
+    font-size: 24px;
+    color: var(--hp-ink-dim);
+}
+
+/* A slot chip: a disc in the slot colour (set by code) with the slot's shape in white or navy (spec §19: never
+   colour alone). */
+.hp-chip {
+    width: 62px;
+    height: 62px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 31px;
+    border-width: 4px;
+    border-color: var(--hp-ink);
+}
+
+.hp-chip--empty {
+    border-color: var(--hp-cream-edge);
+    background-color: rgba(255, 255, 255, 0);
+}
+
+.hp-chip__shape {
+    width: 30px;
+    height: 30px;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.hp-chip__shape--circle { background-image: url("../Icons/slot-circle.svg"); }
+.hp-chip__shape--triangle { background-image: url("../Icons/slot-triangle.svg"); }
+.hp-chip__shape--square { background-image: url("../Icons/slot-square.svg"); }
+.hp-chip__shape--diamond { background-image: url("../Icons/slot-diamond.svg"); }
+
+.hp-chip--small { width: 52px; height: 52px; border-radius: 26px; }
+.hp-chip--small .hp-chip__shape { width: 26px; height: 26px; }
+
+.hp-badge {
+    flex-direction: row;
+    align-items: center;
+    height: 38px;
+    margin-left: 10px;
+    padding: 0 14px 0 10px;
+    border-radius: 19px;
+    border-width: 3px;
+    border-color: var(--hp-ink);
+    background-color: var(--hp-orange);
+}
+
+.hp-badge--you { background-color: var(--hp-sky); }
+
+.hp-badge .hp-icon { width: 20px; height: 20px; }
+
+.hp-badge__text {
+    -unity-font-definition: url("../Fonts/LilitaOne-SDF.asset");
+    font-size: 20px;
+    color: #FFFFFF;
+    letter-spacing: 1px;
+    -unity-text-outline-width: 2px;
+    -unity-text-outline-color: var(--hp-ink);
+    margin: 0 0 0 6px;
+    padding: 0;
+}
+
+/* ------------------------------------------------------------------ results */
+
+.hp-team {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+
+.hp-pill {
+    flex-direction: row;
+    align-items: center;
+    width: 49%;
+    height: 76px;
+    margin-top: 12px;
+    padding: 0 18px 0 10px;
+    border-radius: 38px;
+    border-width: 4px;
+    border-bottom-width: 8px;
+    border-color: var(--hp-cream-edge);
+    background-color: #FFFFFF;
+}
+
+.hp-pill__name {
+    -unity-font-definition: url("../Fonts/Nunito-Black-SDF.asset");
+    font-size: 28px;
+    color: var(--hp-ink);
+    margin: 0 0 0 14px;
+    padding: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.hp-stats { flex-direction: row; }
+
+.hp-stat {
+    flex-grow: 1;
+    flex-basis: 0;
+    align-items: center;
+    padding: 18px 24px 16px;
+    border-radius: 26px;
+    border-width: 4px;
+    border-bottom-width: 10px;
+    border-color: var(--hp-cream-edge);
+    background-color: #FFFFFF;
+}
+
+.hp-stat__value {
+    -unity-font-definition: url("../Fonts/LilitaOne-SDF.asset");
+    font-size: 80px;
+    color: var(--hp-ink);
+    margin: 4px 0 0 0;
+    padding: 0;
+}
+
+/* ------------------------------------------------------------------ confirm dialog */
+
+.hp-dialog-disc {
+    position: absolute;
+    top: -62px;
+    left: 50%;
+    margin-left: -58px;
+    width: 116px;
+    height: 116px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 58px;
+    border-width: 5px;
+    border-bottom-width: 12px;
+    border-color: var(--hp-ink);
+    background-color: var(--hp-red);
+}
+
+.hp-dialog-disc .hp-icon { width: 56px; height: 56px; }
+
+.hp-dialog-buttons {
+    flex-direction: row;
+    align-self: stretch;
+    margin-top: 12px;
+}
+
+
+/* ------------------------------------------------------------------ dev sample (UISampleScreen) */
+
 .hp-toggle,
 .hp-slider {
     min-height: 52px;
@@ -114,7 +960,8 @@
 
 .hp-toggle:focus,
 .hp-slider:focus {
-    border-color: var(--hp-accent);
+    border-color: var(--hp-focus-edge);
+    background-color: var(--hp-focus-tint);
 }
 
 .hp-toggle .unity-base-field__label,
@@ -124,187 +971,50 @@
     min-width: 220px;
 }
 
-.hp-button--danger {
-    background-color: #7A2E3A;
-}
+/* ------------------------------------------------------------------ small layout helpers */
 
-.hp-button--danger:hover,
-.hp-button--danger:focus {
-    background-color: #95384A;
-}
+.hp-self-start { align-self: flex-start; }
+.hp-self-center { align-self: center; }
+.hp-h--stretch { align-items: stretch; }
+.hp-button--join { width: 210px; height: 76px; }
+.hp-button--start { width: 300px; height: auto; }
+.hp-button--tall { height: 100px; }
+.hp-button--wide { min-width: 240px; }
+.hp-row--compact { min-height: 64px; }
+.hp-row--field { padding: 6px 12px 6px 20px; }
+.hp-row--compact .hp-row__label { font-size: 20px; }
+.hp-potato--small { width: 56px; height: 62px; }
 
-/* Settings (#17): a wide panel, a scrolling list of sections and rows, a footer with the buttons. */
-.hp-panel--wide {
-    width: 1040px;
-    max-width: 92%;
-    max-height: 90%;
-}
-
-.hp-scroll {
-    flex-shrink: 1;
-    max-height: 720px;
-    margin-bottom: 12px;
-}
-
-.hp-section {
-    font-size: 26px;
-    -unity-font-style: bold;
-    color: var(--hp-accent);
-    margin: 18px 0 6px 4px;
-}
-
-.hp-row {
-    flex-direction: row;
-    align-items: center;
-    min-height: 58px;
-    margin: 3px 0;
-    padding: 4px 16px;
-    border-radius: var(--hp-radius);
-    border-width: 4px;
-    border-color: rgba(0, 0, 0, 0);
-    background-color: rgba(255, 255, 255, 0.04);
-}
-
-.hp-row:hover {
-    background-color: rgba(255, 255, 255, 0.08);
-}
-
-.hp-row:focus {
-    border-color: var(--hp-accent);
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
-.hp-row:disabled {
-    opacity: 0.4;
-}
-
-.hp-row__label {
-    width: 440px;
-    font-size: 22px;
+.hp-status {
+    -unity-font-definition: url("../Fonts/LilitaOne-SDF.asset");
+    font-size: 40px;
     color: var(--hp-ink);
-    white-space: normal;
+    margin: 0 0 0 24px;
+    padding: 0;
 }
 
-.hp-row__field {
-    flex-grow: 1;
-    margin: 0 12px;
-}
+/* ------------------------------------------------------------------ spacing (USS has no gap)
+   Stacked children are spaced by a bottom margin; the container's bottom padding is smaller by the same amount.
+   Rows of children are spaced by a right margin, cancelled on the row by a negative right margin. Kept last so
+   these win over the elements' own margins. */
 
-.hp-row__value {
-    width: 90px;
-    font-size: 22px;
-    -unity-text-align: middle-right;
-    color: var(--hp-ink-dim);
-}
+.hp-panel > * { margin-bottom: 16px; }
+.hp-panel--lobby > *,
+.hp-panel--working > * { margin-bottom: 0; }
+.hp-card > * { margin-bottom: 8px; }
+.hp-v > * { margin-bottom: 16px; }
+.hp-v--tight > * { margin-bottom: 10px; }
+.hp-lobby-left > * { margin-bottom: 18px; }
+.hp-lobby-right > * { margin-bottom: 14px; }
+.hp-player-list > * { margin-bottom: 12px; }
+.hp-settings-column > * { margin-bottom: 18px; }
+.hp-spacer { margin: 0; }
 
-.hp-row__toggle {
-    flex-grow: 1;
-    margin: 0 12px;
-}
-
-.hp-choice {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.hp-choice__value {
-    flex-grow: 1;
-    font-size: 22px;
-    -unity-text-align: middle-center;
-    color: var(--hp-ink);
-}
-
-.hp-choice__arrow {
-    width: 44px;
-    height: 40px;
-    font-size: 26px;
-    color: var(--hp-ink);
-    background-color: var(--hp-button);
-    border-radius: 10px;
-    border-width: 0;
-}
-
-.hp-footer {
-    flex-direction: row;
-    justify-content: flex-end;
-}
-
-.hp-footer .hp-button {
-    margin-left: 12px;
-    min-width: 220px;
-}
-
-/* Main menu and lobby (#15): a compact column over the menu scene. */
-.hp-overlay--menu {
-    background-color: rgba(10, 14, 28, 0.35);
-}
-
-.hp-panel--menu {
-    width: 680px;
-    max-height: 96%;
-    padding: 24px 36px;
-}
-
-.hp-panel--menu .hp-button {
-    height: 50px;
-    margin: 4px 0;
-    font-size: 22px;
-}
-
-.hp-panel--menu .hp-row {
-    min-height: 50px;
-}
-
-.hp-field {
-    margin: 4px 0;
-    min-height: 50px;
-    padding: 2px 12px;
-    border-radius: var(--hp-radius);
-    border-width: 4px;
-    border-color: rgba(0, 0, 0, 0);
-    background-color: rgba(255, 255, 255, 0.04);
-    align-items: center;
-}
-
-.hp-field:focus {
-    border-color: var(--hp-accent);
-}
-
-.hp-field .unity-base-field__label {
-    min-width: 200px;
-    font-size: 22px;
-    color: var(--hp-ink);
-}
-
-.hp-field .unity-base-text-field__input {
-    font-size: 22px;
-    min-height: 38px;
-    color: #10141F;
-    background-color: var(--hp-ink);
-    border-radius: 8px;
-}
-
-.hp-group {
-    margin: 2px 0 2px 16px;
-}
-
-.hp-error {
-    color: #FF8A7A;
-    margin-top: 8px;
-}
-
-.hp-code {
-    font-size: 64px;
-    -unity-font-style: bold;
-    -unity-text-align: middle-center;
-    letter-spacing: 8px;
-    color: var(--hp-accent);
-    margin: 0 0 8px 0;
-}
-
-.hp-player {
-    font-size: 24px;
-    color: var(--hp-ink);
-    margin: 2px 0;
-}
+.hp-h { flex-direction: row; align-items: center; margin-right: -14px; }
+.hp-h > * { margin-right: 14px; }
+.hp-h--end { align-items: flex-end; }
+.hp-stats { margin-right: -16px; }
+.hp-stats > * { margin-right: 16px; }
+.hp-dialog-buttons { margin-right: -18px; }
+.hp-dialog-buttons > * { flex-grow: 1; flex-basis: 0; margin-right: 18px; }
+.hp-footer > * { margin-left: 16px; }

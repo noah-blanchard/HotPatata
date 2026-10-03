@@ -1,14 +1,23 @@
-<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:hp="HotPatata" editor-extension-mode="False">
     <ui:VisualElement class="hp-overlay">
-        <ui:VisualElement class="hp-panel">
-            <ui:Label name="title" text="UI sample" class="hp-title" />
+        <ui:VisualElement class="hp-panel hp-panel--small">
+            <ui:Label name="title" text="UI SAMPLE" class="hp-title" />
             <ui:Label text="Mouse, arrows / WASD or stick / d-pad to move, Enter or A to press, Esc or B to go back." class="hp-hint" />
-            <ui:Button name="press" text="Press me" class="hp-button" />
+            <ui:Button name="press" class="hp-button">
+                <ui:VisualElement class="hp-icon hp-icon--play" />
+                <ui:Label text="PRESS ME" class="hp-button__label" />
+            </ui:Button>
             <ui:Label name="counter" text="Pressed 0" class="hp-hint" />
-            <ui:Toggle label="A toggle" class="hp-toggle" />
-            <ui:Slider label="A slider" low-value="0" high-value="1" value="0.5" class="hp-slider" />
-            <ui:Button name="another" text="Open another" class="hp-button" />
-            <ui:Button name="close" text="Close" class="hp-button hp-button--secondary" />
+            <hp:ToggleRow label="A toggle row" />
+            <hp:SliderRow label="A slider row" />
+            <hp:ChoiceRow label="A choice row" />
+            <ui:Button name="another" class="hp-button hp-button--secondary">
+                <ui:Label text="OPEN ANOTHER" class="hp-button__label" />
+            </ui:Button>
+            <ui:Button name="close" class="hp-button hp-button--neutral">
+                <ui:VisualElement class="hp-icon hp-icon--back" />
+                <ui:Label text="CLOSE" class="hp-button__label" />
+            </ui:Button>
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

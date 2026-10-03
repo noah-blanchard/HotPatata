@@ -1,0 +1,47 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <ui:VisualElement class="hp-overlay">
+        <ui:VisualElement class="hp-banner">
+            <ui:Label text="COURSE" class="hp-banner__line" />
+            <ui:Label text="COMPLETE!" class="hp-banner__line hp-banner__line--big" />
+        </ui:VisualElement>
+        <ui:VisualElement class="hp-panel hp-panel--results">
+            <ui:VisualElement class="hp-v--tight">
+                <ui:Label text="THE TEAM" class="hp-label" />
+                <ui:VisualElement name="team" class="hp-team" />
+            </ui:VisualElement>
+            <ui:VisualElement class="hp-stats">
+                <ui:VisualElement class="hp-stat">
+                    <ui:Label text="TIME" class="hp-label" />
+                    <ui:Label name="time" text="9:42.3" class="hp-stat__value" />
+                </ui:VisualElement>
+                <ui:VisualElement class="hp-stat">
+                    <ui:Label text="EXPLOSIONS / RESETS" class="hp-label" />
+                    <ui:Label name="resets" text="3" class="hp-stat__value" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement name="host-actions" class="hp-v--tight">
+                <ui:VisualElement class="hp-h hp-h--stretch">
+                    <ui:Button name="rematch" class="hp-button hp-button--big hp-grow">
+                        <ui:VisualElement class="hp-icon hp-icon--reset" />
+                        <ui:Label text="REMATCH" class="hp-button__label" />
+                    </ui:Button>
+                    <ui:Button name="leave" class="hp-button hp-button--neutral hp-button--tall">
+                        <ui:VisualElement class="hp-icon hp-icon--door" />
+                        <ui:Label text="LEAVE" class="hp-button__label" />
+                    </ui:Button>
+                </ui:VisualElement>
+                <ui:Label text="R also starts the rematch." class="hp-hint hp-hint--center" />
+            </ui:VisualElement>
+            <ui:VisualElement name="client-actions" class="hp-v--tight">
+                <ui:VisualElement class="hp-note">
+                    <ui:VisualElement name="waiting-spinner" class="hp-potato hp-potato--small" />
+                    <ui:Label text="Waiting for the host to restart..." class="hp-note__text" />
+                </ui:VisualElement>
+                <ui:Button name="client-leave" class="hp-button hp-button--neutral hp-self-center">
+                    <ui:VisualElement class="hp-icon hp-icon--door" />
+                    <ui:Label text="LEAVE TO MENU" class="hp-button__label" />
+                </ui:Button>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
