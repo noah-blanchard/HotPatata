@@ -812,6 +812,85 @@ Display at minimum:
 
 ---
 
+## 15b. Second level blueprint — PatataWorks (#83)
+
+Added after the three open-sky courses (`PrototypeCourse`, `PlaytestCourse`, `PatataPark`), which are all one straight
+lane of floating platforms along +Z. The second full course is a **place**: an old potato factory at sunset, a closed
+building whose route climbs, turns right, turns left and drops. It is first in the Bootstrap level list.
+
+Working level:
+
+**PatataWorks**
+
+Target:
+
+- **10–14 minutes** for a first clear by a team that knows the controls; **9 checkpoints**, 30–60 s apart (§20);
+- **2 players can solve every puzzle**; 3–4 players make it easier or faster, never possible-only-with-4;
+- the same rules as every course: one bomb, the plain ballistic arc, no new mechanic. Only the existing kit and the
+  #68 elements (§13.13–§13.17) are used.
+
+### Enclosed-course rules
+
+- **Closed building.** Every section except the roof finale has walls and a ceiling. Nothing floats in an open sky,
+  except inside the boiler shaft, the atrium void and on the roof.
+- **Walls and ceilings are environment** (§6): a thrown bomb touching them explodes, like any other geometry.
+- **Ceiling clearance.** Every room where passes happen has a ceiling higher than the intended arcs plus a margin
+  (§20). Low ceilings exist only where a low throw is the question (§13.5).
+- **Pass corridors.** Each intended pass is declared as a volume; decoration never enters one (this replaces the
+  open courses' |x| ≥ 25 m rule, §3.1).
+- **Openings** that passes go through (windows, doorways) are larger than the catch radius with a margin.
+- **Pits** inside the building have a kill zone below them.
+- **Telegraph first:** coloured lights, signage arrows, the exit pad lighting before a tube fires. No blind throw
+  without a window or a telegraph, no puzzle that needs a long discussion (§14).
+- **Puzzles chain elements through the geometry, never through logic:** one source drives exactly one actuator
+  (§13.15, §17.2).
+
+### Route
+
+Direction is the point: the course climbs, turns both ways and drops, and starts and ends at different heights.
+
+| # | Section | Direction | Height | Bomb questions |
+|---|---|---|---|---|
+| 0 | Loading Dock (start) | ahead | 0 m | warm-up passes between crates (§13.1); the first door opened by a bomb gate (§13.15) |
+| 1 | The Atrium | up | 0 → 14 m | vertical relay up a three-storey void (§13.3); a plate lift held by one runner while the others climb (§13.15) |
+| 2 | East Wing: Sorting Hall | right | 14 m | conveyor lanes behind interior windows (§13.9, §13.4); timed doors opened by bomb gates; pistons (§13.10) |
+| 3 | Silo Catwalks | ahead | 14 → 18 m | catwalks under a low truss ceiling: low throws (§13.5), falling grates (§13.7), crane platforms (§13.2) |
+| 4 | West Wing: Cold Storage | left, back across | 18 m | cold pockets and a hot shortcut (§13.14); laser windows in a long corridor (§13.13) |
+| 5 | The Chute | down | 18 → −10 m | mega slide with pass gates (§13.12); the bomb takes its own tube to a pad at the bottom (§13.16) |
+| 6 | Basement Furnaces | right, then a loop | −10 m | hot zones (§13.14), crushers and windmills (§13.11), low tunnels (§13.5), a split route around the furnace (§13.4) |
+| 7 | The Boiler Shaft | up | −10 → 24 m | rising platforms and a cannon firing the bomb up the shaft to a pad (§13.16); catch under movement pressure (§13.8) |
+| 8 | The Roof | out into the sky | 24 m | the one open section: chimneys, a last relay, the checkpoint arch (§13.17), the finish under the PatataWorks sign |
+
+Each section ends with a checkpoint (9 in all). The shorter hold fuse comes near the end, as in `PrototypeCourse`
+Act 3 (`Checkpoint.holdFuseOverride`, §20).
+
+### Signature puzzles
+
+Each chains two elements through the geometry. At least these three are built:
+
+- **Hold the way** (the Atrium): a runner holds a plate one floor up to keep a lift in place while the carrier
+  passes across the void to the third floor. A bomb gate passed on the far side opens the door that brings the
+  plate holder back. With 2 players, the plate holder is also the receiver: the plate sits on the landing the pass
+  lands on.
+- **Two routes, one bomb** (the Sorting Hall): the team splits around a wall; the bomb goes through the wall by a
+  tube. Two mouths lead to two rooms (colour **and** symbol), and the thrower picks the room where the receiver is.
+- **Buy time, spend time** (Cold Storage): the long corridor is only doable by carrying through the cold pockets;
+  the shortcut through the boiler pipes is shorter but hot. The team chooses.
+- **Timed doors** (the Sorting Hall): a bomb gate opens a door for 6–10 s (§20); the receiver must already be running
+  when the pass goes through the ring.
+- **Down the chute** (the Chute): runners take the slide while the bomb takes the chute tube, tuned so a receiver who
+  did not hesitate reaches the pad in time.
+- **Up the shaft** (the Boiler Shaft): the cannon fires the bomb up the shaft; the receiver rides the rising platforms
+  to be on the pad when it arrives.
+
+### Intended difficulty
+
+Sections 0–1 teach the building (wide rooms, high ceilings, a single element each). Sections 2–4 combine two elements
+per room. Sections 5–7 are the hardest (timed transits, hot zones, catch under movement). The roof is a short,
+readable victory lap.
+
+---
+
 ## 16. Multiplayer product behavior
 
 Target session:
@@ -867,8 +946,9 @@ Do not implement unless this file is changed:
 - progression;
 - cosmetics;
 - multiple bomb types;
-- multiple courses (exception: `PlaytestCourse`, the course that tests the #68 obstacles, lives beside
-  `PrototypeCourse`);
+- multiple courses (exceptions: `PlaytestCourse`, the course that tests the #68 obstacles, and `PatataPark`, the
+  KayKit course, live beside `PrototypeCourse`; `PatataWorks`, the second full course, is the enclosed factory of
+  §15b, #83). Still no campaign, no level select beyond the Bootstrap level list, and no procedural levels;
 - Steam-specific integration;
 - leaderboards;
 - procedural levels;
@@ -949,6 +1029,8 @@ At minimum:
 | Bomb gate hold time | per gate, 6–10 s |
 | Checkpoint spacing | 30–60 s |
 | First course length | 3–5 min (Act 1); 8–10 min with Acts 2–3; `PlaytestCourse` ~10 min |
+| Second course length (`PatataWorks`, §15b) | 10–14 min first clear, 9 checkpoints |
+| Ceiling clearance over a pass corridor (§15b) | intended arc apex + 1.5 m |
 | Target frame rate | 60 fps |
 
 These are **starting values**, not final design decisions.
