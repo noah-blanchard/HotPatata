@@ -23,6 +23,7 @@ namespace HotPatata
         [SerializeField] MenuStationId id;
         [SerializeField, Tooltip("The camera spot that frames this station.")] CinemachineCamera spot;
         [SerializeField, Tooltip("The board: a world-space UI document (Resources/HotPatataWorldPanel).")] UIDocument board;
+        [SerializeField, Tooltip("This station's framing: a vignette (weight set by MenuCameraRig).")] UnityEngine.Rendering.Volume focus;
 
         UIScreen screen;
         int boardLayer = -1;    // the pointer's layer (the boards' interaction layer), set back when the board is active
@@ -32,6 +33,7 @@ namespace HotPatata
         public MenuStationId Id => id;
         public CinemachineCamera Spot => spot;
         public UIDocument Board => board;
+        public UnityEngine.Rendering.Volume Focus => focus;
         public UIScreen Screen => screen;
         public bool IsActive => active;
 
@@ -45,11 +47,12 @@ namespace HotPatata
             return null;
         }
 
-        public void Configure(MenuStationId stationId, CinemachineCamera cameraSpot, UIDocument document)
+        public void Configure(MenuStationId stationId, CinemachineCamera cameraSpot, UIDocument document, UnityEngine.Rendering.Volume focusVolume = null)
         {
             id = stationId;
             spot = cameraSpot;
             board = document;
+            focus = focusVolume;
         }
 
         void OnEnable()

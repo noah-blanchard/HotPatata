@@ -1,4 +1,5 @@
 #ifndef HOTPATATA_TOON_INPUT_INCLUDED
+// Material inputs of HotPatata/Stylized (file kept as HotPatataToon* so the materials' references never change).
 #define HOTPATATA_TOON_INPUT_INCLUDED
 
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
@@ -30,6 +31,14 @@ CBUFFER_START(UnityPerMaterial)
     half _PatternStrength;
     float4 _PatternScroll;
     half _Cutoff;
+    // Stylized cinematic lighting (ARCHITECTURE §25)
+    half _Wrap;
+    half _Stylize;
+    half _Smoothness;
+    half _BumpScale;
 CBUFFER_END
+
+// _BaseMap and _BumpMap come from URP's SurfaceInput.hlsl.
+TEXTURE2D(_GlossMap);       SAMPLER(sampler_GlossMap);
 
 #endif

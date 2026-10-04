@@ -19,7 +19,8 @@ namespace HotPatata.Editor
     /// platforms bob, clouds drift, sparkles float, and the camera drifts slowly. Everything in it is visual: copies of the
     /// players' characters and the bomb's visual, never their gameplay components, and no colliders that matter.
     /// The menu itself lives on the island too (#79): four stations (Title, Play, Level, Lobby), each a world-space board
-    /// with a Cinemachine camera spot, the lobby stage the players step onto, and the menu camera's brain and rig.
+    /// with a Cinemachine camera spot and a framing volume (vignette), the lobby stage the players step onto, and the
+    /// menu camera's brain and rig. Sun, sky, fog and grade come from <see cref="LookBuilder"/>, as in every scene.
     /// Idempotent: rebuild after changing it (menu HotPatata/Menu/Build Menu Backdrop), never edit it by hand.
     /// </summary>
     public static class MenuBackdropBuilder
@@ -84,7 +85,7 @@ namespace HotPatata.Editor
             instance.name = RootName;
             instance.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
             SetUpCamera(scene, tuning);
-            SetUpSky();
+            LookBuilder.ApplyToScene(scene);   // sky, ambient, fog and the look volume, as in every scene
 
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
@@ -139,11 +140,7 @@ namespace HotPatata.Editor
             var sun = new GameObject("Sun").AddComponent<Light>();
             sun.transform.SetParent(parent, false);
             sun.type = LightType.Directional;
-            sun.color = new Color(1f, 0.95f, 0.86f);
-            sun.intensity = 1.2f;
-            sun.shadows = LightShadows.Soft;
-            sun.shadowStrength = 0.75f;
-            sun.transform.rotation = Quaternion.Euler(45f, 35f, 0f);   // from behind the camera's left: the island's front is lit
+            LookBuilder.ConfigureSun(sun, LookBuilder.SunYaw(ScenePath));   // the golden-hour sun (ARCHITECTURE §25)
         }
 
         /// <summary>The island: a green top on stone layers that narrow downwards, a yellow terrace and a blue step at the back.</summary>
@@ -336,9 +333,51 @@ namespace HotPatata.Editor
                 if (id == MenuStationId.Title) spot.gameObject.AddComponent<MenuCameraDrift>().Configure(tuning, lookAt);
 
                 var board = Board(root, "Board", panel, boardAt, px, cameraAt, BoardLayer);
-                root.gameObject.AddComponent<MenuStation>().Configure(id, spot, board);
+                var focus = FocusVolume(root, id);
+                root.gameObject.AddComponent<MenuStation>().Configure(id, spot, board, focus);
                 if (id == MenuStationId.Lobby) BuildStage(root, tuning, show, panel, cameraAt);
             }
+        }
+
+        /// <summary>
+        /// The station's cinematic framing (ARCHITECTURE §25): a light vignette, its own profile (generated next to the
+        /// look), weight 0 until the camera is at this station; MenuCameraRig sets it to the camera-effects strength. No
+        /// depth of field: the world-space boards write no depth, so it would blur them as if they were sky.
+        /// </summary>
+        static UnityEngine.Rendering.Volume FocusVolume(Transform parent, MenuStationId id)
+        {
+            string path = "Assets/Settings/Look/MenuFocus_" + id + ".asset";
+            var profile = AssetDatabase.LoadAssetAtPath<UnityEngine.Rendering.VolumeProfile>(path);
+            if (profile == null)
+            {
+                profile = ScriptableObject.CreateInstance<UnityEngine.Rendering.VolumeProfile>();
+                AssetDatabase.CreateAsset(profile, path);
+            }
+            if (profile.TryGet(out UnityEngine.Rendering.Universal.DepthOfField dof))
+            {
+                profile.Remove<UnityEngine.Rendering.Universal.DepthOfField>();
+                AssetDatabase.RemoveObjectFromAsset(dof);
+            }
+            if (!profile.TryGet(out UnityEngine.Rendering.Universal.Vignette vignette))
+            {
+                vignette = profile.Add<UnityEngine.Rendering.Universal.Vignette>(true);
+                vignette.name = "Vignette";
+                AssetDatabase.AddObjectToAsset(vignette, profile);
+            }
+            vignette.intensity.Override(0.26f);
+            vignette.smoothness.Override(0.45f);
+            vignette.color.Override(new Color(0.12f, 0.06f, 0.08f));
+            EditorUtility.SetDirty(vignette);
+            EditorUtility.SetDirty(profile);
+
+            var go = new GameObject("Focus");
+            go.transform.SetParent(parent, false);
+            var volume = go.AddComponent<UnityEngine.Rendering.Volume>();
+            volume.isGlobal = true;
+            volume.priority = 5f;   // over the look volume, under the speed effects
+            volume.weight = 0f;
+            volume.sharedProfile = profile;
+            return volume;
         }
 
         /// <summary>A world-space UI document of <paramref name="px"/> pixels, upright, facing <paramref name="viewer"/>.</summary>
@@ -419,19 +458,5 @@ namespace HotPatata.Editor
             EditorUtility.SetDirty(rig);
         }
 
-        /// <summary>The courses' sky, ambient light and fog (ARCHITECTURE §25), saved with the scene.</summary>
-        static void SetUpSky()
-        {
-            RenderSettings.skybox = Mat("Sky_HotPatata");
-            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = new Color(0.55f, 0.66f, 0.95f);
-            RenderSettings.ambientEquatorColor = new Color(0.7f, 0.7f, 0.8f);
-            RenderSettings.ambientGroundColor = new Color(0.5f, 0.42f, 0.45f);
-            RenderSettings.fog = true;
-            RenderSettings.fogMode = FogMode.Linear;
-            RenderSettings.fogColor = new Color(0.74f, 0.87f, 1f);
-            RenderSettings.fogStartDistance = 70f;
-            RenderSettings.fogEndDistance = 320f;
-        }
     }
 }

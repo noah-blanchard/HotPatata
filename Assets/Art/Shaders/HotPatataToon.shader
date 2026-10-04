@@ -1,29 +1,43 @@
-// HotPatata toon: soft, bright, party-game shading for URP (Forward / Forward+).
-//  - a soft two-band ramp on the main light (with its shadows) and a tinted, never-black shade colour;
-//  - ambient from the sky probe, rim light, optional specular blob, emission (MaterialPropertyBlock friendly);
-//  - kit extras: fake bevel highlight on scaled unit cubes, world-space checker / stripe patterns;
-//  - suit tint (players): the texture's coloured areas take the base colour, greys and whites stay as painted.
+// HotPatata stylized: cinematic, golden-hour shading for URP (Forward / Forward+), ARCHITECTURE §25.
+//  - soft wrapped Lambert on the main light with its real shadows (a touch of the old ramp kept by _Stylize), the
+//    shadowed side filled only by the sky (SH ambient times SSAO, tinted by _ShadeColor): deep, never black;
+//  - GGX specular (_Smoothness, optional gloss map), optional normal map, a light-aware rim (strongest against the sun);
+//  - emission always added (MaterialPropertyBlock friendly);
+//  - kit extras: fake bevel highlight on scaled unit cubes, world-space checker / stripe patterns (hazard stripes:
+//    never red alone), top colour on upward faces;
+//  - suit tint: the texture's coloured areas take the base colour, greys and whites stay as painted.
+// The file and every property name are kept from the old HotPatata/Toon, so no material or builder had to change.
 // ShadowCaster, DepthOnly and DepthNormals (SSAO) reuse URP's own passes.
-Shader "HotPatata/Toon"
+Shader "HotPatata/Stylized"
 {
     Properties
     {
         [MainTexture] _BaseMap ("Base Map", 2D) = "white" {}
         [MainColor] _BaseColor ("Base Color", Color) = (1, 1, 1, 1)
-        _ShadeColor ("Shade Tint (multiplies the base colour in shadow)", Color) = (0.62, 0.58, 0.82, 1)
+        _ShadeColor ("Shadow Tint (colours the sky fill in shadow)", Color) = (0.62, 0.58, 0.82, 1)
         _TopColor ("Top Colour (upward faces)", Color) = (1, 0.94, 0.82, 1)
         _TopBlend ("Top Colour Blend (0 = off)", Range(0, 1)) = 0
-        _RampThreshold ("Ramp Threshold", Range(-1, 1)) = 0.05
-        _RampSmoothness ("Ramp Softness", Range(0.001, 1)) = 0.12
-        _AmbientStrength ("Ambient Strength", Range(0, 2)) = 0.45
+        _Wrap ("Light Wrap (soft terminator)", Range(0, 1)) = 0.25
+        _Stylize ("Stylize (0 = soft light, 1 = the old two-band ramp)", Range(0, 1)) = 0.15
+        _RampThreshold ("Ramp Threshold (stylize)", Range(-1, 1)) = 0.05
+        _RampSmoothness ("Ramp Softness (stylize)", Range(0.001, 1)) = 0.12
+        _AmbientStrength ("Sky Fill Strength", Range(0, 2)) = 0.45
         _SuitTint ("Suit Tint (coloured texels take Base Color, greys stay; 0 = multiply as usual)", Range(0, 1)) = 0
+
+        [Header(Surface)]
+        _Smoothness ("Smoothness", Range(0, 1)) = 0.2
+        [NoScaleOffset] _GlossMap ("Gloss Map (R)", 2D) = "white" {}
+        [Toggle(_GLOSSMAP)] _UseGlossMap ("Use Gloss Map", Float) = 0
+        [NoScaleOffset][Normal] _BumpMap ("Normal Map", 2D) = "bump" {}
+        _BumpScale ("Normal Strength", Range(0, 2)) = 1
+        [Toggle(_NORMALMAP)] _UseNormalMap ("Use Normal Map", Float) = 0
 
         [Header(Rim)]
         _RimColor ("Rim Colour", Color) = (1, 1, 1, 1)
         _RimPower ("Rim Power", Range(0.5, 8)) = 3.5
         _RimStrength ("Rim Strength", Range(0, 1)) = 0.25
 
-        [Header(Specular blob)]
+        [Header(Specular blob (stylized extra))]
         _SpecColor ("Specular Colour", Color) = (1, 1, 1, 1)
         _SpecSize ("Specular Size (0 = off)", Range(0, 0.2)) = 0
 
@@ -58,6 +72,8 @@ Shader "HotPatata/Toon"
             #pragma fragment ToonFragment
 
             #pragma shader_feature_local _VERTEX_COLOR
+            #pragma shader_feature_local _NORMALMAP
+            #pragma shader_feature_local _GLOSSMAP
 
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
@@ -76,6 +92,7 @@ Shader "HotPatata/Toon"
             {
                 float4 positionOS : POSITION;
                 float3 normalOS   : NORMAL;
+                float4 tangentOS  : TANGENT;
                 float2 uv         : TEXCOORD0;
                 half4 color       : COLOR;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
@@ -89,6 +106,7 @@ Shader "HotPatata/Toon"
                 half3 normalWS    : TEXCOORD2;
                 float3 positionOS : TEXCOORD3;
                 half fogFactor    : TEXCOORD4;
+                half4 tangentWS   : TEXCOORD5;
                 half4 color       : COLOR;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
                 UNITY_VERTEX_OUTPUT_STEREO
@@ -102,10 +120,11 @@ Shader "HotPatata/Toon"
                 UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
 
                 VertexPositionInputs pos = GetVertexPositionInputs(input.positionOS.xyz);
-                VertexNormalInputs nrm = GetVertexNormalInputs(input.normalOS);
+                VertexNormalInputs nrm = GetVertexNormalInputs(input.normalOS, input.tangentOS);
                 output.positionCS = pos.positionCS;
                 output.positionWS = pos.positionWS;
                 output.normalWS = nrm.normalWS;
+                output.tangentWS = half4(nrm.tangentWS, input.tangentOS.w * GetOddNegativeScale());
                 output.positionOS = input.positionOS.xyz;
                 output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 output.fogFactor = ComputeFogFactor(pos.positionCS.z);
@@ -142,9 +161,26 @@ Shader "HotPatata/Toon"
                 return lerp(albedo, _PatternColor.rgb, s * _PatternStrength);
             }
 
-            half Band(half ndl)
+            // How much a light reaches a face: a soft wrapped Lambert, nudged towards the old two-band ramp by _Stylize.
+            half Diffuse(half ndl)
             {
-                return smoothstep(_RampThreshold - _RampSmoothness, _RampThreshold + _RampSmoothness, ndl);
+                half soft = saturate((ndl + _Wrap) / (1.0 + _Wrap));
+                half band = smoothstep(_RampThreshold - _RampSmoothness, _RampThreshold + _RampSmoothness, ndl);
+                return lerp(soft, band, _Stylize);
+            }
+
+            // GGX specular (normalised, with a Schlick Fresnel on a dielectric), times N.L.
+            half3 Specular(half3 normalWS, half3 lightDir, half3 viewWS, half roughness)
+            {
+                half3 h = SafeNormalize(lightDir + viewWS);
+                half nh = saturate(dot(normalWS, h));
+                half lh = saturate(dot(lightDir, h));
+                half a2 = max(roughness * roughness, 0.002);
+                a2 *= a2;
+                half d = nh * nh * (a2 - 1.0) + 1.0;
+                half spec = a2 / (4.0 * PI * d * d * max(0.1, lh * lh) * (roughness + 0.5));
+                half fresnel = 0.04 + 0.96 * pow(1.0 - lh, 5.0);
+                return spec * fresnel * saturate(dot(normalWS, lightDir));
             }
 
             half4 ToonFragment(Varyings input) : SV_Target
@@ -153,6 +189,11 @@ Shader "HotPatata/Toon"
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
 
                 half3 normalWS = normalize(input.normalWS);
+                #if defined(_NORMALMAP)
+                    half3 tangentNormal = UnpackNormalScale(SAMPLE_TEXTURE2D(_BumpMap, sampler_BumpMap, input.uv), _BumpScale);
+                    half3 bitangent = input.tangentWS.w * cross(input.normalWS, input.tangentWS.xyz);
+                    normalWS = normalize(TransformTangentToWorld(tangentNormal, half3x3(input.tangentWS.xyz, bitangent, input.normalWS)));
+                #endif
                 half3 viewWS = GetWorldSpaceNormalizeViewDir(input.positionWS);
                 float2 screenUV = GetNormalizedScreenSpaceUV(input.positionCS);
 
@@ -160,8 +201,8 @@ Shader "HotPatata/Toon"
                 half3 albedo = texel * _BaseColor.rgb;
                 if (_SuitTint > 0.0)
                 {
-                    // Player suit (ARCHITECTURE §25): the coloured swatches of the atlas become the slot colour,
-                    // keeping a little of their light-to-dark gradient; greys, whites and the face stay as painted.
+                    // Suit tint (ARCHITECTURE §25): the coloured swatches of the atlas become the base colour,
+                    // keeping a little of their light-to-dark gradient; greys, whites and faces stay as painted.
                     half hi = max(texel.r, max(texel.g, texel.b));
                     half chroma = hi - min(texel.r, min(texel.g, texel.b));
                     half3 suit = _BaseColor.rgb * lerp(0.7, 1.0, hi);
@@ -170,9 +211,15 @@ Shader "HotPatata/Toon"
                 #if defined(_VERTEX_COLOR)
                     albedo *= input.color.rgb;
                 #endif
-                // Upward faces can take their own colour (a cartoon 'grass top' that separates walkable from sides).
-                albedo = lerp(albedo, _TopColor.rgb, smoothstep(0.55, 0.8, normalWS.y) * _TopBlend);
+                // Upward faces can take their own colour (a 'grass top' that separates walkable from sides).
+                albedo = lerp(albedo, _TopColor.rgb, smoothstep(0.55, 0.8, input.normalWS.y) * _TopBlend);
                 if (_Pattern > 0.5) albedo = WorldPattern(albedo, input.positionWS, normalWS);
+
+                half smoothness = _Smoothness;
+                #if defined(_GLOSSMAP)
+                    smoothness *= SAMPLE_TEXTURE2D(_GlossMap, sampler_GlossMap, input.uv).r;
+                #endif
+                half roughness = 1.0 - smoothness;
 
                 half directAO = 1.0, indirectAO = 1.0;
                 #if defined(_SCREEN_SPACE_OCCLUSION)
@@ -181,18 +228,19 @@ Shader "HotPatata/Toon"
                     indirectAO = ao.indirectAmbientOcclusion;
                 #endif
 
-                // --- main light: soft two-band ramp, shadowed side tinted (never black)
+                // --- main light: soft, with its real shadows
                 float4 shadowCoord = TransformWorldToShadowCoord(input.positionWS);
                 Light mainLight = GetMainLight(shadowCoord, input.positionWS, half4(1, 1, 1, 1));
-                half ndl = dot(normalWS, mainLight.direction);
-                half lit = Band(ndl) * lerp(0.0, 1.0, mainLight.shadowAttenuation) * directAO;
-                half3 shade = albedo * _ShadeColor.rgb;
-                half3 color = lerp(shade, albedo * mainLight.color, lit);
+                half shadow = mainLight.shadowAttenuation * directAO;
+                half lit = Diffuse(dot(normalWS, mainLight.direction)) * shadow;
+                half3 color = albedo * mainLight.color * lit;
+                color += mainLight.color * Specular(normalWS, mainLight.direction, viewWS, roughness) * shadow;
 
-                // --- ambient from the sky
-                color += albedo * SampleSH(normalWS) * _AmbientStrength * indirectAO;
+                // --- the sky fills the shadows: cool, deep, never black (tinted by _ShadeColor, a little)
+                half3 fillTint = lerp(half3(1, 1, 1), _ShadeColor.rgb / max(0.01, dot(_ShadeColor.rgb, half3(0.333, 0.333, 0.334))), 0.35);
+                color += albedo * SampleSH(normalWS) * (_AmbientStrength + 0.8) * fillTint * indirectAO;
 
-                // --- specular blob (cartoon highlight)
+                // --- specular blob (an optional cartoon highlight, kept for materials that use it)
                 if (_SpecSize > 0.0)
                 {
                     half3 h = normalize(mainLight.direction + viewWS);
@@ -200,7 +248,7 @@ Shader "HotPatata/Toon"
                     color += _SpecColor.rgb * mainLight.color * blob * lit;
                 }
 
-                // --- additional lights (point/spot), banded too
+                // --- additional lights (point/spot)
                 #if defined(_ADDITIONAL_LIGHTS)
                     InputData inputData = (InputData)0;
                     inputData.positionWS = input.positionWS;
@@ -210,18 +258,21 @@ Shader "HotPatata/Toon"
                     [loop] for (uint lightIndex = 0; lightIndex < min(URP_FP_DIRECTIONAL_LIGHTS_COUNT, MAX_VISIBLE_LIGHTS); lightIndex++)
                     {
                         Light l = GetAdditionalLight(lightIndex, input.positionWS, half4(1, 1, 1, 1));
-                        color += albedo * l.color * Band(dot(normalWS, l.direction)) * l.distanceAttenuation * l.shadowAttenuation;
+                        half a = l.distanceAttenuation * l.shadowAttenuation;
+                        color += l.color * a * (albedo * Diffuse(dot(normalWS, l.direction)) + Specular(normalWS, l.direction, viewWS, roughness));
                     }
                     #endif
                     LIGHT_LOOP_BEGIN(lightCount)
                         Light l = GetAdditionalLight(lightIndex, input.positionWS, half4(1, 1, 1, 1));
-                        color += albedo * l.color * Band(dot(normalWS, l.direction)) * l.distanceAttenuation * l.shadowAttenuation;
+                        half a = l.distanceAttenuation * l.shadowAttenuation;
+                        color += l.color * a * (albedo * Diffuse(dot(normalWS, l.direction)) + Specular(normalWS, l.direction, viewWS, roughness));
                     LIGHT_LOOP_END
                 #endif
 
-                // --- rim: a soft bright outline on the lit side, fainter in shadow
+                // --- rim: light-aware, strongest with the low sun behind the subject (a warm cinematic edge)
                 half fresnel = pow(saturate(1.0 - dot(normalWS, viewWS)), _RimPower);
-                color += _RimColor.rgb * fresnel * _RimStrength * lerp(0.35, 1.0, lit);
+                half backlight = saturate(dot(-viewWS, mainLight.direction) * 0.5 + 0.5);
+                color += _RimColor.rgb * mainLight.color * fresnel * _RimStrength * lerp(0.25, 1.4, backlight) * lerp(0.4, 1.0, shadow);
 
                 // --- fake bevel: a light edge on kit boxes so shapes read at a glance
                 if (_EdgeWidth > 0.0) color *= 1.0 + BevelMask(input.positionOS) * _EdgeStrength;

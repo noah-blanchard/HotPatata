@@ -31,12 +31,14 @@ namespace HotPatata.Editor
         const string MaterialDir = "Assets/Art/Materials/Characters";
         const string PlayerPrefabPath = "Assets/Prefabs/Player/Player.prefab";
         const string TuningPath = "Assets/ScriptableObjects/Tuning/GameTuning.asset";
-        const string ToonShader = "HotPatata/Toon";
+        const string ToonShader = "HotPatata/Stylized";
 
         /// <summary>Every character is fitted to this height (m): it fills the 1.8 m capsule, eyes near the 1.6 m camera.</summary>
         const float CharacterHeight = 1.75f;
         /// <summary>The potato's centre from the hand bone: along the fingers, then off the palm (m, fitted size).</summary>
         const float SocketAlongFingers = 0.08f, SocketOffPalm = 0.055f;
+        /// <summary>How glossy skin and cloth are under the low sun (scaled by each model's gloss map).</summary>
+        const float CharacterSmoothness = 0.45f;
 
         static readonly (string id, string model)[] Characters =
         {
@@ -376,8 +378,47 @@ namespace HotPatata.Editor
             mat.SetTexture("_BaseMap", diffuse);
             mat.SetColor("_BaseColor", Color.white);
             mat.SetFloat("_SuitTint", 0f);
+            mat.SetFloat("_Smoothness", CharacterSmoothness);
+            mat.SetFloat("_Stylize", 0f);
+            // The Mixamo maps next to the diffuse (Ch06_1001_Diffuse → _Normal / _Glossiness, Remy_Body_Diffuse → _Gloss).
+            var normal = Sibling(diffuse, "normal");
+            SetMap(mat, "_BumpMap", "_NORMALMAP", "_UseNormalMap", normal);
+            if (normal != null) MakeNormalMap(normal);
+            SetMap(mat, "_GlossMap", "_GLOSSMAP", "_UseGlossMap", Sibling(diffuse, "glossiness") ?? Sibling(diffuse, "gloss") ?? Sibling(diffuse, "specular"));
             EditorUtility.SetDirty(mat);
             return mat;
+        }
+
+        /// <summary>The texture next to <paramref name="diffuse"/> whose name has <paramref name="kind"/> instead of "diffuse".</summary>
+        static Texture Sibling(Texture diffuse, string kind)
+        {
+            if (diffuse == null) return null;
+            string path = AssetDatabase.GetAssetPath(diffuse);
+            string file = Path.GetFileName(path);
+            int at = file.IndexOf("diffuse", StringComparison.OrdinalIgnoreCase);
+            if (at < 0) return null;
+            string folder = Path.GetDirectoryName(path).Replace(Path.DirectorySeparatorChar, '/');
+            string stem = file.Substring(0, at);
+            return AssetDatabase.FindAssets("t:Texture2D", new[] { folder })
+                .Select(AssetDatabase.GUIDToAssetPath)
+                .Where(p => Path.GetFileNameWithoutExtension(p).Equals(stem + kind, StringComparison.OrdinalIgnoreCase))
+                .Select(AssetDatabase.LoadAssetAtPath<Texture>)
+                .FirstOrDefault();
+        }
+
+        static void SetMap(Material mat, string property, string keyword, string toggle, Texture texture)
+        {
+            mat.SetTexture(property, texture);
+            mat.SetFloat(toggle, texture != null ? 1f : 0f);
+            if (texture != null) mat.EnableKeyword(keyword);
+            else mat.DisableKeyword(keyword);
+        }
+
+        static void MakeNormalMap(Texture texture)
+        {
+            if (!(AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(texture)) is TextureImporter importer) || importer.textureType == TextureImporterType.NormalMap) return;
+            importer.textureType = TextureImporterType.NormalMap;
+            importer.SaveAndReimport();
         }
 
         // ------------------------------------------------------------------ the Player prefab
