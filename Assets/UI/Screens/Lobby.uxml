@@ -1,0 +1,19 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:hp="HotPatata" editor-extension-mode="False">
+    <ui:VisualElement class="hp-overlay hp-overlay--menu">
+        <ui:VisualElement class="hp-panel hp-panel--menu">
+            <ui:Label text="Lobby" class="hp-title" />
+            <ui:Label text="Game code" class="hp-hint" />
+            <ui:Label name="code" text="ABC123" class="hp-code" />
+            <ui:Button name="copy-code" text="Copy code" class="hp-button hp-button--secondary" />
+            <ui:Label name="players-title" text="Players (1/4)" class="hp-section" />
+            <ui:VisualElement name="player-list" class="hp-group" />
+            <ui:VisualElement name="host-controls">
+                <hp:ChoiceRow name="level" label="Level" />
+                <hp:ChoiceRow name="spawn" label="Spawn at" />
+                <ui:Button name="start" text="Start" class="hp-button" />
+            </ui:VisualElement>
+            <ui:Label name="waiting" text="Waiting for the host to start..." class="hp-hint" />
+            <ui:Button name="leave" text="Leave" class="hp-button hp-button--secondary" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

@@ -12,8 +12,9 @@ namespace HotPatata.Tests
     /// #14: the UI Toolkit foundation. One persistent themed panel with an EventSystem for keyboard/gamepad navigation;
     /// screens stack with only the top one shown; focus goes to a screen's first element and comes back on close; Back
     /// (the Cancel navigation event) closes the top screen unless it refuses; Submit presses the focused button; an open
-    /// screen frees the cursor and closing it gives the lock back to gameplay. Navigation is sent as UI Toolkit events,
-    /// never through simulated devices.
+    /// screen frees the cursor and closing it gives the lock back to gameplay. #76: every screen layout is in the
+    /// catalog, a missing UXML element fails at once with the screen and the element named, and up / down follow the
+    /// layout's order. Navigation is sent as UI Toolkit events, never through simulated devices.
     /// </summary>
     public class ScreenStackTests
     {
@@ -38,6 +39,42 @@ namespace HotPatata.Tests
                 Second.AddToClassList("hp-button");
                 root.Add(First);
                 root.Add(Second);
+                return root;
+            }
+        }
+
+        /// <summary>A screen whose layout lacks the element its code requires (a renamed or deleted UXML element).</summary>
+        class BrokenScreen : UIScreen
+        {
+            readonly VisualTreeAsset template;
+
+            public BrokenScreen(VisualTreeAsset template) => this.template = template;
+
+            protected override VisualElement Build()
+            {
+                var root = FromTemplate(template);
+                Require<Button>("missing-button");
+                return root;
+            }
+        }
+
+        /// <summary>Three buttons top to bottom, made navigable out of order: the walk must follow the tree.</summary>
+        class OrderScreen : UIScreen
+        {
+            public Button A, B, C;
+
+            protected override VisualElement Build()
+            {
+                var root = new VisualElement();
+                A = new Button { text = "A" };
+                B = new Button { text = "B" };
+                C = new Button { text = "C" };
+                root.Add(A);
+                root.Add(B);
+                root.Add(C);
+                Navigable(B);
+                Navigable(A);
+                Navigable(C);
                 return root;
             }
         }
@@ -154,6 +191,56 @@ namespace HotPatata.Tests
             using (var e = NavigationSubmitEvent.GetPooled()) Send(e, s.First);
             yield return Frames();
             Assert.AreEqual(1, s.Presses, "Enter / A presses the focused button");
+        }
+
+        [Test]
+        public void Catalog_LoadsFromResources_WithEveryScreenLayout()
+        {
+            var catalog = stack.Catalog;
+            Assert.IsNotNull(catalog, "Resources/" + ScreenStack.CatalogResource);
+            foreach (var field in typeof(UIScreenCatalog).GetFields())
+                if (field.FieldType == typeof(VisualTreeAsset))
+                    Assert.IsNotNull(field.GetValue(catalog), $"{field.Name}: a UXML in Assets/UI/Screens");
+        }
+
+        [Test]
+        public void AMissingElement_FailsAtOnce_NamingTheScreenAndTheElement()
+        {
+            var template = ScriptableObject.CreateInstance<VisualTreeAsset>();
+            template.name = "Broken";
+            var error = Assert.Throws<System.InvalidOperationException>(() => stack.Push(new BrokenScreen(template)));
+            StringAssert.Contains(nameof(BrokenScreen), error.Message);
+            StringAssert.Contains("Broken.uxml", error.Message);
+            StringAssert.Contains("missing-button", error.Message);
+            Assert.AreEqual(0, stack.Count, "the broken screen is not shown");
+            Object.Destroy(template);
+        }
+
+        [UnityTest]
+        public IEnumerator UpDown_FollowsTheLayoutOrder_NotTheOrderTheCodeListedThem()
+        {
+            var s = new OrderScreen();
+            stack.Push(s);
+            yield return Frames();
+            s.A.Focus();
+            using (var e = NavigationMoveEvent.GetPooled(NavigationMoveEvent.Direction.Down)) Send(e, s.A);
+            yield return Frames();
+            Assert.AreSame(s.B, Focused, "down from the top button goes to the one under it");
+            using (var e = NavigationMoveEvent.GetPooled(NavigationMoveEvent.Direction.Down)) Send(e, s.B);
+            yield return Frames();
+            Assert.AreSame(s.C, Focused);
+        }
+
+        [UnityTest]
+        public IEnumerator AScreen_BuildsFromItsLayout_WithTheCallersTexts()
+        {
+            var confirm = new ConfirmScreen("Leave?", "Really.", "Go", null);
+            stack.Push(confirm);
+            yield return Frames();
+            Assert.AreEqual("Leave?", confirm.Root.Q<Label>("title").text);
+            Assert.AreEqual("Go", confirm.Confirm.text);
+            Assert.AreSame(confirm.Cancel, Focused, "the safe answer has the focus");
+            Assert.IsTrue(confirm.Root.ClassListContains("hp-screen"));
         }
 
         [UnityTest]

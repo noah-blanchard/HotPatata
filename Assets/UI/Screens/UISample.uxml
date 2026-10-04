@@ -1,0 +1,14 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <ui:VisualElement class="hp-overlay">
+        <ui:VisualElement class="hp-panel">
+            <ui:Label name="title" text="UI sample" class="hp-title" />
+            <ui:Label text="Mouse, arrows / WASD or stick / d-pad to move, Enter or A to press, Esc or B to go back." class="hp-hint" />
+            <ui:Button name="press" text="Press me" class="hp-button" />
+            <ui:Label name="counter" text="Pressed 0" class="hp-hint" />
+            <ui:Toggle label="A toggle" class="hp-toggle" />
+            <ui:Slider label="A slider" low-value="0" high-value="1" value="0.5" class="hp-slider" />
+            <ui:Button name="another" text="Open another" class="hp-button" />
+            <ui:Button name="close" text="Close" class="hp-button hp-button--secondary" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

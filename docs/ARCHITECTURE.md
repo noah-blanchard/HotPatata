@@ -421,8 +421,8 @@ Assets/
 │   ├── Kit/              KitSkin, KitPalette (KayKit visuals, §25.1)
 │   ├── Zones/            Zone, IBombZoneEffect, BombZoneSweep, FuseZone, BombBarrier, BombGate, PressurePlate,
 │   │                     ISignalSource, SignalActuator, SignalIndicator, BombTransit, TransitMouth, TransitPresentation
-│   ├── UI/               ScreenStack, UIScreen, CursorPolicy (UI Toolkit base, §6.2), MenuView, PauseMenu, SettingsScreen,
-│   │                     SettingRows, ConfirmScreen, AimReticle, RunResultsUI
+│   ├── UI/               ScreenStack, UIScreen, UIScreenCatalog, CursorPolicy (UI Toolkit base, §6.2), MenuView,
+│   │                     PauseMenu, SettingsScreen, SettingRows, ConfirmScreen, AimReticle, RunResultsUI
 │   ├── Debug/            DebugHud, LocalPlayerSwitcher, PlayerBot
 │   └── DebugTools/       Editor/dev-build only: LatencySimulator, ThrowDebugOverlay, ThrowTelemetry, PassPartner,
 │                         UISampleScreen
@@ -430,8 +430,9 @@ Assets/
 ├── Tests/
 │   ├── EditMode/
 │   └── PlayMode/
-└── UI/                   UI Toolkit (§6.2): Screens/ (UXML), Styles/ (HotPatata.uss, HotPatataTheme.tss), Fonts/,
-                          Resources/HotPatataPanel.asset (PanelSettings)
+└── UI/                   UI Toolkit (§6.2): Screens/ (one UXML per screen), Styles/ (HotPatata.uss, HotPatataTheme.tss),
+                          Fonts/, Resources/HotPatataPanel.asset (PanelSettings), Resources/HotPatataScreens.asset
+                          (UIScreenCatalog)
 ```
 
 Keep folder naming boring and predictable.
@@ -509,9 +510,39 @@ for dev tools only; the menu and the lobby moved onto this base (#15), the resul
   `Pop` / `Clear` / `Back`. Only the top screen shows. Focus goes to the screen's first element (or the one with
   `hp-first-focus`) and returns to where it was when the screen above closes. Back is the UI Cancel action (Esc,
   gamepad B) and goes to the top screen's `OnBack` (a root menu sets `CanGoBack` to false).
-- **`UIScreen`**: one screen, its tree built in code or from a UXML template in `Assets/UI/Screens`
-  (`FromTemplate`); `ReleasesCursor` (menus: yes), `CanGoBack`, `BlocksGameplay` (menus: yes), `OnShow` / `OnHide` /
-  `OnBack`, `FirstFocus`, `Navigable` (the up/down order).
+- **`UIScreen`**: one screen, its layout a UXML file in `Assets/UI/Screens` (`FromTemplate(Templates.x)`, then
+  `Require<T>(name)`); `ReleasesCursor` (menus: yes), `CanGoBack`, `BlocksGameplay` (menus: yes), `OnShow` / `OnHide` /
+  `OnBack`, `FirstFocus`, `Navigable` (the elements up / down walk, in tree order).
+- **UXML convention (#76).** Every screen's layout can be opened and edited in UI Builder; the code never builds it.
+  - **Files.** One `.uxml` per screen in `Assets/UI/Screens` (`MainMenu`, `Working`, `Lobby`, `Pause`, `Confirm`,
+    `Settings`, `UISample`). It is styled only through the shared `hp-*` classes, with no inline styles, no
+    per-screen colours and no `<Style>` tags (the theme comes from the PanelSettings).
+  - **Loading.** `UIScreenCatalog` (`Assets/UI/Resources/HotPatataScreens.asset`, next to the PanelSettings) holds
+    one `VisualTreeAsset` per screen. `ScreenStack.Catalog` loads it, and a screen reads its own layout through
+    `Templates`. A new screen adds a field there and assigns its UXML. There is no path lookup.
+  - **Naming.** Every element the code needs has a kebab-case `name` (`host-online`, `code-field`, `player-list`).
+    `Build()` finds each one once with `Require<T>(name)` and then wires behaviour.
+    - A renamed or deleted element throws at once, naming the screen, the file and the element (`[UI]
+      MainMenuScreen (MainMenu.uxml): no Button named "host-online"`), and the stack is left as it was.
+    - AGENTS' "No Find-by-name lookups" rule is about scene GameObjects. Querying a screen's own UXML elements by
+      name is the normal UI Toolkit way and is what this convention requires.
+  - **UXML / code split.** Layout and static text go in UXML. Code owns:
+    - behaviour: the clicks, the host-only controls shown or hidden, `hp-first-focus`;
+    - dynamic content: the lobby list, the code, the error text, values, ranges and choices, and texts that depend
+      on state (online or offline pause, the question asked);
+    - which elements are `Navigable`.
+
+    The up / down walk follows the elements' tree order, so moving an element in UI Builder also moves it in the
+    gamepad order without touching C#.
+  - **Reusable pieces.** The setting rows are `[UxmlElement]` custom controls (`<hp:SliderRow name="field-of-view"
+    label="Field of view"/>` with `xmlns:hp="HotPatata"`). They appear in the UI Builder Library under Project >
+    HotPatata. The layout gives the label; the code gives the range, step, format and value (`SliderRow.Setup`), the
+    choices (`ChoiceRow.SetOptions`) or the state (`ToggleRow.SetValueWithoutNotify`). The panel and title are plain
+    classed elements (`hp-panel`, `hp-title`). A future multi-element piece can be a `<ui:Template>` /
+    `<ui:Instance>`.
+  - **UI Builder setup.** In the Viewport, set the canvas theme to `HotPatataTheme` (Assets/UI/Styles) and the canvas
+    size to 1920x1080, the PanelSettings reference resolution. What you see then matches the game. Both are
+    per-user Builder settings and are not saved in the UXML.
 - **Navigation.** UI Toolkit reads keyboard and gamepad through an `EventSystem` with the Input System
   `InputSystemUIInputModule` and its default UI actions (arrows / WASD / stick / d-pad, Enter / A, Esc / B). The stack
   creates one under `UIRoot` if the scene has none. The mouse works directly.
@@ -567,10 +598,11 @@ for dev tools only; the menu and the lobby moved onto this base (#15), the resul
   when the screen closes (`Settings.Save`, in `OnHide`). **Reset to defaults** goes back to the `GameTuning` values
   (keeping the key bindings). The `GameTuning` asset is only read. Window mode and resolution apply in a build only
   (the Game view owns them in the Editor; the screen says so). Key bindings get their own page with #18.
-- **Setting rows** (`SettingRows.cs`): `SliderRow`, `ToggleRow`, `ChoiceRow` are one focusable line each (`hp-row`)
-  with a label; the inner field only takes the mouse. Up / down walk the rows (`UIScreen.Navigable`: an explicit
-  order, skipping disabled rows, so the d-pad never gets lost), left / right change the focused row, Enter / A
-  toggles or steps forward. A focused row scrolls into view.
+- **Setting rows** (`SettingRows.cs`, UXML custom controls): `SliderRow`, `ToggleRow`, `ChoiceRow` are one focusable
+  line each (`hp-row`) with a label; the inner field only takes the mouse. Up / down walk the rows
+  (`UIScreen.Navigable`: the layout's order, skipping disabled or hidden rows, so the d-pad never gets lost), left /
+  right change the focused row, Enter / A toggles or steps forward. A focused row scrolls into view. The rows' labels
+  and order live in `Settings.uxml`.
 
 ---
 

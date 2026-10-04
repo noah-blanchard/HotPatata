@@ -5,7 +5,7 @@ using UnityEngine.UIElements;
 namespace HotPatata
 {
     /// <summary>
-    /// The pause menu (#16, ARCHITECTURE §6.2): Resume, Settings, Leave to menu. Opened and closed by the Pause action
+    /// The pause menu (#16, ARCHITECTURE §6.2; layout Assets/UI/Screens/Pause.uxml): Resume, Settings, Leave to menu. Opened and closed by the Pause action
     /// (Esc, gamepad Start; <see cref="PlayerPause"/>), closed by Back too. While it is open the local player's gameplay
     /// input reads neutral (<see cref="PlayerInputReader.Blocked"/>) and the cursor is free. Offline the game freezes
     /// (<c>Time.timeScale</c> 0, settings screen included); online nothing pauses for anyone, so a carrier who opens it
@@ -23,33 +23,21 @@ namespace HotPatata
 
         protected override VisualElement Build()
         {
-            var root = new VisualElement();
-            root.AddToClassList("hp-overlay");
-            var panel = new VisualElement();
-            panel.AddToClassList("hp-panel");
-            root.Add(panel);
-            var title = new Label(NetMode.IsNetworked ? "Menu" : "Paused");
-            title.AddToClassList("hp-title");
-            panel.Add(title);
-            var hint = new Label(NetMode.IsNetworked
+            var root = FromTemplate(Templates.pause);
+            Require<Label>("title").text = NetMode.IsNetworked ? "Menu" : "Paused";
+            Require<Label>("hint").text = NetMode.IsNetworked
                 ? "The game keeps running for everyone. If you hold the bomb, its fuse still burns."
-                : "The game is paused.");
-            hint.AddToClassList("hp-hint");
-            panel.Add(hint);
+                : "The game is paused.";
 
-            Resume = Navigable(new Button(() => Stack.Pop()) { text = "Resume" });
-            Resume.AddToClassList("hp-button");
+            Resume = Navigable(Require<Button>("resume"));
+            Resume.clicked += () => Stack.Pop();
             Resume.AddToClassList(FirstFocusClass);
-            panel.Add(Resume);
-            SettingsButton = Navigable(new Button(() => Stack.Push(new SettingsScreen(tuning))) { text = "Settings" });
-            SettingsButton.AddToClassList("hp-button");
-            panel.Add(SettingsButton);
-            LeaveButton = Navigable(new Button(() => Stack.Push(new ConfirmScreen("Leave the run?",
+            SettingsButton = Navigable(Require<Button>("settings"));
+            SettingsButton.clicked += () => Stack.Push(new SettingsScreen(tuning));
+            LeaveButton = Navigable(Require<Button>("leave"));
+            LeaveButton.clicked += () => Stack.Push(new ConfirmScreen("Leave the run?",
                 NetMode.IsNetworked ? "You leave the game; the others carry on without you." : "Your progress in this run is lost.",
-                "Leave to menu", PauseMenu.LeaveToMenu))) { text = "Leave to menu" });
-            LeaveButton.AddToClassList("hp-button");
-            LeaveButton.AddToClassList("hp-button--secondary");
-            panel.Add(LeaveButton);
+                "Leave to menu", PauseMenu.LeaveToMenu));
             return root;
         }
     }

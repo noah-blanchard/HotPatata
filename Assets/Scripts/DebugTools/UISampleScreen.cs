@@ -7,7 +7,8 @@ namespace HotPatata
     /// <summary>
     /// Development only (#14): a sample UI Toolkit screen to check the shared theme, the <see cref="ScreenStack"/> and
     /// navigation by mouse, keyboard and gamepad. F6 or gamepad Select opens it in any scene; Back (Esc / B) or Close
-    /// shuts it; "Open another" stacks a second one to check that focus comes back.
+    /// shuts it; "Open another" stacks a second one to check that focus comes back. Layout:
+    /// Assets/UI/Screens/UISample.uxml (open it in UI Builder to check the theme there).
     /// </summary>
     public class UISampleScreen : UIScreen
     {
@@ -20,41 +21,16 @@ namespace HotPatata
 
         protected override VisualElement Build()
         {
-            var root = new VisualElement();
-            root.AddToClassList("hp-overlay");
-            var panel = new VisualElement();
-            panel.AddToClassList("hp-panel");
-            root.Add(panel);
+            var root = FromTemplate(Templates.uiSample);
+            if (depth > 1) Require<Label>("title").text = $"UI sample ({depth})";
 
-            var title = new Label(depth == 1 ? "UI sample" : $"UI sample ({depth})");
-            title.AddToClassList("hp-title");
-            panel.Add(title);
-            var hint = new Label("Mouse, arrows / WASD or stick / d-pad to move, Enter or A to press, Esc or B to go back.");
-            hint.AddToClassList("hp-hint");
-            panel.Add(hint);
-
-            var press = new Button(() => Counter.text = $"Pressed {++presses}") { text = "Press me" };
-            press.AddToClassList("hp-button");
+            var press = Require<Button>("press");
+            press.clicked += () => Counter.text = $"Pressed {++presses}";
             press.AddToClassList(FirstFocusClass);
-            panel.Add(press);
-            Counter = new Label("Pressed 0");
-            Counter.AddToClassList("hp-hint");
-            panel.Add(Counter);
-
-            var toggle = new Toggle("A toggle");
-            toggle.AddToClassList("hp-toggle");
-            panel.Add(toggle);
-            var slider = new Slider("A slider", 0f, 1f) { value = 0.5f };
-            slider.AddToClassList("hp-slider");
-            panel.Add(slider);
-
-            var another = new Button(() => Stack.Push(new UISampleScreen(depth + 1))) { text = "Open another" };
-            another.AddToClassList("hp-button");
-            panel.Add(another);
-            var close = new Button(() => Stack.Pop()) { text = "Close" };
-            close.AddToClassList("hp-button");
-            close.AddToClassList("hp-button--secondary");
-            panel.Add(close);
+            Counter = Require<Label>("counter");
+            Counter.text = "Pressed 0";
+            Require<Button>("another").clicked += () => Stack.Push(new UISampleScreen(depth + 1));
+            Require<Button>("close").clicked += () => Stack.Pop();
             return root;
         }
     }
