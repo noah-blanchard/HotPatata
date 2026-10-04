@@ -317,12 +317,15 @@ namespace HotPatata.Tests
         public IEnumerator OwnBodyIsHiddenFromOwnCamera_OtherPlayersStayVisible()
         {
             yield return null;
+            static bool IsRing(Player p, Renderer r) => r.transform.IsChildOf(p.Presentation.SlotRing.transform);   // its own rule, below
             foreach (var r in p1.GetComponentsInChildren<Renderer>())
-                if (r.GetComponentInParent<BombController>() == null && !(r is ParticleSystemRenderer))   // your own dust stays visible (M9.3)
+                if (r.GetComponentInParent<BombController>() == null && !(r is ParticleSystemRenderer) && !IsRing(p1, r))   // your own dust stays visible (M9.3)
                     Assert.AreEqual(UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly, r.shadowCastingMode, r.name + " of the local player");
             foreach (var r in p2.GetComponentsInChildren<Renderer>())
-                if (!(r is ParticleSystemRenderer))   // dust puffs never cast shadows
+                if (!(r is ParticleSystemRenderer) && !IsRing(p2, r))   // dust puffs never cast shadows
                     Assert.AreEqual(UnityEngine.Rendering.ShadowCastingMode.On, r.shadowCastingMode, r.name + " of the remote player");
+            Assert.IsFalse(p1.Presentation.SlotRing.enabled, "your own slot ring would sit under your camera");
+            Assert.IsTrue(p2.Presentation.SlotRing.enabled, "the other player's slot ring shows");
             Assert.AreEqual(UnityEngine.Rendering.ShadowCastingMode.On, bomb.GetComponentInChildren<Renderer>().shadowCastingMode, "the held bomb must stay visible");
         }
 

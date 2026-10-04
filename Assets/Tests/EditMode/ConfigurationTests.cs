@@ -55,6 +55,52 @@ namespace HotPatata.Tests
         }
 
         [Test]
+        public void TuningAsset_EverySlotHasAHumanoidCharacter_WithAHandSocket()
+        {
+            var t = Tuning;
+            Assert.AreEqual(Player.MaxSlots, t.playerCharacters.Length, "one character per player slot (PlayerCharacterBuilder)");
+            var controller = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>("Assets/Art/Models/Characters/Controllers/PlayerCharacter.controller");
+            Assert.IsNotNull(controller, "the players' controller");
+            foreach (var c in t.playerCharacters)
+            {
+                Assert.IsNotNull(c, "a character prefab per slot");
+                Assert.IsNotNull(c.Animator, c.name + ": an Animator");
+                Assert.IsTrue(c.Animator.avatar != null && c.Animator.avatar.isHuman, c.name + ": Humanoid, so the shared clips play on it");
+                Assert.AreSame(controller, c.Animator.runtimeAnimatorController, c.name + ": the shared controller");
+                Assert.IsFalse(c.Animator.applyRootMotion, c.name + ": the motor moves the player, never the clips");
+                Assert.IsNotNull(c.HandSocket, c.name + ": the potato's socket");
+                Assert.AreSame(c.Animator.GetBoneTransform(HumanBodyBones.RightHand), c.HandSocket.parent, c.name + ": the socket is in the right hand");
+                Assert.IsNotEmpty(c.Renderers, c.name + ": renderers to hide in first person");
+            }
+        }
+
+        [Test]
+        public void ThrowHold_IsWhereTheHandIsBack()
+        {
+            var (back, _) = HotPatata.Editor.PlayerCharacterBuilder.MeasureThrow();
+            Assert.That(Tuning.throwAnimationHoldNormalized, Is.EqualTo(back).Within(0.04f),
+                        "a held throw waits with the hand back (measured on the Throw clip)");
+        }
+
+        [Test]
+        public void FlatShapes_LieFlat_FacingUp_OnePerShape()
+        {
+            var shapes = (PlayerShape[])System.Enum.GetValues(typeof(PlayerShape));
+            Assert.AreEqual(shapes.Length, shapes.Select(PlayerShapeMesh.Flat).Distinct().Count(), "one flat glyph per shape");
+            foreach (var shape in shapes)
+            {
+                var mesh = PlayerShapeMesh.Flat(shape);
+                Assert.AreEqual(0f, mesh.bounds.size.y, 1e-5f, shape + " lies flat");
+                Assert.LessOrEqual(Mathf.Max(mesh.bounds.extents.x, mesh.bounds.extents.z), 0.5f + 1e-4f, shape + " fits the unit square");
+                var v = mesh.vertices;
+                var tris = mesh.triangles;
+                for (int i = 0; i < tris.Length; i += 3)
+                    Assert.Greater(Vector3.Cross(v[tris[i + 1]] - v[tris[i]], v[tris[i + 2]] - v[tris[i]]).y, 0f, shape + " faces up");
+            }
+            Assert.AreEqual(3, PlayerShapeMesh.Flat(PlayerShape.Triangle).vertexCount - 1, "a triangle has three corners (a pyramid from above would be a square)");
+        }
+
+        [Test]
         public void PlayerShapeMeshes_AreDistinctSolids_FacingOutward()
         {
             var shapes = (PlayerShape[])System.Enum.GetValues(typeof(PlayerShape));
