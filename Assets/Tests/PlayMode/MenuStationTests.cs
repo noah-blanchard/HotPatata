@@ -176,6 +176,23 @@ namespace HotPatata.Tests
         }
 
         [UnityTest]
+        public IEnumerator TheStationsFraming_FollowsTheCameraEffects_AndOnlyTheShownStationHasIt()
+        {
+            SetViewEffects(1f);
+            view.Flow.Choose(MenuAction.Start);
+            yield return Frames();
+            foreach (var s in MenuStation.All)
+            {
+                Assert.IsNotNull(s.Focus, s.Id + ": a framing volume");
+                Assert.AreEqual(s.Id == MenuStationId.Play ? 1f : 0f, s.Focus.weight, 1e-4f, s.Id + ": only the shown station frames the view");
+            }
+
+            SetViewEffects(0f);
+            yield return Frames();
+            Assert.AreEqual(0f, Station(MenuStationId.Play).Focus.weight, 1e-4f, "camera effects at 0: no vignette (spec §19)");
+        }
+
+        [UnityTest]
         public IEnumerator TheLevelBoard_SaysWhatItWillDo()
         {
             view.Flow.Choose(MenuAction.Start);
