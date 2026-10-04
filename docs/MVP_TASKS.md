@@ -7,7 +7,7 @@
 
 ---
 
-# Status (last updated 2026-09-27)
+# Status (last updated 2026-10-04)
 
 A ticked box is verified by the automated tests (see [`TESTING.md`](TESTING.md)), by recorded bot/latency runs, or
 by the owner's own play. An unticked box in a finished milestone is a **human gate**: it needs a group or external
@@ -26,6 +26,7 @@ playtest and cannot be closed by code.
 | M8 Post-validation polish | gated on M7.4; some pulled forward through M9 | |
 | M9 Movement and look pass | done (pulled forward by the owner) | |
 | M10 Bomb obstacles (#68) | done (pulled forward by the owner, M7.4 gate lifted for it) | group playtest of `PlaytestCourse` |
+| M11 Second course (#83) | spec amended (PROJECT_SPEC §15b, §17.2) | M11.1–M11.6 |
 
 **Next up:** the group playtest of `PlaytestCourse` (M10.4), then M6 and M7 (M7.4 external playtest gates any other
 new mechanic). M3.7 is the oldest open gate.
@@ -1217,6 +1218,72 @@ Acceptance criteria:
 - first in the Bootstrap level list; `PrototypeCourse` is kept;
 - `PlaytestCourseTests` pass (structure, checkpoints, completion, rematch);
 - [ ] group playtest of the whole course (human gate).
+
+---
+
+# Milestone 11 — Second course: PatataWorks (#83)
+
+An enclosed factory course that climbs, turns and drops (PROJECT_SPEC §15b). No new mechanic: only the existing kit
+and the M10 elements. The spec amendment (§15b, §17.2) comes first. Architecture: ARCHITECTURE §4, §25.
+
+## M11.1 — Spec amendment
+
+Acceptance criteria:
+
+- PROJECT_SPEC §17.2 allows the second course; §15b holds its blueprint (sections, questions, intended difficulty);
+  §20 its length and the ceiling clearance margin. Nothing renumbered.
+
+## M11.2 — Interior kit
+
+Acceptance criteria:
+
+- new `KitRole`s for floors, walls, ceilings, window and door frames, stairs and ramps, pillars, trusses and
+  railings, drawn by `KitSkin` from the KayKit Platformer pack (ARCHITECTURE §25.1);
+- stairs and ramps stay within the motor's step offset and slope limit;
+- walls and ceilings are on `Environment`; the first-person camera never sees through a wall.
+
+## M11.3 — `PatataWorks` scene and builder
+
+Acceptance criteria:
+
+- `Assets/Scenes/PatataWorks.unity`, generated entirely by `PatataWorksBuilder` (menu **HotPatata/Course/Build
+  PatataWorks**), part of **Rebuild All Courses**; rebuilding twice gives the same scene;
+- first in the Bootstrap level list, its checkpoints counted for the spawn choice;
+- the route: at least 6 direction changes (left and right), a bounding box over 60 m in X and Z, at least 30 m of
+  total climb and one descent of at least 20 m, start and finish at different heights;
+- a closed building: walls and a ceiling over every section except the roof; nothing floats in an open sky outside
+  the shaft, the atrium void and the roof;
+- 9 checkpoints; every section asks a §13 question named in the blueprint; at least three puzzles chain two
+  elements through the geometry;
+- every moving part runs on `SectionClock`, every stateful part is `IResettable`.
+
+## M11.4 — Enclosed-course rules
+
+Acceptance criteria:
+
+- the builder declares each intended pass as a corridor volume; decoration never intersects one;
+- the ceiling over every pass corridor clears the intended arc plus the §20 margin (computed from the throw tuning);
+- openings that passes go through are larger than the catch radius with a margin; pits have kill zones.
+
+## M11.5 — Interior light
+
+Acceptance criteria:
+
+- `LookBuilder` lights `PatataWorks`: golden hour through windows, skylights and the roof, warm practical lights,
+  interiors darker than the open sky (real time, no bake);
+- the potato, hazard stripes, rings and tube colours and symbols read in every room; flashes honour `flashReduction`.
+
+## M11.6 — Tests and playtests
+
+Acceptance criteria:
+
+- `PatataWorksTests` pass: the scene builds and loads, 9 checkpoints in order and a reachable finish, ceiling
+  clearance, clean pass corridors, one actuator per source, every transit mouth has an exit and a pad, every
+  section resets cleanly, the level is in the Bootstrap list;
+- the existing course, bomb-obstacle and pass-feel suites still pass;
+- [ ] a 2-player playtest solves every puzzle; a first clear takes 10–14 min (human gate);
+- [ ] host + 3 clients (MPPM) finish the course, doors, lifts, tubes and resets in sync (human gate);
+- [ ] 60 fps at 1080p on the target PC with 4 players (human gate).
 
 ---
 
