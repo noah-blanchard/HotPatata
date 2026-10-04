@@ -3,6 +3,7 @@
     "rootNamespace": "HotPatata.Editor",
     "references": [
         "HotPatata",
+        "Unity.Cinemachine",
         "Unity.Netcode.Runtime"
     ],
     "includePlatforms": [

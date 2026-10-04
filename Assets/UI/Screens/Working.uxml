@@ -1,8 +1,0 @@
-<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
-    <ui:VisualElement class="hp-overlay hp-overlay--soft">
-        <ui:VisualElement class="hp-panel hp-panel--working">
-            <ui:VisualElement name="spinner" class="hp-potato" />
-            <ui:Label name="status" text="Connecting..." class="hp-status" />
-        </ui:VisualElement>
-    </ui:VisualElement>
-</ui:UXML>

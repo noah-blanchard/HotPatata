@@ -1,0 +1,15 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <ui:VisualElement class="hp-board hp-board--title">
+        <ui:VisualElement class="hp-logo hp-logo--sign">
+            <ui:Label text="HOT" class="hp-logo__word hp-logo__word--hot" />
+            <ui:Label text="PATATA" class="hp-logo__word hp-logo__word--patata" />
+        </ui:VisualElement>
+        <ui:Button name="play" class="hp-button hp-button--big hp-button--prompt">
+            <ui:VisualElement class="hp-icon hp-icon--play" />
+            <ui:VisualElement class="hp-button__text">
+                <ui:Label text="PLAY" class="hp-button__label" />
+                <ui:Label text="press A, Enter or click" class="hp-button__sub" />
+            </ui:VisualElement>
+        </ui:Button>
+    </ui:VisualElement>
+</ui:UXML>

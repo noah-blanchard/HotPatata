@@ -10,12 +10,14 @@ namespace HotPatata
     /// explosion (<see cref="ExplosionFx"/>, its flash always reduced, more if the player asked), the unlucky holder
     /// flinches, the others cheer, and a new potato pops in. Presentation only: no physics, no rules, nothing networked.
     /// It is a loop of looks, built by <c>MenuBackdropBuilder</c>, on unscaled time (the menu is offline and local).
+    /// In the lobby the show pauses (<see cref="SetPaused"/>) and <see cref="MenuLobbyStage"/> moves the mannequins.
     /// </summary>
     public class MenuHotPotato : MonoBehaviour
     {
         static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
 
-        const string Idle = "Idle_A", IdleLook = "Idle_B", Throw = "Throw", Cheer = "Cheering", Wave = "Waving", Flinch = "Hit_A", Hop = "Jump_Full_Short";
+        const string Idle = "Idle_A", IdleLook = "Idle_B", Throw = "Throw", Cheer = "Cheering", Flinch = "Hit_A";
+        public const string Wave = "Waving", Hop = "Jump_Full_Short";
         const float Blend = 0.15f;
 
         [SerializeField] GameTuning tuning;
@@ -51,7 +53,12 @@ namespace HotPatata
         Transform aimAt;         // who the holder will throw to
         ExplosionFx explosion;
         float fuseStart, fuseEnd;
-        bool exploding;
+        bool exploding, paused, started;
+        Coroutine show;
+
+        /// <summary>The players' pivots (mannequin <c>i</c> wears slot <c>i</c>'s colour).</summary>
+        public Transform[] Players => players;
+        public bool Paused => paused;
 
         public void Configure(GameTuning gameTuning, Transform[] pivots, Transform potatoVisual, ParticleSystem wickSparks,
                               TrailRenderer flightTrail, ParticleSystem puffs, ExplosionFx boom)
@@ -95,7 +102,43 @@ namespace HotPatata
                 explosion.gameObject.SetActive(false);
             }
             SetFlying(false);
-            StartCoroutine(Show());
+            started = true;
+            if (!paused) show = StartCoroutine(Show());
+            else potato.gameObject.SetActive(false);
+        }
+
+        /// <summary>
+        /// Stops the show (the potato goes, everyone idles and stays where they are) so someone else can move the
+        /// players, or starts a new round. Resume once the players are back on their spots.
+        /// </summary>
+        public void SetPaused(bool on)
+        {
+            if (paused == on) return;
+            paused = on;
+            if (!started) return;
+            if (on)
+            {
+                if (show != null) StopCoroutine(show);
+                show = null;
+                SetFlying(false);
+                potato.gameObject.SetActive(false);
+                holderPivot = aimAt = null;
+                lookTarget = null;
+                for (int i = 0; i < players.Length; i++)
+                {
+                    squash[i] = 0f;
+                    players[i].localScale = Vector3.one;
+                    Animate(i, Idle);
+                }
+            }
+            else show = StartCoroutine(Show());
+        }
+
+        /// <summary>Plays a clip on mannequin <paramref name="i"/>; it goes back to idle when the clip ends.</summary>
+        public void Animate(int i, string clip)
+        {
+            if (animators == null || i < 0 || i >= animators.Length) return;
+            Play(i, clip);
         }
 
         IEnumerator Show()
@@ -203,6 +246,11 @@ namespace HotPatata
         void Update()
         {
             float now = Time.unscaledTime, dt = Time.unscaledDeltaTime;
+            if (paused)
+            {
+                ReturnToIdle(now);
+                return;
+            }
 
             // The potato rides in its holder's hands, wobbling harder as the fuse burns down.
             float burnt = fuseEnd > fuseStart ? Mathf.Clamp01((now - fuseStart) / (fuseEnd - fuseStart)) : 0f;
@@ -232,11 +280,17 @@ namespace HotPatata
                 squash[i] = Mathf.MoveTowards(squash[i], 0f, dt * 4f);
                 float s = 1f + Mathf.Sin(squash[i] * Mathf.PI) * 0.08f;
                 players[i].localScale = new Vector3(s, 2f - s, s);
-                if (busyUntil[i] > 0f && now >= busyUntil[i])
-                {
-                    busyUntil[i] = 0f;
-                    if (animators[i] != null) animators[i].CrossFadeInFixedTime(Idle, Blend);
-                }
+            }
+            ReturnToIdle(now);
+        }
+
+        void ReturnToIdle(float now)
+        {
+            for (int i = 0; i < players.Length; i++)
+            {
+                if (busyUntil[i] <= 0f || now < busyUntil[i]) continue;
+                busyUntil[i] = 0f;
+                if (animators[i] != null) animators[i].CrossFadeInFixedTime(Idle, Blend);
             }
         }
 
