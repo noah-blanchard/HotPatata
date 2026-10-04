@@ -1,0 +1,28 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:hp="HotPatata" editor-extension-mode="False">
+    <ui:VisualElement class="hp-board">
+        <ui:VisualElement class="hp-panel hp-panel--board">
+            <ui:Label text="PICK A LEVEL" class="hp-title" />
+            <ui:VisualElement name="actions" class="hp-v">
+                <ui:VisualElement class="hp-card">
+                    <hp:ChoiceRow name="level" label="Level" />
+                    <hp:ChoiceRow name="spawn" label="Spawn at" />
+                </ui:VisualElement>
+                <ui:Button name="confirm" class="hp-button hp-button--big">
+                    <ui:VisualElement class="hp-icon hp-icon--play" />
+                    <ui:VisualElement class="hp-button__text">
+                        <ui:Label name="confirm-label" text="HOST ONLINE" class="hp-button__label" />
+                        <ui:Label name="confirm-sub" text="get a game code" class="hp-button__sub" />
+                    </ui:VisualElement>
+                </ui:Button>
+                <ui:Button name="back" class="hp-button hp-button--neutral hp-button--small hp-self-start">
+                    <ui:VisualElement class="hp-icon hp-icon--back" />
+                    <ui:Label text="BACK" class="hp-button__label" />
+                </ui:Button>
+            </ui:VisualElement>
+            <ui:VisualElement name="working" class="hp-note">
+                <ui:VisualElement name="working-spinner" class="hp-potato hp-potato--small" />
+                <ui:Label name="status" text="Creating your game..." class="hp-note__text" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

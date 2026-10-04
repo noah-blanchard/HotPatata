@@ -1,31 +1,27 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:hp="HotPatata" editor-extension-mode="False">
-    <ui:VisualElement class="hp-overlay hp-overlay--menu">
-        <ui:VisualElement class="hp-menu-column">
-            <ui:VisualElement class="hp-logo">
-                <ui:Label text="HOT" class="hp-logo__word hp-logo__word--hot" />
-                <ui:Label text="PATATA" class="hp-logo__word hp-logo__word--patata" />
-            </ui:VisualElement>
-            <ui:VisualElement class="hp-panel hp-panel--menu">
+    <ui:VisualElement class="hp-board">
+        <ui:VisualElement class="hp-panel hp-panel--board">
+            <ui:Label text="LET'S PLAY" class="hp-title" />
+            <ui:VisualElement name="actions" class="hp-v">
                 <ui:VisualElement class="hp-row hp-row--field">
                     <ui:TextField name="name-field" label="Your name" class="hp-field hp-field--inline" />
-                </ui:VisualElement>
-                <ui:VisualElement class="hp-card">
-                    <hp:ChoiceRow name="level" label="Level" />
-                    <hp:ChoiceRow name="spawn" label="Spawn at" />
                 </ui:VisualElement>
                 <ui:Button name="host-online" class="hp-button hp-button--big">
                     <ui:VisualElement class="hp-icon hp-icon--globe" />
                     <ui:VisualElement class="hp-button__text">
                         <ui:Label text="HOST ONLINE" class="hp-button__label" />
-                        <ui:Label text="get a game code" class="hp-button__sub" />
+                        <ui:Label text="pick a level, get a game code" class="hp-button__sub" />
                     </ui:VisualElement>
                 </ui:Button>
-                <ui:VisualElement class="hp-h hp-h--end">
-                    <ui:TextField name="code-field" label="GAME CODE" class="hp-field hp-field--code hp-grow" />
-                    <ui:Button name="join-code" class="hp-button hp-button--secondary hp-button--join">
-                        <ui:VisualElement class="hp-icon hp-icon--join" />
-                        <ui:Label text="JOIN" class="hp-button__label" />
-                    </ui:Button>
+                <ui:VisualElement class="hp-card">
+                    <ui:Label text="GAME CODE" class="hp-label" />
+                    <ui:VisualElement class="hp-h">
+                        <hp:CodeDials name="code-dials" class="hp-grow" />
+                        <ui:Button name="join-code" class="hp-button hp-button--secondary hp-button--join">
+                            <ui:VisualElement class="hp-icon hp-icon--join" />
+                            <ui:Label text="JOIN" class="hp-button__label" />
+                        </ui:Button>
+                    </ui:VisualElement>
                 </ui:VisualElement>
                 <ui:Button name="play-local" class="hp-button hp-button--secondary">
                     <ui:VisualElement class="hp-icon hp-icon--local" />
@@ -52,8 +48,12 @@
                         </ui:Button>
                     </ui:VisualElement>
                 </ui:VisualElement>
-                <ui:Label name="error" class="hp-error" />
             </ui:VisualElement>
+            <ui:VisualElement name="working" class="hp-note">
+                <ui:VisualElement name="working-spinner" class="hp-potato hp-potato--small" />
+                <ui:Label name="status" text="Connecting..." class="hp-note__text" />
+            </ui:VisualElement>
+            <ui:Label name="error" class="hp-error" />
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

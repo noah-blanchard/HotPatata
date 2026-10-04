@@ -1034,3 +1034,156 @@
 .hp-dialog-buttons { margin-right: -18px; }
 .hp-dialog-buttons > * { flex-grow: 1; flex-basis: 0; margin-right: 18px; }
 .hp-footer > * { margin-left: 16px; }
+
+/* ------------------------------------------------------------------ in-world menu boards (#79, MenuStation) */
+
+/* A station board fills its world-space document (Resources/HotPatataWorldPanel). The camera sees it from metres
+   away, so focus reads louder than on a screen: a navy edge and a bigger grow. An idle board (the camera is elsewhere)
+   fades its panel out so it never hides the station in view; the Title logo stays as scenery. */
+.hp-board {
+    flex-grow: 1;
+    align-items: stretch;
+    justify-content: center;
+}
+
+.hp-board--title {
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* The board's panel takes its content's height, centred: opening the LAN group grows it both ways. */
+.hp-panel--board { flex-grow: 0; }
+.hp-panel--board.hp-panel--lobby { width: auto; max-width: none; }
+
+.hp-board .hp-panel,
+.hp-board .hp-button--prompt {
+    transition-property: opacity, translate, scale;
+    transition-duration: 0.3s, 0.3s, 0.3s;
+}
+
+.hp-station--idle .hp-panel,
+.hp-station--idle .hp-button--prompt {
+    opacity: 0;
+    scale: 0.94 0.94;
+}
+
+.hp-board .hp-button:focus:enabled,
+.hp-board .hp-button:focus:hover:enabled {
+    border-color: var(--hp-ink);
+    scale: 1.07 1.07;
+}
+
+.hp-board .hp-row:focus,
+.hp-board .hp-field:focus .unity-base-text-field__input,
+.hp-board .hp-field .unity-base-text-field__input:focus {
+    border-color: var(--hp-ink);
+}
+
+/* The title sign: the logo big over the island, the prompt under it. */
+.hp-logo--sign {
+    transform-origin: center;
+    align-items: center;
+    margin: 0;
+}
+
+.hp-logo--sign .hp-logo__word { font-size: 330px; margin: -40px 0; -unity-text-outline-width: 9px; text-shadow: 0 16px 0 var(--hp-ink); }
+.hp-logo--sign .hp-logo__word--patata { margin-left: 120px; }
+
+.hp-button--prompt { height: 210px; padding: 0 80px; border-radius: 48px; border-width: 7px; border-bottom-width: 22px; }
+.hp-button--prompt .hp-icon { width: 96px; height: 96px; margin-right: 30px; }
+.hp-button--prompt .hp-button__label { font-size: 96px; -unity-text-outline-width: 6px; }
+.hp-button--prompt .hp-button__sub { font-size: 38px; }
+
+.hp-level-name {
+    -unity-font-definition: url("../Fonts/Nunito-Black-SDF.asset");
+    font-size: 30px;
+    color: var(--hp-ink);
+    margin: 0;
+    padding: 0;
+}
+
+/* Game code dials (CodeDials): one focusable row; Enter / A edits, the current dial turns sun yellow. */
+.hp-dials {
+    flex-direction: row;
+    padding: 6px;
+    border-radius: 20px;
+    border-width: 4px;
+    border-color: rgba(0, 0, 0, 0);
+}
+
+.hp-dials:focus {
+    border-color: var(--hp-ink);
+    background-color: var(--hp-focus-tint);
+}
+
+.hp-dial {
+    flex-grow: 1;
+    flex-basis: 0;
+    align-items: center;
+    margin: 0 3px;
+    border-radius: 14px;
+    border-width: 3px;
+    border-bottom-width: 6px;
+    border-color: var(--hp-cream-edge);
+    background-color: #FFFFFF;
+    transition-property: scale, background-color, border-color;
+    transition-duration: 0.12s, 0.12s, 0.12s;
+    transition-timing-function: ease-out-back, ease-out, ease-out;
+}
+
+.hp-dials:focus .hp-dial--current { border-color: var(--hp-focus-edge); }
+
+.hp-dials--editing .hp-dial--current {
+    border-color: var(--hp-ink);
+    background-color: var(--hp-sun);
+    scale: 1.1 1.1;
+}
+
+.hp-dial__glyph {
+    -unity-font-definition: url("../Fonts/LilitaOne-SDF.asset");
+    font-size: 42px;
+    height: 52px;
+    color: var(--hp-ink);
+    -unity-text-align: middle-center;
+    margin: 0;
+    padding: 0;
+}
+
+.hp-dial__arrow {
+    height: 22px;
+    margin: 0;
+    padding: 0;
+    border-width: 0;
+    background-color: rgba(0, 0, 0, 0);
+    font-size: 16px;
+    color: var(--hp-sky-lip);
+    opacity: 0.35;
+}
+
+.hp-dial__arrow:hover { opacity: 1; }
+.hp-dials--editing .hp-dial--current .hp-dial__arrow { opacity: 1; color: var(--hp-ink); }
+
+/* A lobby player's nameplate over their mannequin: chip + name on a cream pill. */
+.hp-nameplate {
+    flex-grow: 1;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    padding: 0 22px 0 10px;
+    border-radius: 44px;
+    border-width: 4px;
+    border-bottom-width: 9px;
+    border-color: var(--hp-cream-edge);
+    background-color: var(--hp-cream);
+}
+
+.hp-nameplate__name {
+    flex-shrink: 1;
+    -unity-font-definition: url("../Fonts/Nunito-Black-SDF.asset");
+    font-size: 34px;
+    color: var(--hp-ink);
+    margin: 0 0 0 14px;
+    padding: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

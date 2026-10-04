@@ -238,6 +238,12 @@ namespace HotPatata
         [Tooltip("Shape per slot, shown next to the colour wherever a player is identified (lobby, results).")]
         public PlayerShape[] playerShapes = { PlayerShape.Circle, PlayerShape.Triangle, PlayerShape.Square, PlayerShape.Diamond };
 
+        [Header("Menu (in-world stations, ARCHITECTURE §6.2)")]
+        [Tooltip("Seconds the menu camera takes to fly between stations (eased). At camera effects 0 it cuts instead.")]
+        [Min(0f)] public float menuTravelSeconds = 1.1f;
+        [Tooltip("Seconds a menu mannequin takes to hop to its lobby spot, or back to the show.")]
+        [Min(0f)] public float menuStepSeconds = 0.6f;
+
         [Header("Run")]
         [Tooltip("Seconds between an explosion and the section being playable again.")]
         [Min(0f)] public float resetDelay = 1.0f;

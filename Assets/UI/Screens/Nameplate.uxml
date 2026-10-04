@@ -1,0 +1,6 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <ui:VisualElement class="hp-nameplate">
+        <ui:VisualElement name="chip" class="hp-nameplate__chip" />
+        <ui:Label name="name" text="Player" class="hp-nameplate__name" />
+    </ui:VisualElement>
+</ui:UXML>

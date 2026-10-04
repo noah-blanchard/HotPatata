@@ -2,10 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using HotPatata;
+using Unity.Cinemachine;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.UIElements;
 using static HotPatata.Editor.CourseKit;
 using Object = UnityEngine.Object;
 
@@ -17,6 +19,8 @@ namespace HotPatata.Editor
     /// mannequins in the slot colours pass the live potato (<see cref="MenuHotPotato"/>); flags sway, stars spin, little
     /// platforms bob, clouds drift, sparkles float, and the camera drifts slowly. Everything in it is visual: copies of the
     /// player's mannequin and the bomb's visual, never their gameplay components, and no colliders that matter.
+    /// The menu itself lives on the island too (#79): four stations (Title, Play, Level, Lobby), each a world-space board
+    /// with a Cinemachine camera spot, the lobby stage the players step onto, and the menu camera's brain and rig.
     /// Idempotent: rebuild after changing it (menu HotPatata/Menu/Build Menu Backdrop), never edit it by hand.
     /// </summary>
     public static class MenuBackdropBuilder
@@ -30,12 +34,37 @@ namespace HotPatata.Editor
         const string BombPrefab = "Assets/Prefabs/Bomb/Bomb.prefab";
         const string ExplosionPrefab = "Assets/Prefabs/VFX/VFX_Explosion.prefab";
         const string SparkleTexture = "Assets/Art/VFX/Textures/SoftDot.png";
+        const string WorldPanelPath = "Assets/UI/Resources/HotPatataWorldPanel.asset";
+        const string ScreenPanelPath = "Assets/UI/Resources/HotPatataPanel.asset";
         const string RootName = "MenuBackdrop";
-
-        // The camera looks a little left of the island, so the island sits on the right, beside the left-docked menu.
-        static readonly Vector3 CameraLookAt = new Vector3(-6.2f, 1.6f, 1.6f);
-        static readonly Vector3 CameraPosition = new Vector3(-17.5f, 8.6f, -17.5f);
+        const string BoardLayer = "UI";          // the boards take the mouse (PanelInputConfiguration's interaction layer)
+        const string PlateLayer = "Default";     // nameplates are read, never clicked
         const float CameraFov = 34f;
+        const float BoardPixelsPerMetre = 200f;  // board layouts are authored in px, like the screens
+
+        /// <summary>
+        /// One station: where its board stands (centre) and its size in px, and the camera spot that frames it. Boards
+        /// stand upright and face their camera. Decoration stays clear of the boards so nothing hides them.
+        /// </summary>
+        static readonly (MenuStationId id, Vector3 board, Vector2 px, Vector3 camera, Vector3 lookAt)[] Stations =
+        {
+            // Title: the logo floats over the island, the players pass the potato below it.
+            (MenuStationId.Title, new Vector3(0f, 7.6f, 5.2f), new Vector2(1800f, 1150f), new Vector3(-9.5f, 6.8f, -15f), new Vector3(0f, 4.3f, 2.5f)),
+            // Play: a board at the island's front left, filling the left of the view, the island on the right.
+            (MenuStationId.Play, new Vector3(-9.5f, 3f, -3.5f), new Vector2(780f, 1000f), new Vector3(-13.3f, 4f, -13.3f), new Vector3(-7.1f, 3f, -4.4f)),
+            // Level: off the island's front right corner, clear of the floaters, the island on the left.
+            (MenuStationId.Level, new Vector3(11f, 3f, -3f), new Vector2(760f, 640f), new Vector3(13.8f, 3.6f, -10.4f), new Vector3(9.1f, 2.8f, -3.7f)),
+            // Lobby: a wide board over the stage at the island's front, the players lined up under it.
+            (MenuStationId.Lobby, new Vector3(0f, 4.7f, -0.8f), new Vector2(1440f, 720f), new Vector3(0f, 3.5f, -15f), new Vector3(0f, 3.1f, -1f))
+        };
+
+        /// <summary>The lobby stage: one spot per slot in a line under the Lobby board, facing its camera.</summary>
+        static readonly Vector3[] StageSpots =
+        {
+            new Vector3(-3f, 0f, -2.8f), new Vector3(-1f, 0f, -2.8f), new Vector3(1f, 0f, -2.8f), new Vector3(3f, 0f, -2.8f)
+        };
+        const float PlateHeight = 2.3f;   // over the mannequin's head
+        static readonly Vector2 PlatePx = new Vector2(340f, 84f);
 
         /// <summary>Where the four players stand: a shallow arc open to the camera, so every one of them shows.</summary>
         static readonly Vector3[] PlayerSpots =
@@ -95,7 +124,10 @@ namespace HotPatata.Editor
                 var players = BuildPlayers(show, controller);
                 var (potato, sparks, trail, puffs) = BuildPotato(show);
                 var boom = AssetDatabase.LoadAssetAtPath<GameObject>(ExplosionPrefab)?.GetComponent<ExplosionFx>();
-                show.gameObject.AddComponent<MenuHotPotato>().Configure(tuning, players, potato, sparks, trail, puffs, boom);
+                var potatoShow = show.gameObject.AddComponent<MenuHotPotato>();
+                potatoShow.Configure(tuning, players, potato, sparks, trail, puffs, boom);
+
+                BuildStations(Group(t, "Stations"), tuning, potatoShow, EnsureWorldPanel());
 
                 PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
             }
@@ -269,6 +301,89 @@ namespace HotPatata.Editor
             return (potato, sparks, flight.GetComponent<TrailRenderer>(), puffs);
         }
 
+        // ------------------------------------------------------------------ menu stations (#79)
+
+        /// <summary>The boards' panel: world space, the shared theme, <see cref="BoardPixelsPerMetre"/>.</summary>
+        static PanelSettings EnsureWorldPanel()
+        {
+            var panel = AssetDatabase.LoadAssetAtPath<PanelSettings>(WorldPanelPath);
+            if (panel == null)
+            {
+                panel = ScriptableObject.CreateInstance<PanelSettings>();
+                AssetDatabase.CreateAsset(panel, WorldPanelPath);
+            }
+            var screen = AssetDatabase.LoadAssetAtPath<PanelSettings>(ScreenPanelPath) ?? throw new InvalidOperationException("missing " + ScreenPanelPath);
+            panel.themeStyleSheet = screen.themeStyleSheet;
+            panel.renderMode = PanelRenderMode.WorldSpace;
+            var so = new SerializedObject(panel);
+            so.FindProperty("m_PixelsPerUnit").floatValue = BoardPixelsPerMetre;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(panel);
+            AssetDatabase.SaveAssets();
+            return panel;
+        }
+
+        static void BuildStations(Transform parent, GameTuning tuning, MenuHotPotato show, PanelSettings panel)
+        {
+            // World-space pointer input: the boards' generated colliders, seen through the main (menu) camera.
+            var input = new GameObject("BoardInput").AddComponent<PanelInputConfiguration>();
+            input.transform.SetParent(parent, false);
+            input.interactionLayers = 1 << LayerMask.NameToLayer(BoardLayer);
+            input.defaultEventCameraIsMainCamera = true;
+
+            foreach (var (id, boardAt, px, cameraAt, lookAt) in Stations)
+            {
+                var root = Group(parent, id.ToString());
+                var spot = new GameObject("Spot").AddComponent<CinemachineCamera>();
+                spot.transform.SetParent(root, false);
+                spot.transform.SetPositionAndRotation(cameraAt, Quaternion.LookRotation(lookAt - cameraAt, Vector3.up));
+                spot.Lens.FieldOfView = CameraFov;
+                spot.Lens.NearClipPlane = 0.3f;
+                spot.Lens.FarClipPlane = 600f;
+                spot.Priority = 0;
+                if (id == MenuStationId.Title) spot.gameObject.AddComponent<MenuCameraDrift>().Configure(tuning, lookAt);
+
+                var board = Board(root, "Board", panel, boardAt, px, cameraAt, BoardLayer);
+                root.gameObject.AddComponent<MenuStation>().Configure(id, spot, board);
+                if (id == MenuStationId.Lobby) BuildStage(root, tuning, show, panel, cameraAt);
+            }
+        }
+
+        /// <summary>A world-space UI document of <paramref name="px"/> pixels, upright, facing <paramref name="viewer"/>.</summary>
+        static UIDocument Board(Transform parent, string name, PanelSettings panel, Vector3 at, Vector2 px, Vector3 viewer, string layer)
+        {
+            var go = new GameObject(name);
+            go.layer = LayerMask.NameToLayer(layer);
+            go.transform.SetParent(parent, false);
+            var away = at - viewer;
+            away.y = 0f;
+            go.transform.SetPositionAndRotation(at, Quaternion.LookRotation(away, Vector3.up));   // the panel's front faces -forward
+            var doc = go.AddComponent<UIDocument>();
+            doc.panelSettings = panel;
+            doc.worldSpaceSizeMode = UIDocument.WorldSpaceSizeMode.Fixed;
+            doc.worldSpaceSize = px;
+            doc.pivot = Pivot.Center;
+            return doc;
+        }
+
+        /// <summary>The lobby stage: a spot per slot and a nameplate (slot chip + name) above each (MenuLobbyStage).</summary>
+        static void BuildStage(Transform parent, GameTuning tuning, MenuHotPotato show, PanelSettings panel, Vector3 viewer)
+        {
+            var stage = Group(parent, "Stage");
+            var spots = new Transform[StageSpots.Length];
+            var plates = new UIDocument[StageSpots.Length];
+            for (int i = 0; i < StageSpots.Length; i++)
+            {
+                var spot = Group(stage, "Spot_" + (i + 1));
+                var toViewer = viewer - StageSpots[i];
+                toViewer.y = 0f;
+                spot.SetPositionAndRotation(StageSpots[i], Quaternion.LookRotation(toViewer, Vector3.up));
+                plates[i] = Board(spot, "Nameplate", panel, StageSpots[i] + Vector3.up * PlateHeight, PlatePx, viewer, PlateLayer);
+                spots[i] = spot;
+            }
+            stage.gameObject.AddComponent<MenuLobbyStage>().Configure(tuning, show, spots, plates);
+        }
+
         // ------------------------------------------------------------------ props
 
         static Transform Prop(Transform parent, string model, KitColor color, Vector3 at, float yaw, Material mat, bool shadows = false, float y = 0f)
@@ -313,19 +428,27 @@ namespace HotPatata.Editor
 
         // ------------------------------------------------------------------ scene: camera and sky
 
+        /// <summary>
+        /// The menu camera: framed on the Title station, flown between stations by its Cinemachine brain and
+        /// <see cref="MenuCameraRig"/> (the drift now lives on the Title spot).
+        /// </summary>
         static void SetUpCamera(UnityEngine.SceneManagement.Scene scene, GameTuning tuning)
         {
             var camera = scene.GetRootGameObjects().Select(g => g.GetComponentInChildren<Camera>()).FirstOrDefault(c => c != null)
                          ?? throw new InvalidOperationException("no camera in " + ScenePath);
-            camera.transform.SetPositionAndRotation(CameraPosition, Quaternion.LookRotation(CameraLookAt - CameraPosition, Vector3.up));
+            var (_, _, _, at, lookAt) = Stations.First(s => s.id == MenuStationId.Title);
+            camera.transform.SetPositionAndRotation(at, Quaternion.LookRotation(lookAt - at, Vector3.up));
             camera.clearFlags = CameraClearFlags.Skybox;
             camera.fieldOfView = CameraFov;
             camera.nearClipPlane = 0.3f;
             camera.farClipPlane = 600f;
-            var drift = camera.GetComponent<MenuCameraDrift>() ?? camera.gameObject.AddComponent<MenuCameraDrift>();
-            drift.Configure(tuning, CameraLookAt);
+            var drift = camera.GetComponent<MenuCameraDrift>();
+            if (drift != null) Object.DestroyImmediate(drift);
+            if (camera.GetComponent<CinemachineBrain>() == null) camera.gameObject.AddComponent<CinemachineBrain>();
+            var rig = camera.GetComponent<MenuCameraRig>() ?? camera.gameObject.AddComponent<MenuCameraRig>();
+            rig.Configure(tuning);
             EditorUtility.SetDirty(camera);
-            EditorUtility.SetDirty(drift);
+            EditorUtility.SetDirty(rig);
         }
 
         /// <summary>The courses' sky, ambient light and fog (ARCHITECTURE §25), saved with the scene.</summary>

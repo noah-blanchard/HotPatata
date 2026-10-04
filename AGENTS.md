@@ -12,7 +12,7 @@ throwing a live bomb between them.
   2.13, Multiplayer Services (Relay sessions, linked to Unity Cloud project HotPatata), Multiplayer Play Mode.
 - **Target:** Windows PC (primary). Linux and macOS builds ship with each release, best effort (macOS unsigned).
 - **Scenes:**
-  - `Bootstrap` (entry: menu and lobby);
+  - `Bootstrap` (entry: the in-world menu and lobby on the menu island);
   - `PassSandbox` (one bomb, the kit demo, the pass range);
   - `PrototypeCourse` (~680 m, 7 checkpoints, 3 acts);
   - `PlaytestCourse` (~10 min, 9 checkpoints, the classic kit plus the #68 bomb obstacles);
@@ -97,13 +97,16 @@ same PR. Code comments cite doc sections (e.g. `PROJECT_SPEC §8.3`), so never r
   - Stateful objects implement `IResettable`.
   - Zones use `PlayerZone.Collect`.
   - Anything a player rides implements `IPlatformCarrier`.
-- **UI.** Screens and the HUD are UI Toolkit on the `ScreenStack` (ARCHITECTURE §6.2), uGUI only for world space,
-  IMGUI only for dev tools. A screen's layout is one UXML in `Assets/UI/Screens` (`hp-*` classes only, listed in
-  `UIScreenCatalog`); its code finds kebab-case named elements with `Require<T>` and never builds layout. Only `CursorPolicy` sets the cursor lock. A menu on top blocks the local player's gameplay
+- **UI.** Screens and the HUD are UI Toolkit on the `ScreenStack` (ARCHITECTURE §6.2); world-space UI is UI Toolkit
+  too (world-space panels, never uGUI); IMGUI only for dev tools. A screen's layout is one UXML in `Assets/UI/Screens`
+  (`hp-*` classes only, listed in `UIScreenCatalog`); its code finds kebab-case named elements with `Require<T>` and
+  never builds layout. The main menu and the lobby are in-world stations (boards + Cinemachine camera spots) placed by
+  `MenuBackdropBuilder`, never by hand; `MenuCameraRig` alone moves the menu camera, and travel honours
+  `viewEffectsStrength` (0 = a cut). Only `CursorPolicy` sets the cursor lock. A menu on top blocks the local player's gameplay
   input through `PlayerInputReader` (read input there, never from devices directly). Online, a menu never pauses the
   game; offline the pause menu freezes it.
 - **Input System only** (never the legacy input manager). **No third-party packages** unless the built-in stack
-  clearly cannot do the job.
+  clearly cannot do the job. Unity's own Cinemachine package is allowed (owner decision, #79: the menu camera).
 - "Beep" (`beepIntervals`, `BombAudio.Beeped`) is a gameplay term for the fuse sound, not the old project name. Keep it.
 
 ## Workflow

@@ -126,13 +126,14 @@ Bootstrap
 As built: the `Bootstrap` scene holds `BootstrapEntry`, which instantiates the persistent `NetworkManager` prefab
 (`Assets/Prefabs/Network`: `NetworkManager` + `UnityTransport` + `NetworkBootstrap`) exactly once. `NetworkBootstrap`
 runs the session flow (Host Online / Join with code / Play Local / Direct IP, the level from `gameplayScenes`) and
-`SessionService` wraps Multiplayer Services (§13.1); the menu and the lobby are UI Toolkit screens drawn by `MenuView`
-(§6.2).
+`SessionService` wraps Multiplayer Services (§13.1); the menu and the lobby are in-world UI Toolkit boards on the
+menu island, driven by `MenuView` (§6.2, #79).
 
 ### `Lobby`
 
-As built: **not a separate scene.** The lobby is a phase of `NetworkBootstrap` in `Bootstrap`, shown by
-`LobbyScreen` (session code, player list with host marker, Start for the host; §6.2). The menu and the host's lobby also pick the **spawn point**
+As built: **not a separate scene.** The lobby is a phase of `NetworkBootstrap` in `Bootstrap`, shown on the Lobby
+station's board (`LobbyStation`: session code, player list with host marker, Start for the host; the players step onto
+the stage in front of it; §6.2). The Level station (before hosting, and for the host from the lobby) also picks the **spawn point**
 (`Start` or `CP1`..`CPn`, stored in `RunOptions.StartCheckpoint`): `RunManager` begins the run, and every rematch, as
 if the team had just reached that checkpoint (its spawns, carrier slot and fuse; earlier checkpoints count as reached).
 It is a practice aid; only the authority's choice matters. The original plan follows.
@@ -419,12 +420,13 @@ Assets/
 │   ├── Run/              RunManager, Checkpoint, KillZone, FinishZone, PlayerZone, PlayerSpawner, PlayerSpawn
 │   ├── Obstacles/        MovingPlatform, RotatingObstacle, FallingPlatform, Conveyor, LaunchPad, IPlatformCarrier
 │   ├── Kit/              KitSkin, KitPalette (KayKit visuals, §25.1)
-│   ├── Menu/             the living menu backdrop (§6.2): MenuHotPotato, MenuFloat, MenuCloudDrift, MenuCameraDrift
+│   ├── Menu/             the living menu backdrop and the in-world menu (§6.2): MenuHotPotato, MenuFloat,
+│   │                     MenuCloudDrift, MenuCameraDrift, MenuFlow, MenuStation, MenuCameraRig, MenuLobbyStage
 │   ├── Zones/            Zone, IBombZoneEffect, BombZoneSweep, FuseZone, BombBarrier, BombGate, PressurePlate,
 │   │                     ISignalSource, SignalActuator, SignalIndicator, BombTransit, TransitMouth, TransitPresentation
 │   ├── UI/               ScreenStack, UIScreen, UIScreenCatalog, UIParts, CursorPolicy (UI Toolkit base, §6.2),
-│   │                     MenuView, PauseMenu, SettingsScreen, SettingRows, ConfirmScreen, ResultsScreen, RunResultsUI,
-│   │                     AimReticle
+│   │                     MenuView, StationScreens, MenuParts, CodeDials, PauseMenu, SettingsScreen, SettingRows,
+│   │                     ConfirmScreen, ResultsScreen, RunResultsUI, AimReticle
 │   ├── Debug/            DebugHud, LocalPlayerSwitcher, PlayerBot
 │   └── DebugTools/       Editor/dev-build only: LatencySimulator, ThrowDebugOverlay, ThrowTelemetry, PassPartner,
 │                         UISampleScreen
@@ -499,8 +501,10 @@ immediately. A screen edits `InputRebinding.CreateEditableCopy(asset)` and commi
 
 ### 6.2 UI: screens and HUD (#14)
 
-**Decision (owner):** UI Toolkit for menus, screens and the HUD; uGUI only for world-space UI. IMGUI (`OnGUI`) stays
-for dev tools only; the menu and the lobby (#15) and the results (#23) moved onto this base, the HUD (#24) follows.
+**Decision (owner):** UI Toolkit for menus, screens, the HUD and world-space UI (#79: the in-world menu's boards are
+UI Toolkit world-space panels, so they keep the UXML convention and the theme); uGUI is not used. IMGUI (`OnGUI`)
+stays for dev tools only; the menu and the lobby (#15, in the world since #79) and the results (#23) moved onto this
+base, the HUD (#24) follows.
 
 - **Panel and theme.** One `PanelSettings`, `Assets/UI/Resources/HotPatataPanel.asset` (scale with screen size from
   1920x1080, match 0.5, sort order 100), with the theme `Assets/UI/Styles/HotPatataTheme.tss` = Unity's runtime theme +
@@ -535,8 +539,8 @@ for dev tools only; the menu and the lobby (#15) and the results (#23) moved ont
   `Require<T>(name)`); `ReleasesCursor` (menus: yes), `CanGoBack`, `BlocksGameplay` (menus: yes), `OnShow` / `OnHide` /
   `OnBack`, `FirstFocus`, `Navigable` (the elements up / down walk, in tree order).
 - **UXML convention (#76).** Every screen's layout can be opened and edited in UI Builder; the code never builds it.
-  - **Files.** One `.uxml` per screen in `Assets/UI/Screens` (`MainMenu`, `Working`, `Lobby`, `Pause`, `Confirm`,
-    `Settings`, `Results`, `UISample`). Buttons hold an icon (`hp-icon`) and a label (`hp-button__label`) as children. It is styled only through the shared `hp-*` classes, with no inline styles, no
+  - **Files.** One `.uxml` per screen in `Assets/UI/Screens` (`Pause`, `Confirm`, `Settings`, `Results`,
+    `UISample`) and per menu board (`StationTitle`, `StationPlay`, `StationLevel`, `StationLobby`, `Nameplate`). Buttons hold an icon (`hp-icon`) and a label (`hp-button__label`) as children. It is styled only through the shared `hp-*` classes, with no inline styles, no
     per-screen colours and no `<Style>` tags (the theme comes from the PanelSettings).
   - **Loading.** `UIScreenCatalog` (`Assets/UI/Resources/HotPatataScreens.asset`, next to the PanelSettings) holds
     one `VisualTreeAsset` per screen. `ScreenStack.Catalog` loads it, and a screen reads its own layout through
@@ -544,7 +548,7 @@ for dev tools only; the menu and the lobby (#15) and the results (#23) moved ont
   - **Naming.** Every element the code needs has a kebab-case `name` (`host-online`, `code-field`, `player-list`).
     `Build()` finds each one once with `Require<T>(name)` and then wires behaviour.
     - A renamed or deleted element throws at once, naming the screen, the file and the element (`[UI]
-      MainMenuScreen (MainMenu.uxml): no Button named "host-online"`), and the stack is left as it was.
+      PlayStation (StationPlay.uxml): no Button named "host-online"`), and the stack is left as it was.
     - AGENTS' "No Find-by-name lookups" rule is about scene GameObjects. Querying a screen's own UXML elements by
       name is the normal UI Toolkit way and is what this convention requires.
   - **UXML / code split.** Layout and static text go in UXML. Code owns:
@@ -574,21 +578,56 @@ for dev tools only; the menu and the lobby (#15) and the results (#23) moved ont
 
 **Screens built on it (#15, #16, #17, #23).**
 
-- **Main menu and lobby** (`MenuView`, `Assets/Scripts/UI/MenuView.cs`, #15). `NetworkBootstrap` is logic only (the
-  session flow, the command line, no drawing); it exposes its phase (`Menu`, `Working`, `Lobby`, `InGame`), status,
-  last message, selected level and spawn point, and the lobby list. `MenuView`, which `NetworkBootstrap` adds outside
-  batch mode (headless bots run without UI), shows the matching screen and clears the stack when the phase changes:
+- **Main menu and lobby: the in-world menu** (`MenuView`, #15, #79). `NetworkBootstrap` is logic only (the session
+  flow, the command line, no drawing); it exposes its phase (`Menu`, `Working`, `Lobby`, `InGame`), status, last
+  message, selected level and spawn point, and the lobby list. The menu is **part of the island**: each step is a
+  **station**, a board (a world-space `UIDocument`) with a Cinemachine camera spot, and choosing an option flies the
+  camera to the next station. `MenuView`, which `NetworkBootstrap` adds outside batch mode (headless bots run without
+  UI), builds every station's board and shows the station `MenuFlow` points at:
 
-  | Phase | Screen | What it holds |
+  | Station | Board (`StationScreens.cs`, UXML) | What it holds |
   |---|---|---|
-  | Menu | `MainMenuScreen` (root, Back does nothing) | your name, level and spawn point, Host Online, game code + Join with code, Play Local, Settings, Direct connection toggle (address, Join IP, Host), the last error |
-  | Working | `WorkingScreen` | a rocking potato (`UIParts.Wobble`) and "Creating your game...", "Joining ...", "Connecting..." |
-  | Lobby | `LobbyScreen` | the game code ticket (Copy code), a card per player (slot chip, name, HOST and YOU badges; `LobbyPlayer.Slot` / `Name`) and an empty card per free seat, the host's level / spawn / Start, else "Waiting for the host to start...", Leave; Back asks before leaving |
-  | InGame | none | the level owns the screen (pause menu) |
+  | Title | `TitleStation` (`StationTitle`), the root: Back does nothing | the HOT PATATA logo over the island (the potato show below it) and one prompt: PLAY |
+  | Play | `PlayStation` (`StationPlay`) | your name, Host Online (to Level), the game code (`CodeDials`) + Join, Play Local (to Level), Settings (the settings screen over the scene), the LAN / testing toggle (address, Join IP, Host on LAN to Level), the last error, the working line ("Joining ...") |
+  | Level | `LevelStation` (`StationLevel`) | level and spawn point, then the button for why you came: Host Online, Host on LAN, Play Local, or Done for the host from the lobby; Back; the working line ("Creating your game...") |
+  | Lobby | `LobbyStation` (`StationLobby`) | the game code ticket (Copy code), a card per player (slot chip, name, HOST and YOU badges) and per free seat, the host's level + Change level (to Level) + Start, else "Waiting for the host to start...", Leave; Back asks before leaving |
 
-  The screens re-read the bootstrap's state every 200 ms (messages, the lobby list) and call its public methods
+  - **`MenuFlow`** (plain state, `Assets/Scripts/Menu`): the current station and why Level was opened (`HostOnline`,
+    `HostLan`, `Local`, `LobbyEdit`). Board choices (`Choose`) and Back move it; the session flow wins (`Sync`): an open
+    lobby shows the Lobby (or keeps the host on its level choice), and back in the Menu phase after a session (a
+    failed host or join, leaving the lobby, a game that ended) it shows Play with the error, never Title. Title only
+    shows on first launch. Working and InGame keep the station, so the board that started the work shows it.
+  - **`MenuStation`**: the station's id, camera spot and board. Only the shown station's board takes input: an idle
+    board fades its panel out (`hp-station--idle`; the Title logo stays as scenery), is disabled so focus never
+    wanders onto it, and leaves the pointer's raycast layer (`UI` to Ignore Raycast) so it never catches a click meant
+    for another. Back (Esc / B) goes to the shown board's screen; focus goes to its first element when the camera
+    arrives, and back where it was when a screen of the stack (Settings, a dialog) closes over it.
+  - **Station boards** are `UIScreen`s built into the station's document instead of the stack (`StationScreen`),
+    with the same conventions (catalog layout, `Require<T>`, `Navigable`, entrance motion). Their panel is
+    `Assets/UI/Resources/HotPatataWorldPanel.asset` (world space, the same theme, 200 px per metre); one
+    `PanelInputConfiguration` in the backdrop lets the main camera raycast them for the mouse, and keyboard and
+    gamepad come through the same `EventSystem`. Focus reads from the camera's distance (a navy edge and a bigger
+    grow, `.hp-board`).
+  - **`CodeDials`** (`[UxmlElement]`): the game code as six dials, so a gamepad can enter it. One focusable row in the
+    walk; Enter / A edits, up / down turn the current dial through A-Z then 0-9, left / right pick the dial, Enter /
+    A or Esc / B stop (Esc then does not leave the station). The keyboard types straight in (Backspace clears back,
+    Ctrl+V pastes a code), the mouse clicks a dial or its arrows. The name stays a text field (it has a default).
+  - **Travel** (`MenuCameraRig` on the menu camera with a `CinemachineBrain`, the one component that decides where
+    the camera looks): the target station's spot gets the priority and the brain blends there, `EaseInOut` over
+    `GameTuning.menuTravelSeconds` on unscaled time, or a **cut** when the camera effects are 0
+    (`Settings.ViewEffectsStrength`, spec §19): no swoop, and nothing flashes. The Title spot keeps the slow drift
+    (`MenuCameraDrift`); the other spots are steady so the boards read.
+  - **Lobby stage** (`MenuLobbyStage`): while the lobby is open the potato show pauses (`MenuHotPotato.SetPaused`) and
+    mannequin `i`, already in slot `i`'s colour, hops to stage spot `i` under the Lobby board for each joined player
+    (`GameTuning.menuStepSeconds`), waves, and shows a nameplate over its head (`Nameplate.uxml`: the slot chip and the
+    name; spec §19, never colour alone). Free seats stay in the show; leaving the lobby sends everyone back and the
+    show resumes.
+
+  The boards re-read the bootstrap's state every 200 ms (messages, the lobby list) and call its public methods
   (`HostOnlineAsync`, `JoinCodeAsync`, `PlayLocal`, `StartHostDirect`, `StartClientDirect`, `StartLevel`,
   `LeaveAsync`). Text fields keep the keyboard's arrows and WASD while you type; a gamepad still moves between rows.
+  The pause menu, the in-game settings and the results stay screen-space screens on the stack (they are over
+  gameplay).
 
 - **Pause menu** (`PauseScreen`, `PauseMenu`, `Assets/Scripts/UI/PauseMenu.cs`): Resume, Settings, Leave to menu
   (behind a `ConfirmScreen` whose safe answer, Cancel, has the focus).
@@ -606,7 +645,7 @@ for dev tools only; the menu and the lobby (#15) and the results (#23) moved ont
   - Leave goes through `NetworkBootstrap.LeaveAsync` (in session mode `SessionService.LeaveAsync`, never
     `NetworkManager.Shutdown`); a course played directly in the Editor loads the entry scene (build index 0). The
     IMGUI in-game Leave button is gone; F10 still leaves, as a dev shortcut.
-- **Settings screen** (`SettingsScreen`, #17), reachable from the main menu and the pause menu. Sections and rows:
+- **Settings screen** (`SettingsScreen`, #17), reachable from the Play station (over the scene) and the pause menu. Sections and rows:
 
   | Section | Rows (stored in `SettingsData`) |
   |---|---|
@@ -625,21 +664,24 @@ for dev tools only; the menu and the lobby (#15) and the results (#23) moved ont
   for the host to restart..." and can leave (behind a `ConfirmScreen`). Back does nothing. `RunResultsUI`, placed in
   each course scene, pushes it while the run is `Completed` and pops it when the run starts again. The old IMGUI
   screen is gone. While any menu is on top, the IMGUI `AimReticle` draws nothing.
-- **Menu backdrop** (`Assets/Prefabs/Menu/MenuBackdrop.prefab`, one instance in `Bootstrap`). A small KayKit island
-  behind the main menu and the lobby where four mannequins in the slot colours pass the live potato in arcs
+- **Menu backdrop** (`Assets/Prefabs/Menu/MenuBackdrop.prefab`, one instance in `Bootstrap`). A small KayKit island,
+  home of the in-world menu (above), where four mannequins in the slot colours pass the live potato in arcs
   (`MenuHotPotato`). The holder faces the next catcher, a catch squashes the catcher and bystanders cheer, wave or hop.
   The wick sparks faster (`GameTuning.fuseSparkRates`) until the fuse runs out in the game's own explosion
   (`ExplosionFx`, its flash always reduced at least 60 %, more if the player asked through `flashReduction`); the
   holder flinches, the others cheer, and a new potato pops in. Flags sway, stars and collectables spin
-  (`MenuFloat`), small platforms bob, clouds drift (`MenuCloudDrift`), sparkles float, and the camera drifts slowly
-  (`MenuCameraDrift`, scaled by `viewEffectsStrength`).
+  (`MenuFloat`), small platforms bob, clouds drift (`MenuCloudDrift`), sparkles float, and on the Title station the
+  camera drifts slowly (`MenuCameraDrift` on the Title spot, scaled by `viewEffectsStrength`).
   - **Visual only.** The mannequins are copies of the player's `Visual/Mannequin` (meshes and Animator, driven by a
     menu controller, `MenuMannequin.controller`), the potato a copy of the bomb's `Visual` and `FlightFx`. None of
-    the gameplay components (`Player`, `BombController`, networking) and no colliders. It runs on unscaled time (the
-    menu is offline and local, so no `SectionClock`) and turns itself off in batch mode.
+    the gameplay components (`Player`, `BombController`, networking) and no colliders (the boards' generated panel
+    colliders aside). It runs on unscaled time (the menu is offline and local, so no `SectionClock`) and turns itself
+    off in batch mode.
   - **Generated** by `MenuBackdropBuilder` (menu **HotPatata/Menu/Build Menu Backdrop**, also run by **Rebuild All
-    Courses**): it writes the prefab and the animator controller, places the instance, frames the camera and sets
-    the courses' sky, ambient light and fog. Never edit it by hand.
+    Courses**): it writes the prefab (with the stations: boards, camera spots, the lobby stage and the board input),
+    the world panel asset and the animator controller, places the instance, gives the camera its brain and rig and
+    sets the courses' sky, ambient light and fog. Station layout (board position and size, camera spot) is a table in
+    the builder; keep decoration out of the boards' way. Never edit it by hand.
 - **Setting rows** (`SettingRows.cs`, UXML custom controls): `SliderRow`, `ToggleRow`, `ChoiceRow` are one focusable
   line each (`hp-row`) with a label; the inner field only takes the mouse. Up / down walk the rows
   (`UIScreen.Navigable`: the layout's order, skipping disabled or hidden rows, so the d-pad never gets lost), left /

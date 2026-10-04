@@ -12,9 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 34f6d8b0be3f5d043919bdc0d58e8f5b, type: 3}
   m_Name: HotPatataScreens
   m_EditorClassIdentifier: HotPatata::HotPatata.UIScreenCatalog
-  mainMenu: {fileID: 9197481963319205126, guid: 6f9f3ac743194584fbe78814e5f226f1, type: 3}
-  working: {fileID: 9197481963319205126, guid: 47fd8e805ca1efa47a71790419d005cb, type: 3}
-  lobby: {fileID: 9197481963319205126, guid: 90b70a9415314424b8036474eb3f0e8b, type: 3}
+  stationTitle: {fileID: 9197481963319205126, guid: 55b1476f7a223ff45b524f217fbafe15, type: 3}
+  stationPlay: {fileID: 9197481963319205126, guid: e09feca23cc55444f89e167feff5fbb6, type: 3}
+  stationLevel: {fileID: 9197481963319205126, guid: 9b5b4bc0e0a05004d9a552b44730e71a, type: 3}
+  stationLobby: {fileID: 9197481963319205126, guid: 68412ed3819cc6442bf44a21a3687214, type: 3}
+  nameplate: {fileID: 9197481963319205126, guid: ee6a2c98164115a48bce3f98bddd5126, type: 3}
   pause: {fileID: 9197481963319205126, guid: 5ed66278e2c79854d91988f3af8a5d8d, type: 3}
   settings: {fileID: 9197481963319205126, guid: 131a36eb398cefd429d0c208db1f3c90, type: 3}
   confirm: {fileID: 9197481963319205126, guid: c29e598cfffd0084eb658dcf0a58f53f, type: 3}

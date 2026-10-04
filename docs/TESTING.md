@@ -20,7 +20,10 @@
 | `CursorPolicyTests` | EditMode | #14: the cursor is locked only while gameplay wants it and no screen needs the mouse |
 | `PlayerNamesTests` | EditMode | M6: player-name cleanup (trim, length, control characters, "Player N" fallback) |
 | `DisplayOptionsTests` | EditMode | #17: settings display choices (window modes, resolutions without duplicates, frame caps) |
+| `MenuFlowTests` | EditMode | #79: in-world menu navigation (Title, Play, Level, Lobby; Back; the session flow wins: lobby shows the Lobby, a failed or left session lands on Play) and the camera blend (eased, a cut at camera effects 0) |
+| `CodeDialsTests` | EditMode | #79: game code dials (turn and wrap, typing moves on, Backspace, pasted codes normalised) |
 | `PauseAndSettingsTests` | PlayMode | #16/#17: pause freezes offline, takes the input and frees the cursor; a carrier keeps the bomb and loses the charge; Esc never closes and reopens on one frame; Leave asks first; settings preview live, save on close, reset, never write `GameTuning` |
+| `MenuStationTests` | PlayMode | #79: the backdrop's four stations build their boards; only the shown board takes input and the pointer; Submit flies to the next station and Back flies back; a cut at camera effects 0, a glide otherwise; the Level board's purpose; Settings over the scene pauses the board and gives its focus back; gamepad code entry; lobby guests step onto the stage with nameplates and the show resumes |
 | `ScreenStackTests` | PlayMode | #14 UI Toolkit base: themed panel and navigation module, stack/focus/back, navigation and submit events, cursor hand-over; #76 every screen layout in the catalog, a missing UXML element fails naming the screen and the element, up / down follow the layout order; the entrance pops a pushed screen in and cascades its buttons, then settles without moving the focus |
 | `BombStateTests` | PlayMode | bomb state machine plus catch / world-contact / fuse rules (M1.4–M1.8) |
 | `RunAndThrowTests` | PlayMode | throw by input (M1.5) and fast, clean section reset (M1.10) |

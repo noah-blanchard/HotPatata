@@ -1,13 +1,15 @@
 # UI screens
 
-The UXML layout of each UI Toolkit screen, one file per screen, edited in UI Builder (canvas theme
+The UXML layout of each UI Toolkit screen and in-world menu board, one file per screen, edited in UI Builder (canvas theme
 `HotPatataTheme`, canvas 1920x1080). The convention is in ARCHITECTURE §6.2.
 
 | File | Screen (`Assets/Scripts/UI/`) |
 |---|---|
-| `MainMenu.uxml` | `MainMenuScreen` (`MenuView.cs`) |
-| `Working.uxml` | `WorkingScreen` (`MenuView.cs`) |
-| `Lobby.uxml` | `LobbyScreen` (`MenuView.cs`) |
+| `StationTitle.uxml` | `TitleStation` (`StationScreens.cs`), a world-space menu board (#79) |
+| `StationPlay.uxml` | `PlayStation` (`StationScreens.cs`) |
+| `StationLevel.uxml` | `LevelStation` (`StationScreens.cs`) |
+| `StationLobby.uxml` | `LobbyStation` (`StationScreens.cs`) |
+| `Nameplate.uxml` | a lobby player's nameplate over their mannequin (`MenuLobbyStage`) |
 | `Pause.uxml` | `PauseScreen` (`PauseMenu.cs`) |
 | `Confirm.uxml` | `ConfirmScreen` |
 | `Settings.uxml` | `SettingsScreen` |

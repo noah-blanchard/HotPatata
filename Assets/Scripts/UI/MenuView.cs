@@ -1,21 +1,36 @@
-using System.Linq;
+using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace HotPatata
 {
     /// <summary>
-    /// The UI Toolkit view of <see cref="NetworkBootstrap"/> (#15, ARCHITECTURE §6.2): it shows the screen that matches
-    /// the bootstrap's phase on the <see cref="ScreenStack"/> (Menu: <see cref="MainMenuScreen"/>, Working:
-    /// <see cref="WorkingScreen"/>, Lobby: <see cref="LobbyScreen"/>, InGame: none, the level owns the screen) and the
-    /// screens call the bootstrap's public methods. It holds no game logic. Added by <see cref="NetworkBootstrap"/>
-    /// outside batch mode, so headless bot runs have no UI.
+    /// The in-world menu of <see cref="NetworkBootstrap"/> (#79, ARCHITECTURE §6.2). The island is the menu: each
+    /// <see cref="MenuStation"/> (Title, Play, Level, Lobby) has a board and a camera spot, the <see cref="MenuFlow"/> says
+    /// which one shows, and <see cref="MenuCameraRig"/> flies there. This view builds the boards
+    /// (<see cref="StationScreen"/>s), makes only the shown one take input and focus, keeps them out of the way while a
+    /// screen of the <see cref="ScreenStack"/> (Settings, a dialog) is open over the scene, and puts the lobby's players
+    /// on the stage (<see cref="MenuLobbyStage"/>). It holds no game logic: the boards call the bootstrap's public
+    /// methods. Added by <see cref="NetworkBootstrap"/> outside batch mode, so headless bot runs have no menu.
     /// </summary>
     public class MenuView : MonoBehaviour
     {
+        const float LobbyPollSeconds = 0.2f;
+
+        readonly MenuFlow flow = new MenuFlow();
+        readonly List<MenuLobbyStage.Guest> guests = new List<MenuLobbyStage.Guest>();
+
         NetworkBootstrap bootstrap;
         NetworkBootstrap.Mode shownPhase;
-        bool shownLobby, shown;
+        bool shownLobby, shown, blocked;
+        MenuStation active;
+        MenuCameraRig rig;
+        MenuLobbyStage stage;
+        float nextPoll;
+
+        public MenuFlow Flow => flow;
+
+        /// <summary>The station that shows and takes input (null outside the menu scene).</summary>
+        public MenuStation Active => active;
 
         void Awake() => bootstrap = GetComponent<NetworkBootstrap>();
 
@@ -23,227 +38,74 @@ namespace HotPatata
         {
             var phase = bootstrap.Phase;
             bool lobby = bootstrap.HasLobby;
-            if (shown && phase == shownPhase && lobby == shownLobby) return;
-            shown = true;
-            shownPhase = phase;
-            shownLobby = lobby;
-
-            var stack = ScreenStack.Get();
-            stack.Clear();   // a new phase replaces the menu screens (and any pause menu left from the level)
-            switch (phase)
+            if (!shown || phase != shownPhase || lobby != shownLobby)
             {
-                case NetworkBootstrap.Mode.Menu: stack.Push(new MainMenuScreen(bootstrap)); break;
-                case NetworkBootstrap.Mode.Working: stack.Push(new WorkingScreen(bootstrap)); break;
-                case NetworkBootstrap.Mode.Lobby: stack.Push(lobby ? new LobbyScreen(bootstrap) : (UIScreen)new WorkingScreen(bootstrap)); break;
+                shown = true;
+                shownPhase = phase;
+                shownLobby = lobby;
+                ScreenStack.Existing?.Clear();   // a new phase closes what was over it (a pause menu left from the level, a dialog)
+            }
+            flow.Sync(phase, lobby);
+
+            if (MenuStation.All.Count == 0)
+            {
+                active = null;   // not in the menu scene
+                return;
+            }
+            foreach (var station in MenuStation.All)
+                if (station.Screen == null) station.Show(CreateScreen(station.Id));
+
+            bool arrived = false;
+            var target = MenuStation.Find(flow.Station);
+            if (target != null && target != active)
+            {
+                if (rig == null) rig = FindAnyObjectByType<MenuCameraRig>();
+                if (rig != null) rig.Travel(target, instant: active == null);
+                foreach (var station in MenuStation.All) station.SetActive(station == target);
+                active = target;
+                arrived = true;
+            }
+            if (active == null) return;
+
+            // Settings or a dialog over the scene, or a level loading: the board waits.
+            bool block = ScreenStack.AnyOpen || phase == NetworkBootstrap.Mode.InGame;
+            if (arrived)
+            {
+                blocked = block;
+                active.SetInteractive(!block);
+                active.FocusFirst();
+            }
+            else if (block != blocked)
+            {
+                blocked = block;
+                active.SetInteractive(!block);
+            }
+
+            if (Time.unscaledTime >= nextPoll)
+            {
+                nextPoll = Time.unscaledTime + LobbyPollSeconds;
+                FeedStage(phase == NetworkBootstrap.Mode.Lobby && lobby);
             }
         }
-    }
 
-    /// <summary>Shared pieces of the menu screens.</summary>
-    static class MenuParts
-    {
-        public const int RefreshMs = 200;   // how often a screen re-reads the bootstrap's state (messages, lobby list)
-        public const int AddressMaxLength = 64;
-
-        /// <summary>A text field of the layout: its value, its length limit, and typed (not delayed) changes.</summary>
-        public static TextField Field(TextField field, string value, int maxLength)
+        UIScreen CreateScreen(MenuStationId id) => id switch
         {
-            field.maxLength = maxLength;
-            field.isDelayed = false;
-            field.SetValueWithoutNotify(value ?? "");
-            return field;
-        }
+            MenuStationId.Title => new TitleStation(bootstrap, flow),
+            MenuStationId.Play => new PlayStation(bootstrap, flow),
+            MenuStationId.Level => new LevelStation(bootstrap, flow),
+            _ => new LobbyStation(bootstrap, flow)
+        };
 
-        /// <summary>The level and spawn-point choices (main menu and the host's lobby); the spawn list follows the level.</summary>
-        public static void LevelChoices(ChoiceRow level, ChoiceRow spawn, NetworkBootstrap bootstrap)
+        /// <summary>The lobby's players step onto the stage; out of the lobby, everyone goes back to the show.</summary>
+        void FeedStage(bool inLobby)
         {
-            void ShowSpawn() => spawn.style.display = bootstrap.SceneCheckpointCount > 0 ? DisplayStyle.Flex : DisplayStyle.None;
-            level.SetOptions(bootstrap.GameplayScenes.ToList(), bootstrap.SceneIndex);
-            spawn.SetOptions(NetworkBootstrap.SpawnLabels(bootstrap.SceneCheckpointCount), RunOptions.StartCheckpoint);
-            level.Changed += i =>
-            {
-                bootstrap.SceneIndex = i;
-                spawn.SetOptions(NetworkBootstrap.SpawnLabels(bootstrap.SceneCheckpointCount), RunOptions.StartCheckpoint);
-                ShowSpawn();
-            };
-            spawn.Changed += i => RunOptions.StartCheckpoint = i;
-            ShowSpawn();
-        }
-    }
-
-    /// <summary>
-    /// The main menu (parity with the old IMGUI one; layout Assets/UI/Screens/MainMenu.uxml): your name, level and spawn
-    /// point, Host Online (get a game code), Join with code, Play Local, Settings, and the direct connection (LAN /
-    /// testing) behind a toggle. Errors from the session flow show under it. It is the root: Back does nothing.
-    /// </summary>
-    public class MainMenuScreen : UIScreen
-    {
-        readonly NetworkBootstrap bootstrap;
-        Label error;
-
-        public MainMenuScreen(NetworkBootstrap bootstrap) => this.bootstrap = bootstrap;
-
-        public override bool CanGoBack => false;
-
-        public TextField NameField { get; private set; }
-        public TextField CodeField { get; private set; }
-        public Label Error => error;
-
-        protected override VisualElement Build()
-        {
-            var root = FromTemplate(Templates.mainMenu);
-
-            NameField = Navigable(MenuParts.Field(Require<TextField>("name-field"), PlayerNames.Local, PlayerNames.MaxLength));
-            NameField.RegisterValueChangedCallback(e => PlayerNames.Local = e.newValue);   // saved here; the host cleans it up when shared
-
-            var level = Navigable(Require<ChoiceRow>("level"));
-            var spawn = Navigable(Require<ChoiceRow>("spawn"));
-            MenuParts.LevelChoices(level, spawn, bootstrap);
-
-            var host = Navigable(Require<Button>("host-online"));
-            host.clicked += () => _ = bootstrap.HostOnlineAsync();
-            host.AddToClassList(FirstFocusClass);
-            CodeField = Navigable(MenuParts.Field(Require<TextField>("code-field"), "", SessionService.CodeLength));
-            CodeField.RegisterValueChangedCallback(e =>
-            {
-                string normalized = SessionService.NormalizeCode(e.newValue);
-                if (normalized != e.newValue) CodeField.SetValueWithoutNotify(normalized);
-            });
-            Navigable(Require<Button>("join-code")).clicked += () => _ = bootstrap.JoinCodeAsync(CodeField.value);
-            Navigable(Require<Button>("play-local")).clicked += bootstrap.PlayLocal;
-            Navigable(Require<Button>("settings")).clicked += () => Stack.Push(new SettingsScreen(bootstrap.Tuning));
-
-            var direct = Require<VisualElement>("direct-group");
-            var toggle = Navigable(Require<ToggleRow>("direct-toggle"));
-            toggle.SetValueWithoutNotify(false);
-            var ip = Navigable(MenuParts.Field(Require<TextField>("direct-address"), bootstrap.DirectAddress, MenuParts.AddressMaxLength));
-            ip.RegisterValueChangedCallback(e => bootstrap.DirectAddress = e.newValue.Trim());
-            Navigable(Require<Button>("join-ip")).clicked += () => bootstrap.StartClientDirect(bootstrap.DirectAddress);
-            Navigable(Require<Button>("host-direct")).clicked += bootstrap.StartHostDirect;
-            Show(direct, false);
-            toggle.Changed += on => Show(direct, on);
-
-            error = Require<Label>("error");
-            root.schedule.Execute(Refresh).Every(MenuParts.RefreshMs);
-            Refresh();
-            return root;
-        }
-
-        void Refresh()
-        {
-            string message = bootstrap.LastMessage;
-            error.text = message ?? "";
-            error.style.display = string.IsNullOrEmpty(message) ? DisplayStyle.None : DisplayStyle.Flex;
-        }
-    }
-
-    /// <summary>"Creating your game...", "Joining ABC123...", "Connecting...": the session flow is busy. Nothing to press.</summary>
-    public class WorkingScreen : UIScreen
-    {
-        readonly NetworkBootstrap bootstrap;
-        Label status;
-
-        public WorkingScreen(NetworkBootstrap bootstrap) => this.bootstrap = bootstrap;
-
-        public override bool CanGoBack => false;
-
-        protected override VisualElement Build()
-        {
-            var root = FromTemplate(Templates.working);
-            status = Require<Label>("status");
-            UIParts.Wobble(Require<VisualElement>("spinner"));
-            root.schedule.Execute(Refresh).Every(MenuParts.RefreshMs);
-            Refresh();
-            return root;
-        }
-
-        void Refresh() => status.text = string.IsNullOrEmpty(bootstrap.Status) ? "Connecting..." : bootstrap.Status;
-    }
-
-    /// <summary>
-    /// The online lobby (parity with the old IMGUI one; layout Assets/UI/Screens/Lobby.uxml): the game code (Copy code),
-    /// the player list with each slot's colour and shape and the host / you tags, then for the host the level, spawn
-    /// point and Start, for the others a waiting line, and Leave. Back asks before leaving.
-    /// </summary>
-    public class LobbyScreen : UIScreen
-    {
-        readonly NetworkBootstrap bootstrap;
-        Label playersTitle;
-        VisualElement playerList;
-        string listed;
-
-        public LobbyScreen(NetworkBootstrap bootstrap) => this.bootstrap = bootstrap;
-
-        protected override VisualElement Build()
-        {
-            var root = FromTemplate(Templates.lobby);
-
-            Require<Label>("code").text = bootstrap.LobbyCode ?? "";
-            Navigable(Require<Button>("copy-code")).clicked += () => GUIUtility.systemCopyBuffer = bootstrap.LobbyCode ?? "";
-
-            playersTitle = Require<Label>("players-title");
-            playerList = Require<VisualElement>("player-list");
-            playerList.Clear();   // anything the layout shows there is a preview
-
-            // The host picks the level and starts; the others wait.
-            bool host = bootstrap.IsLobbyHost;
-            Show(Require<VisualElement>("host-controls"), host);
-            Show(Require<VisualElement>("waiting"), !host);
-            UIParts.Wobble(Require<VisualElement>("waiting-spinner"));
-            if (host)
-            {
-                var level = Navigable(Require<ChoiceRow>("level"));
-                var spawn = Navigable(Require<ChoiceRow>("spawn"));
-                MenuParts.LevelChoices(level, spawn, bootstrap);
-                var start = Navigable(Require<Button>("start"));
-                start.clicked += bootstrap.StartLevel;
-                start.AddToClassList(FirstFocusClass);
-            }
-            Navigable(Require<Button>("leave")).clicked += () => _ = bootstrap.LeaveAsync(null);
-
-            root.schedule.Execute(Refresh).Every(MenuParts.RefreshMs);
-            Refresh();
-            return root;
-        }
-
-        public override void OnBack() =>
-            Stack.Push(new ConfirmScreen("Leave the lobby?", "You leave this game and go back to the menu.", "Leave", () => _ = bootstrap.LeaveAsync(null)));
-
-        /// <summary>
-        /// The player cards, rebuilt only when the list changed (join, leave, name): each player's slot chip, name and
-        /// HOST / YOU badges, then an empty card per free seat.
-        /// </summary>
-        void Refresh()
-        {
-            var players = bootstrap.LobbyPlayers();
-            string signature = string.Join("|", players.Select(p => p.Label + p.IsHost + p.IsYou)) + "/" + bootstrap.LobbyMaxPlayers;
-            if (signature == listed) return;
-            listed = signature;
-            playersTitle.text = $"{players.Count} / {bootstrap.LobbyMaxPlayers}";
-            playerList.Clear();
-            foreach (var p in players)
-            {
-                var card = new VisualElement();
-                card.AddToClassList("hp-slot");
-                card.Add(UIParts.Chip(bootstrap.Tuning, p.Slot));
-                var name = new Label(p.Name);
-                name.AddToClassList("hp-slot__name");
-                card.Add(name);
-                if (p.IsHost) card.Add(UIParts.Badge("HOST", "crown"));
-                if (p.IsYou) card.Add(UIParts.Badge("YOU", "star", "hp-badge--you"));
-                playerList.Add(card);
-            }
-            for (int i = players.Count; i < bootstrap.LobbyMaxPlayers; i++)
-            {
-                var seat = new VisualElement();
-                seat.AddToClassList("hp-slot");
-                seat.AddToClassList("hp-slot--empty");
-                seat.Add(UIParts.EmptyChip());
-                var waiting = new Label("Waiting for a player...");
-                waiting.AddToClassList("hp-slot__name");
-                seat.Add(waiting);
-                playerList.Add(seat);
-            }
+            if (stage == null) stage = FindAnyObjectByType<MenuLobbyStage>();
+            if (stage == null) return;
+            guests.Clear();
+            if (inLobby)
+                foreach (var p in bootstrap.LobbyPlayers())
+                    guests.Add(new MenuLobbyStage.Guest(p.Slot, p.Name));
+            stage.SetGuests(guests);
         }
     }
 }
