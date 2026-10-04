@@ -9,7 +9,7 @@
 
 | Suite | Mode | Covers |
 |---|---|---|
-| `ConfigurationTests` | EditMode | M0 baseline: tuning defaults, layers, collision matrix, player colours/shapes and their indicator meshes |
+| `ConfigurationTests` | EditMode | M0 baseline: tuning defaults, layers, collision matrix, player colours/shapes and their indicator meshes and flat ring glyphs; every slot's character is Humanoid on the shared controller with a right-hand socket; the throw hold point is where the hand is back |
 | `BombFuseTests` | EditMode | fuse maths: refresh, expiry, warning phase, stage bands |
 | `AimAssistTests` | EditMode | release-time aim assist and arc maths (spec §8.3) |
 | `FlightHistoryTests` | EditMode | the host's flight record used for lag-compensated catches |
@@ -30,6 +30,7 @@
 | `MovementTests` | PlayMode | accel/brake, jump, coyote time, jump buffer (M1.2) |
 | `SprintSlideTests` | PlayMode | M9 movement: sprint, carving, slide, slide-jump, crouch, mantle |
 | `ViewFeelTests` | PlayMode | first-person speed feel, post effects, accessibility scaling |
+| `PlayerCharacterTests` | PlayMode | each slot shows its character and its ring (colour + shape); a slot change swaps the character and the animator follows; the first-person player sees only the shadow of theirs; in third person the potato rides the right palm; a held throw waits with the arm cocked and throws on release |
 | `PassFeelTests` | PlayMode | **pass-feel regression suite**: catches at 4/8/12 m moving and jumping, the assist never creates range |
 | `PrefabKitTests` | PlayMode | M2 greybox kit (moving/falling platforms, rotating bar, kill zone, checkpoint, finish) |
 | `CourseTests` | PlayMode | M5 course Act 1: structure, checkpoints, finish, rematch, start checkpoint, launch pad; #23 the results screen opens on finish with the run time and its Rematch button restarts the run |

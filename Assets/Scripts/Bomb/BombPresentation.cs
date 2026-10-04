@@ -74,7 +74,8 @@ namespace HotPatata
             bomb = GetComponent<BombController>();
             bombAudio = GetComponent<BombAudio>();
             block = new MaterialPropertyBlock();
-            baseScale = visual.localScale;
+            baseScale = visual.localScale * (bomb.Tuning != null ? bomb.Tuning.potatoVisualScale : 1f);   // the model only, never the bomb's colliders
+            visual.localScale = baseScale;
             visualBaseLocal = visual.localPosition;
             swayPhase = Random.value * 10f;
             lastPosition = transform.position;

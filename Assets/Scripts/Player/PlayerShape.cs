@@ -38,6 +38,12 @@ namespace HotPatata
                 ? tuning.playerShapes[Mathf.Abs(slot) % tuning.playerShapes.Length]
                 : (PlayerShape)(Mathf.Abs(slot) % 4);
 
+        /// <summary>The slot's character prefab (null if none is set: the player keeps the one it has).</summary>
+        public static PlayerCharacter CharacterFor(GameTuning tuning, int slot) =>
+            tuning != null && tuning.playerCharacters != null && tuning.playerCharacters.Length > 0
+                ? tuning.playerCharacters[Mathf.Abs(slot) % tuning.playerCharacters.Length]
+                : null;
+
         /// <summary>IMGUI rich text: the slot's shape in the slot's colour, then the name (the style needs richText).</summary>
         public static string RichLabel(GameTuning tuning, int slot, string name) =>
             $"<color=#{ColorUtility.ToHtmlStringRGB(ColorFor(tuning, slot))}>{Glyph(ShapeFor(tuning, slot))}</color> {name}";

@@ -398,14 +398,16 @@ As built:
 Assets/
 ├── Art/
 │   ├── Materials/        kit materials (Greybox_*, Pad_*), toon materials
-│   ├── Models/           Bomb/ (potato.glb), Player/ (mannequin + animations), Map/ (KayKit Platformer Pack, CC0)
+│   ├── Models/           Bomb/ (potato.glb), Characters/ (Mixamo: James, Remy, The Boss; Animations/, Controllers/),
+│   │                     Player/ (the old KayKit mannequin, unused), Map/ (KayKit Platformer Pack, CC0)
 │   ├── Shaders/          HotPatata/Toon, HotPatata/Particle, HotPatata/Sky, speed lines
 │   ├── Textures/Icons/   zone and tube icons drawn in code by BombObstacleKitBuilder
 │   └── VFX/              textures for particles and trails
 ├── Audio/                HotPatataMixer (Master > SFX); SFX/ optional real clips (see its README; procedural fallback otherwise)
 ├── EditorTools/          CourseKit, CourseBuilder, PlaytestCourseBuilder, PatataParkBuilder, BombObstacleKitBuilder,
-│                         KayKitKitBuilder, PlayerAnimationSetup, MenuBackdropBuilder
-├── Prefabs/              Bomb/ Gameplay/ Menu/ (MenuBackdrop, generated) Network/ Obstacles/ Platforms/ Player/ VFX/
+│                         KayKitKitBuilder, PlayerCharacterBuilder, MenuBackdropBuilder
+├── Prefabs/              Bomb/ Gameplay/ Menu/ (MenuBackdrop, generated) Network/ Obstacles/ Platforms/
+│                         Player/ (Player; Characters/, generated) VFX/
 ├── Scenes/               Bootstrap, PassSandbox, PrototypeCourse, PlaytestCourse, PatataPark
 ├── ScriptableObjects/    Tuning/GameTuning.asset, Kit/KayKitPalette.asset (generated)
 ├── Scripts/
@@ -414,7 +416,7 @@ Assets/
 │   │                     NetworkBombGate/SignalActuator/BombTransit
 │   ├── Player/           Player, PlayerMotor, PlayerLook, PlayerThrower, PlayerCatcher, PlayerCatchVolume,
 │   │                     FirstPersonCamera, PlayerViewFeel, SpeedEffects, PlayerPresentation, PlayerAnimator,
-│   │                     PlayerPause, ...
+│   │                     PlayerCharacter, PlayerShapeMesh, PlayerPause, ...
 │   ├── Bomb/             BombController, BombFuse, BombPhysics, CatchResolver, FlightHistory, AimAssist,
 │   │                     ThrowBallistics, BombAudio, BombPresentation, ExplosionFx, ProceduralSfx
 │   ├── Run/              RunManager, Checkpoint, KillZone, FinishZone, PlayerZone, PlayerSpawner, PlayerSpawn
@@ -618,7 +620,7 @@ base, the HUD (#24) follows.
     (`Settings.ViewEffectsStrength`, spec §19): no swoop, and nothing flashes. The Title spot keeps the slow drift
     (`MenuCameraDrift`); the other spots are steady so the boards read.
   - **Lobby stage** (`MenuLobbyStage`): while the lobby is open the potato show pauses (`MenuHotPotato.SetPaused`) and
-    mannequin `i`, already in slot `i`'s colour, hops to stage spot `i` under the Lobby board for each joined player
+    the show's player `i` (slot `i`'s character) hops to stage spot `i` under the Lobby board for each joined player
     (`GameTuning.menuStepSeconds`), waves, and shows a nameplate over its head (`Nameplate.uxml`: the slot chip and the
     name; spec §19, never colour alone). Free seats stay in the show; leaving the lobby sends everyone back and the
     show resumes.
@@ -665,15 +667,17 @@ base, the HUD (#24) follows.
   each course scene, pushes it while the run is `Completed` and pops it when the run starts again. The old IMGUI
   screen is gone. While any menu is on top, the IMGUI `AimReticle` draws nothing.
 - **Menu backdrop** (`Assets/Prefabs/Menu/MenuBackdrop.prefab`, one instance in `Bootstrap`). A small KayKit island,
-  home of the in-world menu (above), where four mannequins in the slot colours pass the live potato in arcs
+  home of the in-world menu (above), where the four slots' characters pass the live potato in arcs, hand to hand
   (`MenuHotPotato`). The holder faces the next catcher, a catch squashes the catcher and bystanders cheer, wave or hop.
   The wick sparks faster (`GameTuning.fuseSparkRates`) until the fuse runs out in the game's own explosion
   (`ExplosionFx`, its flash always reduced at least 60 %, more if the player asked through `flashReduction`); the
   holder flinches, the others cheer, and a new potato pops in. Flags sway, stars and collectables spin
   (`MenuFloat`), small platforms bob, clouds drift (`MenuCloudDrift`), sparkles float, and on the Title station the
   camera drifts slowly (`MenuCameraDrift` on the Title spot, scaled by `viewEffectsStrength`).
-  - **Visual only.** The mannequins are copies of the player's `Visual/Mannequin` (meshes and Animator, driven by a
-    menu controller, `MenuMannequin.controller`), the potato a copy of the bomb's `Visual` and `FlightFx`. None of
+  - **Visual only.** The show's players are copies of each slot's character prefab (`PlayerCharacter`, driven by
+    `MenuCharacter.controller`, its states named after the Mixamo clips; the potato leaves the `HandSocket` at the
+    moment `PlayerCharacterBuilder` measured on the Throw clip), the potato a copy of the bomb's `Visual` and
+    `FlightFx`. None of
     the gameplay components (`Player`, `BombController`, networking) and no colliders (the boards' generated panel
     colliders aside). It runs on unscaled time (the menu is offline and local, so no `SectionClock`) and turns itself
     off in batch mode.
@@ -1553,7 +1557,7 @@ Only after that works should the network layer mirror the same state transitions
 
 Soft, bright party-game toon style.
 
-- **Shaders** (`Assets/Art/Shaders`): kit, pads, bomb, mannequin and backdrop use `HotPatata/Toon`, hand-written URP
+- **Shaders** (`Assets/Art/Shaders`): kit, pads, bomb, characters and backdrop use `HotPatata/Toon`, hand-written URP
   HLSL (not Shader Graph) that reuses URP's ShadowCaster/DepthOnly/DepthNormals passes. Features: a two-band ramp with a
   tinted `_ShadeColor`, `_TopColor` on upward faces, rim, an optional spec blob, emission always added
   (MaterialPropertyBlock friendly), a fake bevel on scaled unit cubes (`_EdgeWidth`), world checker/stripes (`_Pattern`;
@@ -1561,7 +1565,8 @@ Soft, bright party-game toon style.
   the texture's coloured swatches take `_BaseColor`, greys, whites and the face stay as painted; 0 = the usual multiply). Particles, trails and
   flashes use `HotPatata/Particle`.
 - **Materials:** the kit materials kept their names (`Greybox_*`, `Pad_*`) and were switched to the toon shader in
-  place, so prefab references did not change. The mannequin's FBX material is remapped to `Toon_Mannequin` (`_SuitTint` = 1).
+  place, so prefab references did not change. The characters' materials (`Assets/Art/Materials/Characters`) take
+  each model's diffuse on the toon shader; Remy's hair and eyelashes keep their imported materials (they need alpha).
 - **Sky and grading:** skybox `HotPatata/Sky` (`Sky_HotPatata`), gradient ambient, linear fog matched to the horizon,
   and a global `LookVolume` (`Assets/Settings/Look/HotPatata_Look.asset`: Neutral tonemapping, bloom, saturation, warm
   balance) in every scene. `PC_RPAsset` uses MSAA 4x.
@@ -1571,10 +1576,30 @@ Soft, bright party-game toon style.
   simulating protanopia, deuteranopia and tritanopia (Machado 2009, full severity) and measuring CIEDE2000: every
   pair stays at least 23 apart in all four visions (the old orange/cyan/green/pink palette fell to 8.7 in tritanopia),
   and every colour stays at least 18.7 from hazard red, the potato orange and glow, and the carrier yellow. Warm hues
-  are left to the bomb and hazards. Spec §19 (never colour alone): in game the whole suit takes the slot colour
-  (`PlayerPresentation.bodyRenderers`, every mannequin part, through `_SuitTint`) and the carrier indicator takes the
-  slot's shape (`PlayerShapeMesh`: sphere, pyramid, cube, octahedron, each reading as its glyph from any side while it
-  spins, in the carrier yellow); the lobby and results show the glyph in the slot colour. Simulated swatches:
+  are left to the bomb and hazards. Spec §19 (never colour alone): in game each slot is **its own character**
+  (`GameTuning.playerCharacters`: 1 James, 2 Remy, 3 The Boss, 4 James until a 4th model; not a player choice, spec
+  §17.2), with a **ring at its feet** in the slot colour holding the slot's shape as a flat glyph
+  (`PlayerShapeMesh.Flat`: ●, ▲, ■, ◆; hidden under your own camera), and the carrier indicator takes the slot's shape
+  (`PlayerShapeMesh`: sphere, pyramid, cube, octahedron, each reading as its glyph from any side while it spins, in the
+  carrier yellow); the lobby and results show the glyph in the slot colour.
+- **Characters** (`PlayerCharacter`, `Assets/Prefabs/Player/Characters`, generated by `PlayerCharacterBuilder`, menu
+  **HotPatata/Player/Build Characters**; never edit them by hand):
+  - Mixamo models and clips, all **Humanoid**; the clips copy James's avatar, so one set plays on every character.
+    Clips live in `Assets/Art/Models/Characters/Animations` (Standing Idle, Slow Run, Fast Run, Jump, Running Jump,
+    Throw; optional Cheering, Waving, Hit Reaction for the menu show). The builder names each clip after its file,
+    bakes the root into the pose (the motor moves the player; root motion stays off) and trims the jumps to take-off
+    to peak.
+  - Each model is fitted to 1.75 m, feet on the ground, with a **`HandSocket`** in the right palm. A slot's character
+    is swapped in by `PlayerPresentation.ApplyIdentity` when the slot is set (offline and online, no extra networking)
+    and bound to `PlayerAnimator`.
+  - `PlayerCharacter.controller`: Locomotion (0 Standing Idle, 1 Slow Run, 2 Fast Run on `Speed`), Jump (standing or
+    running air pose), and a Throw layer on an upper-body mask (`ThrowUpperBody.mask`), so the legs keep running.
+  - **The held potato**: in third person `HandAnchor` sits at the palm (`PlayerAnimator`, a small serialized offset
+    and yaw so it points forward out of the hand); first person keeps the camera anchor. The potato's model size is
+    `GameTuning.potatoVisualScale` (visual only, the same in the hand, in flight and in first person).
+  - **The held throw**: the Throw clip plays to `GameTuning.throwAnimationHoldNormalized` (the frame where the hand is
+    back and up, measured on the clip and checked by `ConfigurationTests`) and waits there (`ThrowSpeed` 0) while the
+    button is held, then follows through on release. The flight itself is unchanged. Simulated swatches:
   [`images/player-palette.png`](images/player-palette.png); four players in PassSandbox, raw and simulated:
   [`images/player-lineup.png`](images/player-lineup.png).
 

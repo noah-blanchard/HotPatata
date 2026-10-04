@@ -5,23 +5,22 @@ using UnityEngine;
 namespace HotPatata
 {
     /// <summary>
-    /// The menu backdrop's little show (ARCHITECTURE §6.2): four mannequins in the slot colours pass the potato around
+    /// The menu backdrop's little show (ARCHITECTURE §6.2): the four slots' characters pass the potato from hand to hand
     /// in arcs while its wick sparks faster and faster. When the fuse runs out it goes off in the game's own cartoon
     /// explosion (<see cref="ExplosionFx"/>, its flash always reduced, more if the player asked), the unlucky holder
     /// flinches, the others cheer, and a new potato pops in. Presentation only: no physics, no rules, nothing networked.
     /// It is a loop of looks, built by <c>MenuBackdropBuilder</c>, on unscaled time (the menu is offline and local).
-    /// In the lobby the show pauses (<see cref="SetPaused"/>) and <see cref="MenuLobbyStage"/> moves the mannequins.
+    /// In the lobby the show pauses (<see cref="SetPaused"/>) and <see cref="MenuLobbyStage"/> moves the players.
     /// </summary>
     public class MenuHotPotato : MonoBehaviour
     {
-        static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
-
-        const string Idle = "Idle_A", IdleLook = "Idle_B", Throw = "Throw", Cheer = "Cheering", Flinch = "Hit_A";
-        public const string Wave = "Waving", Hop = "Jump_Full_Short";
+        // State names = the Mixamo clip names (MenuCharacter.controller, PlayerCharacterBuilder): a clip's length is looked up by name.
+        const string Idle = "Standing Idle", IdleLook = "Standing Idle", Throw = "Throw", Cheer = "Cheering", Flinch = "Hit Reaction";
+        public const string Wave = "Waving", Hop = "Jump";
         const float Blend = 0.15f;
 
         [SerializeField] GameTuning tuning;
-        [SerializeField, Tooltip("The players' pivots (yaw only), each with its mannequin's Animator below it.")] Transform[] players;
+        [SerializeField, Tooltip("The players' pivots (yaw only), each with its character (PlayerCharacter, Animator) below it.")] Transform[] players;
         [SerializeField, Tooltip("The potato's visual (model, wick, sparks).")] Transform potato;
         [SerializeField] ParticleSystem sparks;
         [SerializeField] TrailRenderer trail;
@@ -33,12 +32,12 @@ namespace HotPatata
         [SerializeField] Vector2 flightSeconds = new Vector2(0.75f, 1.15f);
         [SerializeField] Vector2 arcHeight = new Vector2(1.4f, 3.2f);
         [SerializeField] Vector2 fuseSeconds = new Vector2(9f, 15f);
-        [SerializeField, Tooltip("Seconds into the Throw clip when the potato leaves the hand.")] float releaseAt = 0.45f;
+        [SerializeField, Tooltip("Seconds into the Throw clip when the potato leaves the hand (measured on the clip by the builder).")] float releaseAt = 0.45f;
         [SerializeField, Tooltip("Seconds of calm after an explosion.")] float afterBoom = 2.6f;
         [SerializeField, Tooltip("Chance per pass that a bystander cheers, waves or hops.")] float bystanderChance = 0.35f;
 
         [Header("Looks")]
-        [SerializeField] float handHeight = 1.1f;
+        [SerializeField, Tooltip("Where the potato sits for a player without a hand socket.")] float handHeight = 1.1f;
         [SerializeField] float handForward = 0.42f;
         [SerializeField, Tooltip("Degrees per second the players turn to face the action.")] float turnSpeed = 420f;
         [SerializeField, Tooltip("Menu explosions always reduce the flash at least this much (it plays while you read the menu).")]
@@ -46,6 +45,7 @@ namespace HotPatata
         [SerializeField] float sparkRateFloor = 12f;
 
         Animator[] animators;
+        Transform[] sockets;   // each player's right palm (PlayerCharacter.HandSocket), else a point in front of them
         float[] busyUntil, squash;
         Vector3 potatoScale;
         Transform holderPivot;   // the potato sits at this player's hands; null while it flies
@@ -56,13 +56,14 @@ namespace HotPatata
         bool exploding, paused, started;
         Coroutine show;
 
-        /// <summary>The players' pivots (mannequin <c>i</c> wears slot <c>i</c>'s colour).</summary>
+        /// <summary>The players' pivots (player <c>i</c> is slot <c>i</c>'s character).</summary>
         public Transform[] Players => players;
         public bool Paused => paused;
 
         public void Configure(GameTuning gameTuning, Transform[] pivots, Transform potatoVisual, ParticleSystem wickSparks,
-                              TrailRenderer flightTrail, ParticleSystem puffs, ExplosionFx boom)
+                              TrailRenderer flightTrail, ParticleSystem puffs, ExplosionFx boom, float releaseSeconds)
         {
+            releaseAt = releaseSeconds;
             tuning = gameTuning;
             players = pivots;
             potato = potatoVisual;
@@ -80,20 +81,15 @@ namespace HotPatata
                 return;
             }
             animators = new Animator[players.Length];
+            sockets = new Transform[players.Length];
             busyUntil = new float[players.Length];
             squash = new float[players.Length];
-            var block = new MaterialPropertyBlock();
             for (int i = 0; i < players.Length; i++)
             {
                 animators[i] = players[i].GetComponentInChildren<Animator>();
                 if (animators[i] != null) animators[i].Play(Idle, 0, Random.value);
-                // The slot colour on the suit, as in game (PlayerPresentation).
-                foreach (var r in players[i].GetComponentsInChildren<Renderer>())
-                {
-                    r.GetPropertyBlock(block);
-                    block.SetColor(BaseColor, PlayerIdentity.ColorFor(tuning, i));
-                    r.SetPropertyBlock(block);
-                }
+                var character = players[i].GetComponentInChildren<PlayerCharacter>();
+                sockets[i] = character != null ? character.HandSocket : null;
             }
             potatoScale = potato.localScale;
             if (explosionPrefab != null)
@@ -134,7 +130,7 @@ namespace HotPatata
             else show = StartCoroutine(Show());
         }
 
-        /// <summary>Plays a clip on mannequin <paramref name="i"/>; it goes back to idle when the clip ends.</summary>
+        /// <summary>Plays a clip on player <paramref name="i"/>; it goes back to idle when the clip ends.</summary>
         public void Animate(int i, string clip)
         {
             if (animators == null || i < 0 || i >= animators.Length) return;
@@ -332,7 +328,12 @@ namespace HotPatata
             }
         }
 
-        Vector3 Hand(Transform pivot) => pivot.position + Vector3.up * handHeight + pivot.forward * handForward;
+        Vector3 Hand(Transform pivot)
+        {
+            int i = System.Array.IndexOf(players, pivot);
+            if (sockets != null && i >= 0 && sockets[i] != null) return sockets[i].position;
+            return pivot.position + Vector3.up * handHeight + pivot.forward * handForward;
+        }
 
         static IEnumerator Wait(float seconds) { yield return new WaitForSecondsRealtime(seconds); }
 

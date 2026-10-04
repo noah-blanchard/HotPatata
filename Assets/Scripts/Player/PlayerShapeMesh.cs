@@ -22,6 +22,49 @@ namespace HotPatata
             return mesh;
         }
 
+        static readonly Dictionary<PlayerShape, Mesh> FlatCache = new Dictionary<PlayerShape, Mesh>();
+
+        /// <summary>
+        /// The shape as a flat glyph lying in XZ, facing up, fitting a unit square (●, ▲ pointing forward, ■, ◆): the
+        /// slot ring at a player's feet, read from above and from the side. A flattened solid would not do (a pyramid
+        /// seen from above is a square).
+        /// </summary>
+        public static Mesh Flat(PlayerShape shape)
+        {
+            if (FlatCache.TryGetValue(shape, out var mesh) && mesh != null) return mesh;
+            int sides = shape switch { PlayerShape.Triangle => 3, PlayerShape.Square => 4, PlayerShape.Diamond => 4, _ => 32 };
+            float start = shape switch
+            {
+                PlayerShape.Triangle => 90f,   // a point forward (+Z)
+                PlayerShape.Square => 45f,     // edges along the axes
+                _ => 90f                       // diamond: points along the axes
+            };
+            float radius = shape == PlayerShape.Square ? 0.5f * Mathf.Sqrt(2f) : 0.5f;
+            var vertices = new Vector3[sides + 1];
+            var normals = new Vector3[sides + 1];
+            var triangles = new int[sides * 3];
+            vertices[0] = Vector3.zero;
+            for (int i = 0; i < sides; i++)
+            {
+                float a = (start + 360f * i / sides) * Mathf.Deg2Rad;
+                vertices[i + 1] = new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * radius;
+                if (shape == PlayerShape.Diamond) vertices[i + 1].x *= 0.7f;   // taller than wide, as on the chips
+                triangles[i * 3] = 0;
+                triangles[i * 3 + 1] = 1 + (i + 1) % sides;   // clockwise seen from above: the face looks up
+                triangles[i * 3 + 2] = 1 + i;
+            }
+            var colors = new Color[sides + 1];
+            for (int i = 0; i < normals.Length; i++)
+            {
+                normals[i] = Vector3.up;
+                colors[i] = Color.white;   // unlit shaders that multiply by vertex colour
+            }
+            mesh = new Mesh { name = "PlayerShapeFlat_" + shape, vertices = vertices, normals = normals, colors = colors, triangles = triangles, hideFlags = HideFlags.DontSave };
+            mesh.RecalculateBounds();
+            FlatCache[shape] = mesh;
+            return mesh;
+        }
+
         static Mesh Build(PlayerShape shape)
         {
             switch (shape)

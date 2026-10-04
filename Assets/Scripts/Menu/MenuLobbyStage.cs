@@ -6,15 +6,15 @@ namespace HotPatata
 {
     /// <summary>
     /// The lobby's players in the scene (ARCHITECTURE §6.2): while the Lobby station shows, the potato show pauses and
-    /// the backdrop's mannequin <c>i</c> (already in slot <c>i</c>'s colour) hops to stage spot <c>i</c> for each joined
+    /// the show's player <c>i</c> (slot <c>i</c>'s character) hops to stage spot <c>i</c> for each joined
     /// player, waves, and gets a nameplate over its head: the slot chip (colour and shape) and the name, spec §19, never
-    /// colour alone. Free seats keep their mannequin idle in the show. Leaving the lobby sends everyone back and the
+    /// colour alone. Free seats keep their character idle in the show. Leaving the lobby sends everyone back and the
     /// show goes on. Presentation only, on unscaled time; fed by <see cref="MenuView"/> from the bootstrap's lobby list.
     /// Placed by <c>MenuBackdropBuilder</c>.
     /// </summary>
     public class MenuLobbyStage : MonoBehaviour
     {
-        /// <summary>One joined player: the slot (colour, shape, mannequin) and the name.</summary>
+        /// <summary>One joined player: the slot (colour, shape, character) and the name.</summary>
         public readonly struct Guest
         {
             public readonly int Slot;
@@ -28,7 +28,7 @@ namespace HotPatata
         }
 
         [SerializeField] GameTuning tuning;
-        [SerializeField, Tooltip("The potato show whose mannequins step onto the stage.")] MenuHotPotato show;
+        [SerializeField, Tooltip("The potato show whose players step onto the stage.")] MenuHotPotato show;
         [SerializeField, Tooltip("Stage spot per slot; its rotation is where the player faces.")] Transform[] spots;
         [SerializeField, Tooltip("Nameplate per slot above each spot (world-space UI documents).")] UIDocument[] nameplates;
 
@@ -107,7 +107,7 @@ namespace HotPatata
         }
 
         /// <summary>
-        /// The joined players (empty when nobody is, or the lobby closed): their mannequins hop onto the stage, the others
+        /// The joined players (empty when nobody is, or the lobby closed): their characters hop onto the stage, the others
         /// hop back to the show. The show resumes once everyone is back.
         /// </summary>
         public void SetGuests(IReadOnlyList<Guest> guests)
