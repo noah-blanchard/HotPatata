@@ -36,6 +36,7 @@ namespace HotPatata
             if (on && source is BombGate gate && gate.RemainingSeconds < warnSeconds)
                 glow = 0.45f + 0.55f * (0.5f + 0.5f * Mathf.Cos(Time.time * Mathf.PI * 4f));   // about to close
 
+            block ??= new MaterialPropertyBlock();   // Update can come before Awake when the Editor drives play mode
             foreach (var r in lamps)
             {
                 if (r == null) continue;

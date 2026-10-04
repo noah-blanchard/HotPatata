@@ -403,8 +403,8 @@ Assets/
 │   └── VFX/              textures for particles and trails
 ├── Audio/                HotPatataMixer (Master > SFX); SFX/ optional real clips (see its README; procedural fallback otherwise)
 ├── EditorTools/          CourseKit, CourseBuilder, PlaytestCourseBuilder, PatataParkBuilder, BombObstacleKitBuilder,
-│                         KayKitKitBuilder, PlayerAnimationSetup
-├── Prefabs/              Bomb/ Gameplay/ Network/ Obstacles/ Platforms/ Player/ VFX/
+│                         KayKitKitBuilder, PlayerAnimationSetup, MenuBackdropBuilder
+├── Prefabs/              Bomb/ Gameplay/ Menu/ (MenuBackdrop, generated) Network/ Obstacles/ Platforms/ Player/ VFX/
 ├── Scenes/               Bootstrap, PassSandbox, PrototypeCourse, PlaytestCourse, PatataPark
 ├── ScriptableObjects/    Tuning/GameTuning.asset, Kit/KayKitPalette.asset (generated)
 ├── Scripts/
@@ -419,10 +419,12 @@ Assets/
 │   ├── Run/              RunManager, Checkpoint, KillZone, FinishZone, PlayerZone, PlayerSpawner, PlayerSpawn
 │   ├── Obstacles/        MovingPlatform, RotatingObstacle, FallingPlatform, Conveyor, LaunchPad, IPlatformCarrier
 │   ├── Kit/              KitSkin, KitPalette (KayKit visuals, §25.1)
+│   ├── Menu/             the living menu backdrop (§6.2): MenuHotPotato, MenuFloat, MenuCloudDrift, MenuCameraDrift
 │   ├── Zones/            Zone, IBombZoneEffect, BombZoneSweep, FuseZone, BombBarrier, BombGate, PressurePlate,
 │   │                     ISignalSource, SignalActuator, SignalIndicator, BombTransit, TransitMouth, TransitPresentation
-│   ├── UI/               ScreenStack, UIScreen, UIScreenCatalog, CursorPolicy (UI Toolkit base, §6.2), MenuView,
-│   │                     PauseMenu, SettingsScreen, SettingRows, ConfirmScreen, AimReticle, RunResultsUI
+│   ├── UI/               ScreenStack, UIScreen, UIScreenCatalog, UIParts, CursorPolicy (UI Toolkit base, §6.2),
+│   │                     MenuView, PauseMenu, SettingsScreen, SettingRows, ConfirmScreen, ResultsScreen, RunResultsUI,
+│   │                     AimReticle
 │   ├── Debug/            DebugHud, LocalPlayerSwitcher, PlayerBot
 │   └── DebugTools/       Editor/dev-build only: LatencySimulator, ThrowDebugOverlay, ThrowTelemetry, PassPartner,
 │                         UISampleScreen
@@ -431,8 +433,8 @@ Assets/
 │   ├── EditMode/
 │   └── PlayMode/
 └── UI/                   UI Toolkit (§6.2): Screens/ (one UXML per screen), Styles/ (HotPatata.uss, HotPatataTheme.tss),
-                          Fonts/, Resources/HotPatataPanel.asset (PanelSettings), Resources/HotPatataScreens.asset
-                          (UIScreenCatalog)
+                          Fonts/ (Lilita One, Nunito, SIL OFL), Icons/ (SVG), Resources/HotPatataPanel.asset
+                          (PanelSettings), Resources/HotPatataScreens.asset (UIScreenCatalog)
 ```
 
 Keep folder naming boring and predictable.
@@ -498,13 +500,32 @@ immediately. A screen edits `InputRebinding.CreateEditableCopy(asset)` and commi
 ### 6.2 UI: screens and HUD (#14)
 
 **Decision (owner):** UI Toolkit for menus, screens and the HUD; uGUI only for world-space UI. IMGUI (`OnGUI`) stays
-for dev tools only; the menu and the lobby moved onto this base (#15), the results (#23) and the HUD (#24) follow.
+for dev tools only; the menu and the lobby (#15) and the results (#23) moved onto this base, the HUD (#24) follows.
 
 - **Panel and theme.** One `PanelSettings`, `Assets/UI/Resources/HotPatataPanel.asset` (scale with screen size from
   1920x1080, match 0.5, sort order 100), with the theme `Assets/UI/Styles/HotPatataTheme.tss` = Unity's runtime theme +
-  `HotPatata.uss`. Screens style themselves with its `hp-*` classes: `hp-overlay` (dimmed, centred), `hp-panel`,
-  `hp-title`, `hp-hint`, `hp-button` (+ `hp-button--secondary`), `hp-toggle`, `hp-slider`. Focus shows as a yellow
-  ring. The font is Unity's default until a licensed toon font is chosen (`Assets/UI/Fonts`).
+  `HotPatata.uss`.
+  - **Look ("Sunny toy box", owner-approved mock-up).** Cream rounded panels (`hp-panel`), chunky buttons with a
+    darker bottom lip (`hp-button`, variants `--secondary` sky, `--neutral` plum, `--danger` red, sizes `--big` /
+    `--small`), outlined Lilita One titles (`hp-title`, the tilted `hp-logo`, the results `hp-banner`), white cards
+    (`hp-card`, `hp-row`, `hp-slot`, `hp-stat`), a sun-yellow game-code ticket (`hp-ticket`), notes (`hp-note`).
+    The colours are tokens on `:root` (`--hp-cream`, `--hp-ink`, `--hp-orange`, `--hp-sky`, `--hp-plum`,
+    `--hp-red`, `--hp-sun`).
+  - **Focus** (keyboard, gamepad) fills a button with sun yellow and grows it; a focused row or field takes a gold
+    edge on a sun tint. The default theme's focus rules are overridden with `:focus:enabled`.
+  - **Fonts** (`Assets/UI/Fonts`, SIL OFL): Lilita One for titles and buttons, Nunito (Regular / Bold / Black, static
+    instances of the variable font) for text, as dynamic SDF font assets pre-filled with Latin-1, with a fallback
+    for symbols.
+  - **Icons** (`Assets/UI/Icons`): white SVGs (Unity's built-in vector import), tinted in USS (`hp-icon--*`), plus the
+    four slot shapes and the potato.
+  - **Slot chips** (`UIParts.Chip`): a disc in the slot colour holding the slot's shape, the shape in white or navy
+    by the colour's luminance (spec §19: never colour alone; slot 4 is white).
+  - **Spacing.** USS has no `gap` (and no `:first-child`): stacked children are spaced by a bottom margin scoped to
+    their container, rows of children by a right margin cancelled on the row.
+- **Entrance motion.** When a screen is pushed, or shows again under a closing one, its root gets `hp-screen--enter`
+  for one tick (`UIScreen.PlayEntrance`): the panel pops in (opacity, scale, translate, `ease-out-back`) and the
+  navigable elements cascade in (`hp-stagger-N`, removed after 0.7 s so hover and focus stay instant). Short, no flash,
+  no shake; it never moves the focus.
 - **`ScreenStack`** (`Assets/Scripts/UI`): the screen router, created on first use (`ScreenStack.Get()`) as a
   persistent `UIRoot` object, so it works from Bootstrap and in a gameplay scene played directly. `Push` /
   `Pop` / `Clear` / `Back`. Only the top screen shows. Focus goes to the screen's first element (or the one with
@@ -515,7 +536,7 @@ for dev tools only; the menu and the lobby moved onto this base (#15), the resul
   `OnBack`, `FirstFocus`, `Navigable` (the elements up / down walk, in tree order).
 - **UXML convention (#76).** Every screen's layout can be opened and edited in UI Builder; the code never builds it.
   - **Files.** One `.uxml` per screen in `Assets/UI/Screens` (`MainMenu`, `Working`, `Lobby`, `Pause`, `Confirm`,
-    `Settings`, `UISample`). It is styled only through the shared `hp-*` classes, with no inline styles, no
+    `Settings`, `Results`, `UISample`). Buttons hold an icon (`hp-icon`) and a label (`hp-button__label`) as children. It is styled only through the shared `hp-*` classes, with no inline styles, no
     per-screen colours and no `<Style>` tags (the theme comes from the PanelSettings).
   - **Loading.** `UIScreenCatalog` (`Assets/UI/Resources/HotPatataScreens.asset`, next to the PanelSettings) holds
     one `VisualTreeAsset` per screen. `ScreenStack.Catalog` loads it, and a screen reads its own layout through
@@ -551,7 +572,7 @@ for dev tools only; the menu and the lobby moved onto this base (#15), the resul
   over it, and closing the screen gives the lock back. Esc belongs to the pause menu, not to the cursor.
 - **Dev check.** F6 or gamepad Select opens `UISampleScreen` (dev builds only) in any scene.
 
-**Screens built on it (#15, #16, #17).**
+**Screens built on it (#15, #16, #17, #23).**
 
 - **Main menu and lobby** (`MenuView`, `Assets/Scripts/UI/MenuView.cs`, #15). `NetworkBootstrap` is logic only (the
   session flow, the command line, no drawing); it exposes its phase (`Menu`, `Working`, `Lobby`, `InGame`), status,
@@ -561,8 +582,8 @@ for dev tools only; the menu and the lobby moved onto this base (#15), the resul
   | Phase | Screen | What it holds |
   |---|---|---|
   | Menu | `MainMenuScreen` (root, Back does nothing) | your name, level and spawn point, Host Online, game code + Join with code, Play Local, Settings, Direct connection toggle (address, Join IP, Host), the last error |
-  | Working | `WorkingScreen` | "Creating your game...", "Joining ...", "Connecting..." |
-  | Lobby | `LobbyScreen` | the game code (Copy code), players with slot colour and shape, (host) and (you) tags, the host's level / spawn / Start, else "Waiting for the host to start...", Leave; Back asks before leaving |
+  | Working | `WorkingScreen` | a rocking potato (`UIParts.Wobble`) and "Creating your game...", "Joining ...", "Connecting..." |
+  | Lobby | `LobbyScreen` | the game code ticket (Copy code), a card per player (slot chip, name, HOST and YOU badges; `LobbyPlayer.Slot` / `Name`) and an empty card per free seat, the host's level / spawn / Start, else "Waiting for the host to start...", Leave; Back asks before leaving |
   | InGame | none | the level owns the screen (pause menu) |
 
   The screens re-read the bootstrap's state every 200 ms (messages, the lobby list) and call its public methods
@@ -598,6 +619,27 @@ for dev tools only; the menu and the lobby moved onto this base (#15), the resul
   when the screen closes (`Settings.Save`, in `OnHide`). **Reset to defaults** goes back to the `GameTuning` values
   (keeping the key bindings). The `GameTuning` asset is only read. Window mode and resolution apply in a build only
   (the Game view owns them in the Editor; the screen says so). Key bindings get their own page with #18.
+- **Results screen** (`ResultsScreen`, `Results.uxml`, #23): COURSE COMPLETE!, the team (slot chips and names), the
+  run time (`m:ss.s`) and the explosions / resets, from the replicated run state so every player sees it. The host
+  (or an offline player) gets **Rematch** (`RunManager.Restart`; R still works) and Leave; the others see "Waiting
+  for the host to restart..." and can leave (behind a `ConfirmScreen`). Back does nothing. `RunResultsUI`, placed in
+  each course scene, pushes it while the run is `Completed` and pops it when the run starts again. The old IMGUI
+  screen is gone. While any menu is on top, the IMGUI `AimReticle` draws nothing.
+- **Menu backdrop** (`Assets/Prefabs/Menu/MenuBackdrop.prefab`, one instance in `Bootstrap`). A small KayKit island
+  behind the main menu and the lobby where four mannequins in the slot colours pass the live potato in arcs
+  (`MenuHotPotato`). The holder faces the next catcher, a catch squashes the catcher and bystanders cheer, wave or hop.
+  The wick sparks faster (`GameTuning.fuseSparkRates`) until the fuse runs out in the game's own explosion
+  (`ExplosionFx`, its flash always reduced at least 60 %, more if the player asked through `flashReduction`); the
+  holder flinches, the others cheer, and a new potato pops in. Flags sway, stars and collectables spin
+  (`MenuFloat`), small platforms bob, clouds drift (`MenuCloudDrift`), sparkles float, and the camera drifts slowly
+  (`MenuCameraDrift`, scaled by `viewEffectsStrength`).
+  - **Visual only.** The mannequins are copies of the player's `Visual/Mannequin` (meshes and Animator, driven by a
+    menu controller, `MenuMannequin.controller`), the potato a copy of the bomb's `Visual` and `FlightFx`. None of
+    the gameplay components (`Player`, `BombController`, networking) and no colliders. It runs on unscaled time (the
+    menu is offline and local, so no `SectionClock`) and turns itself off in batch mode.
+  - **Generated** by `MenuBackdropBuilder` (menu **HotPatata/Menu/Build Menu Backdrop**, also run by **Rebuild All
+    Courses**): it writes the prefab and the animator controller, places the instance, frames the camera and sets
+    the courses' sky, ambient light and fog. Never edit it by hand.
 - **Setting rows** (`SettingRows.cs`, UXML custom controls): `SliderRow`, `ToggleRow`, `ChoiceRow` are one focusable
   line each (`hp-row`) with a label; the inner field only takes the mouse. Up / down walk the rows
   (`UIScreen.Navigable`: the layout's order, skipping disabled or hidden rows, so the d-pad never gets lost), left /

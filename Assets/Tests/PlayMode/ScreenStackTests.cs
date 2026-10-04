@@ -232,6 +232,20 @@ namespace HotPatata.Tests
         }
 
         [UnityTest]
+        public IEnumerator APushedScreen_PopsIn_AndItsButtonsCascade_ThenSettle()
+        {
+            var s = new OrderScreen();
+            stack.Push(s);
+            Assert.IsTrue(s.Root.ClassListContains(UIScreen.EnterClass), "the entrance starts hidden");
+            Assert.IsTrue(s.B.ClassListContains(UIScreen.StaggerClass + "-2"), "the second button in the walk comes in second");
+            yield return new WaitForSecondsRealtime(0.15f);   // the scheduler ticks on time, not frames
+            Assert.IsFalse(s.Root.ClassListContains(UIScreen.EnterClass), "then the screen transitions in");
+            yield return new WaitForSecondsRealtime(0.8f);
+            Assert.IsFalse(s.A.ClassListContains(UIScreen.StaggerClass), "once in, hover and focus are instant again");
+            Assert.AreSame(s.A, Focused, "the entrance never moves the focus");
+        }
+
+        [UnityTest]
         public IEnumerator AScreen_BuildsFromItsLayout_WithTheCallersTexts()
         {
             var confirm = new ConfirmScreen("Leave?", "Really.", "Go", null);

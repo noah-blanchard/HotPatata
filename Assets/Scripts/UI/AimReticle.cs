@@ -20,7 +20,7 @@ namespace HotPatata
         void OnGUI()
         {
             var player = cam != null ? cam.Target : null;
-            if (player == null) return;
+            if (player == null || ScreenStack.BlocksGameplay) return;   // a menu on top: no aim feedback over it
 
             float cx = Screen.width * 0.5f, cy = Screen.height * 0.5f;
             DrawCrosshair(cx, cy);

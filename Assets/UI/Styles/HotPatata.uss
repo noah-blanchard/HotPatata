@@ -334,17 +334,20 @@
     transition-timing-function: ease-out-back, ease-out, ease-out, ease-out;
 }
 
-.hp-button:hover {
+.hp-button:hover:enabled {
     background-color: var(--hi);
 }
 
-.hp-button:focus {
+.hp-button:focus:enabled,
+.hp-button:focus:hover:enabled {
     background-color: var(--hp-sun);
     border-color: var(--hp-sun-lip);
     scale: 1.04 1.04;
 }
 
-.hp-button:active {
+.hp-button:active:enabled,
+.hp-button:active:hover:enabled,
+.hp-button:active:focus:enabled {
     border-bottom-width: 4px;
     translate: 0 6px;
     scale: 0.98 0.98;
@@ -646,9 +649,9 @@
     transition-duration: 0.12s, 0.12s;
 }
 
-.hp-choice__arrow:hover { background-color: var(--hp-sky-hi); }
+.hp-choice__arrow:hover:enabled { background-color: var(--hp-sky-hi); }
 
-.hp-choice__arrow:active {
+.hp-choice__arrow:active:enabled {
     border-bottom-width: 4px;
     translate: 0 3px;
 }
@@ -665,14 +668,26 @@
 
 
 
+/* A fixed height: the two-column content does not size a ScrollView by itself. All four sections fit at the 1080
+   reference; on a short screen the panel's max-height shrinks it and it scrolls. */
 .hp-scroll {
+    height: 720px;
     flex-shrink: 1;
     margin: 0;
 }
 
-.hp-scroll .unity-scroll-view__content-container {
+/* The two settings columns sit in one row inside the scroll; nothing in it shrinks (the scroll does the work). */
+.hp-settings-columns {
     flex-direction: row;
     align-items: flex-start;
+    flex-shrink: 0;
+}
+
+.hp-settings-columns .hp-card,
+.hp-settings-columns .hp-row,
+.hp-settings-columns .hp-section,
+.hp-settings-columns .hp-hint {
+    flex-shrink: 0;
 }
 
 .hp-scroll .unity-scroller--vertical {
@@ -699,6 +714,7 @@
 
 .hp-settings-column {
     flex-grow: 1;
+    flex-shrink: 0;
     flex-basis: 0;
 }
 
