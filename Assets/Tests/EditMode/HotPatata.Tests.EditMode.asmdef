@@ -6,7 +6,8 @@
         "UnityEditor.TestRunner",
         "Unity.InputSystem",
         "Unity.Services.Multiplayer",
-        "HotPatata"
+        "HotPatata",
+        "Unity.Cinemachine"
     ],
     "includePlatforms": [
         "Editor"
