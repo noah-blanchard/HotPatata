@@ -1,19 +1,47 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:hp="HotPatata" editor-extension-mode="False">
-    <ui:VisualElement class="hp-overlay hp-overlay--menu">
-        <ui:VisualElement class="hp-panel hp-panel--menu">
-            <ui:Label text="Lobby" class="hp-title" />
-            <ui:Label text="Game code" class="hp-hint" />
-            <ui:Label name="code" text="ABC123" class="hp-code" />
-            <ui:Button name="copy-code" text="Copy code" class="hp-button hp-button--secondary" />
-            <ui:Label name="players-title" text="Players (1/4)" class="hp-section" />
-            <ui:VisualElement name="player-list" class="hp-group" />
-            <ui:VisualElement name="host-controls">
-                <hp:ChoiceRow name="level" label="Level" />
-                <hp:ChoiceRow name="spawn" label="Spawn at" />
-                <ui:Button name="start" text="Start" class="hp-button" />
+    <ui:VisualElement class="hp-overlay hp-overlay--soft">
+        <ui:VisualElement class="hp-panel hp-panel--lobby">
+            <ui:VisualElement class="hp-lobby-left">
+                <ui:Label text="LOBBY" class="hp-title" />
+                <ui:Label text="GAME CODE" class="hp-label" />
+                <ui:VisualElement class="hp-ticket">
+                    <ui:VisualElement class="hp-ticket__notch hp-ticket__notch--left" />
+                    <ui:VisualElement class="hp-ticket__notch hp-ticket__notch--right" />
+                    <ui:Label name="code" text="K7P2QX" class="hp-code" />
+                </ui:VisualElement>
+                <ui:Button name="copy-code" class="hp-button hp-button--secondary hp-button--small hp-self-start">
+                    <ui:VisualElement class="hp-icon hp-icon--copy" />
+                    <ui:Label text="COPY CODE" class="hp-button__label" />
+                </ui:Button>
+                <ui:Label text="Friends type this code in Join on their main menu." class="hp-hint" />
+                <ui:VisualElement class="hp-spacer" />
+                <ui:Button name="leave" class="hp-button hp-button--neutral hp-button--small hp-self-start">
+                    <ui:VisualElement class="hp-icon hp-icon--door" />
+                    <ui:Label text="LEAVE" class="hp-button__label" />
+                </ui:Button>
             </ui:VisualElement>
-            <ui:Label name="waiting" text="Waiting for the host to start..." class="hp-hint" />
-            <ui:Button name="leave" text="Leave" class="hp-button hp-button--secondary" />
+            <ui:VisualElement class="hp-lobby-right">
+                <ui:VisualElement class="hp-players-head">
+                    <ui:Label text="PLAYERS" class="hp-section" />
+                    <ui:Label name="players-title" text="2 / 4" class="hp-label" />
+                </ui:VisualElement>
+                <ui:VisualElement name="player-list" class="hp-player-list" />
+                <ui:VisualElement class="hp-spacer" />
+                <ui:VisualElement name="host-controls" class="hp-h hp-h--stretch">
+                    <ui:VisualElement class="hp-card hp-grow">
+                        <hp:ChoiceRow name="level" label="Level" />
+                        <hp:ChoiceRow name="spawn" label="Spawn at" />
+                    </ui:VisualElement>
+                    <ui:Button name="start" class="hp-button hp-button--big hp-button--start">
+                        <ui:VisualElement class="hp-icon hp-icon--play" />
+                        <ui:Label text="START" class="hp-button__label" />
+                    </ui:Button>
+                </ui:VisualElement>
+                <ui:VisualElement name="waiting" class="hp-note">
+                    <ui:VisualElement name="waiting-spinner" class="hp-potato hp-potato--small" />
+                    <ui:Label text="Waiting for the host to start..." class="hp-note__text" />
+                </ui:VisualElement>
+            </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

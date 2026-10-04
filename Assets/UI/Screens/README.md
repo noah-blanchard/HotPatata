@@ -11,6 +11,7 @@ The UXML layout of each UI Toolkit screen, one file per screen, edited in UI Bui
 | `Pause.uxml` | `PauseScreen` (`PauseMenu.cs`) |
 | `Confirm.uxml` | `ConfirmScreen` |
 | `Settings.uxml` | `SettingsScreen` |
+| `Results.uxml` | `ResultsScreen` (#23) |
 | `UISample.uxml` | `UISampleScreen` (dev only, `Assets/Scripts/DebugTools/`) |
 
 - **Styling.** Use only the shared `hp-*` classes of `Assets/UI/Styles/HotPatata.uss`. Do not use inline styles.

@@ -17,6 +17,7 @@ namespace HotPatata
         public VisualTreeAsset pause;
         public VisualTreeAsset settings;
         public VisualTreeAsset confirm;
+        public VisualTreeAsset results;
         public VisualTreeAsset uiSample;
     }
 }

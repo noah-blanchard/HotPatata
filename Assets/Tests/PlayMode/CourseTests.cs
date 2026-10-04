@@ -85,7 +85,20 @@ namespace HotPatata.Tests
             Assert.AreEqual(1, completions);
             Assert.Greater(run.RunTime, 0f);
 
-            run.Restart();
+            // #23: the results screen shows the run, and its Rematch button restarts it.
+            yield return null;
+            var results = ScreenStack.Existing != null ? ScreenStack.Existing.Top as ResultsScreen : null;
+            Assert.IsNotNull(results, "the results screen opens when the course is complete");
+            Assert.AreEqual(ResultsScreen.FormatTime(run.RunTime), results.Time.text);
+            Assert.IsNotNull(results.Rematch, "offline, the player can rematch");
+            using (var press = UnityEngine.UIElements.NavigationSubmitEvent.GetPooled())
+            {
+                press.target = results.Rematch;
+                results.Rematch.SendEvent(press);
+            }
+            yield return null;
+            Assert.IsFalse(ScreenStack.Existing.Top is ResultsScreen, "the results close when the run starts again");
+
             Assert.AreEqual(RunState.Playing, run.State);
             Assert.AreEqual(0, run.ResetCount);
             Assert.IsNull(run.CurrentCheckpoint, "a rematch starts from the beginning");

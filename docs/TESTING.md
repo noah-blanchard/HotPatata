@@ -21,7 +21,7 @@
 | `PlayerNamesTests` | EditMode | M6: player-name cleanup (trim, length, control characters, "Player N" fallback) |
 | `DisplayOptionsTests` | EditMode | #17: settings display choices (window modes, resolutions without duplicates, frame caps) |
 | `PauseAndSettingsTests` | PlayMode | #16/#17: pause freezes offline, takes the input and frees the cursor; a carrier keeps the bomb and loses the charge; Esc never closes and reopens on one frame; Leave asks first; settings preview live, save on close, reset, never write `GameTuning` |
-| `ScreenStackTests` | PlayMode | #14 UI Toolkit base: themed panel and navigation module, stack/focus/back, navigation and submit events, cursor hand-over; #76 every screen layout in the catalog, a missing UXML element fails naming the screen and the element, up / down follow the layout order |
+| `ScreenStackTests` | PlayMode | #14 UI Toolkit base: themed panel and navigation module, stack/focus/back, navigation and submit events, cursor hand-over; #76 every screen layout in the catalog, a missing UXML element fails naming the screen and the element, up / down follow the layout order; the entrance pops a pushed screen in and cascades its buttons, then settles without moving the focus |
 | `BombStateTests` | PlayMode | bomb state machine plus catch / world-contact / fuse rules (M1.4–M1.8) |
 | `RunAndThrowTests` | PlayMode | throw by input (M1.5) and fast, clean section reset (M1.10) |
 | `MovementTests` | PlayMode | accel/brake, jump, coyote time, jump buffer (M1.2) |
@@ -29,7 +29,7 @@
 | `ViewFeelTests` | PlayMode | first-person speed feel, post effects, accessibility scaling |
 | `PassFeelTests` | PlayMode | **pass-feel regression suite**: catches at 4/8/12 m moving and jumping, the assist never creates range |
 | `PrefabKitTests` | PlayMode | M2 greybox kit (moving/falling platforms, rotating bar, kill zone, checkpoint, finish) |
-| `CourseTests` | PlayMode | M5 course Act 1: structure, checkpoints, finish, rematch, start checkpoint, launch pad |
+| `CourseTests` | PlayMode | M5 course Act 1: structure, checkpoints, finish, rematch, start checkpoint, launch pad; #23 the results screen opens on finish with the run time and its Rematch button restarts the run |
 | `FactoryCourseTests` | PlayMode | course Acts 2–3: belts, elevators, sweepers, crushers, mega slide |
 | `ZoneRuleTests` | EditMode | #68 pure rules: fuse-zone severity, flight-sweep geometry, actuator motion, transit exit arc |
 | `BombObstacleTests` | PlayMode | #68 kit on the PassSandbox floor: fuse zones, curtains and windows, gates, plates, doors, arch checkpoint, tubes |

@@ -194,7 +194,7 @@ namespace HotPatata.Tests
             Click(pause.SettingsButton);
             yield return Frames();
             screen = (SettingsScreen)ScreenStack.Existing.Top;
-            var reset = screen.Root.Query<Button>().ToList().Find(b => b.text == "Reset to defaults");
+            var reset = screen.Root.Q<Button>("reset");
             Click(reset);
             yield return null;
             Assert.AreEqual(tuningEffects, Settings.ViewEffectsStrength(tuning), 1e-4f);

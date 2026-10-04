@@ -69,7 +69,7 @@ namespace HotPatata
 
         public SliderRow()
         {
-            slider = new Slider(0f, 1f) { focusable = false };
+            slider = new Slider(0f, 1f) { focusable = false, fill = true };
             slider.AddToClassList("hp-row__field");
             slider.RegisterValueChangedCallback(e =>
             {

@@ -329,7 +329,7 @@ namespace HotPatata.Editor
         /// Floating KayKit islands on both sides of the course: a stack of platform pieces on a grey pillar, with props on
         /// top. Collider-free, shadow-free and at |x| >= 34 m so they never enter a pass path (ARCHITECTURE §4). Deterministic.
         /// </summary>
-        static void BuildKayKitBackdrop(Transform parent, int seed, int islands, float zMin, float zMax)
+        internal static void BuildKayKitBackdrop(Transform parent, int seed, int islands, float zMin, float zMax)
         {
             var rng = new Random(seed);
             float R(float a, float b) => a + (float)rng.NextDouble() * (b - a);
@@ -352,7 +352,7 @@ namespace HotPatata.Editor
             }
         }
 
-        static void Prop(Transform parent, string model, KitColor color, Vector3 localPos, float yaw, Material mat)
+        internal static void Prop(Transform parent, string model, KitColor color, Vector3 localPos, float yaw, Material mat)
         {
             var source = KayKitKitBuilder.Model(model, KayKitKitBuilder.HasColor(model, color) ? color : KitColor.Neutral);
             var go = (GameObject)PrefabUtility.InstantiatePrefab(source, parent);

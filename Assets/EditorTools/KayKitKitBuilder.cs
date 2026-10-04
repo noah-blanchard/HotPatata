@@ -60,6 +60,7 @@ namespace HotPatata.Editor
             PlaytestCourseBuilder.Build();
             BombObstacleKitBuilder.BuildSandboxDemo();
             PatataParkBuilder.Build();
+            MenuBackdropBuilder.Build();   // the menu island is drawn with the same kit
             Debug.Log("[KayKitKitBuilder] all courses rebuilt");
         }
 
