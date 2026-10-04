@@ -144,7 +144,7 @@ namespace HotPatata
         [Tooltip("Seconds of holding the throw button to reach full charge.")]
         [Min(0.05f)] public float throwChargeTime = 0.45f;
         [Tooltip("Normalized point in THROW where the arm waits while the button stays held.")]
-        [Range(0.05f, 0.9f)] public float throwAnimationHoldNormalized = 0.38f;
+        [Range(0.05f, 0.9f)] public float throwAnimationHoldNormalized = 0.27f;
         [Tooltip("Minimum time before the same throw wind-up can be triggered again on a player.")]
         [Min(0f)] public float throwAnimationReplayGuard = 0.65f;
         [Tooltip("Degrees the throw is pitched up from the aim direction (counters the drop on short passes).")]
@@ -211,6 +211,10 @@ namespace HotPatata
         public float[] stageThresholds = { 0.5f, 0.75f, 0.9f };
         [Range(0f, 1f)] public float beepVolume = 0.6f;
 
+        [Header("Bomb - look (visual only)")]
+        [Tooltip("Size of the potato's model (1 = as modelled, about 37 cm long). The same in the hand, in flight and in first person, so it never jumps on a throw. Catching and collisions never use it.")]
+        [Range(0.3f, 1.5f)] public float potatoVisualScale = 0.65f;
+
         [Header("Bomb - natural motion (visual only)")]
         [Tooltip("Average tumble speed in flight, degrees per second. Faster throws spin faster.")]
         [Min(0f)] public float tumbleDegreesPerSecond = 1200f;
@@ -235,8 +239,10 @@ namespace HotPatata
         {
             new Color(0.1f, 0.32f, 1f), new Color(0f, 0.75f, 1f), new Color(0.6f, 0f, 0.4f), new Color(0.95f, 0.95f, 0.95f)
         };
-        [Tooltip("Shape per slot, shown next to the colour wherever a player is identified (lobby, results).")]
+        [Tooltip("Shape per slot, shown next to the colour wherever a player is identified (lobby, results, the ring at the feet).")]
         public PlayerShape[] playerShapes = { PlayerShape.Circle, PlayerShape.Triangle, PlayerShape.Square, PlayerShape.Diamond };
+        [Tooltip("Character per slot (Assets/Prefabs/Player/Characters, built by PlayerCharacterBuilder). Not a player choice: spec §17.2.")]
+        public PlayerCharacter[] playerCharacters = new PlayerCharacter[0];
 
         [Header("Menu (in-world stations, ARCHITECTURE §6.2)")]
         [Tooltip("Seconds the menu camera takes to fly between stations (eased). At camera effects 0 it cuts instead.")]

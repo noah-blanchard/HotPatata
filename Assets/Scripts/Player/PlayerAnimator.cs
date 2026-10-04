@@ -3,11 +3,12 @@ using UnityEngine;
 namespace HotPatata
 {
     /// <summary>
-    /// Presentation-only bridge between the player simulation and the mannequin Animator.
-    /// It also keeps the shared HandAnchor on the first-person camera for the viewed player,
-    /// and between the animated hands for every third-person player.
-    /// Speed runs past 1 when sprinting (the blend tree plays the run faster); slides and crouch-walks are
-    /// procedural poses on the model root (the rig has no slide clip), driven by the replicated motor state.
+    /// Presentation-only bridge between the player simulation and the character's Animator (the slot's
+    /// <see cref="PlayerCharacter"/>, bound by <see cref="PlayerPresentation"/>). It also keeps the shared HandAnchor on
+    /// the first-person camera for the viewed player, and in the right palm (<see cref="PlayerCharacter.HandSocket"/>)
+    /// for every third-person player, so the potato rides the hand and goes back with the arm on a held throw.
+    /// Speed runs 0 (idle) to 1 (run) to 2 (sprint); slides and crouch-walks are procedural poses on the model root
+    /// (no slide clip), driven by the replicated motor state.
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(Player))]
@@ -24,10 +25,11 @@ namespace HotPatata
         enum ThrowPhase { Idle, Charging, Holding, Releasing }
 
         [SerializeField] Animator animator;
-        [SerializeField] Transform leftHand;
-        [SerializeField] Transform rightHand;
+        [SerializeField, Tooltip("The right palm (the character's HandSocket): the potato sits here in third person.")] Transform handSocket;
+        [SerializeField, Tooltip("The held potato from the palm, in the player's frame (right, up, forward, m): out of the hip, a little ahead.")]
+        Vector3 heldOffset = new Vector3(0.05f, 0f, 0.07f);
+        [SerializeField, Tooltip("The held potato's yaw (degrees): its long side points forward, along the arm.")] float heldYaw = 90f;
         [SerializeField] float speedDampTime = 0.1f;
-        [SerializeField] float handForwardOffset = 0.05f;
         [Header("Procedural poses")]
         [Tooltip("Model root that is leaned and squashed (defaults to the Animator's transform).")]
         [SerializeField] Transform poseRoot;
@@ -55,17 +57,33 @@ namespace HotPatata
             if (animator == null) animator = GetComponentInChildren<Animator>(true);
             if (animator != null) animator.applyRootMotion = false;
             if (poseRoot == null && animator != null) poseRoot = animator.transform;
-            if (poseRoot != null)
-            {
-                poseBasePosition = poseRoot.localPosition;
-                poseBaseRotation = poseRoot.localRotation;
-                poseBaseScale = poseRoot.localScale;
-            }
+            CapturePoseBase();
 
             cameraHandPosition = player.HandAnchor.localPosition;
             cameraHandRotation = player.HandAnchor.localRotation;
             lastPosition = transform.position;
             groundMask = LayerMask.GetMask("Environment", "Hazard");
+        }
+
+        /// <summary>Drives <paramref name="character"/> (the slot's character, swapped in by <see cref="PlayerPresentation"/>).</summary>
+        public void Bind(PlayerCharacter character)
+        {
+            if (character == null || character.Animator == animator && character.HandSocket == handSocket) return;
+            animator = character.Animator;
+            handSocket = character.HandSocket;
+            if (animator != null) animator.applyRootMotion = false;
+            poseRoot = animator != null ? animator.transform : null;
+            CapturePoseBase();
+            throwPhase = ThrowPhase.Idle;
+        }
+
+        void CapturePoseBase()
+        {
+            if (poseRoot == null) return;
+            poseBasePosition = poseRoot.localPosition;
+            poseBaseRotation = poseRoot.localRotation;
+            poseBaseScale = poseRoot.localScale;
+            slidePose = crouchPose = 0f;
         }
 
         void OnEnable()
@@ -129,17 +147,16 @@ namespace HotPatata
 
             bool firstPersonView = FirstPersonCamera.Instance != null &&
                                    FirstPersonCamera.Instance.Target == player;
-            if (firstPersonView || leftHand == null || rightHand == null)
+            if (firstPersonView || handSocket == null)
             {
                 player.HandAnchor.localPosition = cameraHandPosition;
                 player.HandAnchor.localRotation = cameraHandRotation;
                 return;
             }
 
-            Vector3 midpoint = (leftHand.position + rightHand.position) * 0.5f;
-            player.HandAnchor.SetPositionAndRotation(
-                midpoint + transform.forward * handForwardOffset,
-                Quaternion.LookRotation(transform.forward, transform.up));
+            // In the palm, upright: the potato follows the hand without spinning with the wrist.
+            var held = handSocket.position + transform.right * heldOffset.x + transform.up * heldOffset.y + transform.forward * heldOffset.z;
+            player.HandAnchor.SetPositionAndRotation(held, Quaternion.LookRotation(transform.forward, transform.up) * Quaternion.Euler(0f, heldYaw, 0f));
         }
 
         void TryBindBomb()

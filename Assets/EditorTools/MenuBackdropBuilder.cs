@@ -4,7 +4,6 @@ using System.Linq;
 using HotPatata;
 using Unity.Cinemachine;
 using UnityEditor;
-using UnityEditor.Animations;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -15,10 +14,10 @@ namespace HotPatata.Editor
 {
     /// <summary>
     /// Builds the living menu backdrop (ARCHITECTURE §6.2) as one prefab, <c>Assets/Prefabs/Menu/MenuBackdrop.prefab</c>,
-    /// and places its instance in <c>Bootstrap</c> with the menu camera, sky and fog. On a small KayKit island four
-    /// mannequins in the slot colours pass the live potato (<see cref="MenuHotPotato"/>); flags sway, stars spin, little
+    /// and places its instance in <c>Bootstrap</c> with the menu camera, sky and fog. On a small KayKit island the four
+    /// slots' characters pass the live potato from hand to hand (<see cref="MenuHotPotato"/>); flags sway, stars spin, little
     /// platforms bob, clouds drift, sparkles float, and the camera drifts slowly. Everything in it is visual: copies of the
-    /// player's mannequin and the bomb's visual, never their gameplay components, and no colliders that matter.
+    /// players' characters and the bomb's visual, never their gameplay components, and no colliders that matter.
     /// The menu itself lives on the island too (#79): four stations (Title, Play, Level, Lobby), each a world-space board
     /// with a Cinemachine camera spot, the lobby stage the players step onto, and the menu camera's brain and rig.
     /// Idempotent: rebuild after changing it (menu HotPatata/Menu/Build Menu Backdrop), never edit it by hand.
@@ -27,10 +26,7 @@ namespace HotPatata.Editor
     {
         public const string ScenePath = "Assets/Scenes/Bootstrap.unity";
         public const string PrefabPath = "Assets/Prefabs/Menu/MenuBackdrop.prefab";
-        const string ControllerPath = "Assets/Art/Models/Player/Controllers/MenuMannequin.controller";
-        const string RigDir = "Assets/Art/Models/Player/Animations/fbx/Rig_Medium/";
         const string TuningPath = "Assets/ScriptableObjects/Tuning/GameTuning.asset";
-        const string PlayerPrefab = "Assets/Prefabs/Player/Player.prefab";
         const string BombPrefab = "Assets/Prefabs/Bomb/Bomb.prefab";
         const string ExplosionPrefab = "Assets/Prefabs/VFX/VFX_Explosion.prefab";
         const string SparkleTexture = "Assets/Art/VFX/Textures/SoftDot.png";
@@ -40,6 +36,7 @@ namespace HotPatata.Editor
         const string BoardLayer = "UI";          // the boards take the mouse (PanelInputConfiguration's interaction layer)
         const string PlateLayer = "Default";     // nameplates are read, never clicked
         const float CameraFov = 34f;
+        const float MenuPotatoScale = 1.4f;   // the show's potato, relative to the game's (GameTuning.potatoVisualScale)
         const float BoardPixelsPerMetre = 200f;  // board layouts are authored in px, like the screens
 
         /// <summary>
@@ -63,7 +60,7 @@ namespace HotPatata.Editor
         {
             new Vector3(-3f, 0f, -2.8f), new Vector3(-1f, 0f, -2.8f), new Vector3(1f, 0f, -2.8f), new Vector3(3f, 0f, -2.8f)
         };
-        const float PlateHeight = 2.3f;   // over the mannequin's head
+        const float PlateHeight = 2.3f;   // over the character's head
         static readonly Vector2 PlatePx = new Vector2(340f, 84f);
 
         /// <summary>Where the four players stand: a shallow arc open to the camera, so every one of them shows.</summary>
@@ -72,19 +69,12 @@ namespace HotPatata.Editor
             new Vector3(-3.4f, 0f, 0.4f), new Vector3(-1.2f, 0f, 2.7f), new Vector3(1.5f, 0f, 2.7f), new Vector3(3.6f, 0f, 0.3f)
         };
 
-        /// <summary>Animator states of the menu mannequins (clip name = state name), all driven by MenuHotPotato.</summary>
-        static readonly (string clip, string rig)[] Clips =
-        {
-            ("Idle_A", "General"), ("Idle_B", "General"), ("Throw", "General"), ("Hit_A", "General"),
-            ("Cheering", "Simulation"), ("Waving", "Simulation"), ("Jump_Full_Short", "MovementBasic")
-        };
-
         [MenuItem("HotPatata/Menu/Build Menu Backdrop")]
         public static void Build()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode) return;
             var tuning = AssetDatabase.LoadAssetAtPath<GameTuning>(TuningPath) ?? throw new InvalidOperationException("missing " + TuningPath);
-            var controller = BuildController();
+            var controller = PlayerCharacterBuilder.MenuController ?? throw new InvalidOperationException("build the characters first (HotPatata/Player/Build Characters)");
             BuildPrefab(tuning, controller);
 
             var scene = EditorSceneManager.GetActiveScene();
@@ -103,7 +93,7 @@ namespace HotPatata.Editor
 
         // ------------------------------------------------------------------ prefab
 
-        static void BuildPrefab(GameTuning tuning, AnimatorController controller)
+        static void BuildPrefab(GameTuning tuning, RuntimeAnimatorController controller)
         {
             System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(PrefabPath));
             var root = new GameObject(RootName);
@@ -121,11 +111,11 @@ namespace HotPatata.Editor
                 BuildSparkles(t);
 
                 var show = Group(t, "Show");
-                var players = BuildPlayers(show, controller);
-                var (potato, sparks, trail, puffs) = BuildPotato(show);
+                var players = BuildPlayers(show, tuning, controller);
+                var (potato, sparks, trail, puffs) = BuildPotato(show, tuning);
                 var boom = AssetDatabase.LoadAssetAtPath<GameObject>(ExplosionPrefab)?.GetComponent<ExplosionFx>();
                 var potatoShow = show.gameObject.AddComponent<MenuHotPotato>();
-                potatoShow.Configure(tuning, players, potato, sparks, trail, puffs, boom);
+                potatoShow.Configure(tuning, players, potato, sparks, trail, puffs, boom, PlayerCharacterBuilder.MeasureThrow().releaseSeconds);
 
                 BuildStations(Group(t, "Stations"), tuning, potatoShow, EnsureWorldPanel());
 
@@ -252,20 +242,22 @@ namespace HotPatata.Editor
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
 
-        /// <summary>The four players: copies of the player's mannequin (model and Animator only) on yaw pivots.</summary>
-        static Transform[] BuildPlayers(Transform parent, AnimatorController controller)
+        /// <summary>
+        /// The four players: copies of each slot's character (PlayerCharacter: model, materials, hand socket; the
+        /// menu's controller) on yaw pivots.
+        /// </summary>
+        static Transform[] BuildPlayers(Transform parent, GameTuning tuning, RuntimeAnimatorController controller)
         {
-            var source = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefab)?.transform.Find("Visual/Mannequin")
-                         ?? throw new InvalidOperationException("no Visual/Mannequin in " + PlayerPrefab);
             var pivots = new Transform[PlayerSpots.Length];
             for (int i = 0; i < PlayerSpots.Length; i++)
             {
                 var pivot = Group(parent, "Player_" + (i + 1));
                 pivot.localPosition = PlayerSpots[i];
                 pivot.localRotation = Quaternion.LookRotation(new Vector3(0f, 0f, 1.4f) - PlayerSpots[i]);
-                var mannequin = Object.Instantiate(source.gameObject, pivot, false);
-                mannequin.name = "Mannequin";
-                var animator = mannequin.GetComponent<Animator>();
+                var source = PlayerIdentity.CharacterFor(tuning, i) ?? throw new InvalidOperationException("no character for slot " + (i + 1));
+                var character = Object.Instantiate(source, pivot, false);
+                character.name = source.name;
+                var animator = character.Animator;
                 animator.runtimeAnimatorController = controller;
                 animator.applyRootMotion = false;
                 animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
@@ -276,12 +268,12 @@ namespace HotPatata.Editor
         }
 
         /// <summary>The potato: a copy of the bomb's visual (model, wick, sparks) and its flight trail, a bit bigger to read.</summary>
-        static (Transform, ParticleSystem, TrailRenderer, ParticleSystem) BuildPotato(Transform parent)
+        static (Transform, ParticleSystem, TrailRenderer, ParticleSystem) BuildPotato(Transform parent, GameTuning tuning)
         {
             var bomb = AssetDatabase.LoadAssetAtPath<GameObject>(BombPrefab)?.transform ?? throw new InvalidOperationException("missing " + BombPrefab);
             var potato = Object.Instantiate(bomb.Find("Visual").gameObject, parent, false).transform;
             potato.name = "Potato";
-            potato.localScale = Vector3.one * 3f;
+            potato.localScale = Vector3.one * (tuning.potatoVisualScale * MenuPotatoScale);   // reads from the menu camera, still fits a hand
             var flight = Object.Instantiate(bomb.Find("FlightFx").gameObject, potato, false).transform;
             flight.name = "FlightFx";
             var sparks = potato.Find("FuseSparks")?.GetComponent<ParticleSystem>();
@@ -401,31 +393,6 @@ namespace HotPatata.Editor
         static void Spin(Transform t, float degreesPerSecond, float bob, float bobPeriod, float phase) =>
             t.gameObject.AddComponent<MenuFloat>().Configure(bob, bobPeriod, degreesPerSecond, 0f, 0f, phase);
 
-        // ------------------------------------------------------------------ animator
-
-        /// <summary>The menu mannequins' controller: one state per clip, no transitions (MenuHotPotato cross-fades).</summary>
-        static AnimatorController BuildController()
-        {
-            var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(ControllerPath)
-                             ?? AnimatorController.CreateAnimatorControllerAtPath(ControllerPath);
-            var machine = controller.layers[0].stateMachine;
-            foreach (var s in machine.states.ToList()) machine.RemoveState(s.state);
-            var clips = new Dictionary<string, AnimationClip>();
-            foreach (var rig in Clips.Select(c => c.rig).Distinct())
-                foreach (var clip in AssetDatabase.LoadAllAssetsAtPath(RigDir + "Rig_Medium_" + rig + ".fbx").OfType<AnimationClip>())
-                    clips[clip.name] = clip;
-            foreach (var (name, rig) in Clips)
-            {
-                if (!clips.TryGetValue(name, out var clip)) throw new InvalidOperationException($"missing clip {name} in Rig_Medium_{rig}.fbx");
-                var state = machine.AddState(name);
-                state.motion = clip;
-                if (name == "Idle_A") machine.defaultState = state;
-            }
-            EditorUtility.SetDirty(controller);
-            AssetDatabase.SaveAssets();
-            return controller;
-        }
-
         // ------------------------------------------------------------------ scene: camera and sky
 
         /// <summary>
@@ -445,7 +412,8 @@ namespace HotPatata.Editor
             var drift = camera.GetComponent<MenuCameraDrift>();
             if (drift != null) Object.DestroyImmediate(drift);
             if (camera.GetComponent<CinemachineBrain>() == null) camera.gameObject.AddComponent<CinemachineBrain>();
-            var rig = camera.GetComponent<MenuCameraRig>() ?? camera.gameObject.AddComponent<MenuCameraRig>();
+            var rig = camera.GetComponent<MenuCameraRig>();
+            if (rig == null) rig = camera.gameObject.AddComponent<MenuCameraRig>();
             rig.Configure(tuning);
             EditorUtility.SetDirty(camera);
             EditorUtility.SetDirty(rig);

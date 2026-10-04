@@ -69,10 +69,12 @@ MonoBehaviour:
   holdFuseDuration: 6
   warningDuration: 2
   caughtGraceDuration: 0.35
+  hotZoneFuseRate: 2
+  coldZoneFuseRate: 0.5
   throwSpeedMin: 14
   throwSpeedMax: 28
   throwChargeTime: 0.45
-  throwAnimationHoldNormalized: 0.38
+  throwAnimationHoldNormalized: 0.27
   throwAnimationReplayGuard: 0.65
   throwUpAngle: 6
   bombGravityScale: 1.5
@@ -107,6 +109,7 @@ MonoBehaviour:
   - 0.75
   - 0.9
   beepVolume: 0.6
+  potatoVisualScale: 0.65
   tumbleDegreesPerSecond: 1200
   tumbleRandomness: 0.85
   handSwayDegrees: 3
@@ -123,9 +126,12 @@ MonoBehaviour:
   - {r: 0, g: 0.75, b: 1, a: 1}
   - {r: 0.6, g: 0, b: 0.4, a: 1}
   - {r: 0.95, g: 0.95, b: 0.95, a: 1}
-  playerShapes:
-  - 0
-  - 1
-  - 2
-  - 3
+  playerShapes: 00000000010000000200000003000000
+  playerCharacters:
+  - {fileID: 5320973318834548855, guid: ac63ffe00bdd4374797c3d92529f015b, type: 3}
+  - {fileID: 1006322956916735308, guid: 86db3b478b284354bb8586cba661b834, type: 3}
+  - {fileID: 1220795069563955885, guid: a61f338c95cedd140a98f64ba5c424f0, type: 3}
+  - {fileID: 5320973318834548855, guid: ac63ffe00bdd4374797c3d92529f015b, type: 3}
+  menuTravelSeconds: 1.1
+  menuStepSeconds: 0.6
   resetDelay: 1
