@@ -7,7 +7,8 @@ namespace HotPatata
     /// The menu camera (ARCHITECTURE §6.2): the one component that decides where it looks. Each station has a Cinemachine
     /// camera spot; <see cref="Travel"/> gives the target spot the priority and the brain flies there with an eased blend
     /// (<see cref="GameTuning.menuTravelSeconds"/>, unscaled time: the menu is offline). Camera effects at 0 (spec §19,
-    /// <see cref="Settings.ViewEffectsStrength"/>) make it a cut: no swoop, and nothing flashes. Presentation only.
+    /// <see cref="Settings.ViewEffectsStrength"/>) make it a cut: no swoop, and nothing flashes. The station's framing
+    /// (a vignette, <see cref="MenuStation.Focus"/>) takes the camera-effects strength as its weight, so it is off at 0. Presentation only.
     /// </summary>
     [RequireComponent(typeof(CinemachineBrain))]
     public class MenuCameraRig : MonoBehaviour
@@ -55,8 +56,21 @@ namespace HotPatata
             float seconds = instant || tuning == null ? 0f : tuning.menuTravelSeconds;
             Brain.DefaultBlend = BlendFor(strength, seconds);
             foreach (var s in MenuStation.All)
+            {
                 if (s.Spot != null) s.Spot.Priority = s == station ? Live : Idle;
+                if (s.Focus != null) s.Focus.weight = s == station ? FocusWeight(strength) : 0f;
+            }
             current = station;
+        }
+
+        /// <summary>The station's vignette follows the camera-effects setting (0 = off).</summary>
+        public static float FocusWeight(float viewEffects) => Mathf.Clamp01(viewEffects);
+
+        void LateUpdate()
+        {
+            // A settings change applies at once, not only on the next move.
+            if (current == null || current.Focus == null) return;
+            current.Focus.weight = FocusWeight(tuning != null ? Settings.ViewEffectsStrength(tuning) : 1f);
         }
     }
 }

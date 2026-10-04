@@ -11,7 +11,9 @@ Material:
   m_Shader: {fileID: 4800000, guid: caf6d4b4bc067734bbda9b0ae3e8e379, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords: []
+  m_ValidKeywords:
+  - _GLOSSMAP
+  - _NORMALMAP
   m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -27,9 +29,18 @@ Material:
         m_Texture: {fileID: 2800000, guid: ff8d9ce18dc5aae4b830153048980062, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _BumpMap:
+        m_Texture: {fileID: 2800000, guid: f67b0f7600637cb4592c58898b02e9bd, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _GlossMap:
+        m_Texture: {fileID: 2800000, guid: 4d994663f2dbee74281cb5f30031bd3e, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
     - _AmbientStrength: 0.45
+    - _BumpScale: 1
     - _Cutoff: 0.5
     - _EdgeStrength: 0.25
     - _EdgeWidth: 0
@@ -40,10 +51,15 @@ Material:
     - _RampThreshold: 0.05
     - _RimPower: 3.5
     - _RimStrength: 0.25
+    - _Smoothness: 0.45
     - _SpecSize: 0
+    - _Stylize: 0
     - _SuitTint: 0
     - _TopBlend: 0
+    - _UseGlossMap: 1
+    - _UseNormalMap: 1
     - _VertexColor: 0
+    - _Wrap: 0.25
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}

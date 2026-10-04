@@ -397,15 +397,15 @@ As built:
 ```text
 Assets/
 ├── Art/
-│   ├── Materials/        kit materials (Greybox_*, Pad_*), toon materials
+│   ├── Materials/        kit materials (Greybox_*, Pad_*), stylized materials, a sky per scene (Sky_HotPatata_<Scene>)
 │   ├── Models/           Bomb/ (potato.glb), Characters/ (Mixamo: James, Remy, The Boss; Animations/, Controllers/),
 │   │                     Player/ (the old KayKit mannequin, unused), Map/ (KayKit Platformer Pack, CC0)
-│   ├── Shaders/          HotPatata/Toon, HotPatata/Particle, HotPatata/Sky, speed lines
+│   ├── Shaders/          HotPatata/Stylized (file HotPatataToon.shader), HotPatata/Particle, HotPatata/Sky, speed lines
 │   ├── Textures/Icons/   zone and tube icons drawn in code by BombObstacleKitBuilder
 │   └── VFX/              textures for particles and trails
 ├── Audio/                HotPatataMixer (Master > SFX); SFX/ optional real clips (see its README; procedural fallback otherwise)
 ├── EditorTools/          CourseKit, CourseBuilder, PlaytestCourseBuilder, PatataParkBuilder, BombObstacleKitBuilder,
-│                         KayKitKitBuilder, PlayerCharacterBuilder, MenuBackdropBuilder
+│                         KayKitKitBuilder, PlayerCharacterBuilder, MenuBackdropBuilder, LookBuilder
 ├── Prefabs/              Bomb/ Gameplay/ Menu/ (MenuBackdrop, generated) Network/ Obstacles/ Platforms/
 │                         Player/ (Player; Characters/, generated) VFX/
 ├── Scenes/               Bootstrap, PassSandbox, PrototypeCourse, PlaytestCourse, PatataPark
@@ -432,7 +432,7 @@ Assets/
 │   ├── Debug/            DebugHud, LocalPlayerSwitcher, PlayerBot
 │   └── DebugTools/       Editor/dev-build only: LatencySimulator, ThrowDebugOverlay, ThrowTelemetry, PassPartner,
 │                         UISampleScreen
-├── Settings/             URP assets (PC_RPAsset, PC_Renderer), Look/HotPatata_Look.asset
+├── Settings/             URP assets (PC_RPAsset, PC_Renderer), Look/HotPatata_Look.asset, Look/MenuFocus_<Station>.asset
 ├── Tests/
 │   ├── EditMode/
 │   └── PlayMode/
@@ -617,7 +617,10 @@ base, the HUD (#24) follows.
   - **Travel** (`MenuCameraRig` on the menu camera with a `CinemachineBrain`, the one component that decides where
     the camera looks): the target station's spot gets the priority and the brain blends there, `EaseInOut` over
     `GameTuning.menuTravelSeconds` on unscaled time, or a **cut** when the camera effects are 0
-    (`Settings.ViewEffectsStrength`, spec §19): no swoop, and nothing flashes. The Title spot keeps the slow drift
+    (`Settings.ViewEffectsStrength`, spec §19): no swoop, and nothing flashes. Each station also has a framing volume
+    (`MenuStation.Focus`, a light vignette, `Assets/Settings/Look/MenuFocus_<Station>.asset`) whose weight is the
+    camera-effects strength while the station shows (0 = none). No depth of field: the world-space boards write no
+    depth, so it would blur them as if they were sky. The Title spot keeps the slow drift
     (`MenuCameraDrift`); the other spots are steady so the boards read.
   - **Lobby stage** (`MenuLobbyStage`): while the lobby is open the potato show pauses (`MenuHotPotato.SetPaused`) and
     the show's player `i` (slot `i`'s character) hops to stage spot `i` under the Lobby board for each joined player
@@ -1555,21 +1558,39 @@ Only after that works should the network layer mirror the same state transitions
 
 ## 25. Look / rendering (M9.3)
 
-Soft, bright party-game toon style.
+**Stylized cinematic, at golden hour** (owner decision, replacing the first "soft, bright party-game toon" look): a
+low warm sun with long soft shadows, a cool sky filling the shadows, a warm haze, and a filmic grade. Dramatic, but
+the potato, the hazards and the slot identity always read. Kept on purpose: the comic **BOOM!** and the cartoon
+explosion (`ExplosionFx`), no chromatic aberration or lens distortion, and every flash and view effect still honours
+`flashReduction` / `viewEffectsStrength`.
 
-- **Shaders** (`Assets/Art/Shaders`): kit, pads, bomb, characters and backdrop use `HotPatata/Toon`, hand-written URP
-  HLSL (not Shader Graph) that reuses URP's ShadowCaster/DepthOnly/DepthNormals passes. Features: a two-band ramp with a
-  tinted `_ShadeColor`, `_TopColor` on upward faces, rim, an optional spec blob, emission always added
-  (MaterialPropertyBlock friendly), a fake bevel on scaled unit cubes (`_EdgeWidth`), world checker/stripes (`_Pattern`;
-  hazards are striped so they do not rely on red alone), `_VERTEX_COLOR` for particle meshes, and `_SuitTint` (players:
-  the texture's coloured swatches take `_BaseColor`, greys, whites and the face stay as painted; 0 = the usual multiply). Particles, trails and
-  flashes use `HotPatata/Particle`.
-- **Materials:** the kit materials kept their names (`Greybox_*`, `Pad_*`) and were switched to the toon shader in
-  place, so prefab references did not change. The characters' materials (`Assets/Art/Materials/Characters`) take
-  each model's diffuse on the toon shader; Remy's hair and eyelashes keep their imported materials (they need alpha).
-- **Sky and grading:** skybox `HotPatata/Sky` (`Sky_HotPatata`), gradient ambient, linear fog matched to the horizon,
-  and a global `LookVolume` (`Assets/Settings/Look/HotPatata_Look.asset`: Neutral tonemapping, bloom, saturation, warm
-  balance) in every scene. `PC_RPAsset` uses MSAA 4x.
+- **Shaders** (`Assets/Art/Shaders`): kit, pads, bomb, characters and backdrop use `HotPatata/Stylized` (the file is
+  still `HotPatataToon.shader`, and every property name is the old toon's, so no material reference changed),
+  hand-written URP HLSL (not Shader Graph) that reuses URP's ShadowCaster/DepthOnly/DepthNormals passes.
+  - **Light:** a soft wrapped Lambert (`_Wrap`) with the main light's real shadows, nudged towards the old two-band
+    ramp by `_Stylize`; GGX specular (`_Smoothness`, optional `_GlossMap`); optional normal map (`_BumpMap`);
+    additional lights the same way. The shadowed side is filled only by the sky (SH ambient times SSAO, slightly
+    tinted by `_ShadeColor`, strength `_AmbientStrength`): deep, never black.
+  - **Rim:** light-aware, strongest against the low sun (a warm edge on backlit shapes).
+  - **Kept:** `_TopColor` on upward faces, an optional spec blob, emission always added (MaterialPropertyBlock
+    friendly), a fake bevel on scaled unit cubes (`_EdgeWidth`), world checker/stripes (`_Pattern`; hazards are
+    striped so they do not rely on red alone), `_VERTEX_COLOR` for particle meshes, `_SuitTint`.
+  - Particles, trails, flashes and the BOOM use `HotPatata/Particle`.
+- **Materials:** the kit materials kept their names (`Greybox_*`, `Pad_*`), so prefab references did not change. The
+  characters' materials (`Assets/Art/Materials/Characters`) take each model's diffuse, normal and gloss maps; Remy's
+  hair and eyelashes keep their imported materials (they need alpha). The potato's material gets a stronger sky fill
+  and a warm rim, so it reads in the long shadows.
+- **Light, sky and grade: generated** by `LookBuilder` (menu **HotPatata/Look/Apply Look To All Scenes**, never set by
+  hand), for Bootstrap, PassSandbox, PrototypeCourse, PlaytestCourse and PatataPark:
+  - the sun: 22° high, warm, soft shadows, from behind and to the side of each scene's main run (`PC_RPAsset` shadow
+    distance 75 m); the menu's sun is built the same way by `MenuBackdropBuilder`;
+  - trilight ambient (cool sky, warm equator, dark ground) and a warm linear haze matched to the horizon;
+  - a sky per scene (`Sky_HotPatata_<Scene>`, a copy of `Sky_HotPatata`) with its sun and glow where that scene's
+    sun is;
+  - the global `LookVolume` (`HotPatata_Look.asset`): ACES tonemapping, more contrast, a warm white balance, split
+    toning (teal shadows, warm highlights), bloom only above 1 (what really shines). No vignette in game: the speed
+    effects own it.
+  - MSAA 4x on `PC_RPAsset`.
 - **Backdrop:** see §4 (`PrototypeCourse/Backdrop`, |x| >= 25 m, no colliders).
 - **Player identity:** one colour and one shape per slot, both in `GameTuning` (`playerColors`, `playerShapes`) and
   read through `PlayerIdentity`. Slots 1–4: royal blue ●, sky blue ▲, plum ■, white ◆. The palette was chosen by
@@ -1629,7 +1650,7 @@ they were, only the look does.
   elbows) when the exit is high and far enough, else low then up (one elbow), else straight; the exit is a flange
   along the launch direction. Straight runs carry a capsule never wider than they are long (a short one would overhang
   the exit arc), elbows a box. The cannon barrel is a pipe with a flange at the muzzle.
-- **Materials:** `KayKit_Toon`, `KayKit_Hazard`, `KayKit_Belt` are `HotPatata/Toon` with the pack's palette texture
+- **Materials:** `KayKit_Toon`, `KayKit_Hazard`, `KayKit_Belt` are `HotPatata/Stylized` with the pack's palette texture
   (mipmaps off, so the colour columns never blend), a lighter shade tint than the greybox, no fake bevel.
 - **Rebuilding:** menu **HotPatata/Course/Build KayKit Kit** (palette, materials, the hand-made classic prefabs, the
   generated prefabs, and the hand-placed boxes of PrototypeCourse Act 1 and PassSandbox), then **HotPatata/Course/Rebuild

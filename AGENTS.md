@@ -93,6 +93,10 @@ same PR. Code comments cite doc sections (e.g. `PROJECT_SPEC §8.3`), so never r
   `PlayerCharacterBuilder` (menu `HotPatata/Player/Build Characters`, then rebuild the menu backdrop): never edit the
   character prefabs or their controllers by hand. A new clip goes in `Assets/Art/Models/Characters/Animations`, set up
   by the builder. Choosing your character is out of scope (spec §17.2 cosmetics).
+- **Light and grade.** The cinematic golden-hour look (ARCHITECTURE §25) comes from `LookBuilder` (menu
+  `HotPatata/Look/Apply Look To All Scenes`): sun, ambient, fog, each scene's sky and the look volume. Never set them
+  by hand in a scene; change the builder and re-apply. The shared shader is `HotPatata/Stylized` (file
+  `HotPatataToon.shader`): keep its property names, materials and builders rely on them.
 - **Look.** Kit visuals are KayKit pieces drawn by `KitSkin` (ARCHITECTURE §25.1): give a box a `KitRole`, never a
   greybox material. Rebuild with `HotPatata/Course/Build KayKit Kit`, then `HotPatata/Course/Rebuild All Courses`.
 - **Prefabs.**
