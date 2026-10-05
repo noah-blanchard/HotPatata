@@ -28,11 +28,11 @@ Shader "HotPatata/Industrial"
         [Header(Normal)]
         [NoScaleOffset][Normal] _BumpMap ("Normal Map (OpenGL, Y+)", 2D) = "bump" {}
         _BumpScale ("Normal Strength", Range(0, 2)) = 1
-        [Toggle] _FlipNormalY ("Flip Normal Y (for DirectX normal maps)", Float) = 0
+        [ToggleUI] _FlipNormalY ("Flip Normal Y (for DirectX normal maps)", Float) = 0
 
         [Header(Smoothness)]
         [NoScaleOffset] _GlossMap ("Gloss or Roughness Map (R, linear)", 2D) = "gray" {}
-        [Toggle] _GlossIsRoughness ("Map Is Roughness (inverted in the shader)", Float) = 0
+        [ToggleUI] _GlossIsRoughness ("Map Is Roughness (inverted in the shader)", Float) = 0
         _SmoothnessMin ("Smoothness at map 0", Range(0, 1)) = 0.05
         _SmoothnessMax ("Smoothness at map 1", Range(0, 1)) = 0.5
 
@@ -60,7 +60,7 @@ Shader "HotPatata/Industrial"
         _GrungeRoughness ("Grunge Roughness (dirt is less glossy)", Range(0, 1)) = 0.5
 
         [Header(Decal)]
-        [Toggle] _Decal ("Decal (alpha blended, mesh UVs, no normal map)", Float) = 0
+        [ToggleUI] _Decal ("Decal (mesh UVs, no normal map; the blending is set by IndustrialDecals, not by this box)", Float) = 0
 
         [Header(Light)]
         _ShadeColor ("Shadow Tint (colours the sky fill in shadow)", Color) = (0.72, 0.72, 0.84, 1)
@@ -208,7 +208,7 @@ Shader "HotPatata/Industrial"
                                         lerp(Hash21(c + float2(0, 1)), Hash21(c + float2(1, 1)), w.x), w.y);
                     q /= 4.3; amp *= 0.6;
                 }
-                return total / 0.8;
+                return total / 0.98;   // 0.5 + 0.3 + 0.18: back to 0..1
             }
 
             // The face's plane in world metres (dominant axis of the world normal).
@@ -354,7 +354,9 @@ Shader "HotPatata/Industrial"
                     half average = dot(SAMPLE_TEXTURE2D_LOD(_BaseMap, sampler_BaseMap, uv, 10).rgb, half3(0.333, 0.333, 0.334));
                     albedo *= lerp(1.0, clamp(macro / max(0.05, average), 0.6, 1.5), _MacroStrength);
                 }
-                float2 worldMetres = WorldPlane(input.positionWS, normalWS);
+                // the geometric normal picks the plane (the mapped normal would flip it back and forth on bevels); world space,
+                // so on a moving platform the variation and the grunge slide, which their low contrast hides
+                float2 worldMetres = WorldPlane(input.positionWS, normalize(input.normalWS));
                 if (!decal) albedo *= 1.0 + (Variation(worldMetres) - 0.5) * 2.0 * _VariationStrength;
                 half dirt = 0.0;
                 if (_GrungeStrength > 0.0 && !decal)

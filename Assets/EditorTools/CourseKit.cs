@@ -325,8 +325,9 @@ namespace HotPatata.Editor
             currentLookSet == LookSet.Industrial ? IndustrialLook(role) : KayKitLook(role);
 
         /// <summary>
-        /// The industrial look (ARCHITECTURE §25.2): bevelled boxes in concrete, painted metal, raw metal and rubber. Hazards and
-        /// falling platforms keep their KayKit look (the hazard stripes are what stops them relying on colour alone, spec §19).
+        /// The industrial look (ARCHITECTURE §25.2): bevelled boxes in the room theme's floor, wall and ceiling materials, painted, raw
+        /// and rusty metal, and rubber. Hazards are striped red paint (the stripes stop them relying on colour alone, spec §19);
+        /// falling platforms are yellow paint, as in KayKit.
         /// </summary>
         static (KitShape shape, KitColor color, string material) IndustrialLook(KitRole role) => role switch
         {
@@ -337,6 +338,8 @@ namespace HotPatata.Editor
             KitRole.Mover or KitRole.Pillar or KitRole.Truss => (KitShape.BevelBox, KitColor.Neutral, PaintedMetalMaterial),
             KitRole.Frame or KitRole.Railing or KitRole.Gate => (KitShape.BevelBox, KitColor.Neutral, PaintedMetalYellowMaterial),
             KitRole.Accent => (KitShape.BevelBox, KitColor.Neutral, PaintedMetalSafetyMaterial),
+            KitRole.Hazard => (KitShape.BevelBox, KitColor.Neutral, IndustrialDir + "Industrial_Hazard"),
+            KitRole.Falling => (KitShape.BevelBox, KitColor.Neutral, PaintedMetalYellowMaterial),
             KitRole.Lamp => (KitShape.BevelBox, KitColor.Neutral, LampMaterial),
             KitRole.Glow => (KitShape.BevelBox, KitColor.Neutral, GlowMaterial),
             KitRole.Slide or KitRole.Grating => (KitShape.BevelBox, KitColor.Neutral, RawMetalMaterial),

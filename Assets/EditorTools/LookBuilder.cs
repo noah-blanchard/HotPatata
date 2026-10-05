@@ -109,8 +109,8 @@ namespace HotPatata.Editor
                     sun.shadows = LightShadows.None;
                     EditorUtility.SetDirty(sun);
                 }
-                // A closed, dark plant (ARCHITECTURE §25.2): almost no sky fill, a dark warm haze; the practical lights and the
-                // sun shafts through the roof slits carry the scene.
+                // A closed, dark plant (ARCHITECTURE §25.2): a low neutral fill (no sky indoors) and a dark warm haze; the lamps
+                // carry the scene.
                 RenderSettings.ambientSkyColor = new Color(0.34f, 0.33f, 0.32f);        // a neutral warm grey: no sky indoors
                 RenderSettings.ambientEquatorColor = new Color(0.3f, 0.28f, 0.26f);
                 RenderSettings.ambientGroundColor = new Color(0.2f, 0.18f, 0.17f);

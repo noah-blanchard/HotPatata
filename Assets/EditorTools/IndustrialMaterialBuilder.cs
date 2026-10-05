@@ -180,9 +180,9 @@ namespace HotPatata.Editor
         static Texture2D Find(string folder, params string[] suffixes)
         {
             if (!AssetDatabase.IsValidFolder(TextureDir + folder)) return null;
-            foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { TextureDir + folder }))
+            // by path, so a folder holding two sets always gives the same pick
+            foreach (var path in AssetDatabase.FindAssets("t:Texture2D", new[] { TextureDir + folder }).Select(AssetDatabase.GUIDToAssetPath).OrderBy(p => p))
             {
-                string path = AssetDatabase.GUIDToAssetPath(guid);
                 string name = System.Text.RegularExpressions.Regex.Replace(Path.GetFileNameWithoutExtension(path).ToLowerInvariant(), @"[_-](1|2|4|8|16)k$", "");
                 if (suffixes.Any(s => name.EndsWith("_" + s) || name.EndsWith("-" + s))) return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
             }
@@ -225,6 +225,8 @@ namespace HotPatata.Editor
             AssignGrunge(mat, surface);
             if (set.color == null)
             {
+                foreach (var map in new[] { "_BaseMap", "_BumpMap", "_GlossMap", "_MetallicMap", "_OcclusionMap" }) mat.SetTexture(map, null);
+                mat.SetFloat("_Metallic", 0f);
                 mat.SetColor("_BaseColor", surface.placeholder);   // no texture at all: a flat colour with the procedural variation
                 mat.SetFloat("_BaseBrightness", 1f);
                 mat.SetFloat("_SmoothnessMin", 0.05f);
@@ -242,6 +244,7 @@ namespace HotPatata.Editor
             mat.SetColor("_BaseColor", hasOwn ? surface.ownTint : surface.fallbackTint);
             mat.SetFloat("_BaseBrightness", hasOwn ? surface.ownBrightness : surface.fallbackBrightness);
             if (set.rough != null || set.gloss != null) { mat.SetFloat("_SmoothnessMin", 0f); mat.SetFloat("_SmoothnessMax", surface.smoothMax); }
+            else { mat.SetFloat("_SmoothnessMin", 0.05f); mat.SetFloat("_SmoothnessMax", 0.4f); }   // no map: the default grey gives 0.22
             mat.SetFloat("_Metallic", set.metal != null ? surface.metalScale : 0f);
             EditorUtility.SetDirty(mat);
             if (!quiet)
@@ -252,10 +255,11 @@ namespace HotPatata.Editor
         {
             var guids = AssetDatabase.IsValidFolder(TextureDir + "Grunge") ? AssetDatabase.FindAssets("t:Texture2D", new[] { TextureDir + "Grunge" }) : new string[0];
             if (guids.Length == 0 || surface.grunge <= 0f) { mat.SetFloat("_GrungeStrength", 0f); return; }
-            int index = Mathf.Abs(surface.name.GetHashCode()) % guids.Length;
-            mat.SetTexture("_GrungeMap", AssetDatabase.LoadAssetAtPath<Texture2D>(AssetDatabase.GUIDToAssetPath(guids.OrderBy(g => g).ElementAt(index))));
+            int hash = IndustrialKit.StableHash(surface.name);
+            var paths = guids.Select(AssetDatabase.GUIDToAssetPath).OrderBy(p => p).ToArray();
+            mat.SetTexture("_GrungeMap", AssetDatabase.LoadAssetAtPath<Texture2D>(paths[hash % paths.Length]));
             mat.SetFloat("_GrungeStrength", surface.grunge);
-            mat.SetFloat("_GrungeSize", 7f + (Mathf.Abs(surface.name.GetHashCode()) % 7));
+            mat.SetFloat("_GrungeSize", 7f + hash % 7);
         }
     }
 }

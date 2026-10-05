@@ -70,7 +70,7 @@ namespace HotPatata.Editor
             importer.maxTextureSize = 2048;
             importer.textureCompression = TextureImporterCompression.CompressedHQ;
             if (kind == MapKind.NormalDirectX)
-                Debug.LogWarning($"[IndustrialTextureImporter] {assetPath} is a DirectX normal map: tick Flip Normal Y on the material (or download the OpenGL one).");
+                Debug.LogWarning($"[IndustrialTextureImporter] {assetPath} is a DirectX normal map: Assign Industrial Textures uses it with Flip Normal Y when the folder has no OpenGL one (prefer the OpenGL map).");
         }
     }
 }

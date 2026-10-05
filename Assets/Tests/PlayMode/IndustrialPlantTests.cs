@@ -182,9 +182,39 @@ namespace HotPatata.Tests
                 Assert.AreEqual(UnityEngine.Rendering.ShadowCastingMode.Off, d.shadowCastingMode);
                 Assert.IsNotNull(d.GetComponentInParent<CourseDecoration>());
                 var normal = -d.transform.forward;
-                Assert.IsTrue(Physics.Raycast(d.transform.position + normal * 0.05f, -normal, 0.2f, LayerMask.GetMask("Environment"), QueryTriggerInteraction.Ignore),
+                Assert.IsTrue(Physics.Raycast(d.transform.position + normal * 0.05f, -normal, out var under, 0.2f, LayerMask.GetMask("Environment"), QueryTriggerInteraction.Ignore),
                     d.name + " floats in the air");
+                Assert.IsTrue(under.collider.attachedRigidbody == null && under.collider.GetComponentInParent<MovingPlatform>() == null
+                              && under.collider.GetComponentInParent<FallingPlatform>() == null && under.collider.GetComponentInParent<SignalActuator>() == null,
+                    d.name + " lies on something that moves: it would be left in the air");
             }
+        }
+
+        [Test]
+        public void FloorsOfTwoRooms_NeverOverlapAtTheSameHeight()
+        {
+            // Two coplanar slabs of different rooms (different themes) would fight over one surface and flicker.
+            Physics.SyncTransforms();
+            var slabs = new List<(Transform room, Bounds bounds, string name)>();
+            foreach (var c in All<BoxCollider>())
+            {
+                if (c.isTrigger || c.attachedRigidbody != null || c.bounds.size.y > 1.5f) continue;
+                var t = c.transform;
+                while (t != null && (t.parent == null || t.parent.name != "IndustrialPlant")) t = t.parent;
+                if (t != null) slabs.Add((t, c.bounds, c.name));
+            }
+            Assert.Greater(slabs.Count, 50);
+            var overlaps = new List<string>();
+            for (int i = 0; i < slabs.Count; i++)
+                for (int j = i + 1; j < slabs.Count; j++)
+                {
+                    var a = slabs[i]; var b = slabs[j];
+                    if (a.room == b.room || Mathf.Abs(a.bounds.max.y - b.bounds.max.y) > 0.02f) continue;
+                    float ox = Mathf.Min(a.bounds.max.x, b.bounds.max.x) - Mathf.Max(a.bounds.min.x, b.bounds.min.x);
+                    float oz = Mathf.Min(a.bounds.max.z, b.bounds.max.z) - Mathf.Max(a.bounds.min.z, b.bounds.min.z);
+                    if (ox > 0.05f && oz > 0.05f) overlaps.Add($"{a.room.name}/{a.name} and {b.room.name}/{b.name}");
+                }
+            Assert.IsEmpty(overlaps.Take(10).ToArray());
         }
 
         [UnityTest]

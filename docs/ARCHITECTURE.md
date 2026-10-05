@@ -1731,8 +1731,12 @@ the build settings: open them in the Editor and play):
 - **`IndustrialLab`** (`IndustrialLabBuilder`): a short open test map with a calibration wall (1, 4 and 12 m panels per material, KayKit on one side
   and industrial on the other) for judging texel density.
 
-**The plant is closed and lit by lamps only.** Walls, roofs and floors are solid, and a ceiling step wall closes the gap at every turn where two
-rooms have different heights. There is **no sun**: a directional light's shadows depend on the camera (cascades, a shadow distance), so under a roof
+**The plant is closed and lit by lamps only.** Walls, roofs and floors are solid, a ceiling step wall closes the gap at every turn where two
+rooms have different heights, and a solid foundation fills each room below its floors (its top is the visible pit floor in the pit rooms), so a
+deeper pit never looks out under a shallower one. Each room owns a stretch of floor: floors at its start level are cut where the previous room's
+stop, floors at its end level where the next room's start, and at a turn the corner square belongs to the next room unless it says otherwise
+(the cold storage leaves the catwalks' crane gap and exit, the control room leaves the shaft's top floors with their lift wells and cannon gap).
+No two rooms' floors overlap at one height, so two themes never flicker on one surface. There is **no sun**: a directional light's shadows depend on the camera (cascades, a shadow distance), so under a roof
 the floor would light up as you approached. `LookBuilder` gives this scene a neutral warm-grey ambient and a dark haze; the light is about 130 warm
 point lamps (hanging, on walls, at the furnaces), none casting shadows, so the lighting is the same wherever the player stands. Lamp fittings and
 furnace mouths are emissive and bloom.
@@ -1789,7 +1793,7 @@ laser beams, pads, icons and plates keep their own materials on purpose (gamepla
 
 **Surface detail** (`IndustrialDecals`): after the rooms are built, about 300 decals are scattered with a fixed seed (the same plant on every
 rebuild): stains, oil, cracks, scuffs and drips lying 6 mm above a floor or a wall, never over a trigger zone, a moving platform or a floor's edge,
-with no collider and marked `CourseDecoration`. Every PNG of `Textures/Industrial/Decals` is used (a name with *drip*, *leak* or *streak* goes on
+with no collider and marked `CourseDecoration`, and never on anything that moves (movers, falling platforms, actuators, rigid bodies). Every PNG of `Textures/Industrial/Decals` is used (a name with *drip*, *leak* or *streak* goes on
 walls only; *arrow*, *stencil*, *number* or *line* on floors only). Procedural placeholders (`IndustrialTextureFactory`) are written when the
 folders are empty: three tileable grunge masks and five decals; delete them when you add real ones.
 

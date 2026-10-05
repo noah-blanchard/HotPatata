@@ -72,13 +72,16 @@ namespace HotPatata.Editor
         // ------------------------------------------------------------------ noise
 
         /// <summary>Tileable value in 0..1 (blends four Perlin samples across the seam).</summary>
-        static float Tile(float x, float y, float frequency, float seed)
+        static float Tile(float x, float y, float frequency, float seed) => Tile(x, y, frequency, frequency, seed);
+
+        /// <summary>Tileable value in 0..1 with its own (whole) frequency on each axis: long streaks need a stretched noise.</summary>
+        static float Tile(float x, float y, float frequencyX, float frequencyY, float seed)
         {
-            float fx = x * frequency, fy = y * frequency;
+            float fx = x * frequencyX, fy = y * frequencyY;
             float a = Mathf.PerlinNoise(fx + seed, fy + seed);
-            float b = Mathf.PerlinNoise(fx - frequency + seed, fy + seed);
-            float c = Mathf.PerlinNoise(fx + seed, fy - frequency + seed);
-            float d = Mathf.PerlinNoise(fx - frequency + seed, fy - frequency + seed);
+            float b = Mathf.PerlinNoise(fx - frequencyX + seed, fy + seed);
+            float c = Mathf.PerlinNoise(fx + seed, fy - frequencyY + seed);
+            float d = Mathf.PerlinNoise(fx - frequencyX + seed, fy - frequencyY + seed);
             return Mathf.Lerp(Mathf.Lerp(a, b, x), Mathf.Lerp(c, d, x), y);
         }
 
@@ -88,7 +91,7 @@ namespace HotPatata.Editor
             float n = 0f, amp = 0.5f, freq = 3f, total = 0f;
             for (int i = 0; i < octaves; i++) { n += amp * Tile(x, y, Mathf.Round(freq), seed + i * 13.1f); total += amp; amp *= 0.55f; freq *= 2f; }
             n /= total;
-            float streak = Tile(x, y, 1f, seed + 5f) * 0.0f + Mathf.PerlinNoise(x * 24f + seed, y * 2f);   // long vertical streaks
+            float streak = Tile(x, y, 24f, 2f, seed + 5f);   // long vertical streaks, tileable like the rest (no seam at each repeat)
             float dirt = Mathf.Clamp01((coverage - n) * 3.2f + (streak - 0.55f) * 0.9f);
             float clean = 1f - dirt;
             return new Color(clean, clean, clean, 1f);
@@ -105,6 +108,13 @@ namespace HotPatata.Editor
 
         static Texture2D Finish(Texture2D tex, Color[] pixels)
         {
+            // fade the alpha to zero at the border: a clamped decal must never show the edge of its quad
+            for (int y = 0; y < 256; y++)
+                for (int x = 0; x < 256; x++)
+                {
+                    float border = Mathf.Min(Mathf.Min(x, 255 - x), Mathf.Min(y, 255 - y)) / 255f;
+                    pixels[y * 256 + x].a *= Smooth(0f, 0.08f, border);
+                }
             tex.SetPixels(pixels);
             tex.Apply();
             return tex;

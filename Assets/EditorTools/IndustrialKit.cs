@@ -14,6 +14,20 @@ namespace HotPatata.Editor
         /// <summary>Strips sit this far above a surface they decorate: enough not to z-fight, far below the controller's skin.</summary>
         public const float SurfaceLift = 0.005f;
 
+        /// <summary>
+        /// A hash of <paramref name="text"/> that is the same on every machine and every run (FNV-1a), unlike
+        /// <see cref="string.GetHashCode"/>, which a runtime may randomise: seeds and picks stay deterministic across rebuilds.
+        /// </summary>
+        public static int StableHash(string text)
+        {
+            unchecked
+            {
+                uint hash = 2166136261;
+                foreach (char ch in text) { hash ^= ch; hash *= 16777619; }
+                return (int)(hash & 0x7fffffff);
+            }
+        }
+
         /// <summary>A collider-free box drawn in <paramref name="role"/>'s look, marked as decoration.</summary>
         public static GameObject Detail(Transform parent, string name, Vector3 center, Vector3 size, KitRole role, Quaternion? rotation = null)
         {

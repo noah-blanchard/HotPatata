@@ -186,7 +186,7 @@ namespace HotPatata.Tests
             {
                 Assert.AreEqual(KitShape.BevelBox, CourseKit.Look(KitRole.Floor).shape);
                 Assert.AreEqual(CourseKit.ConcreteMaterial, CourseKit.Look(KitRole.Brick).material);
-                Assert.AreEqual(CourseKit.KitHazardMaterial, CourseKit.Look(KitRole.Hazard).material, "hazards keep their stripes (spec §19)");
+                Assert.AreEqual("Industrial/Industrial_Hazard", CourseKit.Look(KitRole.Hazard).material, "hazards are striped (spec §19)");
             }
             Assert.AreEqual(CourseKit.LookSet.KayKit, CourseKit.CurrentLookSet);
             Assert.AreEqual(before, CourseKit.Look(KitRole.Floor));

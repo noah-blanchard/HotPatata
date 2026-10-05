@@ -41,13 +41,20 @@ namespace HotPatata.Editor
             public Color lamp;
             public float lampIntensity;
             public Action<Transform> contents;
+            public bool cornerFloor;              // at a turn into this room, its floor covers the corner square (else the previous room's does)
         }
+
+        // The stretch of floor the room being built owns, in its local z: floors at its start level are cut at the start, floors at its
+        // end level at the end. Two rooms' floors never overlap at the same height, so no two materials fight over one surface.
+        static float floorStart, floorEnd, floorEndLevel;
 
         static CourseKit.SurfaceTheme T(string floor, string wall, string ceiling) =>
             new CourseKit.SurfaceTheme(IndustrialDir + "Industrial_Floor_" + floor, IndustrialDir + "Industrial_Wall_" + wall, IndustrialDir + "Industrial_Ceiling_" + ceiling);
 
-        static RoomSpec R(string name, float length, float dy, float ceiling, int turn, bool pit, CourseKit.SurfaceTheme theme, Color lamp, float lampIntensity, Action<Transform> contents) =>
-            new RoomSpec { name = name, length = length, dy = dy, ceiling = ceiling, turn = turn, pit = pit, theme = theme, lamp = lamp, lampIntensity = lampIntensity, contents = contents };
+        static RoomSpec R(string name, float length, float dy, float ceiling, int turn, bool pit, CourseKit.SurfaceTheme theme, Color lamp, float lampIntensity,
+                          Action<Transform> contents, bool cornerFloor = true) =>
+            new RoomSpec { name = name, length = length, dy = dy, ceiling = ceiling, turn = turn, pit = pit, theme = theme, lamp = lamp, lampIntensity = lampIntensity,
+                           contents = contents, cornerFloor = cornerFloor };
 
         // Straight joints keep the same absolute ceiling; the turn sequence was searched so no room overlaps another.
         static RoomSpec[] Rooms() => new[]
@@ -56,13 +63,13 @@ namespace HotPatata.Editor
             R("01 Sorting line", 96, 0, 11, 1, true, T("Plate", "Panel", "Panel"), Warm, 54f, SortingLine),
             R("02 Atrium", 64, 14, 26, 0, true, T("Concrete", "Brick", "Concrete"), Warm, 102f, Atrium),
             R("03 Void catwalks", 64, 4, 12, 1, true, T("Grit", "Block", "Panel"), Warm, 51f, VoidCatwalks),
-            R("04 Cold storage", 108, 0, 11, 1, false, T("Tile", "Plaster", "Panel"), Cold, 44f, ColdStorage),
+            R("04 Cold storage", 108, 0, 11, 1, true, T("Tile", "Plaster", "Panel"), Cold, 44f, ColdStorage, cornerFloor: false),   // the catwalks' crane gap and exit stay
             R("05 Chute", 72, -28, 12, -1, true, T("Grit", "Block", "Concrete"), Sodium, 51f, Chute),
             R("06 Furnace intake", 48, 0, 11, 0, false, T("Grit", "Brick", "Concrete"), Furnace, 48f, FurnaceIntake),
             R("07 Furnace loop", 64, 0, 11, 1, false, T("Plate", "Brick", "Panel"), Furnace, 48f, FurnaceLoop),
             R("08 Boiler approach", 48, 0, 11, -1, false, T("Concrete", "Panel", "Panel"), Warm, 51f, BoilerApproach),
             R("09 Boiler shaft", 24, 34, 48, -1, true, T("Plate", "Block", "Concrete"), Warm, 102f, BoilerShaft),
-            R("10 Control room", 40, 0, 14, 0, false, T("Tile", "Plaster", "Panel"), Warm, 58f, ControlRoom)
+            R("10 Control room", 40, 0, 14, 0, true, T("Tile", "Plaster", "Panel"), Warm, 58f, ControlRoom, cornerFloor: false)   // the shaft's top floors, lift wells and cannon gap stay
         };
 
         [MenuItem("HotPatata/Course/Build Industrial Plant")]
@@ -72,13 +79,13 @@ namespace HotPatata.Editor
             IndustrialMaterialBuilder.Ensure(false);
             var scene = IndustrialLabBuilder.PrepareScene(ScenePath, out var section);
             var rooms = Rooms();
+            int restyled = 0;
             RebuildGroup(section, GroupName, root =>
             {
                 using (UseLookSet(LookSet.Industrial))
                 {
                     var origin = Vector3.zero;
                     float yaw = 0;
-                    int restyled = 0;
                     var absCeiling = new float[rooms.Length];
                     var absLowest = new float[rooms.Length];
                     var y = 0f;
@@ -86,10 +93,14 @@ namespace HotPatata.Editor
                     for (int i = 0; i < rooms.Length; i++)
                     {
                         var spec = rooms[i];
+                        bool first = i == 0, last = i == rooms.Length - 1;
+                        floorStart = first ? -Half : rooms[i - 1].turn == 0 ? 0 : spec.cornerFloor ? -Half : Half;
+                        floorEnd = last ? spec.length + Half : spec.turn == 0 ? spec.length : rooms[i + 1].cornerFloor ? spec.length - Half : spec.length + Half;
+                        floorEndLevel = spec.dy;
                         var room = new GameObject(spec.name).transform;
                         room.SetParent(root, false);
                         int turnIn = i == 0 ? 0 : rooms[i - 1].turn;
-                        float wallTop = Mathf.Max(absCeiling[i], i > 0 ? absCeiling[i - 1] : 0, i + 1 < rooms.Length ? absCeiling[i + 1] : 0) + 1f - origin.y;
+                        float wallTop = Mathf.Max(absCeiling[i], i > 0 ? absCeiling[i - 1] : absCeiling[i], i + 1 < rooms.Length ? absCeiling[i + 1] : absCeiling[i]) + 1f - origin.y;
                         // Walls reach down to the lowest floor of this room and of both neighbours: a corner square owned by the next
                         // room sits above the previous room's lower floors (a rising shaft), and nothing may be open there.
                         float wallBottom = Mathf.Min(absLowest[i], i > 0 ? absLowest[i - 1] : absLowest[i], i + 1 < rooms.Length ? absLowest[i + 1] : absLowest[i]) - 30f - origin.y;
@@ -112,7 +123,7 @@ namespace HotPatata.Editor
             Physics.SyncTransforms();
             int decals = 0;
             foreach (var spec in rooms) decals += IndustrialDecals.Scatter(section.Find(GroupName + "/" + spec.name), spec.length, spec.ceiling, 17);
-            Debug.Log($"[IndustrialPlantBuilder] {decals} decals scattered");
+            Debug.Log($"[IndustrialPlantBuilder] {restyled} KayKit renderers redrawn, {decals} decals scattered");
             PatataWorksBuilder.ValidatePasses();
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
@@ -124,6 +135,9 @@ namespace HotPatata.Editor
 
         static void Floor(Transform p, string name, float a, float b, float y = 0, float width = 2 * Half, float x = 0)
         {
+            if (Mathf.Abs(y) < 0.01f) a = Mathf.Max(a, floorStart);
+            if (Mathf.Abs(y - floorEndLevel) < 0.01f) b = Mathf.Min(b, floorEnd);
+            if (b - a < 0.01f) return;   // wholly in a neighbour's stretch: its floor is there
             Block(p, name, new Vector3(x, y - 0.5f, (a + b) / 2), new Vector3(width, 1, b - a), KitRole.Floor);
             if (b - a < 8 || width < 8) return;
             for (float z = a + 6; z < b - 1; z += 6) Seam(p, name + " seam", x, y, z, width);
@@ -209,8 +223,12 @@ namespace HotPatata.Editor
                 float lo = Mathf.Min(nextCeiling, spec.ceiling), hi = Mathf.Max(nextCeiling, spec.ceiling) + 1f;
                 Block(room, "Ceiling step wall", new Vector3(0, (lo + hi) / 2, L - Half), new Vector3(2 * Half + 2, hi - lo, 1), KitRole.Wall);
             }
-            if (spec.pit)
-                Block(room, "Pit floor", new Vector3(0, Mathf.Min(0, spec.dy) - 20.5f, (ca + cb) / 2), new Vector3(2 * Half, 1, cb - ca), KitRole.Floor);
+            // A solid foundation under the same stretch as the room's floors, down to the walls' foot: a pit room shows its top 20 m
+            // down, any other room hides it just under its floors. Solid rather than a slab, so that next to a deeper pit there is
+            // no opening under the shallower one, and a corner square left to this room (cornerFloor: false) keeps a bottom.
+            float top = Mathf.Min(0, spec.dy) - (spec.pit ? 20f : 1.05f);
+            Block(room, spec.pit ? "Pit floor" : "Foundation", new Vector3(0, (top + bottom) / 2, (floorStart + floorEnd) / 2),
+                  new Vector3(2 * Half, top - bottom, floorEnd - floorStart), KitRole.Floor);
         }
 
         /// <summary>The room's dressing (visual only): ceiling trusses and hanging lamps, wall pilasters, ducts, wall lamps.</summary>
@@ -487,16 +505,10 @@ namespace HotPatata.Editor
 
         static void ControlRoom(Transform p)
         {
-            // The control room's corner square sits right on top of the boiler shaft: the cannon fires the bomb up through it, so the
-            // floor has a doorway there (8 m by 8 m, edged with warning strips) like PatataWorks' roof.
-            Floor(p, "Control room floor", -12, -4);
-            Floor(p, "Control room floor", 4, 52);
-            Floor(p, "Control room floor west", -4, 4, 0, 14, -5);
-            Floor(p, "Control room floor east", -4, 4, 0, 2, 11);
-            EdgeStrip(p, "Cannon doorway strip", 2.15f, 0, 0, 8, 0.3f);
-            EdgeStrip(p, "Cannon doorway strip", 9.85f, 0, 0, 8, 0.3f);
-            EdgeStrip(p, "Cannon doorway strip", 6, 0, -3.85f, 0.3f, 8);
-            EdgeStrip(p, "Cannon doorway strip", 6, 0, 3.85f, 0.3f, 8);
+            // The corner square is the top of the boiler shaft: its own floors, with the lift wells and the gap the cannon fires through
+            // (cornerFloor: false), so this floor starts past it.
+            Floor(p, "Control room floor", -12, 52);
+            EdgeStrip(p, "Shaft edge strip", 0, 0, 12.15f, 0.3f, 2 * Half);
             ArchCheckpoint(p, "CP_09", 9, new Vector3(0, 0, 14), 5, new Vector3(0, 0, 9));
             Pass(p, "Control room arch", new Vector3(0, 1.5f, 5), new Vector3(0, 1.5f, 14), opening: 4);
             Place(p, GameplayDir + "FinishZone", "FinishZone", new Vector3(0, 0, 36), Quaternion.identity);

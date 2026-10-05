@@ -67,9 +67,9 @@ namespace HotPatata.Editor
         {
             var kinds = new List<Kind>();
             if (!AssetDatabase.IsValidFolder(DecalDir.TrimEnd('/'))) return kinds;
-            foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { DecalDir.TrimEnd('/') }).OrderBy(g => g))
+            foreach (var path in AssetDatabase.FindAssets("t:Texture2D", new[] { DecalDir.TrimEnd('/') }).Select(AssetDatabase.GUIDToAssetPath).OrderBy(p => p))
             {
-                var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(AssetDatabase.GUIDToAssetPath(guid));
+                var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
                 string n = tex.name.ToLowerInvariant();
                 bool wallOnly = n.Contains("drip") || n.Contains("leak") || n.Contains("streak");
                 bool floorOnly = n.Contains("arrow") || n.Contains("stencil") || n.Contains("number") || n.Contains("line");
@@ -83,7 +83,7 @@ namespace HotPatata.Editor
         {
             var kinds = Available();
             if (kinds.Count == 0) return 0;
-            var rng = new Random(seed ^ room.name.GetHashCode());
+            var rng = new Random(seed ^ IndustrialKit.StableHash(room.name));
             var parent = new GameObject("Decals").transform;
             parent.SetParent(room, false);
             parent.gameObject.AddComponent<CourseDecoration>();
@@ -101,7 +101,7 @@ namespace HotPatata.Editor
                     var corner = point + right * (sx * width / 2f) + up * (sy * height / 2f);
                     if (!Physics.Raycast(corner + normal * 0.4f, -normal, out var h, 0.6f, environment, QueryTriggerInteraction.Ignore)) return false;
                     if (Mathf.Abs(Vector3.Dot(h.point - point, normal)) > 0.03f) return false;
-                    if (h.collider.GetComponentInParent<MovingPlatform>() != null || h.collider.GetComponentInParent<Conveyor>() != null) return false;
+                    if (!Static(h.collider)) return false;
                 }
                 return !Physics.CheckSphere(point, Mathf.Max(width, height) * 0.5f + 0.4f, cues, QueryTriggerInteraction.Collide);
             }
@@ -124,6 +124,13 @@ namespace HotPatata.Editor
                 r.receiveShadows = false;
                 placed++;
             }
+
+            // the surface must never move: a decal is a separate quad and would be left floating in the air
+            bool Static(Collider c) => c.attachedRigidbody == null && c.GetComponentInParent<MovingPlatform>() == null
+                && c.GetComponentInParent<FallingPlatform>() == null && c.GetComponentInParent<SignalActuator>() == null
+                && c.GetComponentInParent<RotatingObstacle>() == null && c.GetComponentInParent<Conveyor>() == null
+                && c.GetComponentInParent<BombTransit>() == null && c.GetComponentInParent<PressurePlate>() == null
+                && c.GetComponentInParent<LaunchPad>() == null;
 
             var floorKinds = kinds.Where(k => k.floors).ToList();
             var wallKinds = kinds.Where(k => k.walls).ToList();
