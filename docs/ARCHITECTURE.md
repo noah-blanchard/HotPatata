@@ -559,8 +559,14 @@ base, the HUD (#24) follows.
 
 - **Panel and theme.** One `PanelSettings`, `Assets/UI/Resources/HotPatataPanel.asset` (scale with screen size from
   1920x1080, match 0.5, sort order 100), with the theme `Assets/UI/Styles/HotPatataTheme.tss` = Unity's runtime theme +
-  `HotPatata.uss`.
-  - **Look ("Sunny toy box", owner-approved mock-up).** Cream rounded panels (`hp-panel`), chunky buttons with a
+  `HotPatata.uss` + `HotPatataIndustrial.uss`.
+  - **Industrial theme (#87, active).** `HotPatataIndustrial.uss` re-skins every `hp-*` class to match the industrial
+    look (§25.2) and the PatataWorks name board: dark blue-grey steel panels with a hazard-amber top rail, light text on
+    dark, near-black edges, squarer corners, industrial orange / steel blue / gunmetal / signal red buttons, amber focus.
+    It only overrides tokens and shapes: removing its import from the `.tss` brings back the toy box look below. The base
+    sheet keeps text (`--hp-ink`) apart from edges (`--hp-outline`) and white surfaces (`--hp-surface*`), notes, errors
+    and veils as tokens, so a theme never has to restate a rule's layout.
+  - **Look ("Sunny toy box", owner-approved mock-up; the base under the industrial theme).** Cream rounded panels (`hp-panel`), chunky buttons with a
     darker bottom lip (`hp-button`, variants `--secondary` sky, `--neutral` plum, `--danger` red, sizes `--big` /
     `--small`), outlined Lilita One titles (`hp-title`, the tilted `hp-logo`, the results `hp-banner`), white cards
     (`hp-card`, `hp-row`, `hp-slot`, `hp-stat`), a sun-yellow game-code ticket (`hp-ticket`), notes (`hp-note`).

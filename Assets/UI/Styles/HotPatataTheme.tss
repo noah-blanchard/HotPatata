@@ -1,2 +1,3 @@
 @import url("unity-theme://default");
 @import url("HotPatata.uss");
+@import url("HotPatataIndustrial.uss");
