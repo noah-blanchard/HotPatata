@@ -111,12 +111,15 @@ namespace HotPatata.Editor
                 }
                 // A closed, dark plant (ARCHITECTURE §25.2): a low neutral fill (no sky indoors) and a dark warm haze; the lamps
                 // carry the scene.
-                RenderSettings.ambientSkyColor = new Color(0.34f, 0.33f, 0.32f);        // a neutral warm grey: no sky indoors
-                RenderSettings.ambientEquatorColor = new Color(0.3f, 0.28f, 0.26f);
-                RenderSettings.ambientGroundColor = new Color(0.2f, 0.18f, 0.17f);
-                RenderSettings.fogColor = new Color(0.09f, 0.075f, 0.07f);
-                RenderSettings.fogStartDistance = 14f;
-                RenderSettings.fogEndDistance = 130f;
+                // The fill stands in for the light the lamps bounce off walls and floors (no GI here): bright enough that no
+                // floor goes black between two lamps, neutral so the lamps keep their colour.
+                RenderSettings.ambientSkyColor = new Color(0.58f, 0.56f, 0.54f);
+                RenderSettings.ambientEquatorColor = new Color(0.52f, 0.49f, 0.46f);
+                RenderSettings.ambientGroundColor = new Color(0.4f, 0.37f, 0.34f);
+                RenderSettings.fogColor = new Color(0.2f, 0.18f, 0.16f);
+                RenderSettings.fogStartDistance = 25f;
+                RenderSettings.fogEndDistance = 180f;
+                PlantExposure(scene);
             }
             if (scene.name == "PatataWorks")
             {
@@ -136,6 +139,37 @@ namespace HotPatata.Editor
             volume.sharedProfile = AssetDatabase.LoadAssetAtPath<VolumeProfile>(ProfilePath);
             EditorUtility.SetDirty(volume);
             EditorSceneManager.MarkSceneDirty(scene);
+        }
+
+        public const string PlantProfilePath = "Assets/Settings/Look/HotPatata_Look_Plant.asset";
+        public const float PlantExposure_EV = 0.45f;
+
+        /// <summary>
+        /// The closed plant is lit by lamps only, so it gets more exposure than the golden-hour courses: a second global volume
+        /// (priority 1) that only overrides post exposure on top of the shared look.
+        /// </summary>
+        static void PlantExposure(UnityEngine.SceneManagement.Scene scene)
+        {
+            var profile = AssetDatabase.LoadAssetAtPath<VolumeProfile>(PlantProfilePath);
+            if (profile == null)
+            {
+                profile = ScriptableObject.CreateInstance<VolumeProfile>();
+                AssetDatabase.CreateAsset(profile, PlantProfilePath);
+            }
+            var adjust = Get<ColorAdjustments>(profile);
+            adjust.postExposure.Override(0.25f + PlantExposure_EV);   // the shared look's +0.25, plus the plant's own
+            EditorUtility.SetDirty(profile);
+            var volume = scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<Volume>(true)).FirstOrDefault(v => v.isGlobal && v.priority >= 1f);
+            if (volume == null)
+            {
+                var go = new GameObject("PlantExposureVolume");
+                UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(go, scene);
+                volume = go.AddComponent<Volume>();
+                volume.isGlobal = true;
+                volume.priority = 1f;
+            }
+            volume.sharedProfile = profile;
+            EditorUtility.SetDirty(volume);
         }
 
         public static void ConfigureSun(Light sun, float yaw)

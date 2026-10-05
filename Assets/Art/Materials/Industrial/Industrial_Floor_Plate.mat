@@ -25,15 +25,15 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _BaseMap:
-        m_Texture: {fileID: 2800000, guid: 7be83ed7bc954394a82be0d2b3122ec3, type: 3}
+        m_Texture: {fileID: 2800000, guid: 920cd12b6e406904484929aba98ca983, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _BumpMap:
-        m_Texture: {fileID: 2800000, guid: 3ce95961963e7c34093c0812891764b0, type: 3}
+        m_Texture: {fileID: 2800000, guid: a3762920210f6cb41b4fa833eac11e10, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _GlossMap:
-        m_Texture: {fileID: 2800000, guid: 383d827cad43d134d9760ee31da5adda, type: 3}
+        m_Texture: {fileID: 2800000, guid: 5545de110ff0c6e44b2926f66598fb43, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _GrungeMap:
@@ -41,11 +41,11 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MetallicMap:
-        m_Texture: {fileID: 2800000, guid: 8da495d3f54c53e4495a42ab17e96ef5, type: 3}
+        m_Texture: {fileID: 2800000, guid: 8441dd749ba15e44db79fcef228452d9, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _OcclusionMap:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: 75fe854ac3098ea4ab717863d1a567f2, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
@@ -54,7 +54,7 @@ Material:
     - _AntiTile: 0
     - _AntiTileRotation: 0.6
     - _AntiTileSharpness: 6
-    - _BaseBrightness: 1.2
+    - _BaseBrightness: 1.4
     - _BaseSaturation: 1
     - _BumpScale: 1
     - _Cutoff: 0.5
@@ -64,11 +64,11 @@ Material:
     - _FlipNormalY: 0
     - _GlossIsRoughness: 1
     - _GrungeRoughness: 0.5
-    - _GrungeSize: 9
+    - _GrungeSize: 13
     - _GrungeStrength: 0.3
     - _MacroScale: 0.14
     - _MacroStrength: 0.3
-    - _Metallic: 0.55
+    - _Metallic: 0.35
     - _OcclusionStrength: 1
     - _OffsetFactor: 0
     - _OffsetUnits: 0
@@ -88,7 +88,7 @@ Material:
     - _Wrap: 0.15
     - _ZWrite: 1
     m_Colors:
-    - _BaseColor: {r: 0.8, g: 0.84, b: 0.9, a: 1}
+    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _PatternScroll: {r: 0, g: 0, b: 0, a: 0}
     - _RimColor: {r: 1, g: 1, b: 1, a: 1}

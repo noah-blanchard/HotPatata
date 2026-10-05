@@ -25,19 +25,19 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _BaseMap:
-        m_Texture: {fileID: 2800000, guid: 274144b69e0293e41b3671ca5e53dc4e, type: 3}
+        m_Texture: {fileID: 2800000, guid: 7b1160eb24546b64aabb5744c9a2f22f, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _BumpMap:
-        m_Texture: {fileID: 2800000, guid: 681024056b126f14f80cf8ac20196585, type: 3}
+        m_Texture: {fileID: 2800000, guid: 96539fe3e961391438fe8a83a8105919, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _GlossMap:
-        m_Texture: {fileID: 2800000, guid: 012cbcedcb4f1184e8c5b984e01cd461, type: 3}
+        m_Texture: {fileID: 2800000, guid: ccf31eb7bef19a441b52deb9b220ecaf, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _GrungeMap:
-        m_Texture: {fileID: 2800000, guid: b24561699fad45748892119b3c0946f3, type: 3}
+        m_Texture: {fileID: 2800000, guid: 5b39e45556168984486af803eb8a949f, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MetallicMap:
@@ -45,7 +45,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _OcclusionMap:
-        m_Texture: {fileID: 2800000, guid: 4d2f05002e8d2cb4b9e70db5dffcb383, type: 3}
+        m_Texture: {fileID: 2800000, guid: 7c49982433ed67b45b1a63b84666ee7c, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
@@ -54,7 +54,7 @@ Material:
     - _AntiTile: 0
     - _AntiTileRotation: 0.6
     - _AntiTileSharpness: 6
-    - _BaseBrightness: 1.9
+    - _BaseBrightness: 1.4
     - _BaseSaturation: 1
     - _BumpScale: 1
     - _Cutoff: 0.5
@@ -64,7 +64,7 @@ Material:
     - _FlipNormalY: 0
     - _GlossIsRoughness: 1
     - _GrungeRoughness: 0.5
-    - _GrungeSize: 9
+    - _GrungeSize: 10
     - _GrungeStrength: 0.55
     - _MacroScale: 0.14
     - _MacroStrength: 0.3
@@ -88,7 +88,7 @@ Material:
     - _Wrap: 0.15
     - _ZWrite: 1
     m_Colors:
-    - _BaseColor: {r: 0.95, g: 0.5, b: 0.36, a: 1}
+    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _PatternScroll: {r: 0, g: 0, b: 0, a: 0}
     - _RimColor: {r: 1, g: 1, b: 1, a: 1}

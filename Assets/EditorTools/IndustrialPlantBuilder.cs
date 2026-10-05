@@ -59,17 +59,17 @@ namespace HotPatata.Editor
         // Straight joints keep the same absolute ceiling; the turn sequence was searched so no room overlaps another.
         static RoomSpec[] Rooms() => new[]
         {
-            R("00 Gatehouse", 48, 0, 11, 0, false, T("Concrete", "Plaster", "Concrete"), Warm, 54f, Gatehouse),
-            R("01 Sorting line", 96, 0, 11, 1, true, T("Plate", "Panel", "Panel"), Warm, 54f, SortingLine),
-            R("02 Atrium", 64, 14, 26, 0, true, T("Concrete", "Brick", "Concrete"), Warm, 102f, Atrium),
-            R("03 Void catwalks", 64, 4, 12, 1, true, T("Grit", "Block", "Panel"), Warm, 51f, VoidCatwalks),
-            R("04 Cold storage", 108, 0, 11, 1, true, T("Tile", "Plaster", "Panel"), Cold, 44f, ColdStorage, cornerFloor: false),   // the catwalks' crane gap and exit stay
-            R("05 Chute", 72, -28, 12, -1, true, T("Grit", "Block", "Concrete"), Sodium, 51f, Chute),
-            R("06 Furnace intake", 48, 0, 11, 0, false, T("Grit", "Brick", "Concrete"), Furnace, 48f, FurnaceIntake),
-            R("07 Furnace loop", 64, 0, 11, 1, false, T("Plate", "Brick", "Panel"), Furnace, 48f, FurnaceLoop),
-            R("08 Boiler approach", 48, 0, 11, -1, false, T("Concrete", "Panel", "Panel"), Warm, 51f, BoilerApproach),
-            R("09 Boiler shaft", 24, 34, 48, -1, true, T("Plate", "Block", "Concrete"), Warm, 102f, BoilerShaft),
-            R("10 Control room", 40, 0, 14, 0, true, T("Tile", "Plaster", "Panel"), Warm, 58f, ControlRoom, cornerFloor: false)   // the shaft's top floors, lift wells and cannon gap stay
+            R("00 Gatehouse", 48, 0, 11, 0, false, T("Concrete", "Plaster", "Concrete"), Warm, 70f, Gatehouse),
+            R("01 Sorting line", 96, 0, 11, 1, true, T("Plate", "Panel", "Panel"), Warm, 70f, SortingLine),
+            R("02 Atrium", 64, 14, 26, 0, true, T("Concrete", "Brick", "Concrete"), Warm, 133f, Atrium),
+            R("03 Void catwalks", 64, 4, 12, 1, true, T("Grit", "Block", "Panel"), Warm, 66f, VoidCatwalks),
+            R("04 Cold storage", 108, 0, 11, 1, true, T("Tile", "Plaster", "Panel"), Cold, 57f, ColdStorage, cornerFloor: false),   // the catwalks' crane gap and exit stay
+            R("05 Chute", 72, -28, 12, -1, true, T("Grit", "Block", "Concrete"), Sodium, 66f, Chute),
+            R("06 Furnace intake", 48, 0, 11, 0, false, T("Grit", "Brick", "Concrete"), Furnace, 52f, FurnaceIntake),
+            R("07 Furnace loop", 64, 0, 11, 1, false, T("Plate", "Brick", "Panel"), Furnace, 52f, FurnaceLoop),
+            R("08 Boiler approach", 48, 0, 11, -1, false, T("Concrete", "Panel", "Panel"), Warm, 66f, BoilerApproach),
+            R("09 Boiler shaft", 24, 34, 48, -1, true, T("Plate", "Block", "Concrete"), Warm, 133f, BoilerShaft),
+            R("10 Control room", 40, 0, 14, 0, true, T("Tile", "Plaster", "Panel"), Warm, 76f, ControlRoom, cornerFloor: false)   // the shaft's top floors, lift wells and cannon gap stay
         };
 
         [MenuItem("HotPatata/Course/Build Industrial Plant")]

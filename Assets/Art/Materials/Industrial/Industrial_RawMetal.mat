@@ -65,7 +65,7 @@ Material:
     - _FlipNormalY: 0
     - _GlossIsRoughness: 1
     - _GrungeRoughness: 0.5
-    - _GrungeSize: 11
+    - _GrungeSize: 8
     - _GrungeStrength: 0.2
     - _MacroScale: 0.14
     - _MacroStrength: 0.3

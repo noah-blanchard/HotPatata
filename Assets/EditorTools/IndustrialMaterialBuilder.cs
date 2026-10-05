@@ -53,10 +53,10 @@ namespace HotPatata.Editor
             S("Industrial_RawMetal", "RawMetal", null, C(0.66f, 0.67f, 0.69f), Color.white, 1f, 1f, 1f, 0.9f, true, 0.2f),
             S("Industrial_Rubber", "Rubber", null, C(0.22f, 0.22f, 0.23f), Color.white, 1.5f, 1f, 0.5f, 0.9f, false, 0.2f),
             // floors
-            S("Industrial_Floor_Concrete", "FloorConcrete", "Concrete", C(0.55f, 0.55f, 0.53f), Color.white, 1.8f, 1.5f, 2.5f, 0.9f, true, 0.5f),
-            S("Industrial_Floor_Plate", "FloorPlate", "RawMetal", C(0.55f, 0.57f, 0.6f), C(0.8f, 0.84f, 0.9f), 1.2f, 1f, 1f, 0.9f, false, 0.3f, 1f, null, 0.55f),
-            S("Industrial_Floor_Tile", "FloorTile", "Concrete", C(0.6f, 0.62f, 0.64f), C(0.85f, 0.92f, 1f), 2f, 1f, 1.5f, 0.95f, false, 0.35f),
-            S("Industrial_Floor_Grit", "FloorGrit", "Concrete", C(0.4f, 0.39f, 0.38f), C(0.66f, 0.64f, 0.6f), 2.3f, 1.4f, 3.5f, 0.8f, true, 0.7f),
+            S("Industrial_Floor_Concrete", "FloorConcrete", "Concrete", C(0.55f, 0.55f, 0.53f), Color.white, 1.8f, 1.8f, 2.5f, 0.9f, true, 0.5f),
+            S("Industrial_Floor_Plate", "FloorPlate", "RawMetal", C(0.55f, 0.57f, 0.6f), C(0.8f, 0.84f, 0.9f), 1.2f, 1.4f, 1f, 0.9f, false, 0.3f, 1f, null, 0.35f),
+            S("Industrial_Floor_Tile", "FloorTile", "Concrete", C(0.6f, 0.62f, 0.64f), C(0.85f, 0.92f, 1f), 2f, 1.4f, 1.5f, 0.95f, false, 0.35f),
+            S("Industrial_Floor_Grit", "FloorGrit", "Concrete", C(0.4f, 0.39f, 0.38f), C(0.66f, 0.64f, 0.6f), 2.3f, 1.9f, 3.5f, 0.8f, true, 0.7f),
             // walls
             S("Industrial_Wall_Plaster", "WallPlaster", "Concrete", C(0.62f, 0.58f, 0.52f), C(1f, 0.93f, 0.8f), 1.9f, 1.5f, 3f, 0.85f, true, 0.55f),
             S("Industrial_Wall_Brick", "WallBrick", "Concrete", C(0.55f, 0.32f, 0.25f), C(0.95f, 0.5f, 0.36f), 1.9f, 1.4f, 1.6f, 0.8f, false, 0.55f),
@@ -220,7 +220,8 @@ namespace HotPatata.Editor
             mat.SetFloat("_MacroStrength", surface.macro);
             mat.SetFloat("_AntiTile", surface.antiTile ? 1f : 0f);
             if (surface.antiTile) mat.EnableKeyword("_ANTITILE"); else mat.DisableKeyword("_ANTITILE");
-            mat.SetFloat("_BaseSaturation", surface.saturation);
+            // greying is for recolouring: the painted metal's red set, or a set borrowed under a tint; never a surface's own real set
+            mat.SetFloat("_BaseSaturation", hasOwn && surface.fallback != null ? 1f : surface.saturation);
             mat.SetColor("_ShadeColor", new Color(0.95f, 0.92f, 0.9f));   // a neutral sky fill: interiors have no violet sky
             AssignGrunge(mat, surface);
             if (set.color == null)

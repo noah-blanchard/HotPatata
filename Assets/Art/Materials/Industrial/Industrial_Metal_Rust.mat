@@ -26,27 +26,27 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _BaseMap:
-        m_Texture: {fileID: 2800000, guid: 7be83ed7bc954394a82be0d2b3122ec3, type: 3}
+        m_Texture: {fileID: 2800000, guid: 3e012d8ada1a0724199b4bdb54e23e22, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _BumpMap:
-        m_Texture: {fileID: 2800000, guid: 3ce95961963e7c34093c0812891764b0, type: 3}
+        m_Texture: {fileID: 2800000, guid: 270d113f0f59c51429f55ffec76e22c5, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _GlossMap:
-        m_Texture: {fileID: 2800000, guid: 383d827cad43d134d9760ee31da5adda, type: 3}
+        m_Texture: {fileID: 2800000, guid: 45feb79d6cf54364eaffe513ae2f935d, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _GrungeMap:
-        m_Texture: {fileID: 2800000, guid: db770b35c3cc44f4e97083a782a84351, type: 3}
+        m_Texture: {fileID: 2800000, guid: 5b39e45556168984486af803eb8a949f, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MetallicMap:
-        m_Texture: {fileID: 2800000, guid: 8da495d3f54c53e4495a42ab17e96ef5, type: 3}
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _OcclusionMap:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: 20b2fcc5ba04cb842981d484dfb4d97e, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
@@ -55,7 +55,7 @@ Material:
     - _AntiTile: 1
     - _AntiTileRotation: 0.6
     - _AntiTileSharpness: 6
-    - _BaseBrightness: 1.3
+    - _BaseBrightness: 1
     - _BaseSaturation: 1
     - _BumpScale: 1
     - _Cutoff: 0.5
@@ -65,11 +65,11 @@ Material:
     - _FlipNormalY: 0
     - _GlossIsRoughness: 1
     - _GrungeRoughness: 0.5
-    - _GrungeSize: 11
+    - _GrungeSize: 9
     - _GrungeStrength: 0.6
     - _MacroScale: 0.14
     - _MacroStrength: 0.3
-    - _Metallic: 0.7
+    - _Metallic: 0
     - _OcclusionStrength: 1
     - _OffsetFactor: 0
     - _OffsetUnits: 0
@@ -89,7 +89,7 @@ Material:
     - _Wrap: 0.15
     - _ZWrite: 1
     m_Colors:
-    - _BaseColor: {r: 0.85, g: 0.48, b: 0.28, a: 1}
+    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _PatternScroll: {r: 0, g: 0, b: 0, a: 0}
     - _RimColor: {r: 1, g: 1, b: 1, a: 1}

@@ -119,11 +119,16 @@ namespace HotPatata.Tests
         }
 
         [Test]
-        public void TheLook_IsDark_LitOnlyByWarmLamps_WithNoSun()
+        public void TheLook_IsLitOnlyByWarmLamps_WithNoSun_AndExposedForIndoors()
         {
             float Luma(Color c) => c.r * 0.299f + c.g * 0.587f + c.b * 0.114f;
-            Assert.Less(Luma(RenderSettings.ambientSkyColor), 0.4f);
-            Assert.Less(Luma(RenderSettings.fogColor), 0.2f);
+            var fill = RenderSettings.ambientSkyColor;
+            Assert.Greater(Luma(fill), 0.45f, "a bounce fill bright enough that no floor goes black between two lamps");
+            Assert.Less(Mathf.Abs(fill.r - fill.b), 0.1f, "a neutral fill: the lamps keep their colour");
+            Assert.Less(Luma(RenderSettings.fogColor), 0.3f);
+            Assert.IsTrue(All<UnityEngine.Rendering.Volume>().Any(v => v.isGlobal && v.priority >= 1f && v.sharedProfile != null
+                && v.sharedProfile.TryGet(out UnityEngine.Rendering.Universal.ColorAdjustments c) && c.postExposure.overrideState && c.postExposure.value > 0.5f),
+                "the plant's own exposure volume");
             foreach (var sun in All<Light>().Where(l => l.type == LightType.Directional))
             {
                 Assert.AreEqual(0f, sun.intensity, "a sun's shadows depend on the camera: none under a roof");

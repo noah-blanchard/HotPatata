@@ -1737,7 +1737,7 @@ deeper pit never looks out under a shallower one. Each room owns a stretch of fl
 stop, floors at its end level where the next room's start, and at a turn the corner square belongs to the next room unless it says otherwise
 (the cold storage leaves the catwalks' crane gap and exit, the control room leaves the shaft's top floors with their lift wells and cannon gap).
 No two rooms' floors overlap at one height, so two themes never flicker on one surface. There is **no sun**: a directional light's shadows depend on the camera (cascades, a shadow distance), so under a roof
-the floor would light up as you approached. `LookBuilder` gives this scene a neutral warm-grey ambient and a dark haze; the light is about 130 warm
+the floor would light up as you approached. `LookBuilder` gives this scene a neutral fill standing in for the light the lamps bounce off walls and floors (no floor goes black between two lamps), a warm haze, and a second global volume (`HotPatata_Look_Plant`, priority 1) adding +0.45 EV of exposure on top of the shared look; the light is about 130 warm
 point lamps (hanging, on walls, at the furnaces), none casting shadows, so the lighting is the same wherever the player stands. Lamp fittings and
 furnace mouths are emissive and bloom.
 
