@@ -570,7 +570,8 @@ base, the HUD (#24) follows.
     edge on a sun tint. The default theme's focus rules are overridden with `:focus:enabled`.
   - **Fonts** (`Assets/UI/Fonts`, SIL OFL): Lilita One for titles and buttons, Nunito (Regular / Bold / Black, static
     instances of the variable font) for text, as dynamic SDF font assets pre-filled with Latin-1, with a fallback
-    for symbols.
+    for symbols generated from bundled Liberation Sans. Font assets and their material/atlas subassets must be
+    persistent and buildable; never serialize Unity's internal DynamicOS font fallback (it carries `DontSave`).
   - **Icons** (`Assets/UI/Icons`): white SVGs (Unity's built-in vector import), tinted in USS (`hp-icon--*`), plus the
     four slot shapes and the potato.
   - **Slot chips** (`UIParts.Chip`): a disc in the slot colour holding the slot's shape, the shape in white or navy
