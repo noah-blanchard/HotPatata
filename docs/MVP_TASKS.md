@@ -26,7 +26,7 @@ playtest and cannot be closed by code.
 | M8 Post-validation polish | gated on M7.4; some pulled forward through M9 | |
 | M9 Movement and look pass | done (pulled forward by the owner) | |
 | M10 Bomb obstacles (#68) | done (pulled forward by the owner, M7.4 gate lifted for it) | group playtest of `PlaytestCourse` |
-| M11 Second course (#83) | spec amended (PROJECT_SPEC §15b, §17.2) | M11.1–M11.6 |
+| M11 Second course (#83) | factory built; automated verification in M11.6 | 2-player timing/clear, host + 3 clients, 1080p/60 fps |
 
 **Next up:** the group playtest of `PlaytestCourse` (M10.4), then M6 and M7 (M7.4 external playtest gates any other
 new mechanic). M3.7 is the oldest open gate.
@@ -1225,6 +1225,17 @@ Acceptance criteria:
 
 An enclosed factory course that climbs, turns and drops (PROJECT_SPEC §15b). No new mechanic: only the existing kit
 and the M10 elements. The spec amendment (§15b, §17.2) comes first. Architecture: ARCHITECTURE §4, §25.
+
+The spec amendment is merged in PR #84. The scene, interior palette, practical lighting, menu registration, route
+metadata and course tests are implemented. The three human gates in M11.6 remain open; first-clear duration and
+checkpoint spacing have not been measured. Automated checkpoint tests use teleports and do not prove a full clear.
+
+Automated validation (2026-10-04, Unity 6000.3.25f1): `PatataWorksTests` (7), existing course suites (22),
+`PatataParkTests` (3), `BombObstacleTests` (13), `BombStateTests` (22), `PassFeelTests` (17), `ZoneRuleTests` (10),
+and `KitSkinTests` (19) pass. The existing PrototypeCourse sprint-gap test failed once and passed on an isolated
+retry; no movement or throw tuning changed. Two successive factory rebuilds match in transforms, collider geometry,
+component types, actuator sources and transit exits. Nine section screenshots are captured locally, outside Assets;
+their attachment to the review PR remains open.
 
 ## M11.1 — Spec amendment
 

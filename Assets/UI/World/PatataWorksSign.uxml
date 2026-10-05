@@ -1,0 +1,7 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:Style src="PatataWorksSign.uss" />
+    <ui:VisualElement class="hp-factory-sign" picking-mode="Ignore">
+        <ui:Label name="factory-name" text="PATATAWORKS" class="hp-factory-name" picking-mode="Ignore" />
+        <ui:Label text="KEEP IT MOVING" class="hp-factory-subtitle" picking-mode="Ignore" />
+    </ui:VisualElement>
+</ui:UXML>

@@ -109,6 +109,8 @@ namespace HotPatata
                         count = new Vector3Int(1, Mathf.Max(1, Mathf.RoundToInt(size.y / (native.y * section))), 1);
                     }
                     else count = new Vector3Int(Fit(size.x, native.x), Fit(size.y, native.y), Fit(size.z, native.z));
+                    // Timber panels are a surface, never a stack of hidden layers inside the floor slab.
+                    if (shape == KitShape.Floor) count.y = 1;
                     float cost = Stretch(size.x / count.x, native.x) + Stretch(size.z / count.z, native.z)
                                  + (shape == KitShape.Pipe ? 0f : Stretch(size.y / count.y, native.y) + PieceCost * count.x * count.y * count.z);
                     if (cost >= bestCost) continue;

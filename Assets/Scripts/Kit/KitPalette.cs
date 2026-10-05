@@ -10,7 +10,10 @@ namespace HotPatata
         Platform,   // platform_WxDxH: a coloured top over grey sides (floors, steps, movers)
         Barrier,    // barrier_Wx1xH: rounded blocks one metre deep (walls, posts, bars, frames)
         Arrow,      // platform_arrow: a platform with a white chevron on top (belts, slides)
-        Pipe        // pipe_straight: a tube along the box's Y axis (tubes, barrels)
+        Pipe,       // pipe_straight: a tube along the box's Y axis (tubes, barrels)
+        Floor,      // timber floor panels, Platformer pack
+        Pillar,     // structural posts
+        Strut       // open steel trusses
     }
 
     /// <summary>KayKit colour variants. Each role of the course has one (ARCHITECTURE §25.1).</summary>

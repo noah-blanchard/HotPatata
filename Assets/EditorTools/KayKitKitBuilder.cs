@@ -35,7 +35,10 @@ namespace HotPatata.Editor
             (KitShape.Platform, new Regex(@"^platform_\d+x\d+x\d+$")),
             (KitShape.Barrier, new Regex(@"^barrier_\d+x1x\d+$")),
             (KitShape.Arrow, new Regex(@"^platform_arrow_\d+x\d+x\d+$")),
-            (KitShape.Pipe, new Regex(@"^pipe_straight_A$"))
+            (KitShape.Pipe, new Regex(@"^pipe_straight_A$")),
+            (KitShape.Floor, new Regex(@"^floor_wood_\d+x\d+$")),
+            (KitShape.Pillar, new Regex(@"^pillar_\d+x\d+x\d+$")),
+            (KitShape.Strut, new Regex(@"^strut_horizontal$"))
         };
 
         [MenuItem("HotPatata/Course/Build KayKit Kit")]
@@ -60,6 +63,7 @@ namespace HotPatata.Editor
             PlaytestCourseBuilder.Build();
             BombObstacleKitBuilder.BuildSandboxDemo();
             PatataParkBuilder.Build();
+            PatataWorksBuilder.Build();
             MenuBackdropBuilder.Build();   // the menu island is drawn with the same kit
             Debug.Log("[KayKitKitBuilder] all courses rebuilt");
         }
@@ -84,7 +88,7 @@ namespace HotPatata.Editor
 
         // ------------------------------------------------------------------ palette
 
-        static void BuildPalette()
+        public static void BuildPalette()
         {
             var pieces = new List<KitPalette.Piece>();
             foreach (var (color, folder, suffix) in Colors)
@@ -134,7 +138,7 @@ namespace HotPatata.Editor
 
         // ------------------------------------------------------------------ materials
 
-        static void BuildMaterials()
+        public static void BuildMaterials()
         {
             var atlasImporter = (TextureImporter)AssetImporter.GetAtPath(AtlasPath);
             if (atlasImporter.mipmapEnabled)
@@ -148,6 +152,8 @@ namespace HotPatata.Editor
             KitMat(KitMaterial, atlas, 0, Color.black, 1f, 0f);
             KitMat(KitHazardMaterial, atlas, 2, new Color(0.28f, 0.08f, 0.14f), 0.5f, 0.45f);
             KitMat(KitBeltMaterial, atlas, 2, new Color(0.08f, 0.12f, 0.3f), 0.6f, 0.3f);
+            KitMat("KayKit_Brick", atlas, 0, Color.black, 1f, 0f);
+            Mat("KayKit_Brick").SetColor("_BaseColor", new Color(0.72f, 0.39f, 0.25f));
             AssetDatabase.SaveAssets();
         }
 

@@ -20,5 +20,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/PatataPark.unity
     guid: ead76274e6b8a4144af471ecc193ba3c
+  - enabled: 1
+    path: Assets/Scenes/PatataWorks.unity
+    guid: b8e7416cc50a5e446bdad7e93b6a9ab9
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0

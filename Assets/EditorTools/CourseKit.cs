@@ -9,7 +9,7 @@ using Random = System.Random;
 namespace HotPatata.Editor
 {
     /// <summary>What a kit box is for; each role has one KayKit look (<see cref="CourseKit.Look"/>, ARCHITECTURE §25.1).</summary>
-    public enum KitRole { Ground, Wall, Mover, Falling, Belt, Slide, Hazard, Gate }
+    public enum KitRole { Ground, Wall, Mover, Falling, Belt, Slide, Hazard, Gate, Floor, Ceiling, Brick, Frame, Stairs, Pillar, Truss, Railing, Roof }
 
     /// <summary>
     /// Shared editor helpers for the course and kit builders (<see cref="CourseBuilder"/>,
@@ -288,6 +288,15 @@ namespace HotPatata.Editor
             KitRole.Slide => (KitShape.Arrow, KitColor.Green, KitMaterial),
             KitRole.Hazard => (KitShape.Barrier, KitColor.Red, KitHazardMaterial),
             KitRole.Gate => (KitShape.Barrier, KitColor.Yellow, KitMaterial),
+            KitRole.Floor => (KitShape.Floor, KitColor.Neutral, KitMaterial),
+            KitRole.Ceiling => (KitShape.Floor, KitColor.Neutral, KitMaterial),
+            KitRole.Brick => (KitShape.Barrier, KitColor.Neutral, "KayKit_Brick"),
+            KitRole.Frame => (KitShape.Barrier, KitColor.Yellow, KitMaterial),
+            KitRole.Stairs => (KitShape.Platform, KitColor.Neutral, KitMaterial),
+            KitRole.Pillar => (KitShape.Pillar, KitColor.Neutral, KitMaterial),
+            KitRole.Truss => (KitShape.Strut, KitColor.Neutral, KitMaterial),
+            KitRole.Railing => (KitShape.Barrier, KitColor.Neutral, KitMaterial),
+            KitRole.Roof => (KitShape.Platform, KitColor.Neutral, KitMaterial),
             _ => throw new ArgumentOutOfRangeException(nameof(role))
         };
 

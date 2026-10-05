@@ -60,7 +60,8 @@ namespace HotPatata.Editor
             ("Assets/Scenes/PassSandbox.unity", 35f),
             ("Assets/Scenes/PrototypeCourse.unity", 35f),
             ("Assets/Scenes/PlaytestCourse.unity", 35f),
-            ("Assets/Scenes/PatataPark.unity", 35f)
+            ("Assets/Scenes/PatataPark.unity", 35f),
+            ("Assets/Scenes/PatataWorks.unity", 55f)
         };
 
         public static Quaternion SunRotation(float yaw) => Quaternion.Euler(SunElevation, yaw, 0f);
@@ -95,6 +96,12 @@ namespace HotPatata.Editor
                 ConfigureSun(light, yaw);
             }
             ApplyRenderSettings(scene.name, yaw);
+            if (scene.name == "PatataWorks")
+            {
+                RenderSettings.ambientSkyColor = AmbientSky * 0.48f;
+                RenderSettings.ambientEquatorColor = AmbientEquator * 0.42f;
+                RenderSettings.ambientGroundColor = AmbientGround * 0.5f;
+            }
 
             var volume = scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<Volume>(true)).FirstOrDefault(v => v.isGlobal && v.priority <= 0f);
             if (volume == null)
@@ -118,6 +125,21 @@ namespace HotPatata.Editor
             sun.shadowStrength = SunShadowStrength;
             EditorUtility.SetDirty(sun);
             EditorUtility.SetDirty(sun.transform);
+        }
+
+        /// <summary>Steady practical lights for the factory (ARCHITECTURE §25); no flashes or baked dependencies.</summary>
+        public static void FactoryLamp(Transform parent, Vector3 position, bool furnace = false)
+        {
+            var go = new GameObject(furnace ? "Furnace glow" : "Warm practical");
+            go.transform.SetParent(parent, false);
+            go.transform.position = position;
+            var light = go.AddComponent<Light>();
+            light.type = LightType.Point;
+            light.color = furnace ? new Color(1f, 0.38f, 0.12f) : new Color(1f, 0.77f, 0.48f);
+            light.intensity = furnace ? 8f : 5f;
+            light.range = 20f;
+            light.shadows = LightShadows.None;
+            light.lightmapBakeType = LightmapBakeType.Realtime;
         }
 
         /// <summary>Ambient, fog and the scene's own sky (a copy of the shared sky, its sun where this scene's sun is).</summary>
