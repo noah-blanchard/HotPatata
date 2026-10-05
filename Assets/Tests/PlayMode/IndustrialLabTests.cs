@@ -54,8 +54,8 @@ namespace HotPatata.Tests
             int checkedBoxes = 0;
             foreach (var skin in All<KitSkin>().Where(s => s.Shape == KitShape.BevelBox))
             {
-                var collider = skin.GetComponentInParent<Collider>();
-                if (collider == null) continue;   // decoration
+                var collider = skin.transform.parent != null ? skin.transform.parent.GetComponent<BoxCollider>() : null;
+                if (collider == null || collider.isTrigger) continue;   // decoration
                 var visual = skin.GetComponent<Renderer>().bounds;
                 var box = collider.bounds;
                 for (int a = 0; a < 3; a++)

@@ -100,14 +100,23 @@ namespace HotPatata.Editor
             ApplyRenderSettings(scene.name, yaw);
             if (scene.name == "IndustrialPlant")
             {
+                // No sun at all: a directional light's shadows are camera-relative (cascades, a shadow distance), so under a roof
+                // the floor would light up as you approach. The lamps (point lights, no shadows) are the only light, the same
+                // everywhere whatever the player's position.
+                foreach (var sun in scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<Light>(true)).Where(l => l.type == LightType.Directional))
+                {
+                    sun.intensity = 0f;
+                    sun.shadows = LightShadows.None;
+                    EditorUtility.SetDirty(sun);
+                }
                 // A closed, dark plant (ARCHITECTURE §25.2): almost no sky fill, a dark warm haze; the practical lights and the
                 // sun shafts through the roof slits carry the scene.
-                RenderSettings.ambientSkyColor = AmbientSky * 0.22f;
-                RenderSettings.ambientEquatorColor = AmbientEquator * 0.2f;
-                RenderSettings.ambientGroundColor = AmbientGround * 0.2f;
+                RenderSettings.ambientSkyColor = new Color(0.34f, 0.33f, 0.32f);        // a neutral warm grey: no sky indoors
+                RenderSettings.ambientEquatorColor = new Color(0.3f, 0.28f, 0.26f);
+                RenderSettings.ambientGroundColor = new Color(0.2f, 0.18f, 0.17f);
                 RenderSettings.fogColor = new Color(0.09f, 0.075f, 0.07f);
-                RenderSettings.fogStartDistance = 8f;
-                RenderSettings.fogEndDistance = 95f;
+                RenderSettings.fogStartDistance = 14f;
+                RenderSettings.fogEndDistance = 130f;
             }
             if (scene.name == "PatataWorks")
             {

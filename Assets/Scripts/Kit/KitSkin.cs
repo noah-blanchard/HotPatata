@@ -33,6 +33,8 @@ namespace HotPatata
 
         public KitShape Shape => shape;
         public KitColor Color => color;
+        public Vector3 UnitBox => unitBox;
+        public bool Flip => flip;
 
         /// <summary>Editor builders: sets everything at once and redraws.</summary>
         public void Configure(KitPalette kitPalette, KitShape kitShape, KitColor kitColor, Vector3 box, bool flipped)

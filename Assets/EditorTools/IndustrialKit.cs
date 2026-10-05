@@ -12,7 +12,7 @@ namespace HotPatata.Editor
     public static class IndustrialKit
     {
         /// <summary>Strips sit this far above a surface they decorate: enough not to z-fight, far below the controller's skin.</summary>
-        public const float Lift = 0.005f;
+        public const float SurfaceLift = 0.005f;
 
         /// <summary>A collider-free box drawn in <paramref name="role"/>'s look, marked as decoration.</summary>
         public static GameObject Detail(Transform parent, string name, Vector3 center, Vector3 size, KitRole role, Quaternion? rotation = null)
@@ -26,13 +26,13 @@ namespace HotPatata.Editor
         /// <summary>A light strip along the top edge of a slab (a landing cue): flush with the top, never rising above the collider.</summary>
         public static void EdgeStrip(Transform parent, string name, float x, float topY, float z, float length, float width = 0.3f)
         {
-            Detail(parent, name, new Vector3(x, topY + Lift - 0.02f, z), new Vector3(width, 0.04f, length), KitRole.Accent);
+            Detail(parent, name, new Vector3(x, topY + SurfaceLift - 0.02f, z), new Vector3(width, 0.04f, length), KitRole.Accent);
         }
 
         /// <summary>A strip across a slab (a joint): a thin raw-metal line every few metres.</summary>
         public static void Seam(Transform parent, string name, float centerX, float topY, float z, float width)
         {
-            Detail(parent, name, new Vector3(centerX, topY + Lift - 0.015f, z), new Vector3(width, 0.03f, 0.06f), KitRole.Grating);
+            Detail(parent, name, new Vector3(centerX, topY + SurfaceLift - 0.015f, z), new Vector3(width, 0.03f, 0.06f), KitRole.Grating);
         }
 
         /// <summary>A base plate and a cap around a column that stands at <paramref name="foot"/> and is <paramref name="height"/> tall.</summary>

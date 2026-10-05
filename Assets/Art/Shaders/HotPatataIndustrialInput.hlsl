@@ -37,11 +37,27 @@ CBUFFER_START(UnityPerMaterial)
     half _RimStrength;
     half4 _EmissionColor;
     float4 _PatternScroll;
+    half4 _StripeColor;
+    half _StripeStrength;
+    float _StripeScale;
+    half _AntiTile;
+    half _AntiTileSharpness;
+    half _AntiTileRotation;
+    float _GrungeSize;
+    half _GrungeStrength;
+    half _GrungeRoughness;
+    half _Decal;
+    half _SrcBlend;
+    half _DstBlend;
+    half _ZWrite;
+    half _OffsetFactor;
+    half _OffsetUnits;
 CBUFFER_END
 
 // _BaseMap and _BumpMap come from URP's SurfaceInput.hlsl.
 TEXTURE2D(_GlossMap);       SAMPLER(sampler_GlossMap);
 TEXTURE2D(_MetallicMap);    SAMPLER(sampler_MetallicMap);
 TEXTURE2D(_OcclusionMap);   SAMPLER(sampler_OcclusionMap);
+TEXTURE2D(_GrungeMap);      SAMPLER(sampler_GrungeMap);
 
 #endif

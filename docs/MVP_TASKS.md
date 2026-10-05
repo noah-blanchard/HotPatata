@@ -26,7 +26,7 @@ playtest and cannot be closed by code.
 | M8 Post-validation polish | gated on M7.4; some pulled forward through M9 | |
 | M9 Movement and look pass | done (pulled forward by the owner) | |
 | M10 Bomb obstacles (#68) | done (pulled forward by the owner, M7.4 gate lifted for it) | group playtest of `PlaytestCourse` |
-| Spike #87 industrial look | prototype built on `IndustrialLab` and the closed `IndustrialPlant` (ARCHITECTURE §25.2), ambientCG textures assigned | play-test, performance on a player build, adopt/revise/reject decision |
+| Spike #87 industrial look | `IndustrialLab` and the full closed `IndustrialPlant` (11 rooms, 9 checkpoints, every obstacle) built in the industrial look, with a material library, anti-tiling and decals (ARCHITECTURE §25.2) | play-test, real textures per surface (optional), performance on a player build, adopt/revise/reject decision |
 | M11 Second course (#83) | factory built; automated verification in M11.6 | 2-player timing/clear, host + 3 clients, 1080p/60 fps |
 
 **Next up:** the group playtest of `PlaytestCourse` (M10.4), then M6 and M7 (M7.4 external playtest gates any other

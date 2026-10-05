@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -110,6 +111,71 @@ namespace HotPatata.Tests
         {
             Assert.AreEqual(expected, IndustrialTextureImporter.Classify("Assets/Art/Textures/Industrial/Concrete/" + file));
         }
+
+        [Test]
+        public void Library_HasEverySurface_WithItsOwnFolderAndAFallback()
+        {
+            IndustrialMaterialBuilder.Ensure(false);
+            Assert.GreaterOrEqual(IndustrialMaterialBuilder.Library.Length, 15);
+            foreach (var surface in IndustrialMaterialBuilder.Library)
+            {
+                var mat = AssetDatabase.LoadAssetAtPath<Material>(IndustrialMaterialBuilder.Dir + surface.name + ".mat");
+                Assert.IsNotNull(mat, surface.name);
+                Assert.AreEqual(surface.antiTile, mat.IsKeywordEnabled("_ANTITILE"), surface.name + " anti-tiling keyword");
+                Assert.IsNotNull(mat.GetTexture("_BaseMap"), surface.name + " has a texture (its own or a borrowed set)");
+                Assert.Greater(mat.GetFloat("_VariationStrength"), 0f, surface.name + " varies in world space");
+            }
+            foreach (var floor in new[] { "Concrete", "Plate", "Tile", "Grit" })
+                Assert.IsNotNull(AssetDatabase.LoadAssetAtPath<Material>(IndustrialMaterialBuilder.Dir + "Industrial_Floor_" + floor + ".mat"), floor);
+        }
+
+        [Test]
+        public void PlaceholderGrungeAndDecals_Exist_AndImportCorrectly()
+        {
+            IndustrialMaterialBuilder.Ensure(false);
+            var grunge = AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Art/Textures/Industrial/Grunge" });
+            var decals = AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Art/Textures/Industrial/Decals" });
+            Assert.GreaterOrEqual(grunge.Length, 1);
+            Assert.GreaterOrEqual(decals.Length, 3);
+            var g = (TextureImporter)AssetImporter.GetAtPath(AssetDatabase.GUIDToAssetPath(grunge[0]));
+            Assert.IsFalse(g.sRGBTexture, "a grunge mask is linear");
+            var d = (TextureImporter)AssetImporter.GetAtPath(AssetDatabase.GUIDToAssetPath(decals[0]));
+            Assert.IsTrue(d.alphaIsTransparency);
+            Assert.AreEqual(TextureWrapMode.Clamp, d.wrapMode);
+        }
+
+        [Test]
+        public void DecalMaterial_IsAlphaBlended_AndDrawnJustAboveSurfaces()
+        {
+            var decal = HotPatata.Editor.IndustrialDecals.Available().First().material;
+            Assert.AreEqual(1f, decal.GetFloat("_Decal"));
+            Assert.AreEqual((float)UnityEngine.Rendering.BlendMode.SrcAlpha, decal.GetFloat("_SrcBlend"));
+            Assert.AreEqual(0f, decal.GetFloat("_ZWrite"));
+            Assert.Greater(decal.renderQueue, 2500);
+            Assert.IsNotNull(decal.GetTexture("_BaseMap"));
+        }
+
+        [Test]
+        public void Theme_ChoosesTheFloorWallAndCeilingMaterials_AndRestores()
+        {
+            var plate = new CourseKit.SurfaceTheme("Industrial/Industrial_Floor_Plate", "Industrial/Industrial_Wall_Brick", "Industrial/Industrial_Ceiling_Panel");
+            using (CourseKit.UseLookSet(CourseKit.LookSet.Industrial))
+            using (CourseKit.UseTheme(plate))
+            {
+                Assert.AreEqual(plate.Floor, CourseKit.Look(KitRole.Floor).material);
+                Assert.AreEqual(plate.Floor, CourseKit.Look(KitRole.Stairs).material);
+                Assert.AreEqual(plate.Wall, CourseKit.Look(KitRole.Wall).material);
+                Assert.AreEqual(plate.Wall, CourseKit.Look(KitRole.Brick).material);
+                Assert.AreEqual(plate.Ceiling, CourseKit.Look(KitRole.Ceiling).material);
+                Assert.AreEqual("Industrial/Industrial_Metal_Rust", CourseKit.Look(KitRole.Rust).material);
+            }
+            Assert.AreEqual(CourseKit.ConcreteMaterial, CourseKit.CurrentTheme.Floor, "the default theme is plain concrete");
+        }
+
+        [TestCase("Assets/Art/Textures/Industrial/Decals/anything_at_all.png", IndustrialTextureImporter.MapKind.Decal)]
+        [TestCase("Assets/Art/Textures/Industrial/Grunge/mask.png", IndustrialTextureImporter.MapKind.Grunge)]
+        public void TextureImporter_TreatsTheDecalAndGrungeFoldersByFolder(string path, IndustrialTextureImporter.MapKind expected) =>
+            Assert.AreEqual(expected, IndustrialTextureImporter.Classify(path));
 
         [Test]
         public void LookSet_ChangesOnlyItsScope_AndKeepsHazardsStriped()

@@ -9,7 +9,7 @@ using Random = System.Random;
 namespace HotPatata.Editor
 {
     /// <summary>What a kit box is for; each role has one KayKit look (<see cref="CourseKit.Look"/>, ARCHITECTURE §25.1).</summary>
-    public enum KitRole { Ground, Wall, Mover, Falling, Belt, Slide, Hazard, Gate, Floor, Ceiling, Brick, Frame, Stairs, Pillar, Truss, Railing, Roof, Grating, Rubber, Accent, Lamp, Glow }
+    public enum KitRole { Ground, Wall, Mover, Falling, Belt, Slide, Hazard, Gate, Floor, Ceiling, Brick, Frame, Stairs, Pillar, Truss, Railing, Roof, Grating, Rubber, Accent, Lamp, Glow, Rust }
 
     /// <summary>
     /// Shared editor helpers for the course and kit builders (<see cref="CourseBuilder"/>,
@@ -294,6 +294,27 @@ namespace HotPatata.Editor
         /// <summary>Draws every <see cref="Look"/> inside the scope with <paramref name="set"/>: <c>using (UseLookSet(LookSet.Industrial)) { ... }</c>.</summary>
         public static IDisposable UseLookSet(LookSet set) => new LookScope(set);
 
+        /// <summary>The concrete-like surfaces of a room (ARCHITECTURE §25.2): floors, walls and ceilings take their material from the current theme.</summary>
+        public struct SurfaceTheme
+        {
+            public string Floor, Wall, Ceiling;
+            public SurfaceTheme(string floor, string wall, string ceiling) { Floor = floor; Wall = wall; Ceiling = ceiling; }
+        }
+
+        static SurfaceTheme currentTheme = new SurfaceTheme(IndustrialDir + "Industrial_Concrete", IndustrialDir + "Industrial_Concrete", IndustrialDir + "Industrial_Concrete");
+
+        public static SurfaceTheme CurrentTheme => currentTheme;
+
+        sealed class ThemeScope : IDisposable
+        {
+            readonly SurfaceTheme previous;
+            public ThemeScope(SurfaceTheme theme) { previous = currentTheme; currentTheme = theme; }
+            public void Dispose() => currentTheme = previous;
+        }
+
+        /// <summary>Draws the floor, wall and ceiling roles inside the scope with the theme's materials (industrial look only).</summary>
+        public static IDisposable UseTheme(SurfaceTheme theme) => new ThemeScope(theme);
+
         public const string IndustrialDir = "Industrial/";
         public const string ConcreteMaterial = IndustrialDir + "Industrial_Concrete", PaintedMetalMaterial = IndustrialDir + "Industrial_PaintedMetal",
             PaintedMetalYellowMaterial = IndustrialDir + "Industrial_PaintedMetal_Yellow", PaintedMetalSafetyMaterial = IndustrialDir + "Industrial_PaintedMetal_Safety",
@@ -309,8 +330,10 @@ namespace HotPatata.Editor
         /// </summary>
         static (KitShape shape, KitColor color, string material) IndustrialLook(KitRole role) => role switch
         {
-            KitRole.Ground or KitRole.Wall or KitRole.Floor or KitRole.Ceiling or KitRole.Brick or KitRole.Stairs or KitRole.Roof
-                => (KitShape.BevelBox, KitColor.Neutral, ConcreteMaterial),
+            KitRole.Ground or KitRole.Floor or KitRole.Stairs or KitRole.Roof => (KitShape.BevelBox, KitColor.Neutral, currentTheme.Floor),
+            KitRole.Wall or KitRole.Brick => (KitShape.BevelBox, KitColor.Neutral, currentTheme.Wall),
+            KitRole.Ceiling => (KitShape.BevelBox, KitColor.Neutral, currentTheme.Ceiling),
+            KitRole.Rust => (KitShape.BevelBox, KitColor.Neutral, IndustrialDir + "Industrial_Metal_Rust"),
             KitRole.Mover or KitRole.Pillar or KitRole.Truss => (KitShape.BevelBox, KitColor.Neutral, PaintedMetalMaterial),
             KitRole.Frame or KitRole.Railing or KitRole.Gate => (KitShape.BevelBox, KitColor.Neutral, PaintedMetalYellowMaterial),
             KitRole.Accent => (KitShape.BevelBox, KitColor.Neutral, PaintedMetalSafetyMaterial),
@@ -345,6 +368,7 @@ namespace HotPatata.Editor
             KitRole.Accent => (KitShape.Barrier, KitColor.Yellow, KitMaterial),
             KitRole.Lamp => (KitShape.Barrier, KitColor.Yellow, KitMaterial),
             KitRole.Glow => (KitShape.Barrier, KitColor.Yellow, KitMaterial),
+            KitRole.Rust => (KitShape.Barrier, KitColor.Neutral, KitMaterial),
             _ => throw new ArgumentOutOfRangeException(nameof(role))
         };
 
