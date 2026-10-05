@@ -32,6 +32,9 @@ namespace HotPatata.Tests
         [TestCase(KitShape.Arrow, KitColor.Blue)]
         [TestCase(KitShape.Arrow, KitColor.Green)]
         [TestCase(KitShape.Pipe, KitColor.Neutral)]
+        [TestCase(KitShape.Floor, KitColor.Neutral)]
+        [TestCase(KitShape.Pillar, KitColor.Neutral)]
+        [TestCase(KitShape.Strut, KitColor.Neutral)]
         public void Palette_HasTheFamily(KitShape shape, KitColor color)
         {
             var meshes = palette.Meshes(shape, color);

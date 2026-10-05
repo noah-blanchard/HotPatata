@@ -40,6 +40,7 @@
 | `PlaytestCourseTests` | PlayMode | M10.4 `PlaytestCourse`: every beat wired, nine checkpoints with two arches, the podium gate, finish and rematch |
 | `KitSkinTests` | EditMode | KayKit kit (ARCHITECTURE §25.1): palette families, exact box tiling, unstretched pieces on the grid, edge-standing platforms as blocks |
 | `PatataParkTests` | PlayMode | `PatataPark`: every beat wired and drawn in KayKit pieces, nine checkpoints with two arches, the podium gate, finish and rematch |
+| `PatataWorksTests` | PlayMode | enclosed route and ceilings, sampled pass clearance and decoration, signal/transit wiring, explicit catches through the atrium ring and transit exits, nine checkpoint resets, finish/rematch and menu order |
 
 EditMode tests live in `Assets/Tests/EditMode/`. PlayMode tests live in `Assets/Tests/PlayMode/`: they load
 `PassSandbox` (or `PrototypeCourse`, `PlaytestCourse`) through `SandboxTestBase` and drive players through

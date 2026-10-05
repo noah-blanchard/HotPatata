@@ -421,3 +421,39 @@ MonoBehaviour:
   - shape: 1
     color: 4
     mesh: {fileID: -4066416835259905032, guid: 0060b7c8c2ec48e49b4c653949b7a955, type: 3}
+  - shape: 4
+    color: 4
+    mesh: {fileID: -1634187381928565743, guid: 9dc8b840ffe1b874682fcb82dc5d5588, type: 3}
+  - shape: 4
+    color: 4
+    mesh: {fileID: 2663630982995073563, guid: 3cb445a47b9de5e4b9d8f712321224bb, type: 3}
+  - shape: 4
+    color: 4
+    mesh: {fileID: -81328899778603450, guid: 1c58511a7179d5840941da2d56b85636, type: 3}
+  - shape: 4
+    color: 4
+    mesh: {fileID: -315023040719945940, guid: 604226e5d0b6b1e4b9a5f996cee42aaf, type: 3}
+  - shape: 5
+    color: 4
+    mesh: {fileID: 2786042052032957115, guid: 8eb8f29641df04a4faf90502ad7acec1, type: 3}
+  - shape: 5
+    color: 4
+    mesh: {fileID: -6115654455463738705, guid: 58bf44681d07d314cbd532a26b322e41, type: 3}
+  - shape: 5
+    color: 4
+    mesh: {fileID: 1710842269074741459, guid: 012b03bd70ba30c4eb3465ca00af5040, type: 3}
+  - shape: 5
+    color: 4
+    mesh: {fileID: -6392176470903695336, guid: 27407348f206e8d489c35ec24afb385c, type: 3}
+  - shape: 5
+    color: 4
+    mesh: {fileID: 6726091666308813431, guid: fafd42d0808dc1f40a30f829216023a2, type: 3}
+  - shape: 5
+    color: 4
+    mesh: {fileID: 541476970089936829, guid: fe65bc843567ea9488ab703df814492b, type: 3}
+  - shape: 5
+    color: 4
+    mesh: {fileID: -195291799792353659, guid: 7df6ff5a1b41b51439ed3b2f5d3e29f2, type: 3}
+  - shape: 6
+    color: 4
+    mesh: {fileID: -1724203525988298218, guid: 9ac2bee3d79302140af8867dcbf1c9e7, type: 3}

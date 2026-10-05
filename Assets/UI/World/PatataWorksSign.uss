@@ -1,0 +1,18 @@
+.hp-factory-sign {
+    flex-grow: 1;
+    justify-content: center;
+    align-items: center;
+    background-color: rgb(35, 48, 53);
+    border-width: 14px;
+    border-color: rgb(244, 184, 75);
+    color: rgb(255, 230, 170);
+    -unity-font-definition: url("project://database/Assets/UI/Fonts/LilitaOne-SDF.asset");
+}
+.hp-factory-name {
+    font-size: 370px;
+    -unity-text-align: middle-center;
+}
+.hp-factory-subtitle {
+    font-size: 85px;
+    letter-spacing: 18px;
+}
