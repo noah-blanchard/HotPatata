@@ -41,6 +41,8 @@
 | `PlaytestCourseTests` | PlayMode | M10.4 `PlaytestCourse`: every beat wired, nine checkpoints with two arches, the podium gate, finish and rematch |
 | `KitSkinTests` | EditMode | KayKit kit (ARCHITECTURE §25.1): palette families, exact box tiling, unstretched pieces on the grid, edge-standing platforms as blocks |
 | `PatataParkTests` | PlayMode | `PatataPark`: every beat wired and drawn in KayKit pieces, nine checkpoints with two arches, the podium gate, finish and rematch |
+| `IndustrialLookTests` | EditMode | industrial look (ARCHITECTURE §25.2): the bevelled box stays inside its box and faces outward, materials survive rebuilds, texture file names are classified, the look set changes only its scope |
+| `IndustrialLabTests` | PlayMode | `IndustrialLab`: checkpoints and finish, passes clear ceilings, solids and decoration, bevelled visuals inside their colliders, every industrial material drawn |
 | `PatataWorksTests` | PlayMode | enclosed route and ceilings, sampled pass clearance and decoration, signal/transit wiring, explicit catches through the atrium ring and transit exits, nine checkpoint resets, finish/rematch and menu order |
 
 EditMode tests live in `Assets/Tests/EditMode/`. PlayMode tests live in `Assets/Tests/PlayMode/`: they load
@@ -61,7 +63,8 @@ unity command test_status                                      # results also in
 Run only the suites for the system you touched, not the whole project every time. After any throw/catch tuning
 change, run `PassFeelTests`. After a movement change, run `SprintSlideTests` and `MovementTests`. After a course
 change, run `CourseTests` / `FactoryCourseTests`. After a kit look change (`KitSkin`, `KayKitKitBuilder`), run
-`KitSkinTests` and the course suites.
+`KitSkinTests` and the course suites; after an industrial look change (shader, materials, `IndustrialLabBuilder`), run
+`IndustrialLookTests` and `IndustrialLabTests`.
 
 After a font asset change, run `FontAssetTests` and a local Player build. Editor compilation and PlayMode tests do
 not exercise the asset serialization step that rejects `DontSave` font dependencies.

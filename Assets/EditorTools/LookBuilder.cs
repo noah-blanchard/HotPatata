@@ -61,7 +61,8 @@ namespace HotPatata.Editor
             ("Assets/Scenes/PrototypeCourse.unity", 35f),
             ("Assets/Scenes/PlaytestCourse.unity", 35f),
             ("Assets/Scenes/PatataPark.unity", 35f),
-            ("Assets/Scenes/PatataWorks.unity", 55f)
+            ("Assets/Scenes/PatataWorks.unity", 55f),
+            ("Assets/Scenes/IndustrialLab.unity", 55f)
         };
 
         public static Quaternion SunRotation(float yaw) => Quaternion.Euler(SunElevation, yaw, 0f);
