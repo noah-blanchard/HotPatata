@@ -7,6 +7,7 @@
 //  - base colour, normal (OpenGL), gloss or roughness, metallic and occlusion maps, all always sampled (the defaults
 //    are neutral), so dropping a texture in the Inspector is enough: no keyword to tick;
 //  - metals: F0 from the albedo, no diffuse, and a cheap environment reflection from the ambient SH (no probe);
+//  - belts: _PatternScroll (set by Conveyor) slides the texture along the belt;
 //  - anti-repetition: a macro layer of the same texture at a larger scale, and a faint procedural variation that also
 //    gives texture-less placeholder materials some life.
 // ShadowCaster, DepthOnly and DepthNormals (SSAO) reuse URP's own passes.
@@ -17,6 +18,8 @@ Shader "HotPatata/Industrial"
         [Header(Base)]
         [MainTexture][NoScaleOffset] _BaseMap ("Base Color (sRGB)", 2D) = "white" {}
         [MainColor] _BaseColor ("Base Color Tint", Color) = (0.6, 0.6, 0.6, 1)
+        _BaseSaturation ("Texture Saturation (0 = grey, to recolour a painted texture with the tint)", Range(0, 1)) = 1
+        _BaseBrightness ("Texture Brightness", Range(0, 3)) = 1
         _TileSize ("Tile Size (metres per texture repeat)", Float) = 2
 
         [Header(Normal)]
@@ -61,6 +64,7 @@ Shader "HotPatata/Industrial"
         [Header(Emission)]
         [HDR] _EmissionColor ("Emission", Color) = (0, 0, 0, 1)
 
+        [HideInInspector] _PatternScroll ("Belt Scroll (world m/s, set by Conveyor)", Vector) = (0, 0, 0, 0)
         [HideInInspector] _Cutoff ("Alpha Cutoff", Range(0, 1)) = 0.5
     }
 
@@ -140,6 +144,9 @@ Shader "HotPatata/Industrial"
             void BoxMap(float3 positionOS, float3 normalOS, out float2 uv, out float3 tangentOS, out float3 bitangentOS)
             {
                 float3 p = positionOS * ObjectScale();
+                // A conveyor scrolls its texture (cosmetic): the world scroll, turned into the object's axes, in metres.
+                float3 axisX = normalize(UNITY_MATRIX_M._m00_m10_m20), axisY = normalize(UNITY_MATRIX_M._m01_m11_m21), axisZ = normalize(UNITY_MATRIX_M._m02_m12_m22);
+                p -= float3(dot(axisX, _PatternScroll.xyz), dot(axisY, _PatternScroll.xyz), dot(axisZ, _PatternScroll.xyz)) * _Time.y;
                 float3 a = abs(normalOS);
                 float3 s = step(0.0, normalOS) * 2.0 - 1.0;
                 if (a.y >= a.x && a.y >= a.z)      { tangentOS = float3(0, 0, 1); bitangentOS = float3(s.y, 0, 0); }
@@ -211,6 +218,7 @@ Shader "HotPatata/Industrial"
                 float2 screenUV = GetNormalizedScreenSpaceUV(input.positionCS);
 
                 half3 texel = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, uv).rgb;
+                texel = lerp(dot(texel, half3(0.299, 0.587, 0.114)).xxx, texel, _BaseSaturation) * _BaseBrightness;
                 half3 albedo = texel * _BaseColor.rgb;
                 if (_MacroStrength > 0.0)
                 {

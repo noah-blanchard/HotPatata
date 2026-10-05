@@ -42,11 +42,7 @@ namespace HotPatata.Editor
         {
             if (!assetPath.StartsWith(Folder) || !assetImporter.importSettingsMissing) return;
             var kind = Classify(assetPath);
-            if (kind == MapKind.Unknown)
-            {
-                Debug.LogWarning($"[IndustrialTextureImporter] {assetPath}: the name does not end in _BaseColor, _Normal, _Roughness, _Metallic or _AO; import settings left as they are");
-                return;
-            }
+            if (kind == MapKind.Unknown) return;   // displacement, opacity, previews: not used by the shader, left as imported
             var importer = (TextureImporter)assetImporter;
             importer.textureType = kind == MapKind.Normal || kind == MapKind.NormalDirectX ? TextureImporterType.NormalMap : TextureImporterType.Default;
             importer.sRGBTexture = kind == MapKind.Color;

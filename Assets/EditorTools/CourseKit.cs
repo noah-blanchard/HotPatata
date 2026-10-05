@@ -9,7 +9,7 @@ using Random = System.Random;
 namespace HotPatata.Editor
 {
     /// <summary>What a kit box is for; each role has one KayKit look (<see cref="CourseKit.Look"/>, ARCHITECTURE §25.1).</summary>
-    public enum KitRole { Ground, Wall, Mover, Falling, Belt, Slide, Hazard, Gate, Floor, Ceiling, Brick, Frame, Stairs, Pillar, Truss, Railing, Roof, Grating, Rubber, Accent }
+    public enum KitRole { Ground, Wall, Mover, Falling, Belt, Slide, Hazard, Gate, Floor, Ceiling, Brick, Frame, Stairs, Pillar, Truss, Railing, Roof, Grating, Rubber, Accent, Lamp, Glow }
 
     /// <summary>
     /// Shared editor helpers for the course and kit builders (<see cref="CourseBuilder"/>,
@@ -297,7 +297,7 @@ namespace HotPatata.Editor
         public const string IndustrialDir = "Industrial/";
         public const string ConcreteMaterial = IndustrialDir + "Industrial_Concrete", PaintedMetalMaterial = IndustrialDir + "Industrial_PaintedMetal",
             PaintedMetalYellowMaterial = IndustrialDir + "Industrial_PaintedMetal_Yellow", PaintedMetalSafetyMaterial = IndustrialDir + "Industrial_PaintedMetal_Safety",
-            RawMetalMaterial = IndustrialDir + "Industrial_RawMetal", RubberMaterial = IndustrialDir + "Industrial_Rubber";
+            LampMaterial = IndustrialDir + "Industrial_Lamp", GlowMaterial = IndustrialDir + "Industrial_Glow", RawMetalMaterial = IndustrialDir + "Industrial_RawMetal", RubberMaterial = IndustrialDir + "Industrial_Rubber";
 
         /// <summary>One look per role of the course: the piece family, the KayKit colour and the material, in the current look set.</summary>
         public static (KitShape shape, KitColor color, string material) Look(KitRole role) =>
@@ -314,6 +314,8 @@ namespace HotPatata.Editor
             KitRole.Mover or KitRole.Pillar or KitRole.Truss => (KitShape.BevelBox, KitColor.Neutral, PaintedMetalMaterial),
             KitRole.Frame or KitRole.Railing or KitRole.Gate => (KitShape.BevelBox, KitColor.Neutral, PaintedMetalYellowMaterial),
             KitRole.Accent => (KitShape.BevelBox, KitColor.Neutral, PaintedMetalSafetyMaterial),
+            KitRole.Lamp => (KitShape.BevelBox, KitColor.Neutral, LampMaterial),
+            KitRole.Glow => (KitShape.BevelBox, KitColor.Neutral, GlowMaterial),
             KitRole.Slide or KitRole.Grating => (KitShape.BevelBox, KitColor.Neutral, RawMetalMaterial),
             KitRole.Belt or KitRole.Rubber => (KitShape.BevelBox, KitColor.Neutral, RubberMaterial),
             _ => KayKitLook(role)
@@ -341,6 +343,8 @@ namespace HotPatata.Editor
             KitRole.Grating => (KitShape.Platform, KitColor.Neutral, KitMaterial),
             KitRole.Rubber => (KitShape.Platform, KitColor.Neutral, KitMaterial),
             KitRole.Accent => (KitShape.Barrier, KitColor.Yellow, KitMaterial),
+            KitRole.Lamp => (KitShape.Barrier, KitColor.Yellow, KitMaterial),
+            KitRole.Glow => (KitShape.Barrier, KitColor.Yellow, KitMaterial),
             _ => throw new ArgumentOutOfRangeException(nameof(role))
         };
 

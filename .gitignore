@@ -112,3 +112,9 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# Extras that ship in the ambientCG texture zips (Blender, USD, MaterialX, Godot): not used by Unity
+/Assets/Art/Textures/Industrial/**/*.blend*
+/Assets/Art/Textures/Industrial/**/*.usdc*
+/Assets/Art/Textures/Industrial/**/*.mtlx*
+/Assets/Art/Textures/Industrial/**/*.tres*

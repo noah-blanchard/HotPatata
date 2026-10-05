@@ -34,23 +34,7 @@ namespace HotPatata.Editor
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode) return;
             IndustrialMaterialBuilder.Ensure(false);
-            if (AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath) == null && !AssetDatabase.CopyAsset(TemplatePath, ScenePath))
-                throw new InvalidOperationException("Could not create " + ScenePath);
-            var scene = EditorSceneManager.OpenScene(ScenePath);
-            var run = Object.FindFirstObjectByType<RunManager>();
-            if (run == null) throw new InvalidOperationException("Course template has no RunManager");
-            // The template's run, spawns, bomb, camera and networking are retained; generated geometry is replaced.
-            var section = Object.FindObjectsByType<PlayerSpawn>(FindObjectsSortMode.None)
-                .First(s => s.GetComponentInParent<Checkpoint>() == null).transform.parent;
-            while (section.parent != null) section = section.parent;
-            foreach (var child in section.Cast<Transform>().ToArray())
-                if (child.GetComponentsInChildren<Checkpoint>(true).Length > 0 || child.GetComponent<KillZone>() != null)
-                    Object.DestroyImmediate(child.gameObject);
-            foreach (var decoration in scene.GetRootGameObjects().Where(g => g.GetComponentsInChildren<Renderer>(true).Length > 0 &&
-                         g.GetComponentsInChildren<MonoBehaviour>(true).Length == 0).ToArray())
-                Object.DestroyImmediate(decoration);
-            var previous = section.GetComponent<CourseRoute>();
-            if (previous != null) Object.DestroyImmediate(previous);
+            var scene = PrepareScene(ScenePath, out var section);
 
             RebuildGroup(section, GroupName, root =>
             {
@@ -75,12 +59,37 @@ namespace HotPatata.Editor
             Debug.Log($"[IndustrialLabBuilder] Industrial lab built in the {set} look: two checkpoints, covered hall, finish.");
         }
 
+        /// <summary>
+        /// Opens <paramref name="scenePath"/> (copied from the PlaytestCourse template when missing, as PatataWorks is) and clears
+        /// its generated geometry: the template's run, spawns, bomb, camera and networking stay. Returns the section to build in.
+        /// </summary>
+        internal static UnityEngine.SceneManagement.Scene PrepareScene(string scenePath, out Transform section)
+        {
+            if (AssetDatabase.LoadAssetAtPath<SceneAsset>(scenePath) == null && !AssetDatabase.CopyAsset(TemplatePath, scenePath))
+                throw new InvalidOperationException("Could not create " + scenePath);
+            var scene = EditorSceneManager.OpenScene(scenePath);
+            var run = Object.FindFirstObjectByType<RunManager>();
+            if (run == null) throw new InvalidOperationException("Course template has no RunManager");
+            section = Object.FindObjectsByType<PlayerSpawn>(FindObjectsSortMode.None)
+                .First(sp => sp.GetComponentInParent<Checkpoint>() == null).transform.parent;
+            while (section.parent != null) section = section.parent;
+            foreach (var child in section.Cast<Transform>().ToArray())
+                if (child.GetComponentsInChildren<Checkpoint>(true).Length > 0 || child.GetComponent<KillZone>() != null)
+                    Object.DestroyImmediate(child.gameObject);
+            foreach (var decoration in scene.GetRootGameObjects().Where(g => g.GetComponentsInChildren<Renderer>(true).Length > 0 &&
+                         g.GetComponentsInChildren<MonoBehaviour>(true).Length == 0).ToArray())
+                Object.DestroyImmediate(decoration);
+            var previous = section.GetComponent<CourseRoute>();
+            if (previous != null) Object.DestroyImmediate(previous);
+            return scene;
+        }
+
         // ------------------------------------------------------------------ helpers
 
-        static void Floor(Transform p, string name, float a, float b, float y, float width = Width, float x = 0, KitRole role = KitRole.Floor) =>
+        internal static void Floor(Transform p, string name, float a, float b, float y, float width = Width, float x = 0, KitRole role = KitRole.Floor) =>
             Block(p, name, new Vector3(x, y - 0.5f, (a + b) / 2), new Vector3(width, 1, b - a), role);
 
-        static void Pass(Transform p, string name, Vector3 from, Vector3 to, PassCorridor.ArcKind kind = PassCorridor.ArcKind.Normal, float opening = 0)
+        internal static void Pass(Transform p, string name, Vector3 from, Vector3 to, PassCorridor.ArcKind kind = PassCorridor.ArcKind.Normal, float opening = 0)
         {
             var go = new GameObject("Pass " + name);
             go.transform.SetParent(p, false);
@@ -88,19 +97,19 @@ namespace HotPatata.Editor
             go.AddComponent<PassCorridor>().Configure(to, kind, 0, false, opening);
         }
 
-        static void Checkpoint(Transform p, int id, Vector3 position)
+        internal static void Checkpoint(Transform p, int id, Vector3 position)
         {
             var go = AddCheckpoint(p, $"CP_{id:00}", id, position, 0);
             go.transform.rotation = Quaternion.identity;
         }
 
-        static void Kill(Transform p, Vector3 position, Vector3 size)
+        internal static void Kill(Transform p, Vector3 position, Vector3 size)
         {
             var go = Place(p, GameplayDir + "KillZone", "Pit recovery", position, Quaternion.identity);
             go.transform.localScale = size;
         }
 
-        static void Column(Transform p, string name, float x, float z, float footY, float topY, float thickness)
+        internal static void Column(Transform p, string name, float x, float z, float footY, float topY, float thickness)
         {
             float height = topY - footY;
             Block(p, name, new Vector3(x, footY + height / 2, z), new Vector3(thickness, height, thickness), KitRole.Pillar);

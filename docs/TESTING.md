@@ -43,6 +43,7 @@
 | `PatataParkTests` | PlayMode | `PatataPark`: every beat wired and drawn in KayKit pieces, nine checkpoints with two arches, the podium gate, finish and rematch |
 | `IndustrialLookTests` | EditMode | industrial look (ARCHITECTURE §25.2): the bevelled box stays inside its box and faces outward, materials survive rebuilds, texture file names are classified, the look set changes only its scope |
 | `IndustrialLabTests` | PlayMode | `IndustrialLab`: checkpoints and finish, passes clear ceilings, solids and decoration, bevelled visuals inside their colliders, every industrial material drawn |
+| `IndustrialPlantTests` | PlayMode | `IndustrialPlant`: checkpoints, finish, crane, closed on every side, passes clear, dark look with warm practical lights, only industrial materials |
 | `PatataWorksTests` | PlayMode | enclosed route and ceilings, sampled pass clearance and decoration, signal/transit wiring, explicit catches through the atrium ring and transit exits, nine checkpoint resets, finish/rematch and menu order |
 
 EditMode tests live in `Assets/Tests/EditMode/`. PlayMode tests live in `Assets/Tests/PlayMode/`: they load
@@ -64,7 +65,7 @@ Run only the suites for the system you touched, not the whole project every time
 change, run `PassFeelTests`. After a movement change, run `SprintSlideTests` and `MovementTests`. After a course
 change, run `CourseTests` / `FactoryCourseTests`. After a kit look change (`KitSkin`, `KayKitKitBuilder`), run
 `KitSkinTests` and the course suites; after an industrial look change (shader, materials, `IndustrialLabBuilder`), run
-`IndustrialLookTests` and `IndustrialLabTests`.
+`IndustrialLookTests`, `IndustrialLabTests` and `IndustrialPlantTests`.
 
 After a font asset change, run `FontAssetTests` and a local Player build. Editor compilation and PlayMode tests do
 not exercise the asset serialization step that rejects `DontSave` font dependencies.

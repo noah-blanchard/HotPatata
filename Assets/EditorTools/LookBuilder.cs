@@ -62,7 +62,8 @@ namespace HotPatata.Editor
             ("Assets/Scenes/PlaytestCourse.unity", 35f),
             ("Assets/Scenes/PatataPark.unity", 35f),
             ("Assets/Scenes/PatataWorks.unity", 55f),
-            ("Assets/Scenes/IndustrialLab.unity", 55f)
+            ("Assets/Scenes/IndustrialLab.unity", 55f),
+            ("Assets/Scenes/IndustrialPlant.unity", 55f)
         };
 
         public static Quaternion SunRotation(float yaw) => Quaternion.Euler(SunElevation, yaw, 0f);
@@ -97,6 +98,17 @@ namespace HotPatata.Editor
                 ConfigureSun(light, yaw);
             }
             ApplyRenderSettings(scene.name, yaw);
+            if (scene.name == "IndustrialPlant")
+            {
+                // A closed, dark plant (ARCHITECTURE §25.2): almost no sky fill, a dark warm haze; the practical lights and the
+                // sun shafts through the roof slits carry the scene.
+                RenderSettings.ambientSkyColor = AmbientSky * 0.22f;
+                RenderSettings.ambientEquatorColor = AmbientEquator * 0.2f;
+                RenderSettings.ambientGroundColor = AmbientGround * 0.2f;
+                RenderSettings.fogColor = new Color(0.09f, 0.075f, 0.07f);
+                RenderSettings.fogStartDistance = 8f;
+                RenderSettings.fogEndDistance = 95f;
+            }
             if (scene.name == "PatataWorks")
             {
                 RenderSettings.ambientSkyColor = AmbientSky * 0.48f;
@@ -141,6 +153,22 @@ namespace HotPatata.Editor
             light.range = 20f;
             light.shadows = LightShadows.None;
             light.lightmapBakeType = LightmapBakeType.Realtime;
+        }
+
+        /// <summary>A steady practical light of any colour (the industrial plant's lamps and furnaces); no shadows, no baking.</summary>
+        public static Light PracticalLamp(Transform parent, Vector3 position, Color color, float intensity, float range, string name = "Practical")
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            go.transform.position = position;
+            var light = go.AddComponent<Light>();
+            light.type = LightType.Point;
+            light.color = color;
+            light.intensity = intensity;
+            light.range = range;
+            light.shadows = LightShadows.None;
+            light.lightmapBakeType = LightmapBakeType.Realtime;
+            return light;
         }
 
         /// <summary>Ambient, fog and the scene's own sky (a copy of the shared sky, its sun where this scene's sun is).</summary>

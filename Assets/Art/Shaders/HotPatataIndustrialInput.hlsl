@@ -12,6 +12,8 @@ CBUFFER_START(UnityPerMaterial)
     half4 _BaseColor;
     half _Cutoff;
     half _BumpScale;
+    half _BaseSaturation;
+    half _BaseBrightness;
     float _TileSize;
     float _MacroScale;
     half _MacroStrength;
@@ -34,6 +36,7 @@ CBUFFER_START(UnityPerMaterial)
     half _RimPower;
     half _RimStrength;
     half4 _EmissionColor;
+    float4 _PatternScroll;
 CBUFFER_END
 
 // _BaseMap and _BumpMap come from URP's SurfaceInput.hlsl.
