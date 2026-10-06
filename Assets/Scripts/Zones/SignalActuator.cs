@@ -85,10 +85,14 @@ namespace HotPatata
             if (want != opening) SetState(NetMode.ServerTime, CurrentProgress, want);
         }
 
+        /// <summary>Called every frame on every machine with the current progress (0 closed .. 1 open), before the part moves. Pure presentation of replicated state.</summary>
+        protected virtual void ApplyProgress(float progress) { }
+
         void Update()
         {
-            if (platform == null || waypointClosed == null || waypointOpen == null) return;
             float p = CurrentProgress;
+            ApplyProgress(p);
+            if (platform == null || waypointClosed == null || waypointOpen == null) return;
             Vector3 target = PositionAt(waypointClosed, waypointOpen, p);
             Vector3 delta = target - platform.position;
             // A reset (or first frame) snaps the platform; never drag riders along with a snap.

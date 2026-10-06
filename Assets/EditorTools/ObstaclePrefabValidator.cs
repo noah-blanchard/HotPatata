@@ -16,7 +16,7 @@ namespace HotPatata.Editor
     /// </summary>
     public static class ObstaclePrefabValidator
     {
-        static readonly string[] GameplayLayers = { "Player", "PlayerCatch", "Bomb", "Environment", "Hazard", "Trigger" };
+        static readonly string[] GameplayLayers = { "Player", "PlayerCatch", "Bomb", "Environment", "Hazard", "Trigger", BodyScreen.LayerName };
 
         /// <summary>The systems this validator knows: a prefab holding one of them is an obstacle prefab.</summary>
         public static bool IsObstacle(GameObject root) =>
@@ -51,6 +51,17 @@ namespace HotPatata.Editor
             }
             foreach (var a in root.GetComponentsInChildren<SignalActuator>(true))
             {
+                if (a is SignalSwitch s)
+                {
+                    foreach (var target in s.Targets)
+                    {
+                        Need(target != null, s, "a target is empty");
+                        if (target != null) Need(target != s.gameObject && !s.transform.IsChildOf(target.transform), s,
+                                                 $"target '{target.name}' carries the switch (switching it off would switch the switch off)");
+                    }
+                    Networked(s, typeof(NetworkSignalActuator));
+                    continue;
+                }
                 Part(a, a.Platform, "platform");
                 Point(a, a.WaypointClosed, "waypointClosed");
                 Point(a, a.WaypointOpen, "waypointOpen");
@@ -109,6 +120,18 @@ namespace HotPatata.Editor
                 var c = k.GetComponent<Collider>();
                 Need(c != null && c.isTrigger, k, "a KillZone needs a trigger collider");
             }
+            int screenLayer = LayerMask.NameToLayer(BodyScreen.LayerName);
+            foreach (var b in root.GetComponentsInChildren<BodyScreen>(true))
+            {
+                var colliders = b.GetComponentsInChildren<Collider>(true).Where(c => !CustomVisual.Covers(c)).ToList();
+                Need(colliders.Count > 0, b, "a body screen needs a collider (it blocks players)");
+                foreach (var c in colliders)
+                    Need(!c.isTrigger && c.gameObject.layer == screenLayer, b,
+                         $"'{c.name}': a body screen's colliders are solid and on the {BodyScreen.LayerName} layer (players only, never the bomb)");
+            }
+            foreach (var c in root.GetComponentsInChildren<Collider>(true))
+                if (c.gameObject.layer == screenLayer)
+                    Need(c.GetComponentInParent<BodyScreen>(true) != null, c, $"a collider on the {BodyScreen.LayerName} layer belongs under a BodyScreen");
 
             // Colliders: box-like, on gameplay layers, never under a hand-made visual; a lethal solid has a kill trigger.
             var layers = GameplayLayers.Select(LayerMask.NameToLayer).ToHashSet();

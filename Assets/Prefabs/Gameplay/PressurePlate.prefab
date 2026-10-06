@@ -263,6 +263,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 229b0df5b72bbc04b804a5d82b6fcf1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: HotPatata::HotPatata.PressurePlate
+  countCarrier: 1
 --- !u!114 &1445990785571905028
 MonoBehaviour:
   m_ObjectHideFlags: 0

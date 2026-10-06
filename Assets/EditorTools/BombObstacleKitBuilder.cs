@@ -32,6 +32,9 @@ namespace HotPatata.Editor
         public const string Door = ObstaclesDir + "Actuator_Door";
         public const string Bridge = PlatformsDir + "Actuator_Bridge";
         public const string Lift = PlatformsDir + "Actuator_Lift";
+        public const string Screen = ObstaclesDir + "Obstacle_BodyScreen";
+        public const string Switch = GameplayDir + "Actuator_Switch";
+        public const string PlateHandsFree = KitVariantBuilder.VariantsDir + "PressurePlate_HandsFree";
         public const string Tube = ObstaclesDir + "Obstacle_Tube";
         public const string Cannon = ObstaclesDir + "Obstacle_Cannon";
         const string TuningPath = "Assets/ScriptableObjects/Tuning/GameTuning.asset";
@@ -61,6 +64,9 @@ namespace HotPatata.Editor
                                                                    2f, KitRole.Mover, "Environment", lethal: false));
             MakePrefab(Tube + ".prefab", true, BuildTube);
             MakePrefab(Cannon + ".prefab", true, BuildCannon);
+            MakePrefab(Screen + ".prefab", true, BuildScreen);
+            MakePrefab(Switch + ".prefab", true, BuildSwitch);
+            BuildHandsFreePlate();
             EnsureBombComponents();
             AssetDatabase.SaveAssets();
             Debug.Log("[BombObstacleKitBuilder] bomb obstacle kit built");
@@ -308,6 +314,120 @@ namespace HotPatata.Editor
             var pad = Shape("Pad", PrimitiveType.Cylinder, t, new Vector3(0f, 0.07f, 0f), Quaternion.identity, new Vector3(2.4f, 0.04f, 2.4f), Mat("Pad_Plate"), "Default");
             AddIndicator(root, plate, new[] { pad.GetComponent<Renderer>() }, pad.transform);
             return root;
+        }
+
+        /// <summary>
+        /// The hands-free plate (PROJECT_SPEC §13.19): a Prefab Variant of the plate whose carrier does not count, drawn in blue
+        /// with a "throw first" glyph so the rule reads before anyone steps on it.
+        /// </summary>
+        static void BuildHandsFreePlate()
+        {
+            Directory.CreateDirectory(KitVariantBuilder.VariantsDir);
+            var go = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(Plate + ".prefab"));
+            try
+            {
+                go.name = "PressurePlate_HandsFree";
+                SetField(go.GetComponent<PressurePlate>(), "countCarrier", p => p.boolValue = false);
+                var pad = go.transform.Find("Pad").GetComponent<Renderer>();
+                pad.sharedMaterial = Mat("Pad_HandsFree");
+                PrefabUtility.RecordPrefabInstancePropertyModifications(pad);
+                Shape("Icon", PrimitiveType.Quad, go.transform, new Vector3(0f, 0.1f, 0f), Quaternion.Euler(90f, 0f, 0f), Vector3.one * 1.7f,
+                      Mat("Icon_HandsFree"), "Default");
+                PrefabUtility.SaveAsPrefabAsset(go, PlateHandsFree + ".prefab");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        // ------------------------------------------------------------------ body screens (brambles, nets) and switches
+
+        const int ScreenStrandsAcross = 9, ScreenStrandsUp = 6;
+        const float ScreenDepth = 0.3f, ScreenPost = 0.35f;
+
+        /// <summary>
+        /// A body screen (PROJECT_SPEC §13.18; pivot on the floor, centre; spans X, faces Z): a frame of posts and a lintel
+        /// (Environment, like any wall: the bomb explodes on them) around the <c>Screen</c>, a <see cref="BodyScreen"/> whose solid
+        /// box is on the BodyScreen layer (players only) and whose vine strands, faint field and "bomb through" signs show
+        /// what it is. A switch targets <c>Screen</c>, so the frame stays when it parts.
+        /// </summary>
+        static GameObject BuildScreen()
+        {
+            var root = new GameObject("Obstacle_BodyScreen");
+            var t = root.transform;
+            var frame = new GameObject("Frame").transform;
+            frame.SetParent(t, false);
+            Cube("Post_L", frame, Vector3.zero, Vector3.one, KitRole.Frame, "Environment", keepCollider: true);
+            Cube("Post_R", frame, Vector3.zero, Vector3.one, KitRole.Frame, "Environment", keepCollider: true);
+            Cube("Lintel", frame, Vector3.zero, Vector3.one, KitRole.Frame, "Environment", keepCollider: true);
+
+            var screen = new GameObject("Screen") { layer = Layer(BodyScreen.LayerName) };
+            screen.transform.SetParent(t, false);
+            screen.AddComponent<BodyScreen>();
+            Box("Collision", screen.transform, Vector3.zero, Vector3.one, BodyScreen.LayerName);
+            var strand = Mat("Screen_Strand");
+            for (int i = 0; i < ScreenStrandsAcross; i++)
+                Shape($"Strand_V_{i + 1}", PrimitiveType.Cylinder, screen.transform, Vector3.zero, Quaternion.identity, Vector3.one, strand, "Default");
+            for (int i = 0; i < ScreenStrandsUp; i++)
+                Shape($"Strand_H_{i + 1}", PrimitiveType.Cylinder, screen.transform, Vector3.zero, Quaternion.Euler(0f, 0f, 90f), Vector3.one, strand, "Default");
+            Shape("Field", PrimitiveType.Cube, screen.transform, Vector3.zero, Quaternion.identity, Vector3.one, Mat("Screen_Field"), "Default");
+            var icon = Mat("Icon_Screen");
+            Shape("Sign_Front", PrimitiveType.Quad, screen.transform, Vector3.zero, Quaternion.identity, Vector3.one, icon, "Default");
+            Shape("Sign_Back", PrimitiveType.Quad, screen.transform, Vector3.zero, Quaternion.Euler(0f, 180f, 0f), Vector3.one, icon, "Default");
+            ResizeScreen(root, 4f, 3.6f);
+            return root;
+        }
+
+        /// <summary>
+        /// Sizes a body screen (pivot on the floor, centre): the players-only box fills <paramref name="width"/> ×
+        /// <paramref name="height"/> between the posts, under the lintel; the strands, field and signs follow.
+        /// </summary>
+        public static void ResizeScreen(GameObject screen, float width, float height)
+        {
+            var t = screen.transform;
+            var frame = t.Find("Frame");
+            Set(frame.Find("Post_L"), new Vector3(-(width + ScreenPost) / 2f, (height + ScreenPost) / 2f, 0f), new Vector3(ScreenPost, height + ScreenPost, ScreenDepth));
+            Set(frame.Find("Post_R"), new Vector3((width + ScreenPost) / 2f, (height + ScreenPost) / 2f, 0f), new Vector3(ScreenPost, height + ScreenPost, ScreenDepth));
+            Set(frame.Find("Lintel"), new Vector3(0f, height + ScreenPost / 2f, 0f), new Vector3(width + 2f * ScreenPost, ScreenPost, ScreenDepth));
+            var s = t.Find("Screen");
+            var box = s.Find("Collision").GetComponent<BoxCollider>();
+            box.transform.localPosition = new Vector3(0f, height / 2f, 0f);
+            box.size = new Vector3(width, height, ScreenDepth);
+            for (int i = 0; i < ScreenStrandsAcross; i++)
+                Set(s.Find($"Strand_V_{i + 1}"), new Vector3(width * ((i + 1f) / (ScreenStrandsAcross + 1) - 0.5f), height / 2f, 0f), new Vector3(0.07f, height / 2f, 0.07f));
+            for (int i = 0; i < ScreenStrandsUp; i++)
+                Set(s.Find($"Strand_H_{i + 1}"), new Vector3(0f, height * (i + 1f) / (ScreenStrandsUp + 1), 0f), new Vector3(0.07f, width / 2f, 0.07f));
+            Set(s.Find("Field"), new Vector3(0f, height / 2f, 0f), new Vector3(width, height, 0.04f));
+            Set(s.Find("Sign_Front"), new Vector3(0f, Mathf.Min(height - 0.8f, 2.6f), -0.2f), Vector3.one * 0.9f);
+            Set(s.Find("Sign_Back"), new Vector3(0f, Mathf.Min(height - 0.8f, 2.6f), 0.2f), Vector3.one * 0.9f);
+        }
+
+        /// <summary>
+        /// A <see cref="SignalSwitch"/> with no look of its own (PROJECT_SPEC §13.19): wire a source and its targets in the course
+        /// (<see cref="WireSwitch"/>). Replicated like any actuator.
+        /// </summary>
+        static GameObject BuildSwitch()
+        {
+            var root = new GameObject("Actuator_Switch");
+            var sw = root.AddComponent<SignalSwitch>();
+            SetField(sw, "travelSeconds", p => p.floatValue = 0.25f);
+            root.AddComponent<NetworkObject>();
+            root.AddComponent<NetworkSignalActuator>();
+            return root;
+        }
+
+        /// <summary>Links a switch to its one source and the objects it turns on and off (<paramref name="activeWhenOpen"/>: on while the source is active).</summary>
+        public static void WireSwitch(GameObject sw, MonoBehaviour source, bool activeWhenOpen, params GameObject[] targets)
+        {
+            var s = sw.GetComponent<SignalSwitch>();
+            SetReference(s, "source", source);
+            SetField(s, "activeWhenOpen", p => p.boolValue = activeWhenOpen);
+            SetField(s, "targets", p =>
+            {
+                p.arraySize = targets.Length;
+                for (int i = 0; i < targets.Length; i++) p.GetArrayElementAtIndex(i).objectReferenceValue = targets[i];
+            });
         }
 
         // ------------------------------------------------------------------ actuators
@@ -788,6 +908,15 @@ namespace HotPatata.Editor
             // Pressure plates: yellow and dark checker, reads as "step here" next to the plain floor.
             MakeMaterial("Pad_Plate", "Greybox_Hazard", new Color(1f, 0.83f, 0.25f), new Color(1f, 0.9f, 0.5f),
                          1, new Color(0.25f, 0.2f, 0.1f), 0.6f, 0.55f);
+            // Hands-free plates: blue and white checker plus the "throw first" glyph, never the yellow of a plain plate.
+            MakeMaterial("Pad_HandsFree", "Greybox_Hazard", new Color(0.35f, 0.62f, 1f), new Color(0.6f, 0.8f, 1f),
+                         1, new Color(0.92f, 0.96f, 1f), 0.6f, 0.5f);
+            MakeUnlitMaterial("Icon_HandsFree", new Color(0.95f, 0.97f, 1f, 1f), Icon("ThrowFirst"), false);
+            // Body screens: vine-green strands over a faint green field, and the "bomb through" sign: the same cue in every look.
+            MakeMaterial("Screen_Strand", "Greybox_Hazard", new Color(0.3f, 0.58f, 0.22f), new Color(0.45f, 0.72f, 0.3f),
+                         0, Color.black, 1f, 0f);
+            MakeUnlitMaterial("Screen_Field", new Color(0.35f, 0.9f, 0.4f, 0.1f), null, false);
+            MakeUnlitMaterial("Icon_Screen", new Color(0.6f, 1f, 0.55f, 1f), Icon("BombThrough"), false);
             AssetDatabase.SaveAssets();
         }
 
@@ -820,13 +949,15 @@ namespace HotPatata.Editor
             DrawIcon("NoCarry", NoCarry);
             DrawIcon("Flame", Flame);
             DrawIcon("Snowflake", Snowflake);
+            DrawIcon("BombThrough", BombThrough);
+            DrawIcon("ThrowFirst", ThrowFirst);
             for (int s = 1; s <= TubeSlots; s++)
             {
                 int pips = s;
                 DrawIcon($"Pips{s}", p => Pips(p, pips));
             }
             AssetDatabase.Refresh();
-            foreach (var name in new[] { "NoCarry", "Flame", "Snowflake", "Pips1", "Pips2", "Pips3" })
+            foreach (var name in new[] { "NoCarry", "Flame", "Snowflake", "BombThrough", "ThrowFirst", "Pips1", "Pips2", "Pips3" })
             {
                 var importer = (TextureImporter)AssetImporter.GetAtPath(IconDir + name + ".png");
                 importer.textureType = TextureImporterType.Default;
@@ -884,6 +1015,27 @@ namespace HotPatata.Editor
             float slash = Capsule(p, a, b, 0.1f);
             float potato = Mathf.Max(Ellipse(p, Vector2.zero, new Vector2(0.4f, 0.28f)), -Capsule(p, a, b, 0.2f));
             return Mathf.Min(ring, Mathf.Min(slash, potato));
+        }
+
+        /// <summary>A potato flying through two bars, motion line behind it: "the bomb goes through, you don't" (body screens).</summary>
+        static float BombThrough(Vector2 p)
+        {
+            float bars = Mathf.Min(Capsule(p, new Vector2(-0.05f, -0.72f), new Vector2(-0.05f, 0.72f), 0.07f),
+                                   Capsule(p, new Vector2(0.22f, -0.72f), new Vector2(0.22f, 0.72f), 0.07f));
+            float potato = Ellipse(p, new Vector2(0.5f, 0.05f), new Vector2(0.28f, 0.2f));
+            float trail = Mathf.Min(Capsule(p, new Vector2(-0.8f, 0.12f), new Vector2(-0.3f, 0.12f), 0.05f),
+                                    Capsule(p, new Vector2(-0.7f, -0.08f), new Vector2(-0.35f, -0.08f), 0.05f));
+            return Mathf.Min(bars, Mathf.Min(potato, trail));
+        }
+
+        /// <summary>A potato and an arrow leaving it up and away: "pass it first" (hands-free plates).</summary>
+        static float ThrowFirst(Vector2 p)
+        {
+            float potato = Ellipse(p, new Vector2(-0.35f, -0.35f), new Vector2(0.32f, 0.23f));
+            Vector2 tip = new Vector2(0.6f, 0.6f);
+            float shaft = Capsule(p, new Vector2(-0.05f, 0f), tip, 0.08f);
+            float head = Mathf.Min(Capsule(p, tip, tip + new Vector2(-0.38f, 0f), 0.08f), Capsule(p, tip, tip + new Vector2(0f, -0.38f), 0.08f));
+            return Mathf.Min(potato, Mathf.Min(shaft, head));
         }
 
         /// <summary>A flame: a round base tapering to a point.</summary>

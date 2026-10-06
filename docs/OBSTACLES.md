@@ -5,7 +5,8 @@ courses used it, including the courses that were removed. Rules live in [`PROJEC
 level grammar, §20 tuning); the components in [`ARCHITECTURE.md`](ARCHITECTURE.md) §10. This file is the reference
 for designing new maps from the kit.
 
-Kept maps: `PassSandbox` (the kit demo and the pass range), `IndustrialPlant` and `PatataWilds`. `Bootstrap` is the menu.
+Kept maps: `PassSandbox` (the kit demo and the pass range), `IndustrialPlant`, `PatataWilds` and `PatataCanopy`. `Bootstrap`
+is the menu.
 
 ---
 
@@ -31,7 +32,7 @@ the visual, so the same logic takes any look (§2, §4).
 
 | System | Prefab | Component | Behaviour | Rule |
 |---|---|---|---|---|
-| Rotating bar | `Obstacle_RotatingBar` | `RotatingObstacle` | a bar turning on an axis; angle = phase + speed × `SectionClock` | deterministic |
+| Rotating bar | `Obstacle_RotatingBar` | `RotatingObstacle` | a bar turning on an axis; angle = phase + speed × `SectionClock`. The prefab itself is on `Environment` with no `KillZone`: it blocks and pushes, it does not kill (a lethal variant adds a `KillZone`) | deterministic |
 | Sweeper | `Obstacle_Sweeper` | `RotatingObstacle` | a knee-high lethal bar turning around a hub: jump it | knee-high, jumpable |
 | Windmill | `Obstacle_Windmill` | `RotatingObstacle` | lethal blades turning in a wall's plane; guards the only bomb window through the wall | the bomb question stays central (§13.11) |
 | Crusher | `Obstacle_Crusher` | `MovingPlatform` (`Dwell`, vertical) | a slab that drops and rises; lethal underside | never closes below 1.45 m: crouching or sliding under it is always safe; when down it makes a low-throw tunnel (§13.5) |
@@ -45,8 +46,12 @@ the visual, so the same logic takes any look (§2, §4).
 | Hot zone | `Zone_Hot` | `Zone` + `FuseZone` (×2) | the fuse burns twice as fast (§13.14) |
 | Cold zone | `Zone_Cold` | `Zone` + `FuseZone` (×0.5) | the fuse burns half as fast; small pockets beside the line, never a whole beat |
 | Laser curtain | `LaserCurtain` | forbidden `FuseZone` + `BombBarrier` | runners walk through, a thrown bomb crossing it explodes: framing a window makes the window mandatory (§13.13) |
+| Body screen | `Obstacle_BodyScreen` | `BodyScreen` (its box on the `BodyScreen` layer) | the mirror of a curtain: every player is stopped, the bomb, the aim and the catch go through; nobody mantles onto it; resize with `BombObstacleKitBuilder.ResizeScreen`; a switch targets its `Screen` child so the frame stays (§13.18) |
 
 The most severe zone wins (forbidden > hot > cold). Trigger events are never used for the bomb.
+
+An opening in a wall is always one of three: **bomb only** (a body screen in it), **runners only** (a laser curtain in it),
+or **both** (empty). A plain 2.4 × 2 m window is "both": a player climbs through it.
 
 ### 1.4 Signals: sources and actuators (one source drives exactly one actuator, no AND/OR)
 
@@ -55,6 +60,8 @@ The most severe zone wins (forbidden > hot > cold). Trigger events are never use
 | Bomb gate (ring) | `BombGate_Ring` | `BombGate` (+ `NetworkBombGate`) | active for `holdSeconds` after the thrown bomb flies through it (0 = latched until reset); carrying the bomb through does not count |
 | Checkpoint arch | `BombGate_Arch` | latched `BombGate` | a checkpoint with `claimGate` activates only once a pass went through its arch this section (§13.17) |
 | Pressure plate | `PressurePlate` | `PressurePlate` | active while any player stands on it, carrier included |
+| Hands-free plate | `Variants/PressurePlate_HandsFree` | `PressurePlate` (`countCarrier` off) | the carrier does not count: the holder must have passed the bomb first, and a catch on the plate lets it go (§13.19); blue, with a "throw first" glyph |
+| Switch | `Actuator_Switch` | `SignalSwitch` (+ `NetworkSignalActuator`) | an actuator that turns its targets (a curtain, a screen, a fuse zone: any object) on or off at half travel; `activeWhenOpen` picks which way; one source, reset like any actuator (§13.19) |
 | Door | `Actuator_Door` | `SignalActuator` (+ `NetworkSignalActuator`) | a portcullis that closes completely; its lower edge is lethal only while it closes |
 | Bridge | `Actuator_Bridge` | `SignalActuator` | extends over a gap while its source is active |
 | Lift | `Actuator_Lift` | `SignalActuator` | rises to its open waypoint while its source is active; carries riders |
@@ -100,6 +107,8 @@ laser beams, pads, icons, plates, launch pads, tube slot lamps) are never restyl
 | Cannon | basket and barrel | basket and barrel | stump catapult |
 | Bomb gate / arch | ring / arch | ring / arch | vine ring / wooden arch with lanterns |
 | Laser curtain | posts and beams | posts and beams | cairns, beams kept |
+| Body screen | vine strands, field, sign (cue kept in every look) | same | same, frame of rough logs |
+| Hands-free plate | blue checker, "throw first" glyph (cue kept) | same | same |
 | Door | portcullis | portcullis | palisade of upright logs |
 | Checkpoint | square pad | square pad | campfire that lights up (pad hidden) |
 | Water | — | — | lethal surface, kill zone 0.3 m below |
@@ -134,7 +143,21 @@ Lethal parts always carry stripes or bands, never colour alone (§19).
   - **Down the Rapids:** the runners take the slide, the bomb a hollow log.
   - **Mill Race:** a water wheel guards the bomb window; the runners go under a stamp.
 
-  The fuse drops to 5.0 s from CP21 and to 4.5 s from CP24.
+  The fuse drops to 5.0 s from CP21 and to 4.5 s from CP24. Its sections have no contract yet: the M13 review found
+  shortcuts in about 15 of them (MVP_TASKS M14).
+- **`PatataCanopy`.** Five acts, 25 sections in the tree tops (PROJECT_SPEC §15d), every one with a contract (§5 below).
+  Built on the void; puzzle sections under a leaf roof that every cross wall reaches. How it uses the kit:
+  - **Body screens with curtains** in the same wall: the bomb through the brambles, the runners through the lasers (Le
+    Filet, L'Écluse, Couloir de ronces, La Haie, L'Écluse finale); in a divide between two branches (Les Deux Branches,
+    Les Galeries, Pont-levis croisé, where a ring sits in the bramble window); raised 1.3 m over a slide, a slider's gap in
+    spores (Glissade).
+  - **Hands-free plates**: a holder raises the carrier's bridge (La Plaque), raises a lift (La Poulie), raises the other
+    branch's bridge (Pont-levis croisé), cuts lasers (Les Lucioles), clears spores (Le Pont des spores).
+  - **Switches**: a plate cuts a laser curtain, a ring parts a bramble hedge for 6 s, a plate clears a spore zone.
+  - **Rings** raise rising bridges from under the kill plane (14 m gaps), one hangs over the gap on the line of the throw
+    back; **spores** (forbidden zones) wrap launch pads and ride a shuttle, so only empty hands fly or ride; a seed
+    catapult with a 5 s delay crosses 70 m under a branch roof no throw gets past.
+  The fuse drops to 5.0 s from CP15 and to 4.5 s from CP20.
 
 ### 3.2 Removed maps (archive)
 
@@ -250,6 +273,8 @@ What `Progress` and `Active` mean per system:
 | `BombTransit` | share of the delay before release | holding the bomb |
 | `BombGate` | share of the hold time left | active |
 | `PressurePlate` | 1 while held | held |
+| `SignalSwitch` | switch travel (the targets turn over at 0.5) | opening |
+| `BodyScreen` | 1 while it stands | standing (a switch may take it away) |
 | `Checkpoint` | 1 once reached | reached |
 
 The driver only reads. Presentation never changes gameplay state.
@@ -287,15 +312,49 @@ any `SignalActuator`. One source drives exactly one actuator (PROJECT_SPEC §13.
 - The moving part is a child, never the object carrying the system. Its waypoints never ride on it. It has a kinematic
   `Rigidbody`.
 - Colliders are box, sphere or capsule colliders (never `MeshCollider`), on a gameplay layer (`Player`, `PlayerCatch`,
-  `Bomb`, `Environment`, `Hazard`, `Trigger`), and never under a `CustomVisual`.
+  `Bomb`, `Environment`, `Hazard`, `Trigger`, `BodyScreen`), and never under a `CustomVisual`. A body screen's colliders
+  are solid and on `BodyScreen`; nothing else uses that layer.
+- A switch's targets are set, and none of them carries the switch (switching it off would switch the switch off).
 - A part on the `Hazard` layer has a `KillZone` trigger. A door's lethal edge moves with it.
 - Zones are trigger boxes on the `Trigger` layer.
 - Replicated systems keep their network companion and a `NetworkObject`:
   - `SignalActuator` + `NetworkSignalActuator`;
   - `FallingPlatform` + `NetworkFallingPlatform`;
   - `BombTransit` + `NetworkBombTransit`;
-  - `BombGate` + `NetworkBombGate`.
+  - `BombGate` + `NetworkBombGate`;
+  - `SignalSwitch` + `NetworkSignalActuator`.
 
   A Prefab Variant inherits them.
 - Gameplay cues stay readable (PROJECT_SPEC §19): lethal parts striped or banded; a tube's mouth, exit and pad share a colour
   **and** a pip count; zones keep their field and icon.
+
+---
+
+## 5. Designing a section: the contract
+
+A section is not finished when it can be solved, but when it can only be solved the intended way (PROJECT_SPEC §13.20).
+Write its contract first, in the builder:
+
+```csharp
+Contract(p, "One runner per branch: the bomb crosses through a bramble window before each laser curtain.",
+         GapLock("west gap", from, to),            // must be beyond a slide-jump with a mantle (12.75 m flat): use 14 m
+         ClimbLock("the face", floor, ledge),        // must be above a jump and a mantle (3.0 m): use 5 m
+         LobLock("over the wall", thrower, wallTop)); // the wall top must touch a roof: a lob climbs 38 m
+```
+
+Then check every shortcut a team will try:
+
+- **Around it.** A gating obstacle spans the whole walkable width; a wall runs past the floor's edge over the void (3 m),
+  or meets another wall. A laser wall that stops 1 m short of a cliff is a door.
+- **Through it.** Every opening is typed: bomb only (body screen), runners only (laser curtain), or both. A window is not
+  bomb-only.
+- **Over it.** No free-standing wall stops the bomb: it reaches a roof, and that roof runs on long enough that no lob goes
+  over the whole covered stretch (PatataCanopy covers each puzzle section and its two junction decks).
+- **Without it.** A plate, a ring or a mover is required only if every other way across is a 14 m gap or a 5 m face. If two
+  players can walk past side by side, the bomb question is gone.
+- **With one player.** A tube or cannon lets a lone carrier catch their own bomb, and every checkpoint refills the fuse: say
+  so in the contract if it matters.
+
+`CourseContractCheck` (menu **HotPatata/Course/Check Section Contracts**, and `CourseContractTests`) measures the declared
+shortcuts and scans every body screen (walked round, hopped over) and laser curtain (flown round, flown over). It warns; it
+never fails a build.

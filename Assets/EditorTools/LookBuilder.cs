@@ -59,7 +59,8 @@ namespace HotPatata.Editor
             ("Assets/Scenes/Bootstrap.unity", 55f),
             ("Assets/Scenes/PassSandbox.unity", 35f),
             ("Assets/Scenes/IndustrialPlant.unity", 55f),
-            ("Assets/Scenes/PatataWilds.unity", 75f)   // its sun then moves with the day (PatataWildsLook, ARCHITECTURE §25.3)
+            ("Assets/Scenes/PatataWilds.unity", 75f),  // its sun then moves with the day (PatataWildsLook, ARCHITECTURE §25.3)
+            ("Assets/Scenes/PatataCanopy.unity", 75f)  // the same day, over the tree tops
         };
 
         public static Quaternion SunRotation(float yaw) => Quaternion.Euler(SunElevation, yaw, 0f);
@@ -76,6 +77,7 @@ namespace HotPatata.Editor
             ConfigurePotato();
             foreach (var (path, _) in Scenes)
             {
+                if (AssetDatabase.LoadAssetAtPath<SceneAsset>(path) == null) continue;   // a course not built yet
                 var scene = EditorSceneManager.OpenScene(path, OpenSceneMode.Single);
                 ApplyToScene(scene);
                 EditorSceneManager.SaveScene(scene);
@@ -118,7 +120,7 @@ namespace HotPatata.Editor
                 PlantExposure(scene);
             }
             // PatataWilds: a day from dawn to dusk, HDRI skies, one preset per act (sun, fill, haze, grade), blended at run time
-            if (scene.name == PatataWildsLook.SceneName) PatataWildsLook.Apply(scene);
+            if (scene.name == PatataWildsLook.SceneName || scene.name == PatataCanopyBuilder.SceneName) PatataWildsLook.Apply(scene);
 
             var volume = scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<Volume>(true)).FirstOrDefault(v => v.isGlobal && v.priority <= 0f);
             if (volume == null)

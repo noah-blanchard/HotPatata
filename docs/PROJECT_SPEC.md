@@ -692,7 +692,7 @@ Question:
 > Can the pass open the way for the runners, or can a runner hold the way open for the pass?
 
 A **bomb gate** is a ring the bomb must fly through; a **pressure plate** is held by any player standing on it,
-carrier included. Each drives exactly **one** actuator (a door, a bridge, a lift): the gate for a fixed time after
+carrier included (a **hands-free** plate does not count its carrier, §13.19). Each drives exactly **one** actuator (a door, a bridge, a lift): the gate for a fixed time after
 the pass, the plate while it is held. No AND/OR logic (§17.2).
 
 A door is a portcullis that closes completely (a door that left crouch room would not block anything). It is a
@@ -725,6 +725,48 @@ gap to a teammate already on the pad.
 
 Primary levers: arch size, gap, whether the arch is framed by curtains.
 
+### 13.18 Body screen: brambles, nets (M13)
+
+Question:
+
+> Can the bomb go where the runners cannot?
+
+The mirror image of a laser curtain. A **body screen** stops every player's body (carrier or not) and lets the bomb, the
+aim and the catch through: it is solid on its own `BodyScreen` layer, which collides with `Player` only. Nobody mantles
+onto it. In a wall, a screen makes an opening **bomb only**, a laser curtain makes one **runners only**, an empty hole
+makes one for both: an opening is always one of the three, never ambiguous (a 2.4 × 2 m window is not a bomb-only
+opening: a player climbs through it).
+
+Primary levers: where the screens are against the runners' route, their height (a slider fits under a hedge raised 1.3 m),
+what the screen frames.
+
+### 13.19 Hands-free plates and switches (M13)
+
+Question:
+
+> Who holds the way open, and who has the bomb?
+
+A **hands-free plate** is a pressure plate that does not count its carrier: the holder must have passed the bomb first,
+and catching on the plate lets it go. A **switch** is an actuator that turns things on or off instead of moving them: a
+laser curtain cut while a plate is held, a bramble hedge parted for a few seconds after a ring, spores cleared from a
+bridge. Like every actuator it has one source (§13.15), travels, replicates, and goes back to rest on a section reset.
+
+Primary levers: which side of the obstacle the plate is on, whether the catch on the plate undoes it, the switch's hold time.
+
+### 13.20 Section contracts (M13)
+
+Every section of a course built after M13 states its **contract**: what it **forces** (the question it asks) and the
+**shortcuts it locks**, each with the geometry that locks it. A mechanic that the team can skip is filler (§13), however
+it is drawn. The reach a shortcut is measured against comes from the tuning (§20):
+
+- a **gap** is only locked beyond a slide-jump with a mantle (12.75 m on the flat, more downhill): 14 m is the rule;
+- a **face** is only locked above a jump and a mantle (3.0 m): 3.4 m or more;
+- a **wall** only stops the bomb if it reaches a roof: a lob climbs 38 m, so no free-standing height is enough;
+- an obstacle meant to gate the way spans the whole walkable width, and a wall the void beside it;
+- the void is the default: every walkable metre is deliberate.
+
+`SectionContract` holds the contract in the scene; `CourseContractCheck` measures it (warnings, never a build gate).
+
 ---
 
 ## 14. Early-level constraints
@@ -745,8 +787,8 @@ Avoid in the first level:
 ## 15. First level blueprint
 
 > **Removed course.** `PrototypeCourse` was removed in the project cleanup; this blueprint stays as the design record and
-> its built layout is archived in [`OBSTACLES.md`](OBSTACLES.md) §3.2. The kept courses are PatataWilds (§15c) and the
-> industrial plant.
+> its built layout is archived in [`OBSTACLES.md`](OBSTACLES.md) §3.2. The kept courses are PatataWilds (§15c), PatataCanopy
+> (§15d) and the industrial plant.
 
 Working level:
 
@@ -970,6 +1012,49 @@ fuse and ends with a short, readable climb to the summit beacon.
 
 ---
 
+## 15d. Fourth level blueprint — PatataCanopy (M13)
+
+Asked for by the owner after a review of PatataWilds, whose puzzles had the intent but not the constraint. A course in
+the **tree tops**, in PatataWilds' nature look, where every section keeps a contract (§13.20). Second in the Bootstrap
+level list. Built by `PatataCanopyBuilder` (ARCHITECTURE §4).
+
+Working level:
+
+**PatataCanopy**
+
+Target:
+
+- **5 acts, 25 sections, 25 checkpoints**, one per section; about 2 km;
+- **short puzzles, hard execution**: a puzzle reads in about ten seconds, then asks for speed and clean passes (rings of
+  6–8 s, the fuse down to 5 s then 4.5 s);
+- **two roles that scale**: every puzzle needs exactly two roles (a holder and a carrier, a runner and a thrower) and is
+  always solvable by two; a third and a fourth player relay;
+- the kit plus three systems: body screens (§13.18), hands-free plates and switches (§13.19).
+
+### Canopy rules
+
+- **The void is the default.** Decks, bridges and branches over a forest floor 40 m down; a kill plane 10 m under every
+  section's lowest floor, a safety net under everything.
+- **Puzzle sections stand under a leaf roof** 7 m above the floor, over the decks and the void beside them; every cross
+  wall reaches it, so the bomb is never lobbed over a wall. The hollow oak (act 3) has its own roofs.
+- **Gaps that must be bridged are 14 m**, faces that must not be climbed 5 m or more (§13.20).
+- **Junction decks** of 20 × 20 m join the sections, which turn left and right in turn: no two sections meet elsewhere.
+- **Checkpoints are campfires** on the junction decks (§15c); arches at checkpoints 15 and 25 (§13.17).
+
+### Route
+
+| Act (time of day) | Checkpoints | Sections and what each forces |
+|---|---|---|
+| 1 L'Orée (dawn): one system at a time | 1–5 | Premier pont (jumps of 4–4.5 m, the first gap passes); Le Filet (the bomb through the brambles, the runners through the lasers); L'Anneau de lianes (a ring raises the bridge over 14 m for 8 s); La Plaque (an empty-handed holder raises the carrier's bridge; the carrier throws back through a ring over the gap to raise the holder's); Les Lucioles (the plate beyond the lasers cuts them; the catch on it brings them back) |
+| 2 Les Ponts suspendus (noon): combined | 6–10 | Les Deux Branches (two branches split by a wall to the roof, lasers where the other branch has none: the team splits and the bomb changes branch through bramble windows); Pont-levis croisé (the east plate raises the west bridge, the ring in the divide raises the east one, the carrier waits on cold moss); Branches balançoires (rides longer than the fuse); Branches pourries (four lines of rotten twigs, one runner per line); L'Écluse (a ring opens the gate, a sap chamber at ×2, lasers for the runners and a ring in a bramble window for the bomb, which raises the last bridge) |
+| 3 Le Grand Chêne (late afternoon): inside the hollow oak | 11–15 | La Poulie (a hands-free plate lifts the carrier, a throw down, a plain plate lifts the holder); Le Tronc creux (the bomb goes up only through the hollow branch, the climb is behind lasers); La Spirale (three levels swept wall to wall); Les Galeries (a real choice: a short gallery at ×2 or a long weaving one at ×0.5); Le Cœur du chêne (a shuttle over a pit, the arch checkpoint) |
+| 4 La Cime dans le vent (sunset): speed, 5 s fuse | 16–20 | Feuilles-trampolines (launch pads in spores: only empty hands fly, the bomb is thrown up); Branches mouvantes (rolling logs, a shuttle over 14 m, opposite log drives); Couloir de ronces (a slalom of four walls: the runners zig-zag through lasers, the bomb flies straight through brambles); Canon à graines (70 m of void under a branch roof, a shuttle with spores, a catapult that fires 5 s after the throw); Course contre l'anneau (the ring opens a gate 50 m away for 7 s) |
+| 5 Le Sommet (dusk): twisted, 4.5 s fuse | 21–25 | La Haie qui s'ouvre (a ring parts the hedge for 6 s, then lasers and a window); Le Pont des spores (a far hands-free plate clears 48 m of spores under a low branch, the catch on it brings them back); Glissade de la grande branche (hedges only a slider fits under, their gap in spores); L'Écluse finale (everything at once); Arche du sommet (the last shuttle, the arch, the beacon) |
+
+The shorter hold fuse: 5.0 s from checkpoint 15, 4.5 s from checkpoint 20 (§20).
+
+---
+
 ## 16. Multiplayer product behavior
 
 Target session:
@@ -1025,8 +1110,8 @@ Do not implement unless this file is changed:
 - progression;
 - cosmetics;
 - multiple bomb types;
-- multiple courses (exceptions, owner decisions: `PatataWilds`, the outdoor course of §15c, M12, and `IndustrialPlant`, the
-  closed factory built on §15b's rules, beside `PassSandbox`; the earlier `PrototypeCourse`, `PlaytestCourse`, `PatataPark`
+- multiple courses (exceptions, owner decisions: `PatataWilds`, the outdoor course of §15c, M12, `PatataCanopy`, the
+  tree-top course of §15d, M13, and `IndustrialPlant`, the closed factory built on §15b's rules, beside `PassSandbox`; the earlier `PrototypeCourse`, `PlaytestCourse`, `PatataPark`
   and `PatataWorks` were removed in the cleanup, archived in OBSTACLES.md §3.2). Still no campaign, no level
   select beyond the Bootstrap level list, and no procedural levels (PatataWilds' generated trees, plants and terrain are
   art with fixed seeds, not a generated route);
@@ -1078,6 +1163,8 @@ At minimum:
 - lethal hazards are striped, not only red; the fuse stage reads through pulse speed, sparks and beep cadence;
   in PatataWilds a hazard is a stained log with charred bands, and a checkpoint is a campfire that is cold or burning
   (flames and smoke: shape and motion, not colour);
+- a body screen shows vine strands over a faint field and a "bomb through" sign, a laser curtain striped posts, beams and a
+  "no carrying" sign; a hands-free plate is blue with a "throw first" glyph, never the yellow of a plain plate;
 - use the Input System so rebinding remains possible.
 
 ---
@@ -1117,6 +1204,9 @@ At minimum:
 | Third course length (`PatataWilds`, §15c) | 20+ min first clear, 25 checkpoints in 5 acts |
 | Hold fuse override (`PatataWilds`) | 5.0 s from CP21, 4.5 s from CP24 |
 | Water (`PatataWilds`) | lethal: a kill zone 0.3 m under every surface |
+| Fourth course (`PatataCanopy`, §15d) | 25 checkpoints in 5 acts, about 2 km |
+| Hold fuse override (`PatataCanopy`) | 5.0 s from CP15, 4.5 s from CP20 |
+| Locked gap / locked face / roof over a puzzle (§13.20) | 14 m / 5 m (3.4 m minimum) / 7 m above the floor |
 | Ceiling clearance over a pass corridor (§15b) | intended arc apex + 1.5 m |
 | Target frame rate | 60 fps |
 
