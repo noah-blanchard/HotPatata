@@ -116,10 +116,21 @@ namespace HotPatata.Tests
             var fires = All<CampfirePresentation>();
             foreach (var cp in All<Checkpoint>())
             {
-                var fire = fires.Single(f => f.Checkpoint == cp);
-                Assert.That(Vector3.Distance(fire.transform.position, cp.transform.position), Is.InRange(3f, 6f), cp.name);
+                AssertCampfireMarks(fires.Single(f => f.Checkpoint == cp), cp);
             }
             Assert.AreEqual(1, fires.Count(f => f.Checkpoint == null), "one summit beacon");
+        }
+
+        [UnityTest]
+        public IEnumerator Campfire_CatchesWhenTheTeamGathersAtIt()
+        {
+            var cp = All<Checkpoint>().Single(c => c.Id == 1);
+            var fire = All<CampfirePresentation>().Single(f => f.Checkpoint == cp);
+            yield return null;
+            Assert.IsFalse(fire.Lit);
+            yield return GatherAtCampfire(fire, cp);
+            yield return WaitUntil(() => cp.Activated, 2, "checkpoint 1 activation");
+            yield return WaitUntil(() => fire.Lit && fire.Lighting >= 1f, tuning.campfireIgniteSeconds + 2, "the campfire catches");
         }
 
         [Test]

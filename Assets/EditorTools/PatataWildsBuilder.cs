@@ -444,28 +444,13 @@ namespace HotPatata.Editor
             go.AddComponent<PassCorridor>().Configure(to, kind, flight, timed, opening);
         }
 
-        /// <summary>A checkpoint (one per section) and its campfire beside it, 3.8 m from the trigger's centre, never on a spawn.</summary>
+        /// <summary>A checkpoint (one per section) and its campfire beside it, 3.8 m from the spawns and inside the checkpoint's zone (NatureKit.CampfireCheckpoint).</summary>
         static void CP(Transform p, int id, Vector3 position, float yaw = 0, float fireSide = 1f, Vector3? fireOffset = null)
         {
             var go = AddCheckpoint(p, $"CP_{id:00}", id, position, FuseFor(id));
             go.transform.rotation = Quaternion.Euler(0, yaw, 0);
             var offset = fireOffset ?? Quaternion.Euler(0, yaw, 0) * new Vector3(3.8f * fireSide, 0, 0);
-            DressCheckpoint(p, go.GetComponent<Checkpoint>(), position + offset);
-        }
-
-        /// <summary>No square on the ground (spec §19): the pad is switched off, the campfire marks the checkpoint.</summary>
-        static void DressCheckpoint(Transform p, Checkpoint checkpoint, Vector3 firePosition)
-        {
-            var so = new SerializedObject(checkpoint);
-            var pad = so.FindProperty("padRenderer").objectReferenceValue as Renderer;
-            if (pad != null)
-            {
-                pad.gameObject.SetActive(false);
-                PrefabUtility.RecordPrefabInstancePropertyModifications(pad.gameObject);
-            }
-            so.FindProperty("padRenderer").objectReferenceValue = null;
-            so.ApplyModifiedPropertiesWithoutUndo();
-            NatureKit.Campfire(p, firePosition, checkpoint);
+            NatureKit.CampfireCheckpoint(p, go.GetComponent<Checkpoint>(), position + offset);
         }
 
         static void Kill(Transform p, Vector3 position, Vector3 size)

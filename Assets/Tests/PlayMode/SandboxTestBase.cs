@@ -132,5 +132,43 @@ namespace HotPatata.Tests
             p.TeleportTo(position, Quaternion.identity);
             yield return WaitUntil(() => p.Motor.Grounded, 2f, p + " did not land after teleport");
         }
+
+#if UNITY_EDITOR
+        /// <summary>
+        /// A campfire marks its checkpoint (spec §19): it stands beside the spawns (never on one), inside the checkpoint's zone
+        /// with room around it, and its stone ring is seen at its real size.
+        /// </summary>
+        protected static void AssertCampfireMarks(CampfirePresentation fire, Checkpoint cp)
+        {
+            float d = Vector3.Distance(fire.transform.position, cp.transform.position);
+            Assert.That(d, Is.InRange(3f, 6f), cp.name + ": the campfire stands beside the spawns, never on one");
+            var trigger = (BoxCollider)new SerializedObject(cp).FindProperty("trigger").objectReferenceValue;
+            foreach (var offset in new[] { Vector3.zero, Vector3.left, Vector3.right, Vector3.forward, Vector3.back })
+            {
+                var local = trigger.transform.InverseTransformPoint(fire.transform.position + offset * 1.5f + Vector3.up * 0.5f) - trigger.center;
+                var half = trigger.size * 0.5f;
+                Assert.IsTrue(Mathf.Abs(local.x) <= half.x && Mathf.Abs(local.y) <= half.y && Mathf.Abs(local.z) <= half.z,
+                    cp.name + ": the team gathered at the campfire is inside the checkpoint's zone");
+            }
+            Renderer pit = null;
+            foreach (var filter in fire.GetComponentsInChildren<MeshFilter>())
+                if (filter.sharedMesh != null && filter.sharedMesh.name == "stone_fire_pit") pit = filter.GetComponent<Renderer>();
+            Assert.IsNotNull(pit, cp.name + ": the campfire has its stone fire pit");
+            Assert.That(pit.bounds.size.y, Is.InRange(0.3f, 0.7f), cp.name + ": the fire pit stands at its real height");
+            Assert.Greater(pit.bounds.size.x, 1f, cp.name + ": the fire pit lies flat, at its real width");
+        }
+#endif
+
+        /// <summary>Places both players at <paramref name="fire"/> (on the spawns' side of it, but off the spawns).</summary>
+        protected IEnumerator GatherAtCampfire(CampfirePresentation fire, Checkpoint cp)
+        {
+            var toward = cp.transform.position - fire.transform.position;
+            toward.y = 0f;
+            toward.Normalize();
+            var side = Vector3.Cross(Vector3.up, toward) * 0.6f;
+            var at = fire.transform.position + toward * 1.3f + Vector3.up * 0.1f;
+            yield return Place(p1, at + side);
+            yield return Place(p2, at - side);
+        }
     }
 }

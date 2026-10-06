@@ -972,7 +972,8 @@ Target:
 - **Pass corridors** are declared for every intended pass; decoration, scattered plants and the terrain never enter
   one (the |x| ≥ 25 m rule of the open courses does not apply, §3.1).
 - **Checkpoints are campfires**: a cold fire pit in a clearing that catches (flames, embers, smoke, light, crackle) when
-  the checkpoint activates, and goes out at a new run. No square on the ground (§19).
+  the checkpoint activates (the whole team gathered at the fire, §12.3), and goes out at a new run. No square on the
+  ground (§19).
 - **Time of day is presentation**: the sky, sun and haze move from dawn (act 1) to dusk (act 5) with the current checkpoint;
   nothing in the rules depends on it.
 - **Trees, plants and the terrain are generated art** (fixed seeds, saved assets), not procedural levels: the route,

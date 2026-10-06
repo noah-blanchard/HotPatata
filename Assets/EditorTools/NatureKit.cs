@@ -161,11 +161,15 @@ namespace HotPatata.Editor
                         ?? throw new System.InvalidOperationException("missing model " + model + " (run tools/Fetch-PolyHaven.ps1)");
             var go = (GameObject)PrefabUtility.InstantiatePrefab(asset, parent);
             go.name = model;
+            // a model whose mesh sits on its root node carries the file's axis and unit conversion there (90° X, x100):
+            // keep it, or the mesh lies on its side at a hundredth of its size
+            var baseRotation = go.transform.localRotation;
+            var baseScale = go.transform.localScale;
             go.transform.localPosition = position;
-            go.transform.localRotation = Quaternion.Euler(0f, yaw, 0f);
+            go.transform.localRotation = Quaternion.Euler(0f, yaw, 0f) * baseRotation;
             var bounds = WorldBounds(go);
             float scale = bounds.size.y > 0.001f ? height / bounds.size.y : 1f;
-            go.transform.localScale = Vector3.one * scale;
+            go.transform.localScale = baseScale * scale;
             bounds = WorldBounds(go);
             go.transform.position += Vector3.up * (parent.TransformPoint(position).y - bounds.min.y);   // stand on the ground
             var mat = NatureMaterialBuilder.Load(material);
@@ -219,6 +223,39 @@ namespace HotPatata.Editor
             SetReference(presentation, "checkpoint", checkpoint);
             SetField(presentation, "size", p => p.floatValue = scale);
             return presentation;
+        }
+
+        /// <summary>How far around a checkpoint's campfire its zone reaches: room for four players around the ring of stones.</summary>
+        public const float CampfireGatherRadius = 2.3f;
+
+        /// <summary>
+        /// Dresses a checkpoint as a campfire (spec §19): no square on the ground (the pad is switched off), the campfire at
+        /// <paramref name="firePosition"/> marks it, and the checkpoint's trigger is stretched over the clearing around the
+        /// fire so the team activates it by gathering there (it still covers the spawns).
+        /// </summary>
+        public static CampfirePresentation CampfireCheckpoint(Transform parent, Checkpoint checkpoint, Vector3 firePosition)
+        {
+            var so = new SerializedObject(checkpoint);
+            var pad = so.FindProperty("padRenderer").objectReferenceValue as Renderer;
+            if (pad != null)
+            {
+                pad.gameObject.SetActive(false);
+                PrefabUtility.RecordPrefabInstancePropertyModifications(pad.gameObject);
+            }
+            so.FindProperty("padRenderer").objectReferenceValue = null;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            var fire = Campfire(parent, firePosition, checkpoint);
+            if (so.FindProperty("trigger").objectReferenceValue is BoxCollider trigger)
+            {
+                var local = trigger.transform.InverseTransformPoint(fire.transform.position);
+                var zone = new Bounds(trigger.center, trigger.size);
+                zone.Encapsulate(new Bounds(new Vector3(local.x, trigger.center.y, local.z),
+                                            new Vector3(CampfireGatherRadius * 2f, trigger.size.y, CampfireGatherRadius * 2f)));
+                trigger.center = zone.center;
+                trigger.size = zone.size;
+                PrefabUtility.RecordPrefabInstancePropertyModifications(trigger);
+            }
+            return fire;
         }
 
         public const string CampfirePrefabPath = NatureTreeBuilder.PrefabDir + "Campfire.prefab";

@@ -524,7 +524,7 @@ namespace HotPatata.Editor
             Floor(p, "Summit", -12, 64);
             ArchCheckpoint(p, "CP_25", 25, new Vector3(0, 0, 14), FuseFor(25), new Vector3(0, 0, 9));
             var checkpoint = p.Find("CP_25").GetComponent<Checkpoint>();
-            DressCheckpoint(p, checkpoint, new Vector3(3.8f, 0, 14));
+            NatureKit.CampfireCheckpoint(p, checkpoint, new Vector3(3.8f, 0, 14));
             Pass(p, "Summit arch", new Vector3(0, 1.5f, 5), new Vector3(0, 1.5f, 14), opening: 4);
             Pass(p, "Summit relay", new Vector3(-3, 1.5f, 22), new Vector3(3, 1.5f, 31));
             Place(p, GameplayDir + "FinishZone", "FinishZone", new Vector3(0, 0, 36), Quaternion.identity);

@@ -147,9 +147,7 @@ namespace HotPatata.Tests
                 var so = new SerializedObject(cp);
                 Assert.IsNull(so.FindProperty("padRenderer").objectReferenceValue, cp.name + " still paints a pad");
                 foreach (var r in cp.GetComponentsInChildren<Renderer>()) Assert.IsFalse(r.enabled && r.gameObject.activeInHierarchy, cp.name + " shows " + r.name);
-                var fire = fires.Single(f => f.Checkpoint == cp);
-                float d = Vector3.Distance(fire.transform.position, cp.transform.position);
-                Assert.That(d, Is.InRange(3f, 6f), cp.name + ": the campfire stands beside the trigger, never on a spawn");
+                AssertCampfireMarks(fires.Single(f => f.Checkpoint == cp), cp);
             }
             Assert.AreEqual(1, fires.Count(f => f.Checkpoint == null), "one summit beacon");
         }
@@ -162,8 +160,7 @@ namespace HotPatata.Tests
             var fire = All<CampfirePresentation>().Single(f => f.Checkpoint == cp);
             yield return null;
             Assert.IsFalse(fire.Lit);
-            yield return Place(p1, cp.transform.position + new Vector3(-0.6f, 0.1f, 0));
-            yield return Place(p2, cp.transform.position + new Vector3(0.6f, 0.1f, 0));
+            yield return GatherAtCampfire(fire, cp);   // the team gathers at the fire, the only mark on the ground
             yield return WaitUntil(() => cp.Activated, 2, "checkpoint 1 activation");
             yield return WaitUntil(() => fire.Lit && fire.Lighting >= 1f, tuning.campfireIgniteSeconds + 2, "the campfire catches");
             RunOptions.StartCheckpoint = 0;

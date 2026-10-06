@@ -393,26 +393,11 @@ namespace HotPatata.Editor
         static SectionContract.Shortcut ClimbLock(string name, Vector3 from, Vector3 to) => SectionContract.Lock(name, SectionContract.ShortcutKind.Climb, from, to);
         static SectionContract.Shortcut LobLock(string name, Vector3 from, Vector3 wallTop) => SectionContract.Lock(name, SectionContract.ShortcutKind.Lob, from, wallTop);
 
-        /// <summary>A checkpoint at the junction deck and its campfire beside it (never on a spawn, never on the way out).</summary>
+        /// <summary>A checkpoint at the junction deck and its campfire beside it (never on a spawn, never on the way out), inside the checkpoint's zone.</summary>
         static void CP(Transform p, int id, Vector3 position, float fireSide = 1f)
         {
             var go = AddCheckpoint(p, $"CP_{id:00}", id, position, FuseFor(id));
-            DressCheckpoint(p, go.GetComponent<Checkpoint>(), position + new Vector3(3.8f * fireSide, 0, 0));
-        }
-
-        /// <summary>No square on the ground (spec Â§19): the pad is switched off, the campfire marks the checkpoint.</summary>
-        static void DressCheckpoint(Transform p, Checkpoint checkpoint, Vector3 firePosition)
-        {
-            var so = new SerializedObject(checkpoint);
-            var pad = so.FindProperty("padRenderer").objectReferenceValue as Renderer;
-            if (pad != null)
-            {
-                pad.gameObject.SetActive(false);
-                PrefabUtility.RecordPrefabInstancePropertyModifications(pad.gameObject);
-            }
-            so.FindProperty("padRenderer").objectReferenceValue = null;
-            so.ApplyModifiedPropertiesWithoutUndo();
-            NatureKit.Campfire(p, firePosition, checkpoint);
+            NatureKit.CampfireCheckpoint(p, go.GetComponent<Checkpoint>(), position + new Vector3(3.8f * fireSide, 0, 0));
         }
 
         static void Kill(Transform p, Vector3 center, Vector3 size)
