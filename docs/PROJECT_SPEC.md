@@ -816,7 +816,8 @@ Display at minimum:
 
 Added after the three open-sky courses (`PrototypeCourse`, `PlaytestCourse`, `PatataPark`), which are all one straight
 lane of floating platforms along +Z. The second full course is a **place**: an old potato factory at sunset, a closed
-building whose route climbs, turns right, turns left and drops. It is first in the Bootstrap level list.
+building whose route climbs, turns right, turns left and drops. It was first in the Bootstrap level list until PatataWilds
+(§15c).
 
 Working level:
 
@@ -891,6 +892,77 @@ readable victory lap.
 
 ---
 
+## 15c. Third level blueprint — PatataWilds (M12)
+
+Added at the owner's request after `PatataWorks`: a **realistic outdoor course**, a climb through a forest, along a river
+and up granite cliffs to a summit, from dawn to dusk. It is first in the Bootstrap level list. Built by
+`PatataWildsBuilder` (ARCHITECTURE §4); its look is ARCHITECTURE §25.3.
+
+Working level:
+
+**PatataWilds**
+
+Target:
+
+- **20+ minutes** for a first clear by a team that knows the controls; **5 acts, 25 sections, 25 checkpoints**, one per
+  section, 30–60 s apart (§12.3, §20);
+- **2 players can solve every puzzle**; 3–4 players make it easier or faster;
+- the same rules as every course: one bomb, the plain ballistic arc, no new mechanic. Only the existing kit and the #68
+  elements (§13.13–§13.17) are used, **re-dressed as nature**: a mover is a log raft, a falling platform rotten planks, a
+  conveyor a log drive, a crusher a log ram or stamp, a sweeper a swinging log, a windmill a water wheel, a hoop woven
+  willow, a tube a hollow log, a cannon a stump catapult, a ring gate a vine ring, a door a palisade, a laser curtain's
+  posts cairns. Logic, sizes and colliders are unchanged.
+
+### Outdoor-course rules
+
+- **Closed by nature.** Every section is a 24 m corridor closed on both sides by cliffs at least 7 m above its highest
+  floor (never climbable, mantle 1.4 m); one section (the Ember Cave) has a roof. Players can never leave the course.
+- **Every water surface is lethal**: a kill zone starts 0.3 m under it (§20). Touching it fails the section for a player,
+  and explodes a thrown bomb, like any pit. No current moves anything (§17.2).
+- **Pits** are water or gorges, with a kill zone; a last kill zone lies under the whole course.
+- **Pass corridors** are declared for every intended pass; decoration, scattered plants and the terrain never enter
+  one (the |x| ≥ 25 m rule of the open courses does not apply, §3.1).
+- **Checkpoints are campfires**: a cold fire pit in a clearing that catches (flames, embers, smoke, light, crackle) when
+  the checkpoint activates, and goes out at a new run. No square on the ground (§19).
+- **Time of day is presentation**: the sky, sun and haze move from dawn (act 1) to dusk (act 5) with the current checkpoint;
+  nothing in the rules depends on it.
+- **Trees, plants and the terrain are generated art** (fixed seeds, saved assets), not procedural levels: the route,
+  the sections and every obstacle are designed by hand in the builder (§17.2).
+
+### Route
+
+| Act (time of day) | Checkpoints | Sections and bomb questions |
+|---|---|---|
+| 1 Misty Hollow (dawn) | 1–5 | Trailhead Glade (warm-up passes between boulders §13.1, a vine ring opens the palisade §13.15); Fern Terraces (relay up rock terraces §13.3); Brook Crossing (stepping stones and a raft over the first water §13.1, §13.2); Rotten Boardwalk (low throws under fallen trunks §13.5, rotten planks §13.7, a raft §13.2); Hollow Log Junction (split lanes §13.4, the first hollow log §13.16) |
+| 2 River Run (noon) | 6–10 | Log-Drive Lanes (opposite log drives §13.9, no-carry weirs §13.13); Rapids Rafts (rafts out of step, catch on the move §13.2, §13.8); Two Banks, One Bomb; Mudslide (a chute with no-carry riffles §13.12); Mill Race |
+| 3 Granite Cliffs (late afternoon) | 11–15 | Cliff Base Relay (ledges §13.3, a rope lift); Hold the Rope; Ember Cave (steam vents and cold springs §13.14, cairn laser windows §13.13); Ledge Traverse (a swinging log §13.11); Up the Cliff |
+| 4 Waterfall Gorge (sunset) | 16–20 | Spray Bridges (plank bridges and rotten planks over a gorge §13.7, a timed vine ring §13.15); Behind the Falls (low throws under the overhang §13.5, cold spray §13.14); Wheel Gorge (a cairn window §13.13, a willow hoop); Down the Rapids; Gorge Lock (rising rafts, a hollow log up the lock §13.16) |
+| 5 The Summit (dusk) | 21–25 | Alpine Meadow (moss mounds launch the runners, catch at the apex §13.8); Switchbacks (scree no-carry strips §13.13, a pass across the gully); Boulder Run (a log ram over sun-baked stones §13.11, §13.14, rising pillars §13.10); Knife Edge (a narrow ridge, a timed vine ring and the last palisade §13.15); Summit Arch (the checkpoint arch §13.17, a last relay, the finish beacon) |
+
+The route climbs about 100 m (from 0 to the summit, the highest point), drops twice (a mudslide and the rapids), and turns
+nine times each way. The shorter hold fuse is the summit's: 5.0 s from checkpoint 21, 4.5 s from checkpoint 24 (§20).
+
+### Signature puzzles
+
+Each chains elements through the geometry, one source drives one actuator, and 2 players can always solve it.
+
+- **Two Banks, One Bomb**: the river splits the team; two hollow logs (green with one pip, violet with two) reach the two
+  banks, and the thrower picks the bank the receiver ran to.
+- **Hold the Rope**: a runner holds a stone plate on the ledge to keep the rope lift up while the carrier passes across the
+  gorge; the pass lands on that ledge, so with two players the plate holder is also the receiver; a vine ring on the far
+  side opens the gate that brings the plate holder back.
+- **Up the Cliff**: the stump catapult fires the bomb to the cliff top while the receiver rides the rising rafts.
+- **Down the Rapids**: the runners slide down the wet chute while the bomb takes a hollow log to the plunge-pool court.
+- **Mill Race**: the water wheel guards the only window for the bomb; the runners take the tunnel under the log stamp.
+
+### Intended difficulty
+
+Act 1 teaches the outdoors (one element per section, wide floors, the first water). Acts 2–3 combine two elements per
+section and add the signature puzzles. Act 4 is the hardest (timed transits, gorges, low throws). Act 5 runs on the shorter
+fuse and ends with a short, readable climb to the summit beacon.
+
+---
+
 ## 16. Multiplayer product behavior
 
 Target session:
@@ -948,7 +1020,9 @@ Do not implement unless this file is changed:
 - multiple bomb types;
 - multiple courses (exceptions: `PlaytestCourse`, the course that tests the #68 obstacles, and `PatataPark`, the
   KayKit course, live beside `PrototypeCourse`; `PatataWorks`, the second full course, is the enclosed factory of
-  §15b, #83). Still no campaign, no level select beyond the Bootstrap level list, and no procedural levels;
+  §15b, #83; `PatataWilds`, the third, is the outdoor course of §15c, M12, an owner decision). Still no campaign, no level
+  select beyond the Bootstrap level list, and no procedural levels (PatataWilds' generated trees, plants and terrain are
+  art with fixed seeds, not a generated route);
 - Steam-specific integration;
 - leaderboards;
 - procedural levels;
@@ -962,6 +1036,7 @@ Do not implement unless this file is changed:
 - advanced ragdoll gameplay;
 - two-bomb mode;
 - wind, fans or currents that bend a flight in progress (#68: they would break the plain ballistic arc, §8.2);
+  PatataWilds' wind only sways its plants (a shader), and its rivers move nothing;
 - logic wiring between switches (AND/OR, sequences, several sources on one actuator): one source drives one
   actuator (§13.15).
 
@@ -994,6 +1069,8 @@ At minimum:
 - expose camera shake setting before broader testing (`viewEffectsStrength` scales every first-person camera effect, 0 = perfectly steady; the `GameTuning` value is the default, the player's own value is saved by `Settings`; done: the settings screen, from the main menu and the pause menu, ARCHITECTURE §6.2);
 - expose flash reduction before broader testing (`flashReduction` dims every flash; same default/player split; done: the settings screen, MVP_TASKS M6.5);
 - lethal hazards are striped, not only red; the fuse stage reads through pulse speed, sparks and beep cadence;
+  in PatataWilds a hazard is a stained log with charred bands, and a checkpoint is a campfire that is cold or burning
+  (flames and smoke: shape and motion, not colour);
 - use the Input System so rebinding remains possible.
 
 ---
@@ -1030,6 +1107,9 @@ At minimum:
 | Checkpoint spacing | 30–60 s |
 | First course length | 3–5 min (Act 1); 8–10 min with Acts 2–3; `PlaytestCourse` ~10 min |
 | Second course length (`PatataWorks`, §15b) | 10–14 min first clear, 9 checkpoints |
+| Third course length (`PatataWilds`, §15c) | 20+ min first clear, 25 checkpoints in 5 acts |
+| Hold fuse override (`PatataWilds`) | 5.0 s from CP21, 4.5 s from CP24 |
+| Water (`PatataWilds`) | lethal: a kill zone 0.3 m under every surface |
 | Ceiling clearance over a pass corridor (§15b) | intended arc apex + 1.5 m |
 | Target frame rate | 60 fps |
 
