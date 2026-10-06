@@ -213,18 +213,18 @@ namespace HotPatata.Tests
         }
 
         [Test]
-        public void TheMenu_ListsTheWildsThePlantAndTheSandbox_WithTheirSpawnChoices()
+        public void TheMenu_ListsTheWildsTheCanopyThePlantAndTheSandbox_WithTheirSpawnChoices()
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Network/NetworkManager.prefab");
             var so = new SerializedObject(prefab.GetComponent<NetworkBootstrap>());
             var names = so.FindProperty("gameplayScenes");
             var counts = so.FindProperty("sceneCheckpoints");
-            CollectionAssert.AreEqual(new[] { "PatataWilds", "IndustrialPlant", "PassSandbox" },
+            CollectionAssert.AreEqual(new[] { "PatataWilds", "PatataCanopy", "IndustrialPlant", "PassSandbox" },
                 Enumerable.Range(0, names.arraySize).Select(i => names.GetArrayElementAtIndex(i).stringValue).ToArray());
-            Assert.AreEqual(9, counts.GetArrayElementAtIndex(1).intValue, "nine spawn choices in the plant");
-            foreach (var scene in new[] { "Bootstrap", "PatataWilds", "IndustrialPlant", "PassSandbox" })
+            Assert.AreEqual(9, counts.GetArrayElementAtIndex(2).intValue, "nine spawn choices in the plant");
+            foreach (var scene in new[] { "Bootstrap", "PatataWilds", "PatataCanopy", "IndustrialPlant", "PassSandbox" })
                 Assert.IsTrue(EditorBuildSettings.scenes.Any(s => s.enabled && s.path == $"Assets/Scenes/{scene}.unity"), scene + " is in the build");
-            Assert.AreEqual(4, EditorBuildSettings.scenes.Length, "no other scene is in the build");
+            Assert.AreEqual(5, EditorBuildSettings.scenes.Length, "no other scene is in the build");
         }
 
         [Test]

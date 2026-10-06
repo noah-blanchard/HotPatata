@@ -78,6 +78,36 @@ namespace HotPatata.Tests
             Assert.AreEqual(1f, SignalActuator.Progress(10.0, 0f, true, 2f, 30.0));
         }
 
+        // ------------------------------------------------------------------ hands-free plates and switches (§13.19)
+
+        [Test]
+        public void HandsFreePlate_IsNotHeldByItsCarrierAlone()
+        {
+            var go = new GameObject("p");
+            try
+            {
+                var carrier = go.AddComponent<Player>();
+                var other = new GameObject("q").AddComponent<Player>();
+                Assert.IsFalse(PressurePlate.IsHeld(new System.Collections.Generic.HashSet<Player>(), null), "nobody on it");
+                Assert.IsTrue(PressurePlate.IsHeld(new System.Collections.Generic.HashSet<Player> { carrier }, null), "a plain plate counts the carrier");
+                Assert.IsFalse(PressurePlate.IsHeld(new System.Collections.Generic.HashSet<Player> { carrier }, carrier), "a hands-free plate does not");
+                Assert.IsTrue(PressurePlate.IsHeld(new System.Collections.Generic.HashSet<Player> { carrier, other }, carrier), "a teammate holds it");
+                Assert.IsTrue(PressurePlate.IsHeld(new System.Collections.Generic.HashSet<Player> { other }, carrier), "the carrier elsewhere");
+                Object.DestroyImmediate(other.gameObject);
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
+        [Test]
+        public void Switch_TurnsItsTargetsOverAtHalfWay()
+        {
+            Assert.IsTrue(SignalSwitch.TargetsOn(0f, false), "a curtain stands while its plate is idle");
+            Assert.IsTrue(SignalSwitch.TargetsOn(0.49f, false));
+            Assert.IsFalse(SignalSwitch.TargetsOn(0.5f, false), "and goes once the switch is half open");
+            Assert.IsFalse(SignalSwitch.TargetsOn(0f, true), "inverted: nothing while idle");
+            Assert.IsTrue(SignalSwitch.TargetsOn(1f, true), "inverted: on while the source is active");
+        }
+
         // ------------------------------------------------------------------ transit
 
         [Test]

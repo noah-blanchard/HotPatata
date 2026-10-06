@@ -29,9 +29,12 @@ playtest and cannot be closed by code.
 | Spike #87 industrial look | the full closed `IndustrialPlant` (11 rooms, 9 checkpoints, every obstacle) built in the industrial look, with a material library, anti-tiling and decals (ARCHITECTURE §25.2) | play-test, real textures per surface (optional), performance on a player build, adopt/revise/reject decision |
 | M11 Second course (#83) | factory built, then removed in the cleanup; its layouts became the industrial plant's | |
 | M12 Third course: PatataWilds | built: 25 sections in 5 acts, nature look from Poly Haven, campfire checkpoints, dawn to dusk; automated verification in M12.8 | 2-player 20+ min clear, host + 3 clients, 1080p/60 fps, readability review |
+| M13 Fourth course: PatataCanopy | built: 25 sections in 5 acts in the tree tops, every section with a contract; three new generic systems (body screen, hands-free plate, switch) and the section-contract check; automated verification in M13.6 | 2-player clear, every puzzle forced and fun at 2 and at 4, host + 3 clients, 1080p/60 fps, readability review |
+| M14 PatataWilds contracts | not started | give every PatataWilds section a contract and close its shortcuts (M14) |
 | Cleanup and generic obstacles | done: only `PatataWilds`, `IndustrialPlant` and `PassSandbox` (plus `Bootstrap`) remain; every obstacle system is generic (references, `IObstacleState`, `ObstacleVisualDriver`, `CustomVisual`, overridable poses, `ObstaclePrefabValidator`), with two example variants; the obstacle catalogue is `docs/OBSTACLES.md` | |
 
-**Next up:** the group playtest of PatataWilds and the plant (M12.8, M10.4), then M6 and M7 (M7.4 external playtest gates any other
+**Next up:** the group playtest of PatataCanopy (M13.6), then M14 (PatataWilds contracts), the group playtest of PatataWilds
+and the plant (M12.8, M10.4), then M6 and M7 (M7.4 external playtest gates any other
 new mechanic). M3.7 is the oldest open gate.
 
 ---
@@ -1395,6 +1398,91 @@ Acceptance criteria:
 - [ ] host plus three clients online, through the whole course;
 - [ ] 60 fps at 1080p on a mid-range PC, four players;
 - [ ] readability review: hazards, tubes, gates, falling planks and campfires read at a glance in every act's light.
+
+---
+
+# Milestone 13 — Fourth course: PatataCanopy
+
+Asked for by the owner after a review of PatataWilds: its puzzles had the intent but not the constraint (moving
+platforms with an easy path beside them, windows a player jumps through, laser walls with a slot at each end, walls the
+bomb is lobbed over). PatataCanopy (PROJECT_SPEC §15d) is built on the void, in the tree tops, in PatataWilds' nature
+look: 25 sections in 5 acts, every one with a contract (§13.20) that names what it forces and the shortcuts its geometry
+locks. Three generic systems make "bomb only" and "runner only" openings and empty-handed roles possible (§13.18,
+§13.19). Architecture: ARCHITECTURE §4 (`PatataCanopy`) and §25.3.
+
+Automated validation (2026-10-06, Unity 6000.3.25f1): `PatataCanopyTests` (12), `CourseContractTests` (7),
+`BombObstacleTests` (16), `ZoneRuleTests` (12), `ConfigurationTests` (12), `ObstaclePrefabTests` (11),
+`IndustrialPlantTests` (14) and `PatataWildsTests` (15) pass; the contract check finds nothing to report on the three
+courses (PatataWilds is not yet declared, see M14). Teleport-based tests do not prove a clear.
+
+## M13.1 — Spec amendment
+
+Acceptance criteria:
+
+- [x] PROJECT_SPEC §13.18 (body screen), §13.19 (hands-free plate, switch), §13.20 (section contract) and §15d (the
+  blueprint); §20 the fuse overrides. Nothing renumbered.
+
+## M13.2 — Body screen
+
+Acceptance criteria:
+
+- [x] a `BodyScreen` layer that collides with `Player` only: the bomb, the aim and the catch pass through it, and the
+  motor never mantles onto it;
+- [x] `Obstacle_BodyScreen` (vine strands, a faint field, "bomb through" signs, a frame of posts) resizable by
+  `BombObstacleKitBuilder.ResizeScreen`; checked by `ObstaclePrefabValidator`.
+
+## M13.3 — Hands-free plate and switch
+
+Acceptance criteria:
+
+- [x] `PressurePlate.countCarrier` (default on, so no existing plate changes); the variant
+  `PressurePlate_HandsFree` is drawn blue with a "throw first" glyph;
+- [x] `SignalSwitch`, a `SignalActuator` that turns objects (a curtain, a screen, a fuse zone) on or off at half travel,
+  replicated and reset like any actuator; one source, no AND/OR; `Actuator_Switch` with no look of its own.
+
+## M13.4 — Section contracts
+
+Acceptance criteria:
+
+- [x] `SectionContract` (metadata: the force, the locked gaps, climbs and lobs) and `CourseContractCheck` (reach from
+  `GameTuning`: a slide-jump with a mantle reaches 12.75 m on the flat, a jump and a mantle 3.0 m, a lob 38 m up, so only a
+  roof seals a wall); scans for a body screen a player walks round or hops over and a curtain the bomb flies round or over;
+- [x] warnings only (`CourseContractTests`, menu HotPatata/Course/Check Section Contracts), never a CI gate.
+
+## M13.5 — Course builder
+
+Acceptance criteria:
+
+- [x] `PatataCanopyBuilder` builds 25 sections with alternating turns and no overlap, junction decks, a kill plane under
+  every section and a safety net, a leaf roof over every puzzle section (every cross wall reaches it), the forest below;
+- [x] every section declares its contract and its intended passes; the build validates the passes and logs the contract
+  findings (none);
+- [x] the level list: PatataWilds, PatataCanopy, IndustrialPlant, PassSandbox; the day from dawn to dusk
+  (`PatataWildsLook`); campfire checkpoints, an arch at checkpoints 15 and 25, the summit beacon.
+
+## M13.6 — Tests and playtests
+
+Acceptance criteria:
+
+- [x] `PatataCanopyTests` (structure, fuse overrides, passes, signals, screens, campfires, resets at every checkpoint,
+  transit catches, the plate/ring, switch and spore puzzles) and `CourseContractTests` pass;
+- [ ] a first clear by two players; every puzzle is solvable and forced with two players, and still fun with four;
+- [ ] host plus three clients online, through the whole course;
+- [ ] 60 fps at 1080p on a mid-range PC, four players (the forest is about 1,000 tree prefabs, not instanced: watch it);
+- [ ] readability review: brambles versus lasers, hands-free plates, rings over the void, spores, in every act's light.
+
+---
+
+# Milestone 14 — PatataWilds contracts
+
+Close the shortcuts the M13 review found in PatataWilds with the same tools: laser walls that reach the cliffs, a body screen
+in every throw window, palisades out of the turn squares, obstacles that span the walkable width, the Hold the Rope plate
+made necessary, roofs where a wall must stop the bomb; then a `SectionContract` for each of its 25 sections.
+
+Acceptance criteria:
+
+- [ ] every PatataWilds section declares a contract and `CourseContractCheck` reports nothing;
+- [ ] `PatataWildsTests` pass; a group playtest confirms each signature puzzle is forced.
 
 ---
 

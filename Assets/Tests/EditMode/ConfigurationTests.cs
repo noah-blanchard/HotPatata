@@ -123,8 +123,17 @@ namespace HotPatata.Tests
         [Test]
         public void GameplayLayers_Exist()
         {
-            foreach (var name in new[] { "Player", "PlayerCatch", "Bomb", "Environment", "Hazard", "Trigger" })
+            foreach (var name in new[] { "Player", "PlayerCatch", "Bomb", "Environment", "Hazard", "Trigger", BodyScreen.LayerName })
                 Assert.GreaterOrEqual(LayerMask.NameToLayer(name), 0, "missing layer " + name);
+        }
+
+        [Test]
+        public void CollisionMatrix_BodyScreensTouchOnlyPlayers()
+        {
+            int screen = LayerMask.NameToLayer(BodyScreen.LayerName);
+            Assert.IsFalse(Physics.GetIgnoreLayerCollision(screen, LayerMask.NameToLayer("Player")), "a body screen stops players");
+            foreach (var other in new[] { "Bomb", "PlayerCatch", "Environment", "Hazard", "Trigger", "Default" })
+                Assert.IsTrue(Physics.GetIgnoreLayerCollision(screen, LayerMask.NameToLayer(other)), "a body screen should ignore " + other);
         }
 
         [Test]

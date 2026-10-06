@@ -244,6 +244,75 @@ namespace HotPatata.Tests
             yield return WaitUntil(() => run.State == RunState.Failing, 2f, "the closing door caught the player under it");
         }
 
+        // ------------------------------------------------------------------ body screens, hands-free plates, switches (§13.18-§13.19)
+
+        [UnityTest]
+        public IEnumerator BodyScreen_StopsAPlayer_ButThePassGoesThrough()
+        {
+            Spawn("Obstacles/Obstacle_BodyScreen", O);
+            yield return Place(p1, O + new Vector3(0f, 0.05f, -3f));
+            Drive.Move = Vector2.up;
+            for (int i = 0; i < 6; i++)
+            {
+                Drive.PressJump();   // jumping into it never mantles onto it
+                yield return WaitSeconds(0.3f);
+            }
+            Drive.Move = Vector2.zero;
+            Assert.Less(p1.transform.position.z, O.z, "the screen stopped the runner");
+
+            yield return PassFrom(p1, O + new Vector3(0f, 0.05f, -5f), p2, O + new Vector3(0f, 0.05f, 5f));
+            yield return WaitUntil(() => catches > 0 || explosions > 0, 2f, "the pass through the screen");
+            Assert.AreEqual(1, catches, "the bomb flies through a body screen");
+            Assert.AreEqual(0, explosions);
+        }
+
+        [UnityTest]
+        public IEnumerator HandsFreePlate_IgnoresItsCarrier()
+        {
+            var plate = Spawn("Variants/PressurePlate_HandsFree", O + new Vector3(0f, 0f, 4f)).GetComponent<PressurePlate>();
+            yield return Place(p1, O + new Vector3(0f, 0.05f, 4f));
+            Give(p1);
+            yield return WaitSeconds(0.2f);
+            Assert.IsFalse(plate.Active, "the carrier alone does not hold a hands-free plate");
+
+            yield return Place(p2, O + new Vector3(0.6f, 0.05f, 4f));
+            yield return WaitSeconds(0.2f);
+            Assert.IsTrue(plate.Active, "an empty-handed teammate does");
+        }
+
+        [UnityTest]
+        public IEnumerator Switch_CutsACurtain_WhileItsPlateIsHeld()
+        {
+            var curtain = Spawn("Gameplay/LaserCurtain", O);
+            var plate = Spawn("Gameplay/PressurePlate", O + new Vector3(0f, 0f, 5f)).GetComponent<PressurePlate>();
+            var sw = Spawn("Gameplay/Actuator_Switch", O + new Vector3(6f, 0f, 0f)).GetComponent<SignalSwitch>();
+            SetField(sw, "source", Ref(plate));
+            SetField(sw, "targets", Targets(curtain));
+            yield return null;
+            Assert.IsTrue(curtain.activeSelf, "the curtain stands while the plate is idle");
+
+            yield return Place(p2, O + new Vector3(0f, 0.05f, 5f));   // on the plate, beyond the curtain
+            yield return WaitUntil(() => !curtain.activeSelf, 1f, "the plate cut the curtain");
+            yield return PassFrom(p1, O + new Vector3(0f, 0.05f, -5f), p2, O + new Vector3(0f, 0.05f, 5f));
+            yield return WaitUntil(() => catches > 0 || explosions > 0, 2f, "the pass through the cut curtain");
+            Assert.AreEqual(1, catches);
+            Assert.AreEqual(0, explosions);
+
+            yield return Place(p2, O + new Vector3(3f, 0.05f, 5f));   // off the plate
+            yield return WaitUntil(() => curtain.activeSelf, 1f, "the curtain came back");
+        }
+
+#if UNITY_EDITOR
+        static System.Action<object> Targets(params GameObject[] targets) => p =>
+        {
+            var prop = (SerializedProperty)p;
+            prop.arraySize = targets.Length;
+            for (int i = 0; i < targets.Length; i++) prop.GetArrayElementAtIndex(i).objectReferenceValue = targets[i];
+        };
+#else
+        static System.Action<object> Targets(params GameObject[] targets) => null;
+#endif
+
         // ------------------------------------------------------------------ transit
 
         /// <summary>

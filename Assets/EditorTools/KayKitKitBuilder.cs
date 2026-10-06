@@ -61,6 +61,7 @@ namespace HotPatata.Editor
             if (EditorApplication.isPlayingOrWillChangePlaymode) return;
             BombObstacleKitBuilder.BuildSandboxDemo();
             IndustrialPlantBuilder.Build();
+            PatataCanopyBuilder.Build();
             PatataWildsBuilder.Build();     // last: it takes the first place in the level list
             MenuBackdropBuilder.Build();   // the menu island is drawn with the same kit
             Debug.Log("[KayKitKitBuilder] all courses rebuilt");

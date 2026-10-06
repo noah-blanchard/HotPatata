@@ -35,7 +35,8 @@ namespace HotPatata.Editor
 
         /// <summary>
         /// Lists a course in the build settings and in the menu's level list (NetworkBootstrap) with its checkpoint count. One shared
-        /// place, so builders never fight over the order: PatataWilds is first, the plant keeps its place (second when new).
+        /// place, so builders never fight over the order: PatataWilds is first, PatataCanopy and the plant keep their places
+        /// (a new one goes second), PassSandbox is last.
         /// </summary>
         public static void RegisterInMenu(string sceneName, string scenePath, int checkpoints, MenuSlot slot)
         {
