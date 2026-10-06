@@ -126,8 +126,8 @@ Bootstrap
 As built: the `Bootstrap` scene holds `BootstrapEntry`, which instantiates the persistent `NetworkManager` prefab
 (`Assets/Prefabs/Network`: `NetworkManager` + `UnityTransport` + `NetworkBootstrap`) exactly once. `NetworkBootstrap`
 runs the session flow (Host Online / Join with code / Play Local / Direct IP, the level from `gameplayScenes`) and
-`SessionService` wraps Multiplayer Services (§13.1); the menu and the lobby are in-world UI Toolkit boards on the
-menu island, driven by `MenuView` (§6.2, #79).
+`SessionService` wraps Multiplayer Services (§13.1); the menu and the lobby are in-world UI Toolkit boards in the
+menu's factory hall, driven by `MenuView` (§6.2, #79).
 
 ### `Lobby`
 
@@ -559,8 +559,14 @@ base, the HUD (#24) follows.
 
 - **Panel and theme.** One `PanelSettings`, `Assets/UI/Resources/HotPatataPanel.asset` (scale with screen size from
   1920x1080, match 0.5, sort order 100), with the theme `Assets/UI/Styles/HotPatataTheme.tss` = Unity's runtime theme +
-  `HotPatata.uss`.
-  - **Look ("Sunny toy box", owner-approved mock-up).** Cream rounded panels (`hp-panel`), chunky buttons with a
+  `HotPatata.uss` + `HotPatataIndustrial.uss`.
+  - **Industrial theme (#87, active).** `HotPatataIndustrial.uss` re-skins every `hp-*` class to match the industrial
+    look (§25.2) and the PatataWorks name board: dark blue-grey steel panels with a hazard-amber top rail, light text on
+    dark, near-black edges, squarer corners, industrial orange / steel blue / gunmetal / signal red buttons, amber focus.
+    It only overrides tokens and shapes: removing its import from the `.tss` brings back the toy box look below. The base
+    sheet keeps text (`--hp-ink`) apart from edges (`--hp-outline`) and white surfaces (`--hp-surface*`), notes, errors
+    and veils as tokens, so a theme never has to restate a rule's layout.
+  - **Look ("Sunny toy box", owner-approved mock-up; the base under the industrial theme).** Cream rounded panels (`hp-panel`), chunky buttons with a
     darker bottom lip (`hp-button`, variants `--secondary` sky, `--neutral` plum, `--danger` red, sizes `--big` /
     `--small`), outlined Lilita One titles (`hp-title`, the tilted `hp-logo`, the results `hp-banner`), white cards
     (`hp-card`, `hp-row`, `hp-slot`, `hp-stat`), a sun-yellow game-code ticket (`hp-ticket`), notes (`hp-note`).
@@ -632,14 +638,14 @@ base, the HUD (#24) follows.
 
 - **Main menu and lobby: the in-world menu** (`MenuView`, #15, #79). `NetworkBootstrap` is logic only (the session
   flow, the command line, no drawing); it exposes its phase (`Menu`, `Working`, `Lobby`, `InGame`), status, last
-  message, selected level and spawn point, and the lobby list. The menu is **part of the island**: each step is a
+  message, selected level and spawn point, and the lobby list. The menu is **part of the hall**: each step is a
   **station**, a board (a world-space `UIDocument`) with a Cinemachine camera spot, and choosing an option flies the
   camera to the next station. `MenuView`, which `NetworkBootstrap` adds outside batch mode (headless bots run without
   UI), builds every station's board and shows the station `MenuFlow` points at:
 
   | Station | Board (`StationScreens.cs`, UXML) | What it holds |
   |---|---|---|
-  | Title | `TitleStation` (`StationTitle`), the root: Back does nothing | the HOT PATATA logo over the island (the potato show below it) and one prompt: PLAY |
+  | Title | `TitleStation` (`StationTitle`), the root: Back does nothing | the HOT PATATA logo on its sign in the hall (the potato show below it) and one prompt: PLAY |
   | Play | `PlayStation` (`StationPlay`) | your name, Host Online (to Level), the game code (`CodeDials`) + Join, Play Local (to Level), Settings (the settings screen over the scene), the LAN / testing toggle (address, Join IP, Host on LAN to Level), the last error, the working line ("Joining ...") |
   | Level | `LevelStation` (`StationLevel`) | level and spawn point, then the button for why you came: Host Online, Host on LAN, Play Local, or Done for the host from the lobby; Back; the working line ("Creating your game...") |
   | Lobby | `LobbyStation` (`StationLobby`) | the game code ticket (Copy code), a card per player (slot chip, name, HOST and YOU badges) and per free seat, the host's level + Change level (to Level) + Start, else "Waiting for the host to start...", Leave; Back asks before leaving |
@@ -719,14 +725,17 @@ base, the HUD (#24) follows.
   for the host to restart..." and can leave (behind a `ConfirmScreen`). Back does nothing. `RunResultsUI`, placed in
   each course scene, pushes it while the run is `Completed` and pops it when the run starts again. The old IMGUI
   screen is gone. While any menu is on top, the IMGUI `AimReticle` draws nothing.
-- **Menu backdrop** (`Assets/Prefabs/Menu/MenuBackdrop.prefab`, one instance in `Bootstrap`). A small KayKit island,
-  home of the in-world menu (above), where the four slots' characters pass the live potato in arcs, hand to hand
+- **Menu backdrop** (`Assets/Prefabs/Menu/MenuBackdrop.prefab`, one instance in `Bootstrap`). A closed factory hall in
+  the industrial look (§25.2, matching the UI theme): concrete floor, brick walls and roof on steel trusses, columns,
+  machines, a belt of crates, ducts, mouldings, doors, windows, pipes and props along the walls (`IndustrialDetails`), and the logo
+  on a dark sign hung from a yellow gantry. No sun: warm hanging lamps
+  and wall lamps, with the interior fill and exposure `LookBuilder` gives the plant (`LookBuilder.IsInterior`). It is
+  the home of the in-world menu (above), where the four slots' characters pass the live potato in arcs, hand to hand
   (`MenuHotPotato`). The holder faces the next catcher, a catch squashes the catcher and bystanders cheer, wave or hop.
   The wick sparks faster (`GameTuning.fuseSparkRates`) until the fuse runs out in the game's own explosion
   (`ExplosionFx`, its flash always reduced at least 60 %, more if the player asked through `flashReduction`); the
-  holder flinches, the others cheer, and a new potato pops in. Flags sway, stars and collectables spin
-  (`MenuFloat`), small platforms bob, clouds drift (`MenuCloudDrift`), sparkles float, and on the Title station the
-  camera drifts slowly (`MenuCameraDrift` on the Title spot, scaled by `viewEffectsStrength`).
+  holder flinches, the others cheer, and a new potato pops in, on a bay marked on the floor. Dust drifts in the lamp
+  light, and on the Title station the camera drifts slowly (`MenuCameraDrift` on the Title spot, scaled by `viewEffectsStrength`).
   - **Visual only.** The show's players are copies of each slot's character prefab (`PlayerCharacter`, driven by
     `MenuCharacter.controller`, its states named after the Mixamo clips; the potato leaves the `HandSocket` at the
     moment `PlayerCharacterBuilder` measured on the Throw clip), the potato a copy of the bomb's `Visual` and
@@ -1714,3 +1723,138 @@ they were, only the look does.
 - **Rebuilding:** menu **HotPatata/Course/Build KayKit Kit** (palette, materials, the hand-made classic prefabs, the
   generated prefabs, and the hand-placed boxes of PrototypeCourse Act 1 and PassSandbox), then **HotPatata/Course/Rebuild
   All Courses**. Builders place boxes with `CourseKit.Block(..., KitRole)`.
+
+### 25.2 Industrial look (spike #87)
+
+A semi-realistic alternative to the KayKit kit, tried on two maps of its own. `IndustrialPlant` is in the build settings and last in
+the menu's level list (`NetworkBootstrap.gameplayScenes`, nine spawn choices; PatataWorks stays first), so it plays from the menu,
+online included; `IndustrialLab` is opened in the Editor:
+
+- **`IndustrialPlant`** (`Assets/Scenes/IndustrialPlant.unity`, menu **HotPatata/Course/Build Industrial Plant**, `IndustrialPlantBuilder`): the
+  showcase, a full closed factory of eleven rooms, about 680 m, nine checkpoints. Rooms are built along +Z and turned as units, as in
+  PatataWorks: Gatehouse (gate, door, passes) → Sorting line (belts, no-carry strips, a two-route tube, timed gate, piston) → Atrium (stair ramps,
+  a plate lift, a return gate and door; climbs 14 m) → Void catwalks (falling grates, a crane platform, low-throw deck) → Cold storage (cold and hot
+  lanes, a laser wall) → Chute (a 28 m mega slide, a tube) → Furnace intake (hot zone, crusher) → Furnace loop (windmill wall, crusher, cold respite)
+  → Boiler approach (sweeper) → Boiler shaft (rising platforms and a cannon; climbs 34 m) → Control room (arch checkpoint, finish). Six turns, two
+  climbs and a drop. The obstacle layouts are PatataWorks' proven ones (pass lengths, jump distances); the arrangement, the solid shell and the look
+  are new. Every room has its own **surface theme** (a floor, a wall and a ceiling material), so the plant never shows one texture twice in a row.
+- **`IndustrialLab`** (`IndustrialLabBuilder`): a short open test map with a calibration wall (1, 4 and 12 m panels per material, KayKit on one side
+  and industrial on the other) for judging texel density.
+
+**The plant is closed and lit by lamps only.** Walls, roofs and floors are solid, a ceiling step wall closes the gap at every turn where two
+rooms have different heights, and a solid foundation fills each room below its floors (its top is the visible pit floor in the pit rooms), so a
+deeper pit never looks out under a shallower one. Each room owns a stretch of floor: floors at its start level are cut where the previous room's
+stop, floors at its end level where the next room's start, and at a turn the corner square belongs to the next room unless it says otherwise
+(the cold storage leaves the catwalks' crane gap and exit, the control room leaves the shaft's top floors with their lift wells and cannon gap).
+No two rooms' floors overlap at one height, so two themes never flicker on one surface. There is **no sun**: a directional light's shadows depend on the camera (cascades, a shadow distance), so under a roof
+the floor would light up as you approached. `LookBuilder` gives this scene a neutral fill standing in for the light the lamps bounce off walls and floors (no floor goes black between two lamps), a warm haze, and a second global volume (`HotPatata_Look_Plant`, priority 1) adding +0.45 EV of exposure on top of the shared look; the light is about 130 warm
+point lamps (hanging, on walls, at the furnaces), none casting shadows, so the lighting is the same wherever the player stands. Lamp fittings and
+furnace mouths are emissive and bloom.
+
+**Shader `HotPatata/Industrial`** (`Assets/Art/Shaders/HotPatataIndustrial.shader`): a fork of `HotPatata/Stylized` (same wrapped-Lambert light,
+sky fill times SSAO, GGX, Forward+ additional lights, light-aware rim), so `Stylized` and every scene that uses it are untouched.
+- **Box mapping in metres**: the texture is projected on the dominant axis of each face from the object-space position times the object's scale
+  (`_TileSize` = metres per repeat). A 12 m slab and a 1 m cube share one texel density, nothing stretches, the texture sticks to moving platforms,
+  and neither the mesh UVs nor tangents are used.
+- **Maps**, all always sampled with neutral defaults (no keyword to tick): `_BaseMap` (sRGB), `_BumpMap` (OpenGL, `_BumpScale`, `_FlipNormalY`),
+  `_GlossMap` (R; smoothness, or roughness with `_GlossIsRoughness`; remapped by `_SmoothnessMin/Max`), `_MetallicMap` (R, times `_Metallic`),
+  `_OcclusionMap` (R, sky fill only). `_BaseSaturation` and `_BaseBrightness` recolour a source texture (the painted metal is a red paint, kept as a
+  grey wear map under a steel tint, never hazard red).
+- **Metals**: F0 from the albedo, no diffuse, a cheap environment reflection from the ambient SH (no probe).
+- **Against tiling, four layers**: (1) *hex tiling* (`_AntiTile`, a per-material keyword): each map is sampled three times at random offsets and
+  rotations and blended, so no tile is visibly repeated; it is on for concrete, plaster, block, grit and rust, and off for brick, tile and plate,
+  where rotation would break the lines; (2) a *macro layer* of the same texture at a larger scale (`_MacroScale/_MacroStrength`); (3) a
+  *world-space variation* of three octaves (3, 13 and 52 m, `_VariationScale/_VariationStrength`): neighbouring slabs and rooms differ and nothing
+  repeats inside a room, with no texture at all; (4) a *grunge mask* (`_GrungeMap`, `_GrungeSize`, `_GrungeStrength`): a large world-scale dirt
+  mask that darkens and roughens, which is what makes a floor look used.
+- **Decals** (`_Decal`): the same lighting on an alpha-blended quad with its own UVs, drawn just above a surface (see below).
+- **Hazard stripes** (`_Stripe*`): `Industrial_Hazard` keeps the rule that a hazard never relies on colour alone (spec §19). **Belts**:
+  `_PatternScroll` (set by `Conveyor`) slides the texture along the belt.
+- Not supported: height or displacement, opacity, per-pixel emission maps.
+
+**Materials** (`Assets/Art/Materials/Industrial`), one per surface, each fed by its own texture folder under `Assets/Art/Textures/Industrial`:
+
+| Material | Folder | Used for | Borrows until you add a set |
+|---|---|---|---|
+| `Industrial_Floor_Concrete` | `FloorConcrete` | gatehouse, atrium, boiler approach floors | `Concrete` |
+| `Industrial_Floor_Plate` | `FloorPlate` | sorting line, furnace loop, shaft (steel tread plate) | `RawMetal` |
+| `Industrial_Floor_Tile` | `FloorTile` | cold storage, control room | `Concrete`, pale and glossy |
+| `Industrial_Floor_Grit` | `FloorGrit` | void catwalks, chute, furnace intake (rough, dirty) | `Concrete`, dark |
+| `Industrial_Wall_Plaster` | `WallPlaster` | gatehouse, cold storage, control room | `Concrete`, warm |
+| `Industrial_Wall_Brick` | `WallBrick` | atrium, furnace rooms | `Concrete`, red |
+| `Industrial_Wall_Panel` | `WallPanel` | sorting line, boiler approach (painted sheet) | `PaintedMetal`, green-grey |
+| `Industrial_Wall_Block` | `WallBlock` | void catwalks, chute, shaft (concrete block) | `Concrete`, cool |
+| `Industrial_Ceiling_Concrete` | `CeilingConcrete` | gatehouse, atrium, chute, furnace intake, shaft | `Concrete`, dark |
+| `Industrial_Ceiling_Panel` | `CeilingPanel` | sorting line, cold storage, furnace loop, boiler approach, control room | `RawMetal` |
+| `Industrial_Metal_Rust` | `MetalRust` | ducts of the furnace and chute rooms | `RawMetal`, orange |
+| `Industrial_PaintedMetal` (+ `_Yellow`, `_Safety`, `_Hazard`, `_Pipe_1..3`) | `PaintedMetal` | columns, trusses, movers, lifts, machines; variants for frames and railings, landing strips, hazards, slot-coloured pipes | |
+| `Industrial_RawMetal`, `Industrial_Rubber`, `Industrial_Concrete` | `RawMetal`, `Rubber`, `Concrete` | gratings and slides, belts and pads, generic (the lab) | |
+| `Industrial_Lamp`, `Industrial_Glow` | none | emissive fittings, furnace mouths and screens | |
+
+Materials are created only when missing and never rewritten by a rebuild, so what you set in the Inspector survives. **Build Industrial Materials**
+creates what is missing (and the empty texture folders); **Assign Industrial Textures** refills every material from its folder (own set first, else
+the borrowed one); **Reset Industrial Placeholders** goes back to the defaults. A material with no texture anywhere is a flat colour with the
+world-space variation.
+
+**Looks and themes**: `CourseKit.UseLookSet(Industrial)` draws the kit in bevelled boxes (`KitShape.BevelBox`: a chamfer of a tenth of the
+thinnest side, 2–6 cm, every vertex inside the collider's box); `CourseKit.UseTheme(...)` picks the floor, wall and ceiling materials of a room.
+`IndustrialRestyle` redraws the KayKit prefabs placed in the scene (belts, movers, hazards, pipes, kit boxes) with the room's theme; fuse zones,
+laser beams, pads, icons and plates keep their own materials on purpose (gameplay cues). Hazards keep their stripes.
+
+**Surface detail** (`IndustrialDecals`): after the rooms are built, about 300 decals are scattered with a fixed seed (the same plant on every
+rebuild): stains, oil, cracks, scuffs and drips lying 6 mm above a floor or a wall, never over a trigger zone, a moving platform or a floor's edge,
+with no collider and marked `CourseDecoration`, and never on anything that moves (movers, falling platforms, actuators, rigid bodies). Every PNG of `Textures/Industrial/Decals` is used (a name with *drip*, *leak* or *streak* goes on
+walls only; *arrow*, *stencil*, *number* or *line* on floors only). Procedural placeholders (`IndustrialTextureFactory`) are written when the
+folders are empty: three tileable grunge masks and five decals; delete them when you add real ones.
+
+**Relief.** Every textured surface has a height map (`_HeightMap`: the set's displacement map, `_disp` or `_Displacement`, else its AO map
+as a stand-in) and a depth in metres per surface (`Surface.relief`: 2.8 cm for bricks, about 2 cm for blocks and corrugated panels, 1 cm for tiles
+and grit, a few millimetres for concrete and metals). The shader ray-marches it (parallax occlusion, up to 16 steps at grazing angles, in the box
+mapping's frame) so mortar joints and grooves sink; a hex-tiled material takes one offset step instead. The relief fades out between half and all of
+`_ParallaxFade` (24 m). It is visual only: collisions stay the boxes.
+
+**Mouldings, frames and props** (`IndustrialDetails`, `IndustrialSigns`). After the rooms are built, the walls are read from the colliders: a
+*wall run* is a stretch of static wall with a static floor at its foot and nothing at all (obstacle, trigger, machine) within 0.92 m in front of it,
+up to head height. Each run is split into bays by pilasters (base, yellow-and-black caution band, shaft, two-step capital, bolts) and gets a
+baseboard, a dado rail and a wainscot panel frame; by the room's seed a bay may hold a framed door, electrical cabinets (conduits, indicator
+lamps, an electrical warning sign), a valve station (riser, flanges, hand wheel, gauge), barrels, a pallet of crates or a workbench (vice, toolbox,
+pegboard). A run may carry a pipe (flanges, brackets) and a cable tray; tall walls get framed windows, and each room paints its zone number (00–10)
+and a direction arrow at its entrance. Cornices run under every ceiling; steel angles with bolts line the open edges of static slabs. Signs are
+procedural PNGs in `Textures/Industrial/Signs` (warning, electrical, arrow, information, zone numbers; replace a file to restyle it), drawn as decals,
+never in hazard red. Everything is a collider-free `CourseDecoration`, never on anything that moves, and kept 0.85 m from every intended pass
+arc. The menu hall gets the same dressing from runs placed by hand between its machines and columns. About 4,300 pieces in the plant.
+
+**What you can download (nothing is required: every surface works now, from the borrowed sets and the procedural layers).** Free CC0 sets from
+[ambientCG](https://ambientcg.com) and [Poly Haven](https://polyhaven.com) (I did not check specific asset ids; search these terms):
+
+| Folder | Search for | Maps |
+|---|---|---|
+| `FloorConcrete` | concrete floor, polished or poured concrete | Color, NormalGL, Roughness, AO |
+| `FloorPlate` | diamond plate, tread plate, checker plate | Color, NormalGL, Roughness, Metalness |
+| `FloorTile` | tiles, industrial or ceramic floor tiles | Color, NormalGL, Roughness |
+| `FloorGrit` | asphalt, rough dirty concrete | Color, NormalGL, Roughness |
+| `WallPlaster` | plaster, painted concrete wall | Color, NormalGL, Roughness |
+| `WallBrick` | bricks | Color, NormalGL, Roughness, AO |
+| `WallPanel` | corrugated or painted sheet metal | Color, NormalGL, Roughness, Metalness |
+| `WallBlock` | concrete blocks, cinder blocks | Color, NormalGL, Roughness |
+| `CeilingConcrete` | rough concrete, plaster | Color, NormalGL, Roughness |
+| `CeilingPanel` | metal panels, ceiling tiles | Color, NormalGL, Roughness |
+| `MetalRust` | rust, rusty metal | Color, NormalGL, Roughness, Metalness |
+| `Grunge` (optional) | grunge, dirt, streak masks | one greyscale file (white = clean, black = dirt), tileable |
+| `Decals` (optional) | decals: stains, cracks, leaks, stencils, arrows, tape | PNG with alpha |
+
+Required per surface: base colour and an **OpenGL** normal; recommended: roughness and displacement (relief); metals: metalness; optional: AO.
+Ignore opacity. Square power-of-two, tileable, 1K–2K. File names end in `_BaseColor`, `_Normal`, `_Roughness`, `_Metallic`, `_AO` (ambientCG's `_Color`,
+`_NormalGL`, `_Roughness`, `_Metalness`, `_AmbientOcclusion` and Poly Haven's `_diff`, `_nor_gl`, `_rough`, `_metal`, `_ao`, with a trailing `_2k`,
+work as they are). `IndustrialTextureImporter` sets the import on a texture's first import (base colour sRGB; normal as a Normal map; roughness,
+metallic, AO, displacement and grunge linear; all Repeat, trilinear, mip maps, aniso 8, High Quality, 2048 max; decals sRGB with alpha as transparency, Clamp).
+A DirectX normal map gets *Flip Normal Y* automatically. Then run **HotPatata/Course/Assign Industrial Textures**, tune **Tile Size (m)** on the
+material (never its Tiling), and rebuild the plant to move the decals. Record every set in `Textures/Industrial/CREDITS.md`.
+
+**Result so far.** The plant reads as a believable dark factory with ambientCG's four sets; borrowed sets give each room its own character until
+real ones are added. Render time on the lab matches the KayKit look in the Editor (four views, 1080p: about 1.1–1.5 ms both) with 80% fewer
+triangles; the plant's hex-tiled materials sample each map three times (12 samples per pixel on those surfaces) and its ~130 lamps are the main cost:
+neither is measured on a player build yet. Limitations: no reflection probe (metals are dull rather than mirror-like), parallax relief has no self-shadowing,
+decals have no normal map; the detail pieces add draw calls (SRP Batcher, same shader) still to be measured on a player build. Tests: `IndustrialLookTests`, `IndustrialLabTests`, `IndustrialPlantTests` (closed in 26 directions from every route point, passes clear,
+signals one-to-one, every checkpoint resets, transit flights reach their pads, no sun, diverse surfaces and decals). Before/after:
+[`images/industrial-lab`](images/industrial-lab), [`images/industrial-plant`](images/industrial-plant). Decision: pending the owner's play-test.

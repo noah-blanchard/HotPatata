@@ -27,6 +27,20 @@
     --hp-focus-tint: #FFF6CC;
     --hp-sand: #E9D6B2;
     --hp-scrim: rgba(36, 48, 94, 0.3);
+    --hp-scrim-soft: rgba(36, 48, 94, 0.18);
+    --hp-scrim-strong: rgba(36, 48, 94, 0.42);
+    /* Ink is the text colour; outline is what edges text, buttons and fields. They are the same navy here, apart so a
+       dark theme (HotPatataIndustrial.uss) can light the text and keep the edges dark. */
+    --hp-outline: #24305E;
+    --hp-outline-soft: rgba(36, 48, 94, 0.55);
+    --hp-surface: #FFFFFF;
+    --hp-surface-hover: #FFFCF4;
+    --hp-surface-empty: rgba(255, 255, 255, 0.25);
+    --hp-note: #FFF0B8;
+    --hp-note-edge: #EBC23A;
+    --hp-error-fill: #FFE1DF;
+    --hp-error-edge: #E58F8A;
+    --hp-error-text: #A32D33;
     --hp-radius: 22px;
     -unity-font-definition: url("../Fonts/Nunito-Bold-SDF.asset");
     -unity-font-style: normal;
@@ -96,11 +110,11 @@
 }
 
 .hp-overlay--soft {
-    background-color: rgba(36, 48, 94, 0.18);
+    background-color: var(--hp-scrim-soft);
 }
 
 .hp-overlay--strong {
-    background-color: rgba(36, 48, 94, 0.42);
+    background-color: var(--hp-scrim-strong);
 }
 
 /* The main menu docks left, so the 3D backdrop shows on the right. */
@@ -143,8 +157,8 @@
     color: #FFFFFF;
     letter-spacing: 1px;
     -unity-text-outline-width: 3.5px;
-    -unity-text-outline-color: var(--hp-ink);
-    text-shadow: 0 6px 0 var(--hp-ink);
+    -unity-text-outline-color: var(--hp-outline);
+    text-shadow: 0 6px 0 var(--hp-outline);
     margin: 0 0 4px 0;
     padding: 0;
 }
@@ -168,8 +182,8 @@
     font-size: 118px;
     letter-spacing: 2px;
     -unity-text-outline-width: 5px;
-    -unity-text-outline-color: var(--hp-ink);
-    text-shadow: 0 10px 0 var(--hp-ink);
+    -unity-text-outline-color: var(--hp-outline);
+    text-shadow: 0 10px 0 var(--hp-outline);
     margin: -14px 0;
     padding: 0;
 }
@@ -193,8 +207,8 @@
     color: #FFFFFF;
     letter-spacing: 2px;
     -unity-text-outline-width: 5px;
-    -unity-text-outline-color: var(--hp-ink);
-    text-shadow: 0 9px 0 var(--hp-ink);
+    -unity-text-outline-color: var(--hp-outline);
+    text-shadow: 0 9px 0 var(--hp-outline);
     margin: -10px 0;
     padding: 0;
 }
@@ -207,7 +221,7 @@
     color: var(--hp-orange);
     letter-spacing: 1px;
     -unity-text-outline-width: 2.5px;
-    -unity-text-outline-color: var(--hp-ink);
+    -unity-text-outline-color: var(--hp-outline);
     margin: 2px 0 2px 8px;
     padding: 0;
 }
@@ -239,8 +253,8 @@
     padding: 14px 18px;
     border-radius: 20px;
     border-width: 4px;
-    border-color: #EBC23A;
-    background-color: #FFF0B8;
+    border-color: var(--hp-note-edge);
+    background-color: var(--hp-note);
 }
 
 .hp-note__text {
@@ -255,20 +269,20 @@
 }
 
 .hp-note--error {
-    border-color: #E58F8A;
-    background-color: #FFE1DF;
+    border-color: var(--hp-error-edge);
+    background-color: var(--hp-error-fill);
 }
 
 .hp-error {
     -unity-font-definition: url("../Fonts/Nunito-Black-SDF.asset");
     font-size: 22px;
-    color: #A32D33;
+    color: var(--hp-error-text);
     white-space: normal;
     padding: 12px 18px;
     border-radius: 20px;
     border-width: 4px;
-    border-color: #E58F8A;
-    background-color: #FFE1DF;
+    border-color: var(--hp-error-edge);
+    background-color: var(--hp-error-fill);
 }
 
 /* ------------------------------------------------------------------ icons (SVG, Assets/UI/Icons) */
@@ -328,7 +342,7 @@
     color: #FFFFFF;
     letter-spacing: 1px;
     -unity-text-outline-width: 3px;
-    -unity-text-outline-color: var(--hp-ink);
+    -unity-text-outline-color: var(--hp-outline);
     transition-property: scale, translate, background-color, border-color;
     transition-duration: 0.16s, 0.12s, 0.12s, 0.12s;
     transition-timing-function: ease-out-back, ease-out, ease-out, ease-out;
@@ -398,7 +412,7 @@
     letter-spacing: 0;
     color: #FFFFFF;
     -unity-text-outline-width: 0;
-    text-shadow: 0 2px 0 rgba(36, 48, 94, 0.55);
+    text-shadow: 0 2px 0 var(--hp-outline-soft);
     margin: 2px 0 0 0;
     padding: 0;
 }
@@ -429,8 +443,8 @@
     border-radius: 18px;
     border-width: 4px;
     border-bottom-width: 7px;
-    border-color: var(--hp-ink);
-    background-color: #FFFFFF;
+    border-color: var(--hp-outline);
+    background-color: var(--hp-surface);
     -unity-font-definition: url("../Fonts/Nunito-Black-SDF.asset");
     font-size: 28px;
     color: var(--hp-ink);
@@ -481,12 +495,12 @@
     border-width: 4px;
     border-bottom-width: 8px;
     border-color: var(--hp-cream-edge);
-    background-color: #FFFFFF;
+    background-color: var(--hp-surface);
     transition-property: background-color, border-color;
     transition-duration: 0.12s, 0.12s;
 }
 
-.hp-row:hover { background-color: #FFFCF4; }
+.hp-row:hover { background-color: var(--hp-surface-hover); }
 
 .hp-row:focus {
     border-color: var(--hp-focus-edge);
@@ -550,8 +564,8 @@
     margin-left: -18px;
     border-radius: 18px;
     border-width: 5px;
-    border-color: var(--hp-ink);
-    background-color: #FFFFFF;
+    border-color: var(--hp-outline);
+    background-color: var(--hp-surface);
 }
 
 .hp-row__field .unity-base-slider__dragger-border {
@@ -571,7 +585,7 @@
     padding: 4px;
     border-radius: 24px;
     border-width: 4px;
-    border-color: var(--hp-ink);
+    border-color: var(--hp-outline);
     background-color: var(--hp-sand);
     transition-property: background-color;
     transition-duration: 0.15s;
@@ -586,8 +600,8 @@
     margin: 0;
     border-radius: 16px;
     border-width: 4px;
-    border-color: var(--hp-ink);
-    background-color: #FFFFFF;
+    border-color: var(--hp-outline);
+    background-color: var(--hp-surface);
     background-image: none;
     -unity-background-image-tint-color: rgba(0, 0, 0, 0);
     transition-property: translate;
@@ -643,7 +657,7 @@
     font-size: 30px;
     color: #FFFFFF;
     -unity-text-outline-width: 2.5px;
-    -unity-text-outline-color: var(--hp-ink);
+    -unity-text-outline-color: var(--hp-outline);
     -unity-text-align: middle-center;
     transition-property: translate, background-color;
     transition-duration: 0.12s, 0.12s;
@@ -747,7 +761,7 @@
     border-radius: 26px;
     border-width: 4px;
     border-bottom-width: 12px;
-    border-color: var(--hp-ink);
+    border-color: var(--hp-outline);
     background-color: var(--hp-sun);
 }
 
@@ -759,7 +773,7 @@
     margin-top: -24px;
     border-radius: 20px;
     border-width: 4px;
-    border-color: var(--hp-ink);
+    border-color: var(--hp-outline);
     background-color: var(--hp-cream);
 }
 
@@ -772,8 +786,8 @@
     color: #FFFFFF;
     letter-spacing: 12px;
     -unity-text-outline-width: 4.5px;
-    -unity-text-outline-color: var(--hp-ink);
-    text-shadow: 0 7px 0 var(--hp-ink);
+    -unity-text-outline-color: var(--hp-outline);
+    text-shadow: 0 7px 0 var(--hp-outline);
     -unity-text-align: middle-center;
     margin: 0;
     padding: 0;
@@ -796,13 +810,13 @@
     border-width: 4px;
     border-bottom-width: 9px;
     border-color: var(--hp-cream-edge);
-    background-color: #FFFFFF;
+    background-color: var(--hp-surface);
 }
 
 
 .hp-slot--empty {
     border-bottom-width: 4px;
-    background-color: rgba(255, 255, 255, 0.25);
+    background-color: var(--hp-surface-empty);
 }
 
 .hp-slot__name {
@@ -830,7 +844,7 @@
     justify-content: center;
     border-radius: 31px;
     border-width: 4px;
-    border-color: var(--hp-ink);
+    border-color: var(--hp-outline);
 }
 
 .hp-chip--empty {
@@ -860,7 +874,7 @@
     padding: 0 14px 0 10px;
     border-radius: 19px;
     border-width: 3px;
-    border-color: var(--hp-ink);
+    border-color: var(--hp-outline);
     background-color: var(--hp-orange);
 }
 
@@ -874,7 +888,7 @@
     color: #FFFFFF;
     letter-spacing: 1px;
     -unity-text-outline-width: 2px;
-    -unity-text-outline-color: var(--hp-ink);
+    -unity-text-outline-color: var(--hp-outline);
     margin: 0 0 0 6px;
     padding: 0;
 }
@@ -898,7 +912,7 @@
     border-width: 4px;
     border-bottom-width: 8px;
     border-color: var(--hp-cream-edge);
-    background-color: #FFFFFF;
+    background-color: var(--hp-surface);
 }
 
 .hp-pill__name {
@@ -923,7 +937,7 @@
     border-width: 4px;
     border-bottom-width: 10px;
     border-color: var(--hp-cream-edge);
-    background-color: #FFFFFF;
+    background-color: var(--hp-surface);
 }
 
 .hp-stat__value {
@@ -948,7 +962,7 @@
     border-radius: 58px;
     border-width: 5px;
     border-bottom-width: 12px;
-    border-color: var(--hp-ink);
+    border-color: var(--hp-outline);
     background-color: var(--hp-red);
 }
 
@@ -1069,14 +1083,14 @@
 
 .hp-board .hp-button:focus:enabled,
 .hp-board .hp-button:focus:hover:enabled {
-    border-color: var(--hp-ink);
+    border-color: var(--hp-outline);
     scale: 1.07 1.07;
 }
 
 .hp-board .hp-row:focus,
 .hp-board .hp-field:focus .unity-base-text-field__input,
 .hp-board .hp-field .unity-base-text-field__input:focus {
-    border-color: var(--hp-ink);
+    border-color: var(--hp-outline);
 }
 
 /* The title sign: the logo big over the island, the prompt under it. */
@@ -1086,7 +1100,7 @@
     margin: 0;
 }
 
-.hp-logo--sign .hp-logo__word { font-size: 330px; margin: -40px 0; -unity-text-outline-width: 9px; text-shadow: 0 16px 0 var(--hp-ink); }
+.hp-logo--sign .hp-logo__word { font-size: 330px; margin: -40px 0; -unity-text-outline-width: 9px; text-shadow: 0 16px 0 var(--hp-outline); }
 .hp-logo--sign .hp-logo__word--patata { margin-left: 120px; }
 
 .hp-button--prompt { height: 210px; padding: 0 80px; border-radius: 48px; border-width: 7px; border-bottom-width: 22px; }
@@ -1112,7 +1126,7 @@
 }
 
 .hp-dials:focus {
-    border-color: var(--hp-ink);
+    border-color: var(--hp-outline);
     background-color: var(--hp-focus-tint);
 }
 
@@ -1125,7 +1139,7 @@
     border-width: 3px;
     border-bottom-width: 6px;
     border-color: var(--hp-cream-edge);
-    background-color: #FFFFFF;
+    background-color: var(--hp-surface);
     transition-property: scale, background-color, border-color;
     transition-duration: 0.12s, 0.12s, 0.12s;
     transition-timing-function: ease-out-back, ease-out, ease-out;
@@ -1134,7 +1148,7 @@
 .hp-dials:focus .hp-dial--current { border-color: var(--hp-focus-edge); }
 
 .hp-dials--editing .hp-dial--current {
-    border-color: var(--hp-ink);
+    border-color: var(--hp-outline);
     background-color: var(--hp-sun);
     scale: 1.1 1.1;
 }

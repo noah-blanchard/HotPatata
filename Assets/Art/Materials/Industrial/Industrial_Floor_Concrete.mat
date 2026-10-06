@@ -1,0 +1,106 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Industrial_Floor_Concrete
+  m_Shader: {fileID: 4800000, guid: facd792b064a6094c97bb43c6a7217fb, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords:
+  - _ANTITILE
+  m_InvalidKeywords:
+  - _GLOSSISROUGHNESS_ON
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _BaseMap:
+        m_Texture: {fileID: 2800000, guid: 99e3d51e25086434abb8f3ad1a489ecf, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _BumpMap:
+        m_Texture: {fileID: 2800000, guid: 44730f2dffb4f4144ae189f0ce567b6d, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _GlossMap:
+        m_Texture: {fileID: 2800000, guid: cab8b87bc88717e4ca1d2c87513c5953, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _GrungeMap:
+        m_Texture: {fileID: 2800000, guid: b24561699fad45748892119b3c0946f3, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _HeightMap:
+        m_Texture: {fileID: 2800000, guid: e97194394dfb52b4c8f4aeecb16310be, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MetallicMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _OcclusionMap:
+        m_Texture: {fileID: 2800000, guid: 3bd983f83d5ccc64eb60636c315a8d2f, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _AmbientStrength: 0.45
+    - _AntiTile: 1
+    - _AntiTileRotation: 0.6
+    - _AntiTileSharpness: 6
+    - _BaseBrightness: 1.8
+    - _BaseSaturation: 1
+    - _BumpScale: 1
+    - _Cutoff: 0.5
+    - _Decal: 0
+    - _DstBlend: 0
+    - _EnvReflection: 1
+    - _FlipNormalY: 0
+    - _GlossIsRoughness: 1
+    - _GrungeRoughness: 0.5
+    - _GrungeSize: 10
+    - _GrungeStrength: 0.5
+    - _MacroScale: 0.14
+    - _MacroStrength: 0.3
+    - _Metallic: 0
+    - _OcclusionStrength: 1
+    - _OffsetFactor: 0
+    - _OffsetUnits: 0
+    - _ParallaxFade: 24
+    - _ParallaxSteps: 16
+    - _ParallaxStrength: 0.006
+    - _RampSmoothness: 0.12
+    - _RampThreshold: 0.05
+    - _RimPower: 3.5
+    - _RimStrength: 0.1
+    - _SmoothnessMax: 0.9
+    - _SmoothnessMin: 0
+    - _SrcBlend: 1
+    - _StripeScale: 0.5
+    - _StripeStrength: 0
+    - _Stylize: 0
+    - _TileSize: 2.5
+    - _VariationScale: 3
+    - _VariationStrength: 0.14
+    - _Wrap: 0.15
+    - _ZWrite: 1
+    m_Colors:
+    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
+    - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _PatternScroll: {r: 0, g: 0, b: 0, a: 0}
+    - _RimColor: {r: 1, g: 1, b: 1, a: 1}
+    - _ShadeColor: {r: 0.95, g: 0.92, b: 0.9, a: 1}
+    - _StripeColor: {r: 0.03, g: 0.03, b: 0.03, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

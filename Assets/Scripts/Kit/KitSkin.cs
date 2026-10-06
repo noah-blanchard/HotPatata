@@ -33,6 +33,8 @@ namespace HotPatata
 
         public KitShape Shape => shape;
         public KitColor Color => color;
+        public Vector3 UnitBox => unitBox;
+        public bool Flip => flip;
 
         /// <summary>Editor builders: sets everything at once and redraws.</summary>
         public void Configure(KitPalette kitPalette, KitShape kitShape, KitColor kitColor, Vector3 box, bool flipped)
@@ -64,7 +66,7 @@ namespace HotPatata
 
         public void Rebuild()
         {
-            if (palette == null) return;
+            if (palette == null && shape != KitShape.BevelBox) return;
             if (filter == null) filter = GetComponent<MeshFilter>();
             builtScale = transform.lossyScale;
             filter.sharedMesh = MeshFor(palette, shape, color, unitBox, Abs(builtScale), flip);
@@ -145,8 +147,9 @@ namespace HotPatata
             Vector3 size = Vector3.Scale(scale, unitBox);
             // A platform box standing on edge (a piston gate, a door) reads as a wall: rounded blocks, same colour.
             if (shape == KitShape.Platform && size.y > Mathf.Min(size.x, size.z)) shape = KitShape.Barrier;
-            string key = $"{palette.GetInstanceID()}|{shape}|{color}|{flip}|{Q(size)}|{Q(unitBox)}";
+            string key = $"{(palette == null ? 0 : palette.GetInstanceID())}|{shape}|{color}|{flip}|{Q(size)}|{Q(unitBox)}";
             if (Cache.TryGetValue(key, out var cached) && cached != null) return cached;
+            if (shape == KitShape.BevelBox) return Cache[key] = BevelMesh(size, scale);
 
             var vertices = new List<Vector3>();
             var normals = new List<Vector3>();
@@ -205,6 +208,86 @@ namespace HotPatata
             combined.RecalculateBounds();
             Cache[key] = combined;
             return combined;
+        }
+
+        // ------------------------------------------------------------------ bevel box
+
+        /// <summary>Chamfer of a <see cref="KitShape.BevelBox"/> in metres: a tenth of its thinnest side, kept between 2 and 6 cm.</summary>
+        public static float ChamferFor(Vector3 size)
+        {
+            float thinnest = Mathf.Min(size.x, Mathf.Min(size.y, size.z));
+            return Mathf.Min(Mathf.Clamp(thinnest * 0.1f, 0.02f, 0.06f), thinnest * 0.4f);
+        }
+
+        /// <summary>
+        /// A chamfered box of <paramref name="size"/> metres, drawn in this object's local space (<paramref name="scale"/> is its
+        /// lossy scale). Every vertex lies inside the box and the faces reach its full extent, so a bevelled visual never
+        /// sticks out of the collider it stands for. Flat normals (the 45° strips are what catches the light); the shader
+        /// maps textures from the position, so the UVs are only a metre-scaled planar fallback.
+        /// </summary>
+        static Mesh BevelMesh(Vector3 size, Vector3 scale)
+        {
+            Vector3 h = size / 2f;
+            float c = ChamferFor(size);
+            var vertices = new List<Vector3>();
+            var normals = new List<Vector3>();
+            var uvs = new List<Vector2>();
+            var indices = new List<int>();
+            Vector3 toLocal = new Vector3(1f / Mathf.Max(0.0001f, scale.x), 1f / Mathf.Max(0.0001f, scale.y), 1f / Mathf.Max(0.0001f, scale.z));
+
+            void Add(Vector3 normal, params Vector3[] points)
+            {
+                // wind the polygon so it faces along the normal
+                if (Vector3.Dot(Vector3.Cross(points[1] - points[0], points[2] - points[0]), normal) < 0f) System.Array.Reverse(points);
+                int first = vertices.Count;
+                Vector3 n = Vector3.Scale(normal.normalized, scale).normalized;
+                Vector3 a = new Vector3(Mathf.Abs(normal.x), Mathf.Abs(normal.y), Mathf.Abs(normal.z));
+                foreach (var p in points)
+                {
+                    vertices.Add(Vector3.Scale(p, toLocal));
+                    normals.Add(n);
+                    uvs.Add(a.y >= a.x && a.y >= a.z ? new Vector2(p.x, p.z) : a.x >= a.z ? new Vector2(p.z, p.y) : new Vector2(p.x, p.y));
+                }
+                for (int i = 1; i < points.Length - 1; i++) { indices.Add(first); indices.Add(first + i); indices.Add(first + i + 1); }
+            }
+
+            Vector3 Axis(int i) => i == 0 ? Vector3.right : i == 1 ? Vector3.up : Vector3.forward;
+
+            for (int a = 0; a < 3; a++)
+            {
+                int u = (a + 1) % 3, v = (a + 2) % 3;
+                for (int s = -1; s <= 1; s += 2)
+                {
+                    Vector3 P(float su, float sv) => Axis(a) * (s * h[a]) + Axis(u) * (su * (h[u] - c)) + Axis(v) * (sv * (h[v] - c));
+                    Add(Axis(a) * s, P(-1, -1), P(1, -1), P(1, 1), P(-1, 1));
+                }
+            }
+            for (int a = 0; a < 3; a++)
+            {
+                int b = (a + 1) % 3, t = (a + 2) % 3;
+                for (int sa = -1; sa <= 1; sa += 2)
+                    for (int sb = -1; sb <= 1; sb += 2)
+                    {
+                        Vector3 A(float st) => Axis(a) * (sa * h[a]) + Axis(b) * (sb * (h[b] - c)) + Axis(t) * (st * (h[t] - c));
+                        Vector3 B(float st) => Axis(a) * (sa * (h[a] - c)) + Axis(b) * (sb * h[b]) + Axis(t) * (st * (h[t] - c));
+                        Add(Axis(a) * sa + Axis(b) * sb, A(-1), A(1), B(1), B(-1));
+                    }
+            }
+            for (int sx = -1; sx <= 1; sx += 2)
+                for (int sy = -1; sy <= 1; sy += 2)
+                    for (int sz = -1; sz <= 1; sz += 2)
+                        Add(new Vector3(sx, sy, sz),
+                            new Vector3(sx * h.x, sy * (h.y - c), sz * (h.z - c)),
+                            new Vector3(sx * (h.x - c), sy * h.y, sz * (h.z - c)),
+                            new Vector3(sx * (h.x - c), sy * (h.y - c), sz * h.z));
+
+            var mesh = new Mesh { name = $"KitSkin BevelBox {Q(size)}", hideFlags = HideFlags.HideAndDontSave };
+            mesh.SetVertices(vertices);
+            mesh.SetNormals(normals);
+            mesh.SetUVs(0, uvs);
+            mesh.SetTriangles(indices, 0);
+            mesh.RecalculateBounds();
+            return mesh;
         }
 
         static string Q(Vector3 v) => $"{Mathf.RoundToInt(v.x * 100f)},{Mathf.RoundToInt(v.y * 100f)},{Mathf.RoundToInt(v.z * 100f)}";

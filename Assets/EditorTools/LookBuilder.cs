@@ -61,7 +61,9 @@ namespace HotPatata.Editor
             ("Assets/Scenes/PrototypeCourse.unity", 35f),
             ("Assets/Scenes/PlaytestCourse.unity", 35f),
             ("Assets/Scenes/PatataPark.unity", 35f),
-            ("Assets/Scenes/PatataWorks.unity", 55f)
+            ("Assets/Scenes/PatataWorks.unity", 55f),
+            ("Assets/Scenes/IndustrialLab.unity", 55f),
+            ("Assets/Scenes/IndustrialPlant.unity", 55f)
         };
 
         public static Quaternion SunRotation(float yaw) => Quaternion.Euler(SunElevation, yaw, 0f);
@@ -96,6 +98,29 @@ namespace HotPatata.Editor
                 ConfigureSun(light, yaw);
             }
             ApplyRenderSettings(scene.name, yaw);
+            if (IsInterior(scene.name))
+            {
+                // No sun at all: a directional light's shadows are camera-relative (cascades, a shadow distance), so under a roof
+                // the floor would light up as you approach. The lamps (point lights, no shadows) are the only light, the same
+                // everywhere whatever the player's position.
+                foreach (var sun in scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<Light>(true)).Where(l => l.type == LightType.Directional))
+                {
+                    sun.intensity = 0f;
+                    sun.shadows = LightShadows.None;
+                    EditorUtility.SetDirty(sun);
+                }
+                // A closed, dark plant (ARCHITECTURE §25.2): a low neutral fill (no sky indoors) and a dark warm haze; the lamps
+                // carry the scene.
+                // The fill stands in for the light the lamps bounce off walls and floors (no GI here): bright enough that no
+                // floor goes black between two lamps, neutral so the lamps keep their colour.
+                RenderSettings.ambientSkyColor = new Color(0.58f, 0.56f, 0.54f);
+                RenderSettings.ambientEquatorColor = new Color(0.52f, 0.49f, 0.46f);
+                RenderSettings.ambientGroundColor = new Color(0.4f, 0.37f, 0.34f);
+                RenderSettings.fogColor = new Color(0.2f, 0.18f, 0.16f);
+                RenderSettings.fogStartDistance = 25f;
+                RenderSettings.fogEndDistance = 180f;
+                PlantExposure(scene);
+            }
             if (scene.name == "PatataWorks")
             {
                 RenderSettings.ambientSkyColor = AmbientSky * 0.48f;
@@ -114,6 +139,40 @@ namespace HotPatata.Editor
             volume.sharedProfile = AssetDatabase.LoadAssetAtPath<VolumeProfile>(ProfilePath);
             EditorUtility.SetDirty(volume);
             EditorSceneManager.MarkSceneDirty(scene);
+        }
+
+        /// <summary>The closed industrial scenes, lit by lamps only: the plant, and the menu's factory hall (Bootstrap).</summary>
+        public static bool IsInterior(string sceneName) => sceneName == "IndustrialPlant" || sceneName == "Bootstrap";
+
+        public const string PlantProfilePath = "Assets/Settings/Look/HotPatata_Look_Plant.asset";
+        public const float PlantExposure_EV = 0.45f;
+
+        /// <summary>
+        /// The closed plant is lit by lamps only, so it gets more exposure than the golden-hour courses: a second global volume
+        /// (priority 1) that only overrides post exposure on top of the shared look.
+        /// </summary>
+        static void PlantExposure(UnityEngine.SceneManagement.Scene scene)
+        {
+            var profile = AssetDatabase.LoadAssetAtPath<VolumeProfile>(PlantProfilePath);
+            if (profile == null)
+            {
+                profile = ScriptableObject.CreateInstance<VolumeProfile>();
+                AssetDatabase.CreateAsset(profile, PlantProfilePath);
+            }
+            var adjust = Get<ColorAdjustments>(profile);
+            adjust.postExposure.Override(0.25f + PlantExposure_EV);   // the shared look's +0.25, plus the plant's own
+            EditorUtility.SetDirty(profile);
+            var volume = scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<Volume>(true)).FirstOrDefault(v => v.isGlobal && v.priority >= 1f);
+            if (volume == null)
+            {
+                var go = new GameObject("PlantExposureVolume");
+                UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(go, scene);
+                volume = go.AddComponent<Volume>();
+                volume.isGlobal = true;
+                volume.priority = 1f;
+            }
+            volume.sharedProfile = profile;
+            EditorUtility.SetDirty(volume);
         }
 
         public static void ConfigureSun(Light sun, float yaw)
@@ -140,6 +199,22 @@ namespace HotPatata.Editor
             light.range = 20f;
             light.shadows = LightShadows.None;
             light.lightmapBakeType = LightmapBakeType.Realtime;
+        }
+
+        /// <summary>A steady practical light of any colour (the industrial plant's lamps and furnaces); no shadows, no baking.</summary>
+        public static Light PracticalLamp(Transform parent, Vector3 position, Color color, float intensity, float range, string name = "Practical")
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            go.transform.position = position;
+            var light = go.AddComponent<Light>();
+            light.type = LightType.Point;
+            light.color = color;
+            light.intensity = intensity;
+            light.range = range;
+            light.shadows = LightShadows.None;
+            light.lightmapBakeType = LightmapBakeType.Realtime;
+            return light;
         }
 
         /// <summary>Ambient, fog and the scene's own sky (a copy of the shared sky, its sun where this scene's sun is).</summary>

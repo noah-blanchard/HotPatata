@@ -41,6 +41,9 @@
 | `PlaytestCourseTests` | PlayMode | M10.4 `PlaytestCourse`: every beat wired, nine checkpoints with two arches, the podium gate, finish and rematch |
 | `KitSkinTests` | EditMode | KayKit kit (ARCHITECTURE §25.1): palette families, exact box tiling, unstretched pieces on the grid, edge-standing platforms as blocks |
 | `PatataParkTests` | PlayMode | `PatataPark`: every beat wired and drawn in KayKit pieces, nine checkpoints with two arches, the podium gate, finish and rematch |
+| `IndustrialLookTests` | EditMode | industrial look (ARCHITECTURE §25.2): the bevelled box stays inside its box and faces outward, the material library (every surface, anti-tiling keyword, a texture each), grunge and decal placeholders and their import, the decal material, themes, texture file names and folders (displacement maps are linear, the signs folder is decals), relief (a height map and a shallow depth on every textured surface), signs as decals without hazard red, the look set's scope |
+| `IndustrialLabTests` | PlayMode | `IndustrialLab`: checkpoints and finish, passes clear ceilings, solids and decoration, bevelled visuals inside their colliders, every industrial material drawn |
+| `IndustrialPlantTests` | PlayMode | `IndustrialPlant`: nine checkpoints, climbs, drops and spread, every kit obstacle present, the building closed in 26 directions from every route point, passes clear, signals one-to-one, no sun, many warm lamps, a bright neutral fill and its own exposure volume, diverse floors/walls/ceilings and decals (never on moving surfaces), mouldings and props in every room (collider-free, never on a mover), no two rooms' floors overlapping at one height, listed last in the menu with nine spawn choices, every checkpoint resets then finish and rematch, the atrium plate pass, every transit flight reaches its pad |
 | `PatataWorksTests` | PlayMode | enclosed route and ceilings, sampled pass clearance and decoration, signal/transit wiring, explicit catches through the atrium ring and transit exits, nine checkpoint resets, finish/rematch and menu order |
 
 EditMode tests live in `Assets/Tests/EditMode/`. PlayMode tests live in `Assets/Tests/PlayMode/`: they load
@@ -61,7 +64,8 @@ unity command test_status                                      # results also in
 Run only the suites for the system you touched, not the whole project every time. After any throw/catch tuning
 change, run `PassFeelTests`. After a movement change, run `SprintSlideTests` and `MovementTests`. After a course
 change, run `CourseTests` / `FactoryCourseTests`. After a kit look change (`KitSkin`, `KayKitKitBuilder`), run
-`KitSkinTests` and the course suites.
+`KitSkinTests` and the course suites; after an industrial look change (shader, materials, `IndustrialLabBuilder`), run
+`IndustrialLookTests`, `IndustrialLabTests` and `IndustrialPlantTests`.
 
 After a font asset change, run `FontAssetTests` and a local Player build. Editor compilation and PlayMode tests do
 not exercise the asset serialization step that rejects `DontSave` font dependencies.

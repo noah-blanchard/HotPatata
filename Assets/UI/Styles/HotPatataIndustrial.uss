@@ -1,0 +1,118 @@
+/* HotPatata UI, industrial theme (ARCHITECTURE §6.2): the semi-realistic factory of the industrial look (§25.2) on the same
+   hp-* classes. Dark blue-grey steel panels with a hazard-amber top rail, light text on dark, near-black edges, squarer
+   corners, industrial orange / steel blue / gunmetal / signal red buttons, amber focus. The palette continues the
+   PatataWorks name board (World/PatataWorksSign.uss). Loaded after HotPatata.uss by HotPatataTheme.tss: it only overrides
+   tokens and shapes, so dropping that one import line brings back the "Sunny toy box" look. Player slot colours and
+   shapes are untouched (spec §19). */
+
+:root {
+    /* surfaces */
+    --hp-cream: #232F33;
+    --hp-cream-edge: #10171A;
+    --hp-card: rgba(255, 255, 255, 0.05);
+    --hp-surface: #2E3B40;
+    --hp-surface-hover: #35454B;
+    --hp-surface-empty: rgba(255, 255, 255, 0.04);
+    --hp-sand: #172024;
+    /* text and edges */
+    --hp-ink: #EEE6D6;
+    --hp-ink-dim: #A3AEB0;
+    --hp-outline: #0D1315;
+    --hp-outline-soft: rgba(8, 12, 14, 0.7);
+    /* buttons: industrial orange, steel blue, gunmetal, signal red */
+    --hp-orange: #E2802A;
+    --hp-orange-lip: #7E3F10;
+    --hp-orange-hi: #EE9440;
+    --hp-sky: #4C7D94;
+    --hp-sky-lip: #263F4B;
+    --hp-sky-hi: #5D90A8;
+    --hp-plum: #56626B;
+    --hp-plum-lip: #2B3238;
+    --hp-plum-hi: #67747E;
+    --hp-red: #C4443A;
+    --hp-red-lip: #6E211C;
+    --hp-red-hi: #D45A50;
+    /* hazard amber: focus, the game-code ticket, the rail on top of every panel */
+    --hp-sun: #F4B84B;
+    --hp-sun-lip: #8F6418;
+    --hp-focus-edge: #F4B84B;
+    --hp-focus-tint: #3C3A2C;
+    /* notes and errors */
+    --hp-note: #3A3424;
+    --hp-note-edge: #B98A2C;
+    --hp-error-fill: #3D2422;
+    --hp-error-edge: #B5483F;
+    --hp-error-text: #F2A49B;
+    /* veils over the game */
+    --hp-scrim: rgba(8, 12, 14, 0.45);
+    --hp-scrim-soft: rgba(8, 12, 14, 0.3);
+    --hp-scrim-strong: rgba(8, 12, 14, 0.62);
+    --hp-radius: 10px;
+}
+
+/* ------------------------------------------------------------------ panels: steel plates with a hazard-amber rail */
+
+.hp-panel {
+    border-radius: 12px;
+    border-width: 3px;
+    border-top-width: 10px;
+    border-bottom-width: 12px;
+    border-top-color: var(--hp-sun);
+}
+
+.hp-nameplate {
+    border-radius: 12px;
+    border-top-color: var(--hp-sun);
+}
+
+.hp-card { border-radius: 10px; border-width: 2px; }
+
+/* ------------------------------------------------------------------ squarer cards, rows and fields */
+
+.hp-row { border-radius: 8px; border-width: 2px; border-bottom-width: 6px; }
+.hp-slot { border-radius: 10px; border-width: 2px; border-bottom-width: 7px; }
+.hp-slot--empty { border-bottom-width: 2px; }
+.hp-stat { border-radius: 10px; border-width: 2px; border-bottom-width: 8px; }
+.hp-pill { border-radius: 10px; border-width: 2px; border-bottom-width: 6px; }
+.hp-note, .hp-error { border-radius: 8px; border-width: 3px; }
+.hp-ticket { border-radius: 10px; }
+.hp-ticket__notch { border-radius: 10px; }
+.hp-dials { border-radius: 8px; }
+.hp-dial { border-radius: 6px; border-width: 2px; border-bottom-width: 5px; }
+.hp-choice__arrow { border-radius: 8px; }
+
+.hp-field .unity-base-text-field__input {
+    border-radius: 8px;
+    border-width: 3px;
+    border-bottom-width: 6px;
+    border-color: var(--hp-cream-edge);
+    background-color: var(--hp-sand);
+}
+
+/* ------------------------------------------------------------------ buttons: same chunky lip, squarer plates */
+
+.hp-button { border-radius: var(--hp-radius); border-width: 3px; }
+.hp-button--big { border-radius: 12px; }
+.hp-button--small { border-radius: 8px; }
+.hp-button--prompt { border-radius: 20px; }
+
+/* ------------------------------------------------------------------ controls on dark steel: light knobs, dark text on amber */
+
+.hp-row__field .unity-base-slider__dragger,
+.hp-row__toggle .unity-toggle__checkmark,
+.hp-row__toggle:checked .unity-toggle__checkmark,
+.hp-row__toggle:hover .unity-toggle__checkmark,
+.hp-row__toggle:checked:hover .unity-toggle__checkmark {
+    background-color: #D9D2C4;
+}
+
+.hp-dials--editing .hp-dial--current .hp-dial__glyph,
+.hp-dials--editing .hp-dial--current .hp-dial__arrow {
+    color: var(--hp-outline);
+}
+
+.hp-dial__arrow { color: var(--hp-ink-dim); }
+
+.hp-scroll .unity-scroller--vertical .unity-base-slider__dragger { background-color: var(--hp-plum-hi); }
+
+/* The logo keeps its colours (hot orange, amber) and its tilt: the game's name stays playful on the steel. */

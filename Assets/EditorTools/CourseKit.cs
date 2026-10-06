@@ -9,7 +9,7 @@ using Random = System.Random;
 namespace HotPatata.Editor
 {
     /// <summary>What a kit box is for; each role has one KayKit look (<see cref="CourseKit.Look"/>, ARCHITECTURE §25.1).</summary>
-    public enum KitRole { Ground, Wall, Mover, Falling, Belt, Slide, Hazard, Gate, Floor, Ceiling, Brick, Frame, Stairs, Pillar, Truss, Railing, Roof }
+    public enum KitRole { Ground, Wall, Mover, Falling, Belt, Slide, Hazard, Gate, Floor, Ceiling, Brick, Frame, Stairs, Pillar, Truss, Railing, Roof, Grating, Rubber, Accent, Lamp, Glow, Rust }
 
     /// <summary>
     /// Shared editor helpers for the course and kit builders (<see cref="CourseBuilder"/>,
@@ -55,7 +55,7 @@ namespace HotPatata.Editor
         {
             var go = Place(parent, PlatformsDir + "Platform_Basic", name, center, rotation ?? Quaternion.identity);
             go.transform.localScale = size;
-            if (role != KitRole.Ground || flip) Skin(go.transform.Find("Visual").gameObject, role, flip);
+            if (role != KitRole.Ground || flip || currentLookSet != LookSet.KayKit) Skin(go.transform.Find("Visual").gameObject, role, flip);
             return go;
         }
 
@@ -277,8 +277,77 @@ namespace HotPatata.Editor
         public const string PalettePath = "Assets/ScriptableObjects/Kit/KayKitPalette.asset";
         public const string KitMaterial = "KayKit_Toon", KitHazardMaterial = "KayKit_Hazard", KitBeltMaterial = "KayKit_Belt";
 
-        /// <summary>One look per role of the course: the piece family, the KayKit colour and the material.</summary>
-        public static (KitShape shape, KitColor color, string material) Look(KitRole role) => role switch
+        /// <summary>The look set the kit draws with: KayKit everywhere, Industrial (ARCHITECTURE §25.2) only where a builder asks.</summary>
+        public enum LookSet { KayKit, Industrial }
+
+        static LookSet currentLookSet = LookSet.KayKit;
+
+        public static LookSet CurrentLookSet => currentLookSet;
+
+        sealed class LookScope : IDisposable
+        {
+            readonly LookSet previous;
+            public LookScope(LookSet set) { previous = currentLookSet; currentLookSet = set; }
+            public void Dispose() => currentLookSet = previous;
+        }
+
+        /// <summary>Draws every <see cref="Look"/> inside the scope with <paramref name="set"/>: <c>using (UseLookSet(LookSet.Industrial)) { ... }</c>.</summary>
+        public static IDisposable UseLookSet(LookSet set) => new LookScope(set);
+
+        /// <summary>The concrete-like surfaces of a room (ARCHITECTURE §25.2): floors, walls and ceilings take their material from the current theme.</summary>
+        public struct SurfaceTheme
+        {
+            public string Floor, Wall, Ceiling;
+            public SurfaceTheme(string floor, string wall, string ceiling) { Floor = floor; Wall = wall; Ceiling = ceiling; }
+        }
+
+        static SurfaceTheme currentTheme = new SurfaceTheme(IndustrialDir + "Industrial_Concrete", IndustrialDir + "Industrial_Concrete", IndustrialDir + "Industrial_Concrete");
+
+        public static SurfaceTheme CurrentTheme => currentTheme;
+
+        sealed class ThemeScope : IDisposable
+        {
+            readonly SurfaceTheme previous;
+            public ThemeScope(SurfaceTheme theme) { previous = currentTheme; currentTheme = theme; }
+            public void Dispose() => currentTheme = previous;
+        }
+
+        /// <summary>Draws the floor, wall and ceiling roles inside the scope with the theme's materials (industrial look only).</summary>
+        public static IDisposable UseTheme(SurfaceTheme theme) => new ThemeScope(theme);
+
+        public const string IndustrialDir = "Industrial/";
+        public const string ConcreteMaterial = IndustrialDir + "Industrial_Concrete", PaintedMetalMaterial = IndustrialDir + "Industrial_PaintedMetal",
+            PaintedMetalYellowMaterial = IndustrialDir + "Industrial_PaintedMetal_Yellow", PaintedMetalSafetyMaterial = IndustrialDir + "Industrial_PaintedMetal_Safety",
+            LampMaterial = IndustrialDir + "Industrial_Lamp", GlowMaterial = IndustrialDir + "Industrial_Glow", RawMetalMaterial = IndustrialDir + "Industrial_RawMetal", RubberMaterial = IndustrialDir + "Industrial_Rubber";
+
+        /// <summary>One look per role of the course: the piece family, the KayKit colour and the material, in the current look set.</summary>
+        public static (KitShape shape, KitColor color, string material) Look(KitRole role) =>
+            currentLookSet == LookSet.Industrial ? IndustrialLook(role) : KayKitLook(role);
+
+        /// <summary>
+        /// The industrial look (ARCHITECTURE §25.2): bevelled boxes in the room theme's floor, wall and ceiling materials, painted, raw
+        /// and rusty metal, and rubber. Hazards are striped red paint (the stripes stop them relying on colour alone, spec §19);
+        /// falling platforms are yellow paint, as in KayKit.
+        /// </summary>
+        static (KitShape shape, KitColor color, string material) IndustrialLook(KitRole role) => role switch
+        {
+            KitRole.Ground or KitRole.Floor or KitRole.Stairs or KitRole.Roof => (KitShape.BevelBox, KitColor.Neutral, currentTheme.Floor),
+            KitRole.Wall or KitRole.Brick => (KitShape.BevelBox, KitColor.Neutral, currentTheme.Wall),
+            KitRole.Ceiling => (KitShape.BevelBox, KitColor.Neutral, currentTheme.Ceiling),
+            KitRole.Rust => (KitShape.BevelBox, KitColor.Neutral, IndustrialDir + "Industrial_Metal_Rust"),
+            KitRole.Mover or KitRole.Pillar or KitRole.Truss => (KitShape.BevelBox, KitColor.Neutral, PaintedMetalMaterial),
+            KitRole.Frame or KitRole.Railing or KitRole.Gate => (KitShape.BevelBox, KitColor.Neutral, PaintedMetalYellowMaterial),
+            KitRole.Accent => (KitShape.BevelBox, KitColor.Neutral, PaintedMetalSafetyMaterial),
+            KitRole.Hazard => (KitShape.BevelBox, KitColor.Neutral, IndustrialDir + "Industrial_Hazard"),
+            KitRole.Falling => (KitShape.BevelBox, KitColor.Neutral, PaintedMetalYellowMaterial),
+            KitRole.Lamp => (KitShape.BevelBox, KitColor.Neutral, LampMaterial),
+            KitRole.Glow => (KitShape.BevelBox, KitColor.Neutral, GlowMaterial),
+            KitRole.Slide or KitRole.Grating => (KitShape.BevelBox, KitColor.Neutral, RawMetalMaterial),
+            KitRole.Belt or KitRole.Rubber => (KitShape.BevelBox, KitColor.Neutral, RubberMaterial),
+            _ => KayKitLook(role)
+        };
+
+        static (KitShape shape, KitColor color, string material) KayKitLook(KitRole role) => role switch
         {
             KitRole.Ground => (KitShape.Platform, KitColor.Green, KitMaterial),
             KitRole.Wall => (KitShape.Barrier, KitColor.Neutral, KitMaterial),
@@ -297,6 +366,12 @@ namespace HotPatata.Editor
             KitRole.Truss => (KitShape.Strut, KitColor.Neutral, KitMaterial),
             KitRole.Railing => (KitShape.Barrier, KitColor.Neutral, KitMaterial),
             KitRole.Roof => (KitShape.Platform, KitColor.Neutral, KitMaterial),
+            KitRole.Grating => (KitShape.Platform, KitColor.Neutral, KitMaterial),
+            KitRole.Rubber => (KitShape.Platform, KitColor.Neutral, KitMaterial),
+            KitRole.Accent => (KitShape.Barrier, KitColor.Yellow, KitMaterial),
+            KitRole.Lamp => (KitShape.Barrier, KitColor.Yellow, KitMaterial),
+            KitRole.Glow => (KitShape.Barrier, KitColor.Yellow, KitMaterial),
+            KitRole.Rust => (KitShape.Barrier, KitColor.Neutral, KitMaterial),
             _ => throw new ArgumentOutOfRangeException(nameof(role))
         };
 
