@@ -7,7 +7,7 @@ namespace HotPatata.Editor
     /// <summary>
     /// Visual-only details for the industrial look (ARCHITECTURE §25.2): edge strips, column bases and caps, braces, seams.
     /// Every piece is a collider-free <see cref="CourseDecoration"/>, so it can never change a collision, and builders keep
-    /// them out of the pass corridors (checked by <c>IndustrialLabTests</c>).
+    /// them out of the pass corridors (checked by <c>IndustrialPlantTests</c>).
     /// </summary>
     public static class IndustrialKit
     {

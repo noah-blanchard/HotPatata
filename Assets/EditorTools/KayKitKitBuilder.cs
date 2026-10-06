@@ -14,8 +14,8 @@ namespace HotPatata.Editor
 {
     /// <summary>
     /// Puts the whole kit in KayKit Platformer Pack pieces (ARCHITECTURE §25.1): the palette of tile meshes, the KayKit
-    /// materials, the hand-made classic prefabs, then the generated ones (<see cref="CourseBuilder"/>,
-    /// <see cref="BombObstacleKitBuilder"/>), and the hand-placed boxes of PrototypeCourse Act 1 and PassSandbox. Colliders,
+    /// materials, the hand-made classic prefabs, then the generated ones (<see cref="KitPrefabBuilder"/>,
+    /// <see cref="BombObstacleKitBuilder"/>), and the hand-placed boxes of PassSandbox. Colliders,
     /// sizes and layers never change. Idempotent. Rebuild the courses afterwards (menu HotPatata/Course/Rebuild All Courses).
     /// </summary>
     public static class KayKitKitBuilder
@@ -48,7 +48,7 @@ namespace HotPatata.Editor
             BuildPalette();
             BuildMaterials();
             ReskinHandMadePrefabs();
-            CourseBuilder.BuildPrefabs();
+            KitPrefabBuilder.BuildPrefabs();
             BombObstacleKitBuilder.BuildAll();
             MigrateHandPlacedBoxes();
             AssetDatabase.SaveAssets();
@@ -59,11 +59,9 @@ namespace HotPatata.Editor
         public static void RebuildCourses()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode) return;
-            CourseBuilder.BuildActs();
-            PlaytestCourseBuilder.Build();
             BombObstacleKitBuilder.BuildSandboxDemo();
-            PatataParkBuilder.Build();
-            PatataWorksBuilder.Build();
+            IndustrialPlantBuilder.Build();
+            PatataWildsBuilder.Build();     // last: it takes the first place in the level list
             MenuBackdropBuilder.Build();   // the menu island is drawn with the same kit
             Debug.Log("[KayKitKitBuilder] all courses rebuilt");
         }
@@ -218,7 +216,7 @@ namespace HotPatata.Editor
 
         // ------------------------------------------------------------------ hand-placed boxes
 
-        static readonly string[] HandPlacedScenes = { "Assets/Scenes/PrototypeCourse.unity", "Assets/Scenes/PassSandbox.unity" };
+        static readonly string[] HandPlacedScenes = { "Assets/Scenes/PassSandbox.unity" };
 
         /// <summary>
         /// Platform_Basic / Platform_Narrow instances placed by hand carried a greybox material override; each becomes the

@@ -30,7 +30,7 @@
                 <ui:VisualElement name="host-controls" class="hp-h hp-h--stretch">
                     <ui:VisualElement class="hp-card hp-grow">
                         <ui:Label text="LEVEL" class="hp-label" />
-                        <ui:Label name="level-name" text="PatataPark" class="hp-level-name" />
+                        <ui:Label name="level-name" text="PatataWilds" class="hp-level-name" />
                         <ui:Button name="change-level" class="hp-button hp-button--neutral hp-button--small hp-self-start">
                             <ui:Label text="CHANGE LEVEL" class="hp-button__label" />
                         </ui:Button>

@@ -253,5 +253,20 @@ namespace HotPatata
         [Header("Run")]
         [Tooltip("Seconds between an explosion and the section being playable again.")]
         [Min(0f)] public float resetDelay = 1.0f;
+
+        [Header("Presentation - PatataWilds (visual only, ARCHITECTURE §25.3)")]
+        [Tooltip("Seconds the sky, sun and grade take to move one act of the day (dawn to noon...) after a checkpoint.")]
+        [Min(0.1f)] public float timeOfDayBlendSeconds = 24f;
+        [Tooltip("A jump in the time of day bigger than this many acts (a practice start, a late join) is shown at once, never blended.")]
+        [Min(0f)] public float timeOfDaySnapActs = 0.6f;
+        [Tooltip("Seconds a checkpoint campfire takes to catch once the checkpoint is reached.")]
+        [Min(0f)] public float campfireIgniteSeconds = 1.4f;
+        [Tooltip("The lit campfire's light: intensity and range (metres).")]
+        [Min(0f)] public float campfireLightIntensity = 4.5f;
+        [Min(0f)] public float campfireLightRange = 14f;
+        [Tooltip("How much a lit campfire's light flickers (fraction of its intensity). Times (1 - flash reduction).")]
+        [Range(0f, 0.5f)] public float campfireFlicker = 0.18f;
+        [Tooltip("Embers thrown up when a campfire catches. Times (1 - flash reduction).")]
+        [Min(0)] public int campfireIgniteBurst = 40;
     }
 }

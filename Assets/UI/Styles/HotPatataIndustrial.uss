@@ -1,7 +1,6 @@
 /* HotPatata UI, industrial theme (ARCHITECTURE §6.2): the semi-realistic factory of the industrial look (§25.2) on the same
    hp-* classes. Dark blue-grey steel panels with a hazard-amber top rail, light text on dark, near-black edges, squarer
-   corners, industrial orange / steel blue / gunmetal / signal red buttons, amber focus. The palette continues the
-   PatataWorks name board (World/PatataWorksSign.uss). Loaded after HotPatata.uss by HotPatataTheme.tss: it only overrides
+   corners, industrial orange / steel blue / gunmetal / signal red buttons, amber focus. Loaded after HotPatata.uss by HotPatataTheme.tss: it only overrides
    tokens and shapes, so dropping that one import line brings back the "Sunny toy box" look. Player slot colours and
    shapes are untouched (spec §19). */
 

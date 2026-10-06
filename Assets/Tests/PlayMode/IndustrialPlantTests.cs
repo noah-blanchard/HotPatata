@@ -10,7 +10,7 @@ namespace HotPatata.Tests
 {
     /// <summary>
     /// ARCHITECTURE §25.2 (issue #87): the industrial plant is a full, closed, dark, playable course drawn only in the industrial look:
-    /// every obstacle of the kit works (the PatataWorks rules), the route climbs, drops and turns, and the building has no opening.
+    /// every obstacle of the kit works (the enclosed-course rules), the route climbs, drops and turns, and the building has no opening.
     /// </summary>
     public class IndustrialPlantTests : SandboxTestBase
     {
@@ -213,16 +213,18 @@ namespace HotPatata.Tests
         }
 
         [Test]
-        public void ThePlant_IsListedInTheMenuAfterPatataWorks_WithNineSpawnChoices()
+        public void TheMenu_ListsTheWildsThePlantAndTheSandbox_WithTheirSpawnChoices()
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Network/NetworkManager.prefab");
             var so = new SerializedObject(prefab.GetComponent<NetworkBootstrap>());
             var names = so.FindProperty("gameplayScenes");
-            int index = Enumerable.Range(0, names.arraySize).FirstOrDefault(i => names.GetArrayElementAtIndex(i).stringValue == "IndustrialPlant");
-            Assert.AreEqual("IndustrialPlant", names.GetArrayElementAtIndex(index).stringValue);
-            Assert.Greater(index, 0, "PatataWorks stays first");
-            Assert.AreEqual(9, so.FindProperty("sceneCheckpoints").GetArrayElementAtIndex(index).intValue);
-            Assert.IsTrue(EditorBuildSettings.scenes.Any(s => s.enabled && s.path.EndsWith("/IndustrialPlant.unity")));
+            var counts = so.FindProperty("sceneCheckpoints");
+            CollectionAssert.AreEqual(new[] { "PatataWilds", "IndustrialPlant", "PassSandbox" },
+                Enumerable.Range(0, names.arraySize).Select(i => names.GetArrayElementAtIndex(i).stringValue).ToArray());
+            Assert.AreEqual(9, counts.GetArrayElementAtIndex(1).intValue, "nine spawn choices in the plant");
+            foreach (var scene in new[] { "Bootstrap", "PatataWilds", "IndustrialPlant", "PassSandbox" })
+                Assert.IsTrue(EditorBuildSettings.scenes.Any(s => s.enabled && s.path == $"Assets/Scenes/{scene}.unity"), scene + " is in the build");
+            Assert.AreEqual(4, EditorBuildSettings.scenes.Length, "no other scene is in the build");
         }
 
         [Test]

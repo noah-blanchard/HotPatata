@@ -4,9 +4,10 @@ namespace HotPatata
 {
     /// <summary>
     /// Continuously rotates around an axis. The angle is a pure function of <see cref="SectionClock"/>,
-    /// so it is deterministic and consistent after a section reset.
+    /// so it is deterministic and consistent after a section reset. Rotates the object it is on: put the visual and the colliders
+    /// (and a child <c>KillZone</c> for a lethal one) under it. Subclasses may override <see cref="RotationAt"/> (docs/OBSTACLES.md §4).
     /// </summary>
-    public class RotatingObstacle : MonoBehaviour
+    public class RotatingObstacle : MonoBehaviour, IObstacleState
     {
         [SerializeField] Vector3 axis = Vector3.up;
         [SerializeField, Tooltip("Degrees per second (negative reverses).")] float degreesPerSecond = 60f;
@@ -15,11 +16,17 @@ namespace HotPatata
         Quaternion baseRotation;
 
         public float CurrentAngle => phaseDegrees + degreesPerSecond * SectionClock.Now;
+        public Vector3 Axis => axis;
+        public float DegreesPerSecond => degreesPerSecond;
+        float IObstacleState.Progress => Mathf.Repeat(CurrentAngle, 360f) / 360f;
+        bool IObstacleState.Active => !Mathf.Approximately(degreesPerSecond, 0f);
+
+        /// <summary>The local rotation at <paramref name="angle"/> degrees from the rest pose. Override for another motion (still a pure function of the angle).</summary>
+        protected virtual Quaternion RotationAt(Quaternion rest, float angle) => rest * Quaternion.AngleAxis(angle, axis.normalized);
 
         void Awake() => baseRotation = transform.localRotation;
 
-        void Update() =>
-            transform.localRotation = baseRotation * Quaternion.AngleAxis(CurrentAngle, axis.normalized);
+        void Update() => transform.localRotation = RotationAt(baseRotation, CurrentAngle);
 
         void OnDrawGizmosSelected()
         {

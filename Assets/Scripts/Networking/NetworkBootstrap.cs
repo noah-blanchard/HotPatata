@@ -37,7 +37,7 @@ namespace HotPatata
         public static NetworkBootstrap Instance { get; private set; }
 
         [SerializeField] string menuScene = "Bootstrap";
-        [SerializeField] string[] gameplayScenes = { "PatataPark", "PlaytestCourse", "PrototypeCourse", "PassSandbox" };
+        [SerializeField] string[] gameplayScenes = { "PatataWilds", "IndustrialPlant", "PassSandbox" };
         [SerializeField, Tooltip("Highest checkpoint id of each gameplay scene (same order), offered as a start point.")]
         int[] sceneCheckpoints = { 9, 9, 7, 1 };
         [SerializeField] ushort port = 7777;

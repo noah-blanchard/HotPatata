@@ -6,6 +6,7 @@
         "UnityEditor.TestRunner",
         "Unity.InputSystem",
         "Unity.Services.Multiplayer",
+        "Unity.Netcode.Runtime",
         "HotPatata",
         "HotPatata.EditorTools",
         "Unity.Cinemachine"

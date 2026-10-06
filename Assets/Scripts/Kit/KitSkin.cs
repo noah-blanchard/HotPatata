@@ -66,13 +66,18 @@ namespace HotPatata
 
         public void Rebuild()
         {
-            if (palette == null && shape != KitShape.BevelBox) return;
+            if (palette == null && !IsGenerated(shape)) return;
             if (filter == null) filter = GetComponent<MeshFilter>();
             builtScale = transform.lossyScale;
             filter.sharedMesh = MeshFor(palette, shape, color, unitBox, Abs(builtScale), flip);
         }
 
         static Vector3 Abs(Vector3 v) => new Vector3(Mathf.Abs(v.x), Mathf.Abs(v.y), Mathf.Abs(v.z));
+
+        /// <summary>Shapes drawn from code, with no palette piece (the bevel box, and the nature shapes of <see cref="NatureShapes"/>).</summary>
+        public static bool IsGenerated(KitShape shape) =>
+            shape == KitShape.BevelBox || shape == KitShape.RoughBox || shape == KitShape.Logs || shape == KitShape.Planks
+            || shape == KitShape.Boulder || shape == KitShape.Skirt || shape == KitShape.Crag;
 
         // ------------------------------------------------------------------ layout
 
@@ -150,6 +155,12 @@ namespace HotPatata
             string key = $"{(palette == null ? 0 : palette.GetInstanceID())}|{shape}|{color}|{flip}|{Q(size)}|{Q(unitBox)}";
             if (Cache.TryGetValue(key, out var cached) && cached != null) return cached;
             if (shape == KitShape.BevelBox) return Cache[key] = BevelMesh(size, scale);
+            if (shape == KitShape.RoughBox) return Cache[key] = NatureShapes.RoughBox(size, scale);
+            if (shape == KitShape.Logs) return Cache[key] = NatureShapes.Logs(size, scale);
+            if (shape == KitShape.Planks) return Cache[key] = NatureShapes.Planks(size, scale);
+            if (shape == KitShape.Boulder) return Cache[key] = NatureShapes.Boulder(size, scale);
+            if (shape == KitShape.Skirt) return Cache[key] = NatureShapes.Skirt(size, scale);
+            if (shape == KitShape.Crag) return Cache[key] = NatureShapes.Crag(size, scale);
 
             var vertices = new List<Vector3>();
             var normals = new List<Vector3>();

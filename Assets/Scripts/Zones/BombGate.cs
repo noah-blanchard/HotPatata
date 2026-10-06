@@ -11,7 +11,7 @@ namespace HotPatata
     /// bomb through does nothing. Cleared on every section reset.
     /// </summary>
     [RequireComponent(typeof(Zone))]
-    public class BombGate : MonoBehaviour, IBombZoneEffect, ISignalSource, IResettable
+    public class BombGate : MonoBehaviour, IBombZoneEffect, ISignalSource, IResettable, IObstacleState
     {
         [SerializeField, Min(0f), Tooltip("Seconds the gate stays active after a pass (0 = until the section resets).")]
         float holdSeconds = 8f;
@@ -36,6 +36,8 @@ namespace HotPatata
             }
         }
         public bool Active => RemainingSeconds > 0f;
+        /// <summary>The share of the hold time left (1 just after a pass, and for a latched gate once passed).</summary>
+        float IObstacleState.Progress => !PassedThisSection ? 0f : holdSeconds <= 0f ? 1f : RemainingSeconds / holdSeconds;
 
         public void OnBombPassed(BombController bomb)
         {

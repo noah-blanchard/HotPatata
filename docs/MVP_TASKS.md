@@ -7,7 +7,7 @@
 
 ---
 
-# Status (last updated 2026-10-04)
+# Status (last updated 2026-10-06)
 
 A ticked box is verified by the automated tests (see [`TESTING.md`](TESTING.md)), by recorded bot/latency runs, or
 by the owner's own play. An unticked box in a finished milestone is a **human gate**: it needs a group or external
@@ -20,16 +20,18 @@ playtest and cannot be closed by code.
 | M2 Greybox prefab kit | done | |
 | M3 Network proof | done (host authority, lag-compensated catch) | M3.7: test on two physical machines |
 | M4 Session and lobby | done, verified with real Relay sessions | |
-| M5 First greybox course | done, then extended to Acts 2–3 (~680 m, 7 checkpoints) | group playtest of the full course |
+| M5 First greybox course | done, then extended to Acts 2–3 (~680 m, 7 checkpoints); the course was removed in the cleanup (layout archived in OBSTACLES.md §3.2) | |
 | M6 UX and readability | partly covered by earlier work (see each task); UI Toolkit base (#14), main menu and lobby (#15), pause menu (#16), settings screen (#17) and results screen (#23) in place, their layouts in UXML editable in UI Builder (#76), the "Sunny toy box" look with a living 3D menu backdrop, the in-world menu (#79: stations with camera travel, the lobby on the island) | verify M6.1/M6.2 at range, player-facing progress UI, ping only if needed |
 | M7 Test and harden | not started (bot latency runs cover part of M7.3) | all |
 | M8 Post-validation polish | gated on M7.4; some pulled forward through M9 | |
 | M9 Movement and look pass | done (pulled forward by the owner) | |
-| M10 Bomb obstacles (#68) | done (pulled forward by the owner, M7.4 gate lifted for it) | group playtest of `PlaytestCourse` |
-| Spike #87 industrial look | `IndustrialLab` and the full closed `IndustrialPlant` (11 rooms, 9 checkpoints, every obstacle) built in the industrial look, with a material library, anti-tiling and decals (ARCHITECTURE §25.2) | play-test, real textures per surface (optional), performance on a player build, adopt/revise/reject decision |
-| M11 Second course (#83) | factory built; automated verification in M11.6 | 2-player timing/clear, host + 3 clients, 1080p/60 fps |
+| M10 Bomb obstacles (#68) | done (pulled forward by the owner, M7.4 gate lifted for it); `PlaytestCourse` removed in the cleanup, the obstacles live on in the kept courses | group playtest of the obstacles (now in PatataWilds and the plant) |
+| Spike #87 industrial look | the full closed `IndustrialPlant` (11 rooms, 9 checkpoints, every obstacle) built in the industrial look, with a material library, anti-tiling and decals (ARCHITECTURE §25.2) | play-test, real textures per surface (optional), performance on a player build, adopt/revise/reject decision |
+| M11 Second course (#83) | factory built, then removed in the cleanup; its layouts became the industrial plant's | |
+| M12 Third course: PatataWilds | built: 25 sections in 5 acts, nature look from Poly Haven, campfire checkpoints, dawn to dusk; automated verification in M12.8 | 2-player 20+ min clear, host + 3 clients, 1080p/60 fps, readability review |
+| Cleanup and generic obstacles | done: only `PatataWilds`, `IndustrialPlant` and `PassSandbox` (plus `Bootstrap`) remain; every obstacle system is generic (references, `IObstacleState`, `ObstacleVisualDriver`, `CustomVisual`, overridable poses, `ObstaclePrefabValidator`), with two example variants; the obstacle catalogue is `docs/OBSTACLES.md` | |
 
-**Next up:** the group playtest of `PlaytestCourse` (M10.4), then M6 and M7 (M7.4 external playtest gates any other
+**Next up:** the group playtest of PatataWilds and the plant (M12.8, M10.4), then M6 and M7 (M7.4 external playtest gates any other
 new mechanic). M3.7 is the oldest open gate.
 
 ---
@@ -1296,6 +1298,103 @@ Acceptance criteria:
 - [ ] a 2-player playtest solves every puzzle; a first clear takes 10–14 min (human gate);
 - [ ] host + 3 clients (MPPM) finish the course, doors, lifts, tubes and resets in sync (human gate);
 - [ ] 60 fps at 1080p on the target PC with 4 players (human gate).
+
+---
+
+# Milestone 12 — Third course: PatataWilds
+
+A realistic outdoor course (PROJECT_SPEC §15c), asked for by the owner: a forest, a river and granite cliffs climbed from
+dawn to dusk, 20+ minutes, 25 checkpoints in 5 acts, first in the Bootstrap level list. No new mechanic: every element of
+the kit and of M10 is re-dressed as nature with its logic and colliders unchanged. Architecture: ARCHITECTURE §4
+(`PatataWilds`) and §25.3 (nature look).
+
+Automated validation (2026-10-06, Unity 6000.3.25f1): `PatataWildsTests` (15), `NatureLookTests` (18), `TimeOfDayTests`
+(4), `KitSkinTests` (19), `IndustrialLookTests` (34), `PatataWorksTests` (7), `IndustrialPlantTests` (14),
+`IndustrialLabTests` (4), `MenuStationTests` (10), `BombObstacleTests` (13), `PrefabKitTests` (9), `CourseTests` (11),
+`FactoryCourseTests` (8) and `PatataParkTests` (3) pass. Teleport-based checkpoint tests do not prove a full clear; the
+first-clear time and checkpoint spacing in seconds are unmeasured.
+
+## M12.1 — Spec amendment
+
+Acceptance criteria:
+
+- [x] PROJECT_SPEC §17.2 lists PatataWilds as an owner-decided exception, says its generated trees, plants and terrain
+  are art (not procedural levels) and that its wind only sways plants;
+- [x] §15c holds the blueprint (target, outdoor-course rules, route by act, signature puzzles, intended difficulty); §19
+  the campfire and the banded hazards; §20 the length, the fuse override and the lethal water. Nothing renumbered.
+
+## M12.2 — Assets and credits
+
+Acceptance criteria:
+
+- [x] `tools/Fetch-PolyHaven.ps1` fetches the CC0 textures, models and skies listed in `tools/nature-assets.json`
+  incrementally, never `.blend`, packed ARM or DirectX normal files, and rewrites the Poly Haven block of `CREDITS.md`;
+- [x] `NatureAssetImporter` sets every asset's import on first import (colour, normal, linear, alpha masks, sky cubemaps,
+  models without colliders and with mesh LODs, compressed ambient loops);
+- [x] generated meshes and scatter data are LFS-tracked; the Poly Haven extras are git-ignored; the downloads stay
+  near 300 MB.
+
+## M12.3 — Nature shader and materials
+
+Acceptance criteria:
+
+- [x] `HotPatata/Nature` maps rock and ground triplanar in metres and wood, props and foliage by UV, reads Poly Haven
+  roughness and AO, has a moss/grass top layer, cut-out two-sided foliage, wind in every pass and a distance fade;
+- [x] `HotPatata/Water` (depth tint, refraction, foam, sky reflection) and `HotPatata/SkyBlend` (two skies blended);
+- [x] `NatureMaterialBuilder` builds the library and the gameplay variants (banded hazard, rotten planks, slot-coloured
+  logs, lantern glass, embers).
+
+## M12.4 — Kit look
+
+Acceptance criteria:
+
+- [x] `KitShape.RoughBox`, `Crag`, `Boulder`, `Skirt`, `Logs` and `Planks` are generated by `KitSkin`, deterministic,
+  with tangents; rock never rises above a walked-on top and bulges at most 30 cm out of a side; `CourseKit.LookSet.Nature`
+  maps every `KitRole`;
+- [x] organic course edges: rock buttresses and fallen boulders along the cliffs (clear of passes, triggers and movers),
+  rock skirts under raised slabs, scanned rocks, plants and deadwood instanced at their own mesh LODs;
+- [x] `NatureRestyle` redraws the placed KayKit prefabs and leaves every gameplay cue alone; colliders unchanged;
+- [x] `CourseKit.RegisterInMenu` is the one place that orders the level list (PatataWilds first, PatataWorks kept,
+  the plant last).
+
+## M12.5 — Time of day and sky
+
+Acceptance criteria:
+
+- [x] five presets (dawn, noon, late afternoon, sunset, dusk) written by `LookBuilder` through `PatataWildsLook`, each
+  sky turned so its photographed sun matches the scene's sun;
+- [x] `TimeOfDayBlender` follows the current checkpoint only (host-decided, mirrored), blends a step forward, shows a
+  step back or a big jump at once, and never changes on a section reset; tuning in `GameTuning`.
+
+## M12.6 — Vegetation and terrain
+
+Acceptance criteria:
+
+- [x] generated pines, firs, broadleaf trees, snags, bushes, grass, ferns and rocks, three LODs within budget, wind
+  weights in the vertex colour;
+- [x] a collider-free terrain around the course, never over a section; the scatter drawn instanced from a `FoliageSet`
+  asset, clear of every pass arc, trigger and mover.
+
+## M12.7 — Course builder, water and campfires
+
+Acceptance criteria:
+
+- [x] `PatataWildsBuilder` builds 25 sections in 5 acts with no overlap, closed by cliffs, with every intended pass
+  declared and validated on every build;
+- [x] every water surface has a kill zone 0.3 m under it; every pit has one; a safety net lies under the course;
+- [x] checkpoints show campfires (no pad) that catch when reached and go out at a new run, honouring flash reduction;
+  the summit beacon lights at the finish;
+- [x] fixed 3D ambience (river, falls, birds, crickets, wind) on the SFX group, under the beeps; no movement sound.
+
+## M12.8 — Tests and playtests
+
+Acceptance criteria:
+
+- [x] `PatataWildsTests`, `NatureLookTests` and `TimeOfDayTests` pass, and the touched suites still pass;
+- [ ] a first clear by two players takes 20+ minutes and every puzzle is solvable with two players;
+- [ ] host plus three clients online, through the whole course;
+- [ ] 60 fps at 1080p on a mid-range PC, four players;
+- [ ] readability review: hazards, tubes, gates, falling planks and campfires read at a glance in every act's light.
 
 ---
 

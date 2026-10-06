@@ -38,7 +38,7 @@ namespace HotPatata
             spawn.style.display = bootstrap.SceneCheckpointCount > 0 ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
-        /// <summary>"PatataPark, from CP3": the level and spawn point the host has picked.</summary>
+        /// <summary>"PatataWilds, from CP3": the level and spawn point the host has picked.</summary>
         public static string LevelSummary(NetworkBootstrap bootstrap)
         {
             string level = bootstrap.GameplayScenes[bootstrap.SceneIndex];
