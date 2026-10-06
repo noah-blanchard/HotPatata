@@ -118,3 +118,12 @@ InitTestScene*.unity*
 /Assets/Art/Textures/Industrial/**/*.usdc*
 /Assets/Art/Textures/Industrial/**/*.mtlx*
 /Assets/Art/Textures/Industrial/**/*.tres*
+
+# Poly Haven extras never used by Unity (PatataWilds, tools/Fetch-PolyHaven.ps1 already skips them)
+/Assets/Art/Textures/Nature/**/*.blend*
+/Assets/Art/Models/Nature/**/*.blend*
+/Assets/Art/Models/Nature/**/*.gltf
+/Assets/Art/Models/Nature/**/*.bin
+/Assets/Art/Models/Nature/**/*.glb
+/Assets/Art/**/*_arm_*k.*
+/Assets/Art/**/*_nor_dx_*k.*

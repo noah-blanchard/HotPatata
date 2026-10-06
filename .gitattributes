@@ -169,3 +169,7 @@ Packages/packages-lock.json linguist-generated
 
 # Exceptions for .asset files such as lightning pre-baking
 LightingData.asset     binary
+
+# Generated PatataWilds meshes and scatter data (large binary-like YAML)
+Assets/Art/Models/Nature/Generated/**/*.asset lfs
+Assets/Art/Nature/Generated/**/*.asset lfs

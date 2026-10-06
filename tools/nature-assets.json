@@ -1,0 +1,51 @@
+{
+  "comment": "Poly Haven (CC0) assets used by PatataWilds (ARCHITECTURE §25.3). Fetch with tools/Fetch-PolyHaven.ps1. folder = texture folder under Assets/Art/Textures/Nature; texturesOnly = keep only a model's textures, never its mesh (unused today: tree and grass sprays are drawn by NatureTextureFactory).",
+  "textures": [
+    { "id": "forest_floor",          "folder": "ForestFloor",  "res": "2k" },
+    { "id": "forest_leaves_02",      "folder": "ForestLeaves", "res": "1k" },
+    { "id": "leaves_forest_ground",  "folder": "LeafLitter",   "res": "1k" },
+    { "id": "brown_mud_leaves_01",   "folder": "Mud",          "res": "1k" },
+    { "id": "rocky_trail",           "folder": "Trail",        "res": "2k" },
+    { "id": "rock_path",             "folder": "RockPath",     "res": "1k" },
+    { "id": "gravel_stones",         "folder": "Gravel",       "res": "1k" },
+    { "id": "river_small_rocks",     "folder": "Riverbed",     "res": "1k" },
+    { "id": "sparse_grass",          "folder": "Grass",        "res": "2k" },
+    { "id": "grass_path_2",          "folder": "GrassPath",    "res": "1k" },
+    { "id": "mossy_rock",            "folder": "MossyRock",    "res": "2k" },
+    { "id": "rock_pitted_mossy",     "folder": "RockPitted",   "res": "1k" },
+    { "id": "rock_face_03",          "folder": "RockFace",     "res": "2k" },
+    { "id": "cliff_side",            "folder": "Cliff",        "res": "2k" },
+    { "id": "rock_wall_10",          "folder": "RockWall",     "res": "1k" },
+    { "id": "rocks_ground_01",       "folder": "RocksGround",  "res": "1k" },
+    { "id": "pine_bark",             "folder": "PineBark",     "res": "1k" },
+    { "id": "bark_brown_01",         "folder": "BarkBrown",    "res": "1k" },
+    { "id": "bark_brown_02",         "folder": "BarkDark",     "res": "1k" },
+    { "id": "bark_willow",           "folder": "BarkWillow",   "res": "1k" },
+    { "id": "rough_wood",            "folder": "RoughWood",    "res": "1k" },
+    { "id": "weathered_planks",      "folder": "Planks",       "res": "1k" },
+    { "id": "wood_planks",           "folder": "PlanksClean",  "res": "1k" },
+    { "id": "wooden_gate",           "folder": "Gate",         "res": "1k" },
+    { "id": "wood_trunk_wall",       "folder": "LogWall",      "res": "1k" },
+    { "id": "moss_wood",             "folder": "MossWood",     "res": "1k" },
+    { "id": "mossy_stone_wall",      "folder": "StoneWall",    "res": "1k" }
+  ],
+  "models": [
+    { "id": "boulder_01",          "res": "1k" },
+    { "id": "rock_moss_set_01",    "res": "1k" },
+    { "id": "rock_face_01",        "res": "1k" },
+    { "id": "mountainside",        "res": "1k" },
+    { "id": "dead_tree_trunk_02",  "res": "1k" },
+    { "id": "tree_stump_01",       "res": "1k" },
+    { "id": "shrub_03",            "res": "1k" },
+    { "id": "fern_02",             "res": "1k" },
+    { "id": "stone_fire_pit",      "res": "1k" },
+    { "id": "wooden_lantern_01",   "res": "1k" }
+  ],
+  "hdris": [
+    { "id": "qwantani_dawn_puresky",           "res": "2k", "act": 1 },
+    { "id": "qwantani_noon_puresky",           "res": "2k", "act": 2 },
+    { "id": "qwantani_late_afternoon_puresky", "res": "2k", "act": 3 },
+    { "id": "qwantani_sunset_puresky",         "res": "2k", "act": 4 },
+    { "id": "qwantani_dusk_2_puresky",         "res": "2k", "act": 5 }
+  ]
+}
