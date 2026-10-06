@@ -411,31 +411,7 @@ namespace HotPatata.Editor
             }
         }
 
-        static void Register()
-        {
-            var scenes = EditorBuildSettings.scenes.ToList();
-            if (!scenes.Any(s => s.path == ScenePath)) scenes.Add(new EditorBuildSettingsScene(ScenePath, true));
-            EditorBuildSettings.scenes = scenes.ToArray();
-            var root = PrefabUtility.LoadPrefabContents(NetworkPrefab);
-            try
-            {
-                var so = new SerializedObject(root.GetComponent<NetworkBootstrap>());
-                var names = so.FindProperty("gameplayScenes");
-                var counts = so.FindProperty("sceneCheckpoints");
-                int existing = -1;
-                for (int i = 0; i < names.arraySize; i++)
-                    if (names.GetArrayElementAtIndex(i).stringValue == "PatataWorks") existing = i;
-                if (existing < 0)
-                {
-                    names.InsertArrayElementAtIndex(0); counts.InsertArrayElementAtIndex(0);
-                }
-                else { names.MoveArrayElement(existing, 0); counts.MoveArrayElement(existing, 0); }
-                names.GetArrayElementAtIndex(0).stringValue = "PatataWorks";
-                counts.GetArrayElementAtIndex(0).intValue = 9;
-                so.ApplyModifiedPropertiesWithoutUndo();
-                PrefabUtility.SaveAsPrefabAsset(root, NetworkPrefab);
-            }
-            finally { PrefabUtility.UnloadPrefabContents(root); }
-        }
+        /// <summary>Lists the factory in the build settings and the menu's level list, where it already is (PatataWilds is first).</summary>
+        static void Register() => RegisterInMenu("PatataWorks", ScenePath, 9, MenuSlot.Keep);
     }
 }

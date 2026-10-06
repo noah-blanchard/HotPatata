@@ -144,12 +144,14 @@ namespace HotPatata.Tests
         }
 
         [Test]
-        public void Bootstrap_ListsFactoryFirst_WithNineSpawnChoices()
+        public void Bootstrap_ListsTheFactory_WithNineSpawnChoices()
         {
+            // PatataWilds took the first place (M12); the factory keeps its place in the level list
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Network/NetworkManager.prefab");
             var so = new SerializedObject(prefab.GetComponent<NetworkBootstrap>());
-            Assert.AreEqual("PatataWorks", so.FindProperty("gameplayScenes").GetArrayElementAtIndex(0).stringValue);
-            Assert.AreEqual(9, so.FindProperty("sceneCheckpoints").GetArrayElementAtIndex(0).intValue);
+            var names = so.FindProperty("gameplayScenes");
+            int index = Enumerable.Range(0, names.arraySize).Single(i => names.GetArrayElementAtIndex(i).stringValue == "PatataWorks");
+            Assert.AreEqual(9, so.FindProperty("sceneCheckpoints").GetArrayElementAtIndex(index).intValue);
             Assert.IsTrue(EditorBuildSettings.scenes.Any(s => s.enabled && s.path.EndsWith("/PatataWorks.unity")));
         }
 

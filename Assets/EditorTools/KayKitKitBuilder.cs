@@ -64,6 +64,7 @@ namespace HotPatata.Editor
             BombObstacleKitBuilder.BuildSandboxDemo();
             PatataParkBuilder.Build();
             PatataWorksBuilder.Build();
+            PatataWildsBuilder.Build();     // last: it takes the first place in the level list
             MenuBackdropBuilder.Build();   // the menu island is drawn with the same kit
             Debug.Log("[KayKitKitBuilder] all courses rebuilt");
         }
