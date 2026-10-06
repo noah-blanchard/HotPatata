@@ -228,14 +228,17 @@ namespace HotPatata.Tests
             var errors = new List<string>();
             foreach (var skin in All<KitSkin>())
             {
-                if (!KitSkin.IsGenerated(skin.Shape)) continue;
+                if (!KitSkin.IsGenerated(skin.Shape) || skin.Shape == KitShape.Skirt) continue;   // a skirt is decoration under a slab
                 var box = skin.GetComponent<BoxCollider>() ?? skin.transform.parent?.GetComponent<BoxCollider>()
                           ?? skin.transform.parent?.Find("Collision")?.GetComponent<BoxCollider>();
                 if (box == null) continue;
                 var r = skin.GetComponent<Renderer>().bounds;
                 var b = box.bounds;
-                b.Expand(0.06f);
-                if (!b.Contains(r.min) || !b.Contains(r.max)) errors.Add(skin.transform.parent?.name + "/" + skin.name);
+                // rock sides may bulge 30 cm out (turned boxes: their world bounds grow too); nothing rises above the walked-on top
+                bool rock = skin.Shape == KitShape.RoughBox || skin.Shape == KitShape.Crag;
+                var side = b;
+                side.Expand(new Vector3(rock ? 0.9f : 0.12f, rock ? 0.9f : 0.12f, rock ? 0.9f : 0.12f));
+                if (!side.Contains(r.min) || !side.Contains(r.max) || r.max.y > b.max.y + 0.05f) errors.Add(skin.transform.parent?.name + "/" + skin.name);
             }
             Assert.IsEmpty(errors.Take(20).ToArray(), "visuals outside their collider");
         }

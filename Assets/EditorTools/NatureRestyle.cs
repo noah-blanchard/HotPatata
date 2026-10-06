@@ -60,6 +60,8 @@ namespace HotPatata.Editor
                 var skin = r.GetComponent<KitSkin>();
                 var (shape, target) = Target(current.name, skin, theme);
                 if (target == null) continue;   // nature already, or a gameplay cue
+                // a visual that carries its own collider (a cannon's basket) must match it exactly: planks, never bulging rock
+                if (shape == KitShape.RoughBox && r.GetComponent<Collider>() != null) { shape = KitShape.Planks; target = NatureDir + "Nature_Planks"; }
                 var material = Mat(target);
                 if (skin != null)
                     CourseKit.Skin(r.gameObject, shape, KitColor.Neutral, material, skin.UnitBox, skin.Flip);

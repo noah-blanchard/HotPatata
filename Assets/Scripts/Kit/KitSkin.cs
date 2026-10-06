@@ -76,7 +76,8 @@ namespace HotPatata
 
         /// <summary>Shapes drawn from code, with no palette piece (the bevel box, and the nature shapes of <see cref="NatureShapes"/>).</summary>
         public static bool IsGenerated(KitShape shape) =>
-            shape == KitShape.BevelBox || shape == KitShape.RoughBox || shape == KitShape.Logs || shape == KitShape.Planks;
+            shape == KitShape.BevelBox || shape == KitShape.RoughBox || shape == KitShape.Logs || shape == KitShape.Planks
+            || shape == KitShape.Boulder || shape == KitShape.Skirt || shape == KitShape.Crag;
 
         // ------------------------------------------------------------------ layout
 
@@ -157,6 +158,9 @@ namespace HotPatata
             if (shape == KitShape.RoughBox) return Cache[key] = NatureShapes.RoughBox(size, scale);
             if (shape == KitShape.Logs) return Cache[key] = NatureShapes.Logs(size, scale);
             if (shape == KitShape.Planks) return Cache[key] = NatureShapes.Planks(size, scale);
+            if (shape == KitShape.Boulder) return Cache[key] = NatureShapes.Boulder(size, scale);
+            if (shape == KitShape.Skirt) return Cache[key] = NatureShapes.Skirt(size, scale);
+            if (shape == KitShape.Crag) return Cache[key] = NatureShapes.Crag(size, scale);
 
             var vertices = new List<Vector3>();
             var normals = new List<Vector3>();

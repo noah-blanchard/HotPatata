@@ -140,62 +140,139 @@ namespace HotPatata
             }
         }
 
-        // ------------------------------------------------------------------ rough rock slab
+        // ------------------------------------------------------------------ rock: slabs, cliffs, skirts
 
-        /// <summary>How deep a rough slab's surface may sink below its box: the top barely (it is walked on), the sides more.</summary>
+        /// <summary>How deep the walked-on top of a rock slab may sink below its box (never above it).</summary>
         public static float TopRelief(Vector3 size) => Mathf.Min(0.05f, size.y * 0.1f);
 
-        /// <summary>Sides sink up to 16 cm; a tall, thick-enough box (a cliff) sinks up to 45 cm, in broad bulges.</summary>
-        public static float SideRelief(Vector3 size) =>
-            size.y > 2.5f ? Mathf.Min(0.45f, Mathf.Min(size.x, size.z) * 0.45f) : Mathf.Min(0.16f, Mathf.Min(size.x, size.z) * 0.12f);
+        /// <summary>
+        /// How far a slab's sides may bulge OUT of its box, below its rim: up to 30 cm, less than a player's half width, so a
+        /// player never sees the camera enter rock and a thrown bomb never meets rock it cannot see by more than a few centimetres.
+        /// </summary>
+        public static float OutReach(Vector3 size) => size.y > 0.8f ? 0.3f : 0.1f;
 
-        public static float EdgeRound(Vector3 size) => Mathf.Min(0.12f, Mathf.Min(size.x, Mathf.Min(size.y, size.z)) * 0.2f);
+        /// <summary>How far a side may sink IN: deep on a thick box, a few centimetres on the ends of a thin wall (window edges).</summary>
+        public static float InReach(Vector3 size) => Mathf.Min(0.6f, Mathf.Min(size.x, size.z) * 0.3f);
+
+        /// <summary>The band under the top where the sides only sink (a rounded rim): nothing to step on that is not there.</summary>
+        public static float RimDepth(Vector3 size) => Mathf.Min(0.5f, size.y * 0.4f);
+
+        public static float EdgeRound(Vector3 size) => Mathf.Min(0.45f, Mathf.Min(size.x, Mathf.Min(size.y, size.z)) * 0.3f);
+
+        enum RockStyle { Slab, Skirt, Crag }
 
         /// <summary>
-        /// A rough slab: each face is a grid pushed inwards by a 3D noise (shallow on the top, deeper on the sides) and rounded along
-        /// the edges. The push is computed from the position alone, along the inward sum of the faces a vertex lies on, so the faces
-        /// meet without cracks and nothing leaves the box.
+        /// A rock slab (floors, ledges, steps, cliffs, buttresses): every face is a grid moved along the inward sum of the faces a
+        /// vertex lies on by an amount computed from the position alone (so faces meet without cracks): broad bulges and strata
+        /// in low-frequency noise, edges strongly rounded. The walked-on top only sinks (up to 5 cm); under a rounded rim the
+        /// sides may sink deep or bulge out by up to <see cref="OutReach"/>; the bottom only sinks.
         /// </summary>
-        public static Mesh RoughBox(Vector3 size, Vector3 scale)
+        public static Mesh RoughBox(Vector3 size, Vector3 scale) => Rock(size, scale, RockStyle.Slab);
+
+        /// <summary>
+        /// The rock mass under a raised slab (collider-free decoration): its top hides under the slab, then it widens with depth,
+        /// up to 1.4 m out at 4 m down, and narrows again at its foot: a platform reads as an outcrop, not a floating box.
+        /// </summary>
+        public static Mesh Skirt(Vector3 size, Vector3 scale) => Rock(size, scale, RockStyle.Skirt);
+
+        /// <summary>
+        /// A crag (a rock spur against a cliff, never walked on): every edge rounded deep, the top domed, the sides hollowed: a
+        /// spur reads as rock, not as a box. Sides bulge out by at most <see cref="OutReach"/>.
+        /// </summary>
+        public static Mesh Crag(Vector3 size, Vector3 scale) => Rock(size, scale, RockStyle.Crag);
+
+        static Mesh Rock(Vector3 size, Vector3 scale, RockStyle style)
         {
             var b = new Builder();
             Vector3 h = size / 2f;
-            int seed = SeedFor(size);
-            float top = TopRelief(size), sideDepth = SideRelief(size), round = EdgeRound(size);
+            int seed = SeedFor(size) + (style == RockStyle.Skirt ? 991 : style == RockStyle.Crag ? 557 : 0);
+            float top = TopRelief(size), outReach = OutReach(size), inReach = InReach(size), rim = RimDepth(size), round = EdgeRound(size);
+            bool thinWall = Mathf.Min(size.x, size.z) < 2.2f && size.y > 1.5f;
+            int longAxis = size.x >= size.z ? 0 : 2;
+            float big = Mathf.Max(2.5f, Mathf.Min(Mathf.Max(size.x, size.z), 14f));
             Vector3 Axis(int i) => i == 0 ? Vector3.right : i == 1 ? Vector3.up : Vector3.forward;
 
             Vector3 Displace(Vector3 p)
             {
                 Vector3 dir = Vector3.zero;
                 float gapMin = float.MaxValue, gapSecond = float.MaxValue;
-                bool onTop = false;
+                int faces = 0, faceAxis = -1, faceSign = 0;
                 for (int a = 0; a < 3; a++)
                 {
                     float gap = h[a] - Mathf.Abs(p[a]);
                     if (gap < 1e-4f)
                     {
                         dir -= Axis(a) * Mathf.Sign(p[a]);
-                        if (a == 1 && p.y > 0f) onTop = true;
+                        faces++;
+                        faceAxis = a;
+                        faceSign = p[a] > 0f ? 1 : -1;
                     }
                     if (gap < gapMin) { gapSecond = gapMin; gapMin = gap; }
                     else if (gap < gapSecond) gapSecond = gap;
                 }
                 if (dir == Vector3.zero) return p;
                 dir.Normalize();
-                float n = size.y > 2.5f
-                    ? Noise(p * 0.28f, seed) * 0.5f + Noise(p * 0.9f, seed + 3) * 0.3f + Noise(p * 2.7f, seed + 7) * 0.2f   // cliffs: broad bulges and ledges
-                    : Noise(p * 0.9f, seed) * 0.65f + Noise(p * 2.7f, seed + 7) * 0.35f;
-                float depth = onTop && Mathf.Abs(dir.y) > 0.99f ? top * n : sideDepth * n;
-                // round the edges: a vertex close to another face sinks towards the box's inside
+                // low frequencies make the forms (bulges, ledges), the high ones the grain; a slight vertical stretch reads as strata
+                var q = new Vector3(p.x, p.y * 1.8f, p.z);
+                float n = Noise(q / big * 1.6f, seed) * 0.5f + Noise(q * 0.45f, seed + 3) * 0.32f + Noise(q * 1.6f, seed + 7) * 0.18f;
+                float below = h.y - p.y;                      // depth under the top
+                bool onTop = faces == 1 && faceAxis == 1 && faceSign > 0;
+                bool onBottom = faces == 1 && faceAxis == 1 && faceSign < 0;
+                float d;
+                if (style == RockStyle.Crag)
+                {
+                    float hollow = Mathf.Min(h.x, h.z) * 0.7f;
+                    d = onTop ? Mathf.Min(h.y * 0.35f, 1.6f) * n : onBottom ? hollow * n : Mathf.Lerp(-outReach, hollow, n);
+                    if (below < 0.6f || p.y < -h.y + 0.6f) d = Mathf.Max(d, 0f);   // never above the top nor under the foot
+                    float cr = Mathf.Min(1.4f, Mathf.Min(h.x, h.z) * 0.9f);
+                    float ce = gapSecond;
+                    if (ce < cr) d += cr * (1f - ce / cr) * (1f - ce / cr);
+                    return Move(p, dir, d);
+                }
+                if (onTop) d = top * n;
+                else if (style == RockStyle.Skirt)
+                {
+                    // hidden under the slab at the top, wider and wider below, narrower again at the foot
+                    float grow = Mathf.Min(1.4f, below * 0.35f);
+                    float foot = Mathf.Clamp01((p.y + h.y) / Mathf.Max(0.5f, Mathf.Min(3f, size.y * 0.3f)));
+                    float inset = 0.2f + (1f - foot) * Mathf.Min(h.x, h.z) * 0.6f;
+                    d = onBottom ? Mathf.Min(h.x, h.z) * 0.4f * n : Mathf.Lerp(-grow, inset, n * 0.6f + (1f - foot) * 0.4f);
+                    if (below < 0.25f) d = Mathf.Max(d, 0.2f);
+                }
+                else
+                {
+                    float sink = inReach;
+                    float bulge = outReach;
+                    if (thinWall && faces == 1 && faceAxis == longAxis) { sink = 0.05f; bulge = 0.05f; }   // the edges of windows and doorways stay true
+                    d = onBottom ? sink * n : Mathf.Lerp(-bulge, sink, n);
+                    if (below < rim || p.y < -h.y + 1e-3f) d = Mathf.Max(d, 0f);   // the rim and the foot only sink
+                }
+                // round the edges: a vertex close to another face sinks towards the inside
+                float r = onTop || below < rim ? Mathf.Min(round, rim) : round;
                 float e = gapSecond;
-                if (e < round) depth += round * (1f - e / round) * (1f - e / round);
-                return p + dir * depth;
+                if (e < r) d += r * (1f - e / r) * (1f - e / r);
+                return Move(p, dir, d);
+            }
+
+            // inwards along the faces' inward sum, never past the box's middle; outwards only sideways, so nothing rises or sinks
+            Vector3 Move(Vector3 p, Vector3 dir, float d)
+            {
+                if (d >= 0f)
+                {
+                    float limit = float.MaxValue;
+                    for (int a = 0; a < 3; a++)
+                        if (Mathf.Abs(dir[a]) > 1e-3f) limit = Mathf.Min(limit, h[a] * 0.9f / Mathf.Abs(dir[a]));
+                    return p + dir * Mathf.Min(d, limit);
+                }
+                var side = new Vector3(dir.x, 0f, dir.z);
+                return side.sqrMagnitude < 1e-6f ? p : p + side.normalized * d;
             }
 
             for (int a = 0; a < 3; a++)
             {
                 int u = (a + 1) % 3, v = (a + 2) % 3;
-                int nu = Mathf.Clamp(Mathf.CeilToInt(size[u] / 0.6f), 2, 28), nv = Mathf.Clamp(Mathf.CeilToInt(size[v] / 0.6f), 2, 28);
+                float cell = style == RockStyle.Skirt ? 0.8f : 0.55f;
+                int nu = Mathf.Clamp(Mathf.CeilToInt(size[u] / cell), 3, 40), nv = Mathf.Clamp(Mathf.CeilToInt(size[v] / cell), 3, 40);
                 for (int s = -1; s <= 1; s += 2)
                 {
                     int first = b.Vertices.Count;
@@ -212,14 +289,64 @@ namespace HotPatata
                         for (int i = 0; i < nu; i++)
                         {
                             int i0 = first + j * (nu + 1) + i, i1 = i0 + 1, i2 = i0 + nu + 1, i3 = i2 + 1;
-                            // wind each quad to face outwards
                             bool flip = Vector3.Dot(Vector3.Cross(Axis(u), Axis(v)), normal) < 0f;
                             if (!flip) { b.Indices.Add(i0); b.Indices.Add(i1); b.Indices.Add(i3); b.Indices.Add(i0); b.Indices.Add(i3); b.Indices.Add(i2); }
                             else { b.Indices.Add(i0); b.Indices.Add(i3); b.Indices.Add(i1); b.Indices.Add(i0); b.Indices.Add(i2); b.Indices.Add(i3); }
                         }
                 }
             }
-            return b.ToMesh($"KitSkin RoughBox {size}", scale, true);
+            return b.ToMesh($"KitSkin {style} {size}", scale, true);
+        }
+
+        // ------------------------------------------------------------------ boulder
+
+        /// <summary>
+        /// A boulder filling its box (stepping stones, rocks, pillars, cairns): a rounded superellipsoid knocked in by noise, its
+        /// top flattened to the box's top (it can be walked on) and its foot to the bottom. Never outside the box.
+        /// </summary>
+        public static Mesh Boulder(Vector3 size, Vector3 scale)
+        {
+            int seed = SeedFor(size) + 17;
+            int rings = Mathf.Clamp(Mathf.CeilToInt(size.y * 4f) + 8, 10, 22), segments = Mathf.Clamp(Mathf.CeilToInt((size.x + size.z) * 2.5f) + 12, 16, 40);
+            const float e = 2.6f;
+            var pts = new List<Vector3>();
+            var uvs = new List<Vector2>();
+            for (int r = 0; r <= rings; r++)
+            {
+                float theta = r / (float)rings * Mathf.PI;
+                for (int k = 0; k <= segments; k++)
+                {
+                    float phi = k / (float)segments * Mathf.PI * 2f;
+                    var d = new Vector3(Mathf.Sin(theta) * Mathf.Cos(phi), Mathf.Cos(theta), Mathf.Sin(theta) * Mathf.Sin(phi));
+                    float denom = Mathf.Pow(Mathf.Abs(d.x), e) + Mathf.Pow(Mathf.Abs(d.y), e) + Mathf.Pow(Mathf.Abs(d.z), e);
+                    var q = d / Mathf.Pow(Mathf.Max(1e-5f, denom), 1f / e);
+                    var w = Vector3.Scale(q, size) * 0.5f;
+                    float n = Noise(w * 0.5f + Vector3.one * 3.1f, seed) * 0.6f + Noise(w * 1.7f, seed + 5) * 0.4f;
+                    q *= 1f - 0.2f * n;
+                    if (q.y > 0.78f) q.y = 0.78f + (q.y - 0.78f) * 0.2f;      // a flat top
+                    if (q.y < -0.85f) q.y = -0.85f + (q.y + 0.85f) * 0.3f;    // a flat foot
+                    pts.Add(q);
+                    uvs.Add(new Vector2(phi * (size.x + size.z) * 0.25f, theta * size.y * 0.5f));
+                }
+            }
+            // stretch so the top meets the box's top and the foot its bottom exactly; never wider than the box
+            float maxY = float.MinValue, minY = float.MaxValue, maxX = 0f, maxZ = 0f;
+            foreach (var q in pts) { maxY = Mathf.Max(maxY, q.y); minY = Mathf.Min(minY, q.y); maxX = Mathf.Max(maxX, Mathf.Abs(q.x)); maxZ = Mathf.Max(maxZ, Mathf.Abs(q.z)); }
+            var b = new Builder();
+            foreach (var q in pts)
+            {
+                float y = Mathf.Lerp(-1f, 1f, (q.y - minY) / Mathf.Max(1e-4f, maxY - minY));
+                b.Vertices.Add(Vector3.Scale(new Vector3(q.x / Mathf.Max(1f, maxX), y, q.z / Mathf.Max(1f, maxZ)), size) * 0.5f);
+            }
+            b.Uvs.AddRange(uvs);
+            for (int r = 0; r < rings; r++)
+                for (int k = 0; k < segments; k++)
+                {
+                    int a = r * (segments + 1) + k, c = a + segments + 1;
+                    b.Indices.Add(a); b.Indices.Add(a + 1); b.Indices.Add(c);
+                    b.Indices.Add(a + 1); b.Indices.Add(c + 1); b.Indices.Add(c);
+                }
+            return b.ToMesh($"KitSkin Boulder {size}", scale, true);
         }
 
         // ------------------------------------------------------------------ logs

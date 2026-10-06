@@ -83,22 +83,43 @@ namespace HotPatata.Tests
         public void GeneratedShapes_StayInsideTheirBox_AndRepeat(float x, float y, float z)
         {
             var size = new Vector3(x, y, z);
-            foreach (var make in new System.Func<Vector3, Vector3, Mesh>[] { NatureShapes.RoughBox, NatureShapes.Logs, NatureShapes.Planks })
+            // rock may bulge out of its sides by at most 30 cm (less than a player's half width); never above its top
+            var shapes = new (System.Func<Vector3, Vector3, Mesh> make, float side)[]
+            {
+                (NatureShapes.RoughBox, 0.31f), (NatureShapes.Crag, 0.31f), (NatureShapes.Boulder, 1e-3f), (NatureShapes.Logs, 1e-3f), (NatureShapes.Planks, 1e-3f)
+            };
+            foreach (var (make, side) in shapes)
             {
                 var mesh = make(size, Vector3.one);
                 var again = make(size, Vector3.one);
                 try
                 {
                     var b = mesh.bounds;
-                    Assert.LessOrEqual(b.max.x, x / 2 + 1e-3f); Assert.GreaterOrEqual(b.min.x, -x / 2 - 1e-3f);
-                    Assert.LessOrEqual(b.max.y, y / 2 + 1e-3f); Assert.GreaterOrEqual(b.min.y, -y / 2 - 1e-3f);
-                    Assert.LessOrEqual(b.max.z, z / 2 + 1e-3f); Assert.GreaterOrEqual(b.min.z, -z / 2 - 1e-3f);
+                    Assert.LessOrEqual(b.max.x, x / 2 + side, mesh.name); Assert.GreaterOrEqual(b.min.x, -x / 2 - side, mesh.name);
+                    Assert.LessOrEqual(b.max.y, y / 2 + 1e-3f, mesh.name + " rises above its top"); Assert.GreaterOrEqual(b.min.y, -y / 2 - 1e-3f, mesh.name);
+                    Assert.LessOrEqual(b.max.z, z / 2 + side, mesh.name); Assert.GreaterOrEqual(b.min.z, -z / 2 - side, mesh.name);
                     Assert.AreEqual(mesh.vertexCount, again.vertexCount, mesh.name);
                     CollectionAssert.AreEqual(mesh.vertices, again.vertices, mesh.name + " must be the same on every build");
                     Assert.AreEqual(mesh.vertexCount, mesh.tangents.Length, mesh.name + " needs tangents (normal maps)");
                 }
                 finally { Object.DestroyImmediate(mesh); Object.DestroyImmediate(again); }
             }
+        }
+
+        [Test]
+        public void Skirt_HidesUnderItsSlab_AndWidensBelow()
+        {
+            var size = new Vector3(6f, 8f, 10f);
+            var mesh = NatureShapes.Skirt(size, Vector3.one);
+            try
+            {
+                Assert.LessOrEqual(mesh.bounds.max.y, size.y / 2 + 1e-3f);
+                foreach (var v in mesh.vertices)
+                    if (v.y > size.y / 2 - 0.2f)
+                        Assert.IsTrue(Mathf.Abs(v.x) <= size.x / 2 + 1e-3f && Mathf.Abs(v.z) <= size.z / 2 + 1e-3f, "its top stays under the slab");
+                Assert.Greater(mesh.bounds.size.x, size.x, "it widens below");
+            }
+            finally { Object.DestroyImmediate(mesh); }
         }
 
         [Test]

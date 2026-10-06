@@ -54,6 +54,10 @@ namespace HotPatata.Editor
         static float floorStart, floorEnd, floorEndLevel;
         static readonly List<Vector3> Route = new List<Vector3>();
         static readonly List<bool> Outdoors = new List<bool>();
+        // the section's floors, steps, ramps and shell: the only colliders a rock buttress may lean on
+        static HashSet<Collider> Structural = new HashSet<Collider>();
+        static readonly List<(Transform room, SectionSpec spec, int index, float wallTop, HashSet<Collider> structural)> Built =
+            new List<(Transform, SectionSpec, int, float, HashSet<Collider>)>();
         static int currentAct;
 
         static SurfaceTheme T(string floor, string wall, string ceiling) => new SurfaceTheme(NatureDir + floor, NatureDir + wall, NatureDir + ceiling);
@@ -64,10 +68,10 @@ namespace HotPatata.Editor
         static readonly SurfaceTheme River = T("Nature_RockPath", "Nature_RockFace", "Nature_RockFace");
         static readonly SurfaceTheme Gravel = T("Nature_Gravel", "Nature_RockFace", "Nature_RockFace");
         static readonly SurfaceTheme Granite = T("Nature_RocksGround", "Nature_Cliff", "Nature_RockPitted");
-        static readonly SurfaceTheme Cave = T("Nature_RockPath", "Nature_RockWall", "Nature_RockPitted");
+        static readonly SurfaceTheme Cave = T("Nature_RockPath", "Nature_RockFace", "Nature_RockPitted");
         static readonly SurfaceTheme Mud = T("Nature_Mud", "Nature_MossyRock", "Nature_RockFace");
         static readonly SurfaceTheme Meadow = T("Nature_Grass", "Nature_Cliff", "Nature_RockFace");
-        static readonly SurfaceTheme Summit = T("Nature_GrassPath", "Nature_RockWall", "Nature_RockFace");
+        static readonly SurfaceTheme Summit = T("Nature_GrassPath", "Nature_RockFace", "Nature_RockFace");
 
         static SectionSpec S(string name, int act, float length, float dy, int turn, SurfaceTheme theme, Action<Transform> contents,
                              bool pit = false, bool water = false, float ceiling = 0f, bool cornerFloor = true) =>
@@ -135,6 +139,7 @@ namespace HotPatata.Editor
             Route.Clear();
             Outdoors.Clear();
             Footprints.Clear();
+            Built.Clear();
             int restyled = 0;
             RebuildGroup(section, GroupName, root =>
             {
@@ -161,6 +166,8 @@ namespace HotPatata.Editor
                         float top = Mathf.Max(absTop[i], first ? absTop[i] : absTop[i - 1], last ? absTop[i] : absTop[i + 1]);
                         float wallTop = (spec.ceiling > 0f ? origin.y + spec.ceiling + 1f : top + CliffAbove) - origin.y;
                         float wallBottom = Mathf.Min(absLowest[i], first ? absLowest[i] : absLowest[i - 1], last ? absLowest[i] : absLowest[i + 1]) - 30f - origin.y;
+                        Structural = new HashSet<Collider>();
+                        Built.Add((room, spec, i, wallTop, Structural));
                         using (UseTheme(spec.theme))
                         {
                             Shell(room, spec, i, n, turnIn, wallTop, wallBottom);
@@ -178,6 +185,7 @@ namespace HotPatata.Editor
                         origin += rotation * Vector3.forward * spec.length + Vector3.up * spec.dy;
                         yaw += 90f * spec.turn;
                     }
+                    ButtressAll();
                     SafetyNet(root);
                 }
             });
@@ -247,12 +255,12 @@ namespace HotPatata.Editor
                     float stretch = Mathf.Min(zb - z, 7f + (float)rng.NextDouble() * 9f);
                     if (zb - (z + stretch) < 4f) stretch = zb - z;
                     float stretchTop = spec.ceiling > 0f ? wallTop : wallTop + (float)rng.NextDouble() * 4.5f;
-                    Block(room, "Cliff", new Vector3(side * (Half + 0.5f), (bottom + stretchTop) / 2, z + stretch / 2), new Vector3(1, stretchTop - bottom, stretch), KitRole.Wall);
+                    Structure(Block(room, "Cliff", new Vector3(side * (Half + 0.5f), (bottom + stretchTop) / 2, z + stretch / 2), new Vector3(1, stretchTop - bottom, stretch), KitRole.Wall));
                     z += stretch;
                 }
             }
-            if (first) Block(room, "Cliff end", new Vector3(0, (bottom + wallTop) / 2, -Half - 0.5f), new Vector3(2 * Half + 2, wallTop - bottom, 1), KitRole.Wall);
-            if (last) Block(room, "Cliff end", new Vector3(0, (bottom + wallTop) / 2, L + Half + 0.5f), new Vector3(2 * Half + 2, wallTop - bottom, 1), KitRole.Wall);
+            if (first) Structure(Block(room, "Cliff end", new Vector3(0, (bottom + wallTop) / 2, -Half - 0.5f), new Vector3(2 * Half + 2, wallTop - bottom, 1), KitRole.Wall));
+            if (last) Structure(Block(room, "Cliff end", new Vector3(0, (bottom + wallTop) / 2, L + Half + 0.5f), new Vector3(2 * Half + 2, wallTop - bottom, 1), KitRole.Wall));
             if (spec.ceiling > 0f)
             {
                 float ca = first ? -Half : turnIn == 0 ? 0 : -Half;
@@ -262,9 +270,145 @@ namespace HotPatata.Editor
             // A solid foundation under the section's floors, down to the cliffs' foot: a gorge shows its bottom 20 m down, water its bed
             // 3 m down, any other section hides it just under its floors.
             float top = Mathf.Min(0, spec.dy) - (spec.water ? -WaterBed : spec.pit ? 20f : 1.05f);
-            var foundation = Block(room, spec.water ? "River bed" : spec.pit ? "Gorge floor" : "Foundation", new Vector3(0, (top + bottom) / 2, (floorStart + floorEnd) / 2),
-                                   new Vector3(2 * Half, top - bottom, floorEnd - floorStart), KitRole.Floor);
+            var foundation = Structure(Block(room, spec.water ? "River bed" : spec.pit ? "Gorge floor" : "Foundation", new Vector3(0, (top + bottom) / 2, (floorStart + floorEnd) / 2),
+                                   new Vector3(2 * Half, top - bottom, floorEnd - floorStart), KitRole.Floor));
             if (spec.water) CourseKit.Skin(foundation.transform.Find("Visual").gameObject, KitShape.RoughBox, KitColor.Neutral, NatureMaterialBuilder.Load("Nature_Riverbed"));
+        }
+
+        static GameObject Structure(GameObject block)
+        {
+            foreach (var c in block.GetComponentsInChildren<Collider>()) Structural.Add(c);
+            return block;
+        }
+
+        /// <summary>
+        /// Rock buttresses against the cliffs (Environment boxes, turned and leaning a little, drawn as crags), placed once every
+        /// section stands in its final place: the cliff line breaks into spurs and bays, in water and gorges too. A buttress only
+        /// leans on floors, cliffs and rocks: it touches no other collider or trigger (zones, checkpoints, gates, transits), stays
+        /// 1.2 m from every intended pass arc of any section, clear of every mover's whole travel and of collider-free pieces
+        /// (waterfalls, campfires); rising from water or a gorge, its top stays at least 2.2 m above the floors around (never a
+        /// step to climb on).
+        /// </summary>
+        static void ButtressAll()
+        {
+            Physics.SyncTransforms();
+            var tuning = AssetDatabase.LoadAssetAtPath<GameTuning>("Assets/ScriptableObjects/Tuning/GameTuning.asset");
+            var group = Built[0].room.parent;
+            var arcs = new List<Vector3>();
+            var samples = new List<Vector3>();
+            foreach (var pass in group.GetComponentsInChildren<PassCorridor>())
+                if (pass.TrySample(tuning, samples, 0.04f)) arcs.AddRange(samples);
+            var moving = new List<Bounds>();
+            foreach (var c in group.GetComponentsInChildren<Collider>())
+            {
+                if (IndustrialKit.IsStatic(c)) continue;
+                var bounds = c.bounds;
+                var mover = c.GetComponentInParent<MovingPlatform>();
+                var actuator = c.GetComponentInParent<SignalActuator>();
+                var rotator = c.GetComponentInParent<RotatingObstacle>();
+                Transform a = null, b = null;
+                if (mover != null) { a = mover.transform.Find("Waypoint_A"); b = mover.transform.Find("Waypoint_B"); }
+                if (actuator != null) { a = actuator.transform.Find("Waypoint_Closed"); b = actuator.transform.Find("Waypoint_Open"); }
+                if (a != null && b != null) { var moved = bounds; moved.center += b.position - a.position; bounds.Encapsulate(moved); }
+                if (rotator != null) { float reach = Vector3.Distance(rotator.transform.position, bounds.center) + bounds.extents.magnitude; bounds.Encapsulate(new Bounds(rotator.transform.position, Vector3.one * reach * 2f)); }
+                bounds.Expand(2f);
+                moving.Add(bounds);
+            }
+            var decorations = group.GetComponentsInChildren<CourseDecoration>().SelectMany(d => d.GetComponentsInChildren<Renderer>()).Select(r => r.bounds).ToList();
+            var structural = new HashSet<Collider>(Built.SelectMany(x => x.structural).Where(c => c != null));
+            var rocks = new HashSet<Collider>();
+            foreach (var (room, spec, index, wallTop, own) in Built)
+                using (UseTheme(spec.theme))
+                    PlaceButtresses(room, spec, index, wallTop, own, structural, rocks, arcs, moving, decorations);
+        }
+
+        static void PlaceButtresses(Transform room, SectionSpec spec, int index, float wallTop, HashSet<Collider> own, HashSet<Collider> structural,
+                                    HashSet<Collider> rocks, List<Vector3> arcs, List<Bounds> moving, List<Bounds> decorations)
+        {
+            var rng = new System.Random(900 + index);
+            float R(float a, float b) => a + (float)rng.NextDouble() * (b - a);
+            // the section's own walked-on pieces, in its own space
+            var pieces = new List<(Vector3 min, Vector3 max)>();
+            foreach (var c in own)
+            {
+                if (c == null) continue;
+                var b = c.bounds;
+                Vector3 mn = Vector3.one * float.MaxValue, mx = Vector3.one * float.MinValue;
+                for (int k = 0; k < 8; k++)
+                {
+                    var corner = room.InverseTransformPoint(b.center + Vector3.Scale(b.extents, new Vector3((k & 1) == 0 ? -1 : 1, (k & 2) == 0 ? -1 : 1, (k & 4) == 0 ? -1 : 1)));
+                    mn = Vector3.Min(mn, corner);
+                    mx = Vector3.Max(mx, corner);
+                }
+                if (mx.y - mn.y > 4f || Mathf.Abs((mn.x + mx.x) / 2f) > Half + 0.2f) continue;   // cliffs and foundations
+                pieces.Add((mn, mx));
+            }
+            float WalkTop(float z)
+            {
+                float top = float.MinValue;
+                foreach (var (mn, mx) in pieces)
+                    if (mn.z <= z + 3f && mx.z >= z - 3f) top = Mathf.Max(top, mx.y);
+                return top;
+            }
+            bool Clear(Vector3 centerLocal, Vector3 size, Quaternion rotLocal)
+            {
+                var center = room.TransformPoint(centerLocal);
+                var rotation = room.rotation * rotLocal;
+                var half = size / 2f + new Vector3(0.45f, 0.2f, 0.45f);
+                foreach (var c in Physics.OverlapBox(center, half, rotation, ~0, QueryTriggerInteraction.Collide))
+                    if (!structural.Contains(c) && !rocks.Contains(c) && c.GetComponent<KillZone>() == null) return false;   // rock on rock, water and gorges are fine
+                var ex = rotation * Vector3.right * size.x / 2f;
+                var ey = rotation * Vector3.up * size.y / 2f;
+                var ez = rotation * Vector3.forward * size.z / 2f;
+                var extents = new Vector3(Mathf.Abs(ex.x) + Mathf.Abs(ey.x) + Mathf.Abs(ez.x), Mathf.Abs(ex.y) + Mathf.Abs(ey.y) + Mathf.Abs(ez.y), Mathf.Abs(ex.z) + Mathf.Abs(ey.z) + Mathf.Abs(ez.z));
+                var spur = new Bounds(center, extents * 2.05f);
+                if (moving.Any(m => m.Intersects(spur)) || decorations.Any(d => d.Intersects(spur))) return false;
+                spur.Expand(2.4f);
+                return !arcs.Any(a => spur.Contains(a));
+            }
+            GameObject Make(Vector3 centerLocal, Vector3 size, Quaternion rotLocal, bool boulder)
+            {
+                var center = room.TransformPoint(centerLocal);
+                var rotation = room.rotation * rotLocal;
+                var go = boulder ? NatureKit.Rock(room, "Fallen boulder", center, size, "Nature_MossyRock", rotation)
+                                 : Block(room, "Rock buttress", center, size, KitRole.Wall, rotation);
+                if (!boulder) CourseKit.Skin(go.transform.Find("Visual").gameObject, KitShape.Crag, KitColor.Neutral, Mat(Look(KitRole.Wall).material));
+                foreach (var c in go.GetComponentsInChildren<Collider>()) rocks.Add(c);
+                Physics.SyncTransforms();
+                return go;
+            }
+            float L = spec.length;
+            foreach (int side in new[] { -1, 1 })
+                for (float z = -Half + R(0.5f, 2f); z < L + Half - 2f; z += R(1.8f, 4.2f))
+                {
+                    float depth = R(0.8f, 3f), length = R(2.5f, 8f), rise = R(2f, 7f);
+                    var rotation = Quaternion.Euler(R(-4f, 4f), R(-18f, 18f), R(-4f, 4f));
+                    var foot = new Vector3(side * (Half - depth / 2f + 0.15f), 0, z);
+                    float from = spec.ceiling > 0f ? spec.ceiling - 0.5f : 80f;   // under a cave's roof
+                    if (!Physics.Raycast(room.TransformPoint(foot + Vector3.up * from), Vector3.down, out var hit, 200f, ~0, QueryTriggerInteraction.Ignore)) continue;
+                    if (!own.Contains(hit.collider) || hit.normal.y < 0.9f) continue;   // on this section's own ground only (not a mover, not a rock)
+                    float ground = room.InverseTransformPoint(hit.point).y;
+                    float walk = WalkTop(z);
+                    bool low = walk > float.MinValue && ground < walk - 0.5f;           // water or a gorge at the cliff's foot
+                    float bottom = ground - (low ? 0.5f : 2.5f);
+                    float topY = low ? walk + R(2.2f, 6f) : ground + rise;
+                    if (rng.NextDouble() < 0.4 && spec.ceiling <= 0f) topY = wallTop - R(0.3f, 2f);   // a full spur, up to the cliff's top
+                    topY = Mathf.Min(topY, wallTop - 0.3f);
+                    if (topY - ground < 1.5f || (low && topY < walk + 2.2f)) continue;
+                    var center = new Vector3(foot.x, (bottom + topY) / 2f, z);
+                    var size = new Vector3(depth, topY - bottom, length);
+                    if (!Clear(center, size, rotation)) continue;
+                    Make(center, size, rotation, false);
+                    // now and then a fallen boulder at its foot, on walked-on ground
+                    if (!low && rng.NextDouble() < 0.4)
+                    {
+                        float bs = R(0.9f, 2f);
+                        var bc = new Vector3(side * (Half - depth - bs * 0.45f), ground + bs * 0.4f, z + R(-length / 2f, length / 2f));
+                        var bsize = new Vector3(bs * R(0.9f, 1.3f), bs * 0.9f, bs * R(0.9f, 1.3f));
+                        var brot = Quaternion.Euler(0, R(0f, 360f), 0);
+                        if (Clear(bc, bsize, brot)) Make(bc, bsize, brot, true);
+                    }
+                }
         }
 
         // ------------------------------------------------------------------ helpers (as PatataWorks and the plant)
@@ -274,7 +418,7 @@ namespace HotPatata.Editor
             if (Mathf.Abs(y) < 0.01f) a = Mathf.Max(a, floorStart);
             if (Mathf.Abs(y - floorEndLevel) < 0.01f) b = Mathf.Min(b, floorEnd);
             if (b - a < 0.01f) return;
-            Block(p, name, new Vector3(x, y - 0.5f, (a + b) / 2), new Vector3(width, 1, b - a), role);
+            Structure(Block(p, name, new Vector3(x, y - 0.5f, (a + b) / 2), new Vector3(width, 1, b - a), role));
         }
 
         /// <summary>A solid step of earth and rock from the foundation up to <paramref name="top"/> (terraces, ledges).</summary>
@@ -282,13 +426,13 @@ namespace HotPatata.Editor
         {
             if (b - a < 0.01f) return;
             const float foot = -1.05f;
-            Block(p, name, new Vector3(x, (top + foot) / 2, (a + b) / 2), new Vector3(width, top - foot, b - a), KitRole.Floor);
+            Structure(Block(p, name, new Vector3(x, (top + foot) / 2, (a + b) / 2), new Vector3(width, top - foot, b - a), KitRole.Floor));
         }
 
         static void Ramp(Transform p, string name, Vector3 a, Vector3 b, float width, bool slide = false)
         {
             var rotation = Quaternion.LookRotation(b - a, Vector3.up);
-            Block(p, name, (a + b) / 2 - rotation * Vector3.up * 0.5f, new Vector3(width, 1, Vector3.Distance(a, b)), slide ? KitRole.Slide : KitRole.Stairs, rotation, slide);
+            Structure(Block(p, name, (a + b) / 2 - rotation * Vector3.up * 0.5f, new Vector3(width, 1, Vector3.Distance(a, b)), slide ? KitRole.Slide : KitRole.Stairs, rotation, slide));
         }
 
         static void Pass(Transform p, string name, Vector3 from, Vector3 to, PassCorridor.ArcKind kind = PassCorridor.ArcKind.Normal,

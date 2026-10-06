@@ -290,8 +290,8 @@ namespace HotPatata.Editor
                 float z = 24 + i * 20;
                 Zone(p, ZoneCold, "Cold spring", new Vector3(-6, 0, z), new Vector3(8, 3, 12));
                 Zone(p, ZoneHot, "Steam vent", new Vector3(6, 0, z), new Vector3(7, 3, 12));
-                NatureKit.Rock(p, "Cave rock", new Vector3(i % 2 == 0 ? -9 : -2, 2, z + 8), new Vector3(6, 4, 2), "Nature_RockWall");
-                NatureKit.Rock(p, "Cave spine", new Vector3(0, 3, z), new Vector3(1.4f, 6, 12), "Nature_RockWall");
+                NatureKit.Rock(p, "Cave rock", new Vector3(i % 2 == 0 ? -9 : -2, 2, z + 8), new Vector3(6, 4, 2), "Nature_RockPitted");
+                NatureKit.Rock(p, "Cave spine", new Vector3(0, 3, z), new Vector3(1.4f, 6, 12), "Nature_RockPitted");
                 Pass(p, "Cold handoff " + i, new Vector3(-6, 1.5f, z - 4), new Vector3(-6, 1.5f, z + 4));
                 foreach (float x in new[] { -11.3f, 11.3f }) NatureKit.Torch(p, new Vector3(x, 0, z - 6));
             }

@@ -25,6 +25,20 @@ namespace HotPatata
             [Tooltip("Levels that cast shadows (only near trees do).")] public bool[] lodShadows = Array.Empty<bool>();
             [Tooltip("Shadows stop at this distance whatever the level.")] public float shadowDistance = 60f;
             public float minScale = 0.8f, maxScale = 1.2f;
+            [Tooltip("Applied to the mesh before each instance (a scanned model's own placement: centred, standing on its base).")]
+            public Matrix4x4 meshTransform = Matrix4x4.identity;
+            [Tooltip("Per level: the mesh's own LOD to draw (Unity mesh LODs of a scanned model), or -1 to draw it whole.")]
+            public int[] meshLods = Array.Empty<int>();
+
+            public Bounds LocalBounds(int lod)
+            {
+                var m = lods[Mathf.Min(lod, lods.Length - 1)];
+                var b = m.bounds;
+                var result = new Bounds(meshTransform.MultiplyPoint3x4(b.center), Vector3.zero);
+                for (int c = 0; c < 8; c++)
+                    result.Encapsulate(meshTransform.MultiplyPoint3x4(b.center + Vector3.Scale(b.extents, new Vector3((c & 1) == 0 ? -1 : 1, (c & 2) == 0 ? -1 : 1, (c & 4) == 0 ? -1 : 1))));
+                return result;
+            }
             public List<Cell> cells = new List<Cell>();
         }
 

@@ -142,11 +142,11 @@ namespace HotPatata.Editor
 
         // ------------------------------------------------------------------ rocks and props
 
-        /// <summary>A solid rock (Environment collider, a rough slab drawn in <paramref name="material"/>, Nature_MossyRock by default).</summary>
-        public static GameObject Rock(Transform parent, string name, Vector3 center, Vector3 size, string material = "Nature_MossyRock")
+        /// <summary>A solid rock (Environment box collider, a rounded boulder drawn in <paramref name="material"/>, Nature_MossyRock by default).</summary>
+        public static GameObject Rock(Transform parent, string name, Vector3 center, Vector3 size, string material = "Nature_MossyRock", Quaternion? rotation = null)
         {
-            var go = Block(parent, name, center, size, KitRole.Wall);
-            CourseKit.Skin(go.transform.Find("Visual").gameObject, KitShape.RoughBox, KitColor.Neutral, NatureMaterialBuilder.Load(material));
+            var go = Block(parent, name, center, size, KitRole.Wall, rotation);
+            CourseKit.Skin(go.transform.Find("Visual").gameObject, KitShape.Boulder, KitColor.Neutral, NatureMaterialBuilder.Load(material));
             return go;
         }
 

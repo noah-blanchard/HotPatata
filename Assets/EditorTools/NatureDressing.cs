@@ -72,11 +72,12 @@ namespace HotPatata.Editor
             var root = new GameObject("Dressing").transform;
             root.SetParent(group, false);
             Directory.CreateDirectory(GeneratedDir.TrimEnd('/'));
+            int skirts = Skirts(root, group);
             var terrain = Terrain(root, rooms, out var heights);
             var foliage = Scatter(root, rooms, heights);
             int props = HeroProps(root, rooms, heights);
             AssetDatabase.SaveAssets();
-            return $"terrain {terrain} chunks, {foliage} plants and rocks, {props} scanned props";
+            return $"{skirts} rock skirts, terrain {terrain} chunks, {foliage} plants and rocks, {props} scanned props";
         }
 
         // ------------------------------------------------------------------ terrain
@@ -212,6 +213,101 @@ namespace HotPatata.Editor
             return count;
         }
 
+        // ------------------------------------------------------------------ rock skirts
+
+        /// <summary>
+        /// Under every raised rock slab (a ledge over a gorge, a floor over water, a ramp), a collider-free rock mass that widens
+        /// with depth down to what lies below (capped at 14 m): platforms read as outcrops, never as floating boxes. Kept clear of
+        /// the pass arcs.
+        /// </summary>
+        static int Skirts(Transform root, Transform group)
+        {
+            var parent = new GameObject("Rock skirts").transform;
+            parent.SetParent(root, false);
+            var samples = PassSamples();
+            int count = 0;
+            foreach (var skin in group.GetComponentsInChildren<KitSkin>())
+            {
+                if (skin.Shape != KitShape.RoughBox) continue;
+                var box = skin.transform.parent != null ? skin.transform.parent.GetComponent<BoxCollider>() : null;
+                if (box == null || box.isTrigger || !IndustrialKit.IsStatic(box) || box.gameObject.layer != LayerMask.NameToLayer("Environment")) continue;
+                var t = box.transform;
+                if (Vector3.Dot(t.up, Vector3.up) < 0.996f) continue;   // level floors only (not cliffs; a tilted ramp's mass would rise over its path)
+                var size = Vector3.Scale(box.size, new Vector3(Mathf.Abs(t.lossyScale.x), Mathf.Abs(t.lossyScale.y), Mathf.Abs(t.lossyScale.z)));
+                if (size.y > 2.5f || size.x < 1.5f || size.z < 1.5f) continue;   // solid steps reach the ground already
+                var bottom = t.TransformPoint(box.center - Vector3.up * box.size.y * 0.5f);
+                float below = float.MaxValue;
+                foreach (var offset in new[] { Vector3.zero, new Vector3(0.35f, 0, 0.35f), new Vector3(-0.35f, 0, 0.35f), new Vector3(0.35f, 0, -0.35f), new Vector3(-0.35f, 0, -0.35f) })
+                {
+                    var from = bottom + t.rotation * Vector3.Scale(offset, size) - Vector3.up * 0.02f;
+                    float d = 30f;
+                    foreach (var hit in Physics.RaycastAll(from, Vector3.down, 30f, LayerMask.GetMask("Environment", "Hazard"), QueryTriggerInteraction.Ignore))
+                        if (hit.collider != box && hit.distance < d) d = hit.distance;
+                    below = Mathf.Min(below, d);
+                }
+                if (below < 1.2f) continue;   // it lies on something
+                float depth = Mathf.Clamp(below + 0.6f, 2f, 14f);
+                var center = bottom - t.up * (depth / 2f - 0.05f);
+                var reach = new Bounds(center, new Vector3(size.x + 3.4f, depth, size.z + 3.4f));
+                reach.Expand(0.6f);
+                if (samples.Any(p => reach.Contains(p))) continue;
+                var go = new GameObject("Rock skirt");
+                go.transform.SetParent(parent, false);
+                go.transform.SetPositionAndRotation(center, t.rotation);
+                go.transform.localScale = new Vector3(size.x, depth, size.z);
+                go.AddComponent<MeshFilter>();
+                var renderer = go.AddComponent<MeshRenderer>();
+                renderer.sharedMaterial = skin.GetComponent<Renderer>().sharedMaterial;
+                go.AddComponent<KitSkin>().Configure(CourseKit.Palette, KitShape.Skirt, KitColor.Neutral, Vector3.one, false);
+                go.AddComponent<CourseDecoration>();
+                go.isStatic = true;
+                count++;
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// Each mesh of a scanned Poly Haven model as its own variant: the mesh and the matrix that stands it on its base,
+        /// centred, in metres (the model's own scale and turn applied); its height in metres.
+        /// </summary>
+        static List<(Mesh mesh, Matrix4x4 bake, float height)> Variants(string model)
+        {
+            var result = new List<(Mesh, Matrix4x4, float)>();
+            var asset = AssetDatabase.LoadAssetAtPath<GameObject>($"{NatureAssetImporter.ModelFolder}{model}/{model}_1k.fbx");
+            if (asset == null) return result;
+            foreach (var filter in asset.GetComponentsInChildren<MeshFilter>())
+            {
+                var mesh = filter.sharedMesh;
+                if (mesh == null) continue;
+                var m = asset.transform.worldToLocalMatrix * filter.transform.localToWorldMatrix;
+                var b = mesh.bounds;
+                var world = new Bounds(m.MultiplyPoint3x4(b.center), Vector3.zero);
+                for (int c = 0; c < 8; c++)
+                    world.Encapsulate(m.MultiplyPoint3x4(b.center + Vector3.Scale(b.extents, new Vector3((c & 1) == 0 ? -1 : 1, (c & 2) == 0 ? -1 : 1, (c & 4) == 0 ? -1 : 1))));
+                var bake = Matrix4x4.Translate(new Vector3(-world.center.x, -world.min.y, -world.center.z)) * m;
+                result.Add((mesh, bake, world.size.y));
+            }
+            return result;
+        }
+
+        /// <summary>Batches for every variant of a scanned model, sized so a scale of 1 is <paramref name="height"/> metres tall.</summary>
+        static FoliageSet.Batch[] ModelBatches(FoliageSet set, string model, string material, float height, float[] distances, int[] meshLods, bool[] shadows,
+                                              float minScale, float maxScale)
+        {
+            var mat = NatureMaterialBuilder.Load(material);
+            var batches = new List<FoliageSet.Batch>();
+            foreach (var (mesh, bake, h) in Variants(model))
+            {
+                float k = height / Mathf.Max(0.01f, h);
+                var b = Batch(set, $"{model} {batches.Count}", Enumerable.Repeat(mesh, distances.Length).ToArray(), new[] { mat }, distances, shadows, minScale, maxScale);
+                b.meshTransform = Matrix4x4.Scale(Vector3.one * k) * bake;
+                b.meshLods = meshLods;
+                b.shadowDistance = 45f;
+                batches.Add(b);
+            }
+            return batches.ToArray();
+        }
+
         // ------------------------------------------------------------------ scatter
 
         static FoliageSet.Batch Batch(FoliageSet set, string name, Mesh[] lods, Material[] materials, float[] distances, bool[] shadows, float minScale, float maxScale)
@@ -223,8 +319,39 @@ namespace HotPatata.Editor
 
         static Mesh M(string kind, int variant, int lod) => AssetDatabase.LoadAssetAtPath<Mesh>(NatureTreeBuilder.MeshPath(kind, variant, lod));
 
+        // every intended pass arc, by 2 m cell: no plant or rock may come within the decoration clearance of one
+        static Dictionary<(int, int, int), List<Vector3>> arcCells;
+
+        static void IndexArcs(List<Vector3> samples)
+        {
+            arcCells = new Dictionary<(int, int, int), List<Vector3>>();
+            foreach (var p in samples)
+            {
+                var key = (Mathf.FloorToInt(p.x / 2f), Mathf.FloorToInt(p.y / 2f), Mathf.FloorToInt(p.z / 2f));
+                if (!arcCells.TryGetValue(key, out var list)) arcCells[key] = list = new List<Vector3>();
+                list.Add(p);
+            }
+        }
+
+        static bool TouchesAnArc(FoliageSet.Batch batch, Vector3 p, float yaw, float scale)
+        {
+            if (arcCells == null) return false;
+            var local = batch.LocalBounds(0);
+            var m = Matrix4x4.TRS(p, Quaternion.Euler(0f, yaw, 0f), Vector3.one * scale);
+            var world = new Bounds(m.MultiplyPoint3x4(local.center), Vector3.zero);
+            for (int c = 0; c < 8; c++)
+                world.Encapsulate(m.MultiplyPoint3x4(local.center + Vector3.Scale(local.extents, new Vector3((c & 1) == 0 ? -1 : 1, (c & 2) == 0 ? -1 : 1, (c & 4) == 0 ? -1 : 1))));
+            world.Expand(2f * (PassCorridor.DecorationClearance + 0.1f));
+            for (int x = Mathf.FloorToInt(world.min.x / 2f); x <= Mathf.FloorToInt(world.max.x / 2f); x++)
+                for (int y = Mathf.FloorToInt(world.min.y / 2f); y <= Mathf.FloorToInt(world.max.y / 2f); y++)
+                    for (int z = Mathf.FloorToInt(world.min.z / 2f); z <= Mathf.FloorToInt(world.max.z / 2f); z++)
+                        if (arcCells.TryGetValue((x, y, z), out var list) && list.Any(a => world.Contains(a))) return true;
+            return false;
+        }
+
         static void Add(Dictionary<FoliageSet.Batch, Dictionary<(int, int), List<(Vector3, float, float)>>> bins, FoliageSet.Batch batch, Vector3 p, float yaw, float scale)
         {
+            if (TouchesAnArc(batch, p, yaw, scale)) return;
             if (!bins.TryGetValue(batch, out var cells)) bins[batch] = cells = new Dictionary<(int, int), List<(Vector3, float, float)>>();
             var key = (Mathf.FloorToInt(p.x / FoliageSet.CellSize), Mathf.FloorToInt(p.z / FoliageSet.CellSize));
             if (!cells.TryGetValue(key, out var list)) cells[key] = list = new List<(Vector3, float, float)>();
@@ -260,6 +387,33 @@ namespace HotPatata.Editor
                 Batch(set, "Grass " + v, new[] { M("Grass", v, 0) }, new[] { NatureMaterialBuilder.Load("Nature_GrassBlades") }, new[] { 32f }, new[] { false }, 0.8f, 1.3f)).ToArray();
             var ferns = Enumerable.Range(0, NatureTreeBuilder.Variants).Select(v =>
                 Batch(set, "Fern " + v, new[] { M("Fern", v, 0) }, new[] { NatureMaterialBuilder.Load("Nature_Fern") }, new[] { 34f }, new[] { false }, 0.8f, 1.4f)).ToArray();
+            // scanned Poly Haven models, drawn at their own reduced mesh LODs
+            float[] closeRange = { 22f, 55f }, mid = { 40f, 110f, 260f }, far = { 60f, 160f, 420f };
+            int[] lodsNear = { 2, 4 }, lodsMid = { 2, 4, 6 };
+            bool[] shadowNear = { false, false }, shadowMid = { true, true, false };
+            var bigRocks = ModelBatches(set, "namaqualand_boulder_02", "Nature_Prop_Boulder02", 1.6f, far, lodsMid, shadowMid, 0.7f, 2.2f)
+                .Concat(ModelBatches(set, "namaqualand_boulder_04", "Nature_Prop_Boulder04", 2.2f, far, lodsMid, shadowMid, 0.6f, 2f))
+                .Concat(ModelBatches(set, "boulder_01", "Nature_Prop_Boulder", 1.4f, far, lodsMid, shadowMid, 0.6f, 2f))
+                .Concat(ModelBatches(set, "rock_moss_set_01", "Nature_Prop_RockMoss", 1.1f, far, lodsMid, shadowMid, 0.6f, 2f))
+                .Concat(ModelBatches(set, "rock_moss_set_02", "Nature_Prop_RockMoss2", 1f, far, lodsMid, shadowMid, 0.6f, 2f)).ToArray();
+            var cliffRocks = ModelBatches(set, "rock_face_02", "Nature_Prop_RockFace02", 4.5f, far, lodsMid, shadowMid, 0.7f, 1.8f)
+                .Concat(ModelBatches(set, "rock_face_01", "Nature_Prop_RockFace", 4f, far, lodsMid, shadowMid, 0.7f, 1.8f)).ToArray();
+            var pebbles = ModelBatches(set, "rock_07", "Nature_Prop_Rock07", 0.22f, closeRange, lodsNear, shadowNear, 0.7f, 1.6f)
+                .Concat(ModelBatches(set, "rock_09", "Nature_Prop_Rock09", 0.16f, closeRange, lodsNear, shadowNear, 0.7f, 1.8f))
+                .Concat(ModelBatches(set, "stone_01", "Nature_Prop_Stone01", 0.2f, closeRange, lodsNear, shadowNear, 0.7f, 1.6f)).ToArray();
+            var footRocks = ModelBatches(set, "rock_07", "Nature_Prop_Rock07", 0.5f, mid, lodsMid, shadowMid, 0.7f, 1.6f)
+                .Concat(ModelBatches(set, "stone_01", "Nature_Prop_Stone01", 0.45f, mid, lodsMid, shadowMid, 0.7f, 1.6f)).ToArray();
+            var undergrowth = ModelBatches(set, "weed_plant_02", "Nature_Weed", 0.4f, closeRange, lodsNear, shadowNear, 0.7f, 1.4f)
+                .Concat(ModelBatches(set, "nettle_plant", "Nature_Nettle", 0.55f, closeRange, lodsNear, shadowNear, 0.7f, 1.4f))
+                .Concat(ModelBatches(set, "shrub_04", "Nature_Shrub04", 0.6f, closeRange, lodsNear, shadowNear, 0.7f, 1.4f)).ToArray();
+            var moss = ModelBatches(set, "moss_01", "Nature_Moss", 0.08f, new[] { 26f }, new[] { -1 }, new[] { false }, 1.5f, 4f);
+            var shrubs = ModelBatches(set, "shrub_02", "Nature_Shrub02", 1.6f, mid, lodsMid, shadowMid, 0.7f, 1.4f);
+            var deadwood = ModelBatches(set, "dry_branches_medium_01", "Nature_Prop_Branches", 0.3f, closeRange, lodsNear, shadowNear, 0.8f, 1.6f);
+            var logs = ModelBatches(set, "tree_stump_02", "Nature_Prop_Stump2", 0.7f, mid, lodsMid, shadowMid, 0.8f, 1.5f)
+                .Concat(ModelBatches(set, "dead_tree_trunk", "Nature_Prop_DeadTrunk1", 0.5f, mid, lodsMid, shadowMid, 0.8f, 1.4f))
+                .Concat(ModelBatches(set, "root_cluster_01", "Nature_Prop_Roots", 1.2f, mid, lodsMid, shadowMid, 0.7f, 1.3f)).ToArray();
+            FoliageSet.Batch Pick(FoliageSet.Batch[] options, Random r) => options[r.Next(options.Length)];
+
             // the grass and ferns thin out before they stop, with no pop
             foreach (var mat in new[] { "Nature_GrassBlades", "Nature_Fern" })
             {
@@ -270,6 +424,7 @@ namespace HotPatata.Editor
             }
 
             var bins = new Dictionary<FoliageSet.Batch, Dictionary<(int, int), List<(Vector3, float, float)>>>();
+            IndexArcs(PassSamples());
             var rng = new Random(2026);
             float R(float a, float b) => a + (float)rng.NextDouble() * (b - a);
 
@@ -294,8 +449,21 @@ namespace HotPatata.Editor
                         if (rng.NextDouble() < 0.05) species = NatureTreeBuilder.Species.Snag;
                         Add(bins, trees[species][rng.Next(NatureTreeBuilder.Variants)], p - Vector3.up * 0.2f, R(0, 360), R(0.8f, 1.25f));
                     }
-                    else if (roll < density + 0.14f) Add(bins, trees[NatureTreeBuilder.Species.Bush][rng.Next(NatureTreeBuilder.Variants)], p, R(0, 360), R(0.8f, 1.25f));
-                    else if (roll < density + 0.22f) Add(bins, rocks[rng.Next(rocks.Length)], p - Vector3.up * 0.3f, R(0, 360), R(0.8f, 2.4f));
+                    else if (roll < density + 0.12f) Add(bins, trees[NatureTreeBuilder.Species.Bush][rng.Next(NatureTreeBuilder.Variants)], p, R(0, 360), R(0.8f, 1.25f));
+                    else if (roll < density + 0.18f) Add(bins, rocks[rng.Next(rocks.Length)], p - Vector3.up * 0.3f, R(0, 360), R(0.8f, 2.4f));
+                    else if (roll < density + 0.25f) Add(bins, Pick(bigRocks, rng), p - Vector3.up * 0.25f, R(0, 360), R(0.7f, 2f));
+                    else if (roll < density + 0.30f) Add(bins, Pick(logs, rng), p - Vector3.up * 0.05f, R(0, 360), R(0.8f, 1.4f));
+                    else if (roll < density + 0.36f) Add(bins, Pick(shrubs, rng), p, R(0, 360), R(0.7f, 1.3f));
+                    // the cliff rim: big rock faces half sunk along the top of the cliffs
+                    if (near < 8f && rng.NextDouble() < 0.35)
+                    {
+                        // never overhanging a section: the rock's reach stays behind the cliff line
+                        var rimRock = Pick(cliffRocks, rng);
+                        float rimScale = R(0.7f, 1.6f);
+                        var lb = rimRock.LocalBounds(0);
+                        float radius = new Vector2(lb.extents.x, lb.extents.z).magnitude * rimScale;
+                        if (near > radius - 0.8f) Add(bins, rimRock, p - Vector3.up * R(0.8f, 2f), R(0, 360), rimScale);
+                    }
                 }
 
             // grass and ferns on the walkable floors
@@ -307,9 +475,9 @@ namespace HotPatata.Editor
                     for (float lz = -Half; lz < r.length + Half; lz += step)
                     {
                         var start = r.origin + r.rotation * new Vector3(lx + R(-0.5f, 0.5f), 80f, lz + R(-0.5f, 0.5f));
-                        if (!Physics.Raycast(start, Vector3.down, out var hit, 160f, LayerMask.GetMask("Environment", "Hazard", "Trigger"), QueryTriggerInteraction.Collide)) continue;
+                        if (!GroundHit(start, out var hit)) continue;
                         if (hit.collider.isTrigger || hit.collider.gameObject.layer != LayerMask.NameToLayer("Environment")) continue;
-                        if (hit.normal.y < 0.9f || !IndustrialKit.IsStatic(hit.collider)) continue;
+                        if (hit.normal.y < 0.97f || !IndustrialKit.IsStatic(hit.collider)) continue;
                         if (hit.collider.GetComponentInParent<CourseCeiling>() != null) continue;
                         if (r.Distance(hit.point, out _) > -0.5f) continue;   // only inside this section
                         if (NearGameplay(hit.point)) continue;
@@ -319,23 +487,66 @@ namespace HotPatata.Editor
                         float fernChance = r.act <= 1 ? 0.18f : r.act == 3 ? 0.1f : 0.05f;
                         if (roll < grassChance) Add(bins, grass[rng.Next(grass.Length)], hit.point, R(0, 360), R(0.8f, 1.3f));
                         else if (roll < grassChance + fernChance) Add(bins, ferns[rng.Next(ferns.Length)], hit.point, R(0, 360), R(0.8f, 1.4f));
+                        else if (roll < grassChance + fernChance + 0.12f) Add(bins, Pick(pebbles, rng), hit.point - Vector3.up * 0.03f, R(0, 360), R(0.7f, 1.6f));
+                        else if (roll < grassChance + fernChance + 0.22f) Add(bins, Pick(moss, rng), hit.point - Vector3.up * 0.01f, R(0, 360), R(1.5f, 4f));
+                        else if (roll < grassChance + fernChance + 0.28f) Add(bins, Pick(undergrowth, rng), hit.point, R(0, 360), R(0.7f, 1.3f));
+                        else if (roll < grassChance + fernChance + 0.31f) Add(bins, Pick(deadwood, rng), hit.point, R(0, 360), R(0.8f, 1.5f));
                     }
             }
 
             // bushes and small rocks at the foot of the cliffs, inside the sections: the cliffs never meet the floor in a hard line
             foreach (var r in rooms)
                 foreach (int side in new[] { -1, 1 })
-                    for (float lz = -Half; lz < r.length + Half; lz += 2.6f)
+                    for (float lz = -Half; lz < r.length + Half; lz += 1.7f)
                     {
                         var start = r.origin + r.rotation * new Vector3(side * R(10.7f, 11.6f), 80f, lz + R(-0.8f, 0.8f));
-                        if (!Physics.Raycast(start, Vector3.down, out var hit, 160f, LayerMask.GetMask("Environment", "Hazard", "Trigger"), QueryTriggerInteraction.Collide)) continue;
-                        if (hit.collider.isTrigger || hit.normal.y < 0.9f || !IndustrialKit.IsStatic(hit.collider)) continue;
+                        if (!GroundHit(start, out var hit)) continue;
+                        if (hit.collider.isTrigger || hit.normal.y < 0.97f || !IndustrialKit.IsStatic(hit.collider)) continue;
                         if (hit.collider.GetComponentInParent<CourseCeiling>() != null || r.Distance(hit.point, out _) > -0.5f) continue;
                         if (NearGameplay(hit.point) || NearPass(passSamples, hit.point, 2.2f, 1.8f)) continue;
                         double roll = rng.NextDouble();
-                        if (roll < 0.4) Add(bins, trees[NatureTreeBuilder.Species.Bush][rng.Next(NatureTreeBuilder.Variants)], hit.point, R(0, 360), R(0.8f, 1.1f));
-                        else if (roll < 0.62) Add(bins, rocks[rng.Next(rocks.Length)], hit.point - Vector3.up * 0.15f, R(0, 360), R(0.6f, 1.2f));
+                        if (roll < 0.22) Add(bins, trees[NatureTreeBuilder.Species.Bush][rng.Next(NatureTreeBuilder.Variants)], hit.point, R(0, 360), R(0.8f, 1.1f));
+                        else if (roll < 0.40) Add(bins, Pick(footRocks, rng), hit.point - Vector3.up * 0.1f, R(0, 360), R(0.7f, 1.6f));
+                        else if (roll < 0.52) Add(bins, rocks[rng.Next(rocks.Length)], hit.point - Vector3.up * 0.15f, R(0, 360), R(0.6f, 1.2f));
+                        else if (roll < 0.66) Add(bins, Pick(undergrowth, rng), hit.point, R(0, 360), R(0.8f, 1.5f));
+                        else if (roll < 0.78) Add(bins, Pick(moss, rng), hit.point, R(0, 360), R(2f, 4f));
+                        else if (roll < 0.86) Add(bins, Pick(deadwood, rng), hit.point, R(0, 360), R(0.8f, 1.6f));
+                        else if (roll < 0.90) Add(bins, Pick(logs, rng), hit.point - Vector3.up * 0.05f, R(0, 360), R(0.6f, 0.9f));
                     }
+
+            // scanned rock faces sunk into the cliffs: their bulk stays behind the cliff, only their relief shows (at most 30 cm in
+            // front of it, so the cliff never seems further than it is), and they break the cliff's top line
+            foreach (var r in rooms)
+            {
+                float roomYaw = r.rotation.eulerAngles.y;
+                foreach (int side in new[] { -1, 1 })
+                    for (float lz = -Half + R(0f, 3f); lz < r.length + Half; lz += R(3.5f, 7f))
+                    {
+                        var batch = Pick(cliffRocks, rng);
+                        float localYaw = R(0f, 360f), scale = R(1.1f, 1.8f);
+                        var bounds = batch.LocalBounds(0);
+                        var toCentre = new Vector3(-side, 0, 0);
+                        float m = float.MinValue, lowest = float.MaxValue;
+                        var turn = Quaternion.Euler(0, localYaw, 0);
+                        for (int c = 0; c < 8; c++)
+                        {
+                            var corner = bounds.center + Vector3.Scale(bounds.extents, new Vector3((c & 1) == 0 ? -1 : 1, (c & 2) == 0 ? -1 : 1, (c & 4) == 0 ? -1 : 1));
+                            var turned = turn * corner;
+                            m = Mathf.Max(m, Vector3.Dot(turned, toCentre));
+                            lowest = Mathf.Min(lowest, turned.y);
+                        }
+                        float ox = side * (Half - 0.3f + scale * m);
+                        var footLocal = new Vector3(side * 11.4f, 0, lz);
+                        if (!GroundHit(r.origin + r.rotation * (footLocal + Vector3.up * 80f), out var foot)) continue;
+                        // only where a cliff really stands behind (not in a corner owned by the next section)
+                        var probe = foot.point + Vector3.up * 2.5f - r.rotation * new Vector3(side * 2f, 0, 0);
+                        if (!Physics.Raycast(probe, r.rotation * new Vector3(side, 0, 0), out var cliff, 4.5f, LayerMask.GetMask("Environment"), QueryTriggerInteraction.Ignore)
+                            || !IndustrialKit.IsStatic(cliff.collider)) continue;
+                        var origin = r.origin + r.rotation * new Vector3(ox, 0, lz);
+                        origin.y = foot.point.y - R(0.4f, 1.5f) - lowest * scale;
+                        Add(bins, batch, origin, roomYaw + localYaw, scale);
+                    }
+            }
 
             int total = 0;
             foreach (var (batch, cells) in bins)
@@ -352,6 +563,26 @@ namespace HotPatata.Editor
             go.transform.SetParent(root, false);
             go.AddComponent<FoliageInstancer>().Configure(set);
             return total;
+        }
+
+        /// <summary>The first thing below <paramref name="start"/> that is not a cave roof (triggers included, so zones are found and refused).</summary>
+        static bool GroundHit(Vector3 start, out RaycastHit hit)
+        {
+            hit = default;
+            var hits = Physics.RaycastAll(start, Vector3.down, 160f, LayerMask.GetMask("Environment", "Hazard", "Trigger"), QueryTriggerInteraction.Collide);
+            float best = float.MaxValue;
+            bool found = false;
+            foreach (var h in hits)
+            {
+                if (h.collider.GetComponentInParent<CourseCeiling>() != null || h.distance >= best) continue;
+                // a boulder or a crag is a rock, not ground: nothing grows on its collider's top
+                var shape = h.collider.transform.Find("Visual")?.GetComponent<KitSkin>();
+                if (shape != null && (shape.Shape == KitShape.Boulder || shape.Shape == KitShape.Crag)) { best = h.distance; found = false; continue; }
+                best = h.distance;
+                hit = h;
+                found = true;
+            }
+            return found;
         }
 
         /// <summary>Every intended pass arc, sampled (plants keep clear of them, ARCHITECTURE §25.3).</summary>

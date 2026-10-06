@@ -50,7 +50,8 @@ namespace HotPatata
             {
                 if (batch.lods == null || batch.lods.Length == 0 || batch.lods[0] == null) continue;
                 var cells = new List<CellData>();
-                float reach = batch.lods[0].bounds.extents.magnitude * batch.maxScale + 0.5f;
+                var local = batch.LocalBounds(0);
+                float reach = local.extents.magnitude * batch.maxScale + 0.5f;
                 foreach (var cell in batch.cells)
                 {
                     int n = cell.Count;
@@ -60,8 +61,8 @@ namespace HotPatata
                     for (int i = 0; i < n; i++)
                     {
                         var (position, yaw, scale) = FoliageSet.Unpack(batch, cell, i);
-                        matrices[i] = Matrix4x4.TRS(position, Quaternion.Euler(0f, yaw, 0f), Vector3.one * scale);
-                        var b = new Bounds(position + Vector3.up * batch.lods[0].bounds.center.y * scale, Vector3.one * reach * 2f);
+                        matrices[i] = Matrix4x4.TRS(position, Quaternion.Euler(0f, yaw, 0f), Vector3.one * scale) * batch.meshTransform;
+                        var b = new Bounds(position + Vector3.up * local.center.y * scale, Vector3.one * reach * 2f);
                         if (i == 0) bounds = b; else bounds.Encapsulate(b);
                     }
                     cells.Add(new CellData { bounds = bounds, matrices = matrices });
@@ -100,6 +101,8 @@ namespace HotPatata
                             shadowCastingMode = shadows ? ShadowCastingMode.On : ShadowCastingMode.Off,
                             receiveShadows = true
                         };
+                        if (lod < batch.meshLods.Length && batch.meshLods[lod] >= 0 && mesh.lodCount > 1)
+                            rp.forceMeshLod = Mathf.Min(batch.meshLods[lod], mesh.lodCount - 1);
                         for (int start = 0; start < cell.matrices.Length; start += Chunk)
                             Graphics.RenderMeshInstanced(rp, mesh, sub, cell.matrices, Mathf.Min(Chunk, cell.matrices.Length - start), start);
                     }
@@ -115,7 +118,7 @@ namespace HotPatata
             foreach (var batch in set.batches)
             {
                 if (batch.lods == null || batch.lods.Length == 0 || batch.lods[0] == null) continue;
-                var local = batch.lods[0].bounds;
+                var local = batch.LocalBounds(0);
                 foreach (var cell in batch.cells)
                     for (int i = 0; i < cell.Count; i++)
                     {
