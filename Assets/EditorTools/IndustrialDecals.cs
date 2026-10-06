@@ -126,11 +126,7 @@ namespace HotPatata.Editor
             }
 
             // the surface must never move: a decal is a separate quad and would be left floating in the air
-            bool Static(Collider c) => c.attachedRigidbody == null && c.GetComponentInParent<MovingPlatform>() == null
-                && c.GetComponentInParent<FallingPlatform>() == null && c.GetComponentInParent<SignalActuator>() == null
-                && c.GetComponentInParent<RotatingObstacle>() == null && c.GetComponentInParent<Conveyor>() == null
-                && c.GetComponentInParent<BombTransit>() == null && c.GetComponentInParent<PressurePlate>() == null
-                && c.GetComponentInParent<LaunchPad>() == null;
+            bool Static(Collider c) => IndustrialKit.IsStatic(c);
 
             var floorKinds = kinds.Where(k => k.floors).ToList();
             var wallKinds = kinds.Where(k => k.walls).ToList();

@@ -52,6 +52,9 @@ CBUFFER_START(UnityPerMaterial)
     half _ZWrite;
     half _OffsetFactor;
     half _OffsetUnits;
+    float _ParallaxStrength;
+    half _ParallaxSteps;
+    float _ParallaxFade;
 CBUFFER_END
 
 // _BaseMap and _BumpMap come from URP's SurfaceInput.hlsl.
@@ -59,5 +62,6 @@ TEXTURE2D(_GlossMap);       SAMPLER(sampler_GlossMap);
 TEXTURE2D(_MetallicMap);    SAMPLER(sampler_MetallicMap);
 TEXTURE2D(_OcclusionMap);   SAMPLER(sampler_OcclusionMap);
 TEXTURE2D(_GrungeMap);      SAMPLER(sampler_GrungeMap);
+TEXTURE2D(_HeightMap);      SAMPLER(sampler_HeightMap);
 
 #endif

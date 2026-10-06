@@ -106,7 +106,9 @@ namespace HotPatata.Tests
         [TestCase("Metal032_2K-PNG_Metalness.png", IndustrialTextureImporter.MapKind.Linear)]
         [TestCase("Metal032_2K-PNG_AmbientOcclusion.png", IndustrialTextureImporter.MapKind.Linear)]
         [TestCase("metal_plate_ao.png", IndustrialTextureImporter.MapKind.Linear)]
-        [TestCase("Concrete_Displacement.png", IndustrialTextureImporter.MapKind.Unknown)]
+        [TestCase("Concrete_Displacement.png", IndustrialTextureImporter.MapKind.Linear)]
+        [TestCase("factory_brick_disp_2k.png", IndustrialTextureImporter.MapKind.Linear)]
+        [TestCase("Concrete_Opacity.png", IndustrialTextureImporter.MapKind.Unknown)]
         public void TextureImporter_ClassifiesTheUsualNames(string file, IndustrialTextureImporter.MapKind expected)
         {
             Assert.AreEqual(expected, IndustrialTextureImporter.Classify("Assets/Art/Textures/Industrial/Concrete/" + file));
@@ -174,8 +176,50 @@ namespace HotPatata.Tests
 
         [TestCase("Assets/Art/Textures/Industrial/Decals/anything_at_all.png", IndustrialTextureImporter.MapKind.Decal)]
         [TestCase("Assets/Art/Textures/Industrial/Grunge/mask.png", IndustrialTextureImporter.MapKind.Grunge)]
+        [TestCase("Assets/Art/Textures/Industrial/Signs/Sign_Warning.png", IndustrialTextureImporter.MapKind.Decal)]
         public void TextureImporter_TreatsTheDecalAndGrungeFoldersByFolder(string path, IndustrialTextureImporter.MapKind expected) =>
             Assert.AreEqual(expected, IndustrialTextureImporter.Classify(path));
+
+        [Test]
+        public void Relief_EveryTexturedSurfaceHasAHeightMap_AndAShallowDepth()
+        {
+            var shader = Shader.Find(IndustrialMaterialBuilder.ShaderName);
+            Assert.GreaterOrEqual(shader.FindPropertyIndex("_HeightMap"), 0);
+            Assert.GreaterOrEqual(shader.FindPropertyIndex("_ParallaxStrength"), 0);
+            foreach (var surface in IndustrialMaterialBuilder.Library)
+            {
+                Assert.That(surface.relief, Is.InRange(0f, 0.05f), surface.name + ": relief is a few centimetres at most");
+                var mat = AssetDatabase.LoadAssetAtPath<Material>(IndustrialMaterialBuilder.Dir + surface.name + ".mat");
+                if (mat == null || mat.GetTexture("_BaseMap") == null) continue;
+                var height = mat.GetTexture("_HeightMap");
+                if (height == null) { Assert.AreEqual(0f, mat.GetFloat("_ParallaxStrength"), surface.name + ": no height map, no relief"); continue; }
+                var importer = (TextureImporter)AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(height));
+                Assert.IsFalse(importer.sRGBTexture, surface.name + ": a height map is linear data");
+            }
+        }
+
+        [Test]
+        public void Signs_AreDecals_WithoutHazardRed()
+        {
+            foreach (IndustrialSigns.Sign sign in System.Enum.GetValues(typeof(IndustrialSigns.Sign)))
+            {
+                var mat = IndustrialSigns.For(sign);
+                Assert.Greater(mat.GetFloat("_Decal"), 0.5f, sign + " is drawn as a decal");
+                var tex = (Texture2D)mat.GetTexture("_BaseMap");
+                Assert.IsNotNull(tex, sign.ToString());
+                var readable = new RenderTexture(64, 64, 0);
+                Graphics.Blit(tex, readable);
+                var copy = new Texture2D(64, 64, TextureFormat.RGBA32, false);
+                RenderTexture.active = readable;
+                copy.ReadPixels(new Rect(0, 0, 64, 64), 0, 0);
+                RenderTexture.active = null;
+                foreach (var c in copy.GetPixels())
+                    if (c.a > 0.5f) Assert.IsFalse(c.r > 0.6f && c.g < 0.3f && c.b < 0.3f, sign + " uses the red of a real hazard (spec §19)");
+                Object.DestroyImmediate(copy);
+                readable.Release();
+            }
+            Assert.AreEqual(2f, IndustrialSigns.Zone(7).GetTexture("_BaseMap").width / (float)IndustrialSigns.Zone(7).GetTexture("_BaseMap").height, 0.01f);
+        }
 
         [Test]
         public void LookSet_ChangesOnlyItsScope_AndKeepsHazardsStriped()

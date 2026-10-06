@@ -196,6 +196,23 @@ namespace HotPatata.Tests
         }
 
         [Test]
+        public void Details_LineEveryRoom_AsCollidersFreeDecoration_NeverOnAMover()
+        {
+            var groups = All<Transform>().Where(t => t.name == "Details" && t.GetComponent<CourseDecoration>() != null).ToArray();
+            Assert.AreEqual(11, groups.Length, "one detail group per room");
+            foreach (var g in groups)
+            {
+                Assert.Greater(g.childCount, 50, g.parent.name + " has its mouldings and props");
+                Assert.IsEmpty(g.GetComponentsInChildren<Collider>(), g.parent.name + ": details never collide");
+                Assert.IsNull(g.GetComponentInParent<MovingPlatform>());
+            }
+            var names = groups.SelectMany(g => g.Cast<Transform>()).Select(t => t.name).ToHashSet();
+            foreach (var kind in new[] { "Baseboard", "Cornice", "Pilaster", "Panel frame", "Edge angle", "Door leaf", "Window glass", "Wall pipe", "Cabinet",
+                                         "Cable tray", "Barrel", "Pallet deck", "Bench top", "Zone number" })
+                Assert.IsTrue(names.Contains(kind), "the plant has a " + kind.ToLowerInvariant());
+        }
+
+        [Test]
         public void ThePlant_IsListedInTheMenuAfterPatataWorks_WithNineSpawnChoices()
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Network/NetworkManager.prefab");

@@ -28,6 +28,13 @@ namespace HotPatata.Editor
             }
         }
 
+        /// <summary>True when nothing ever moves <paramref name="c"/>: a separate detail or decal laid on it would otherwise float.</summary>
+        public static bool IsStatic(Collider c) => c.attachedRigidbody == null && c.GetComponentInParent<MovingPlatform>() == null
+            && c.GetComponentInParent<FallingPlatform>() == null && c.GetComponentInParent<SignalActuator>() == null
+            && c.GetComponentInParent<RotatingObstacle>() == null && c.GetComponentInParent<Conveyor>() == null
+            && c.GetComponentInParent<BombTransit>() == null && c.GetComponentInParent<PressurePlate>() == null
+            && c.GetComponentInParent<LaunchPad>() == null;
+
         /// <summary>A collider-free box drawn in <paramref name="role"/>'s look, marked as decoration.</summary>
         public static GameObject Detail(Transform parent, string name, Vector3 center, Vector3 size, KitRole role, Quaternion? rotation = null)
         {
@@ -55,6 +62,9 @@ namespace HotPatata.Editor
             float plate = thickness + 0.4f;
             Detail(parent, name + " base", foot + Vector3.up * 0.06f, new Vector3(plate, 0.12f, plate), KitRole.Truss);
             Detail(parent, name + " cap", foot + Vector3.up * (height - 0.06f), new Vector3(plate, 0.12f, plate), KitRole.Truss);
+            // anchor bolts on the base plate
+            foreach (var (sx, sz) in new[] { (-1, -1), (1, -1), (-1, 1), (1, 1) })
+                Detail(parent, name + " bolt", foot + new Vector3(sx * plate * 0.36f, 0.15f, sz * plate * 0.36f), new Vector3(0.07f, 0.06f, 0.07f), KitRole.Grating);
         }
 
         /// <summary>A flat diagonal brace between two points (a column to a column, a column to a beam).</summary>

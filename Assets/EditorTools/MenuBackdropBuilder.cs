@@ -217,6 +217,21 @@ namespace HotPatata.Editor
                 IndustrialKit.Detail(p, "Pipe", new Vector3(x, 8.6f, 0), new Vector3(0.35f, 0.35f, HallBack - HallFront - 4), KitRole.Grating);
             }
             IndustrialKit.Detail(p, "Back duct", new Vector3(0, 12.5f, HallBack - 0.6f), new Vector3(2 * HallX - 4, 0.8f, 0.8f), KitRole.Rust);
+
+            // mouldings, frames and props along the side walls and the back wall (IndustrialDetails), between the machines and the
+            // columns; the hall's columns stand in for pilasters
+            var options = new IndustrialDetails.Options { pilasters = false, windows = true, density = 0.85f };
+            var sideRuns = new List<IndustrialDetails.Run>();
+            foreach (int side in new[] { -1, 1 })
+                foreach (var (a, b) in new[] { (HallFront + 0.5f, -19f), (-17f, -13.6f), (-5f, -1.6f), (7f, 10.4f), (19f, HallBack - 0.5f) })
+                    sideRuns.Add(new IndustrialDetails.Run { side = side, half = HallX, z0 = a, z1 = b, floor = 0, top = HallHeight, upper = true });
+            IndustrialDetails.DressFrame(p, sideRuns, new[] { (-1, HallX, HallFront, HallBack), (1, HallX, HallFront, HallBack) }, HallHeight, options, 4242);
+            // the back wall, in a frame turned so that its face is the plane x = HallBack
+            var back = new GameObject("Back wall").transform;
+            back.SetParent(p, false);
+            back.localRotation = Quaternion.Euler(0, -90, 0);
+            IndustrialDetails.DressFrame(back, new[] { new IndustrialDetails.Run { side = 1, half = HallBack, z0 = -HallX + 2.5f, z1 = HallX - 2.5f, floor = 0, top = HallHeight, upper = true } },
+                                         new[] { (1, HallBack, -HallX, HallX) }, HallHeight, options, 4243);
         }
 
         static void Machine(Transform p, string name, Vector3 center, Vector3 size)

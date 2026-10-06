@@ -121,15 +121,38 @@ namespace HotPatata.Editor
             });
             LookBuilder.ApplyToScene(scene);
             Physics.SyncTransforms();
+            int details = DressDetails(section, rooms);
             int decals = 0;
             foreach (var spec in rooms) decals += IndustrialDecals.Scatter(section.Find(GroupName + "/" + spec.name), spec.length, spec.ceiling, 17);
-            Debug.Log($"[IndustrialPlantBuilder] {restyled} KayKit renderers redrawn, {decals} decals scattered");
+            Debug.Log($"[IndustrialPlantBuilder] {restyled} KayKit renderers redrawn, {details} detail pieces, {decals} decals scattered");
             PatataWorksBuilder.ValidatePasses();
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
             Register();
             AssetDatabase.SaveAssets();
             Debug.Log("[IndustrialPlantBuilder] Industrial plant built: eleven closed rooms, nine checkpoints, every obstacle of the kit.");
+        }
+
+        /// <summary>Mouldings, frames and props along every room's walls and slab edges, kept clear of every intended pass.</summary>
+        static int DressDetails(Transform section, RoomSpec[] rooms)
+        {
+            int pieces = 0;
+            IndustrialDetails.CollectPasses();
+            try
+            {
+                using (UseLookSet(LookSet.Industrial))
+                    for (int i = 0; i < rooms.Length; i++)
+                    {
+                        var spec = rooms[i];
+                        bool first = i == 0, last = i == rooms.Length - 1;
+                        float z0 = first || rooms[i - 1].turn != 0 ? -Half : 0, z1 = last || spec.turn != 0 ? spec.length + Half : spec.length;
+                        var options = new IndustrialDetails.Options { pilasters = true, windows = true, zoneNumbers = true, zone = i, density = 0.7f };
+                        using (UseTheme(spec.theme))
+                            pieces += IndustrialDetails.DressRoom(section.Find(GroupName + "/" + spec.name), Half, z0, z1, spec.ceiling, Mathf.Min(0, spec.dy) - 10f, options, 23);
+                    }
+            }
+            finally { IndustrialDetails.ClearPasses(); }
+            return pieces;
         }
 
         /// <summary>
@@ -267,7 +290,8 @@ namespace HotPatata.Editor
                   new Vector3(2 * Half, top - bottom, floorEnd - floorStart), KitRole.Floor);
         }
 
-        /// <summary>The room's dressing (visual only): ceiling trusses and hanging lamps, wall pilasters, ducts, wall lamps.</summary>
+        /// <summary>The room's dressing (visual only): ceiling trusses and hanging lamps, ducts, wall lamps. The pilasters, mouldings
+        /// and props come after the build, from the colliders (<see cref="IndustrialDetails"/>).</summary>
         static void Dress(Transform room, RoomSpec spec, int turnIn)
         {
             float L = spec.length, c = spec.ceiling;
@@ -283,11 +307,6 @@ namespace HotPatata.Editor
             foreach (int side in new[] { -1, 1 })
             {
                 float x = side * (Half - 0.05f);
-                for (float z = start + 6; z < end; z += 24)
-                {
-                    Detail(room, "Pilaster", new Vector3(side * (Half - 0.3f), c / 2, z), new Vector3(0.6f, c, 0.8f), KitRole.Pillar);
-                    Detail(room, "Pilaster cap", new Vector3(side * (Half - 0.3f), c - 0.15f, z), new Vector3(0.8f, 0.3f, 1.1f), KitRole.Truss);
-                }
                 Detail(room, "Duct", new Vector3(side * (Half - 0.5f), c - 1.4f, (start + end) / 2), new Vector3(0.55f, 0.55f, end - start), spec.lamp == Furnace || spec.lamp == Sodium ? KitRole.Rust : KitRole.Grating);
                 for (float z = start + 2; z < end; z += 6) Detail(room, "Duct clamp", new Vector3(side * (Half - 0.5f), c - 1.4f, z), new Vector3(0.68f, 0.68f, 0.12f), KitRole.Truss);
                 if (spec.dy == 0 && c <= 14)

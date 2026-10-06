@@ -12,6 +12,8 @@
 //    rotations and blended, so no tile is visibly repeated), a macro layer of the same texture at a larger scale, a
 //    multi-scale procedural variation in world metres (no repeat inside a room), and an optional grunge mask (dirt,
 //    streaks) at a large world scale that darkens and roughens;
+//  - relief (_HeightMap, _ParallaxStrength): parallax occlusion mapping in the box-mapping frame, so mortar joints, tile
+//    grooves and plate studs sink into the surface; it fades out with distance (cheap single offset under hex tiling);
 //  - decals (_Decal): the same lighting on an alpha-blended quad with its own UVs, drawn just above a surface.
 // ShadowCaster, DepthOnly and DepthNormals (SSAO) reuse URP's own passes.
 Shader "HotPatata/Industrial"
@@ -43,6 +45,12 @@ Shader "HotPatata/Industrial"
         [Header(Occlusion)]
         [NoScaleOffset] _OcclusionMap ("Occlusion Map (R, linear)", 2D) = "white" {}
         _OcclusionStrength ("Occlusion Strength", Range(0, 1)) = 1
+
+        [Header(Relief)]
+        [NoScaleOffset] _HeightMap ("Height Map (R, linear: 1 = high; the AO map makes a fair stand-in)", 2D) = "white" {}
+        _ParallaxStrength ("Relief Depth (m, 0 = off)", Range(0, 0.1)) = 0
+        _ParallaxSteps ("Relief Steps (at grazing angles)", Range(4, 32)) = 16
+        _ParallaxFade ("Relief Fade Distance (m)", Float) = 24
 
         [Header(Repetition)]
         _MacroScale ("Macro Layer Scale (1 = same as tile)", Range(0.02, 1)) = 0.14
@@ -283,6 +291,30 @@ Shader "HotPatata/Industrial"
             }
             #endif
 
+            // Relief: parallax occlusion mapping. viewTS is the eye direction in the box-mapping frame (T, B, face normal) in
+            // metres; the ray walks down the height field (1 = top) in layers and stops where it goes under it, then
+            // interpolates between the last two layers. depthUV is the relief depth in uv units (metres / tile size).
+            float2 ParallaxOcclusion(float2 uv, float3 viewTS, float depthUV)
+            {
+                float2 dx = ddx(uv), dy = ddy(uv);
+                int steps = (int)lerp(_ParallaxSteps, 4.0, saturate(viewTS.z));
+                float layer = 1.0 / steps;
+                float2 delta = viewTS.xy / max(viewTS.z, 0.25) * depthUV * layer;
+                float depth = 0.0, prevDepth = 0.0;
+                float2 cur = uv;
+                float h = 1.0 - SAMPLE_TEXTURE2D_GRAD(_HeightMap, sampler_HeightMap, cur, dx, dy).r, prevH = h;
+                [loop] for (int i = 0; i < 32 && i < steps && depth < h; i++)
+                {
+                    prevH = h; prevDepth = depth;
+                    cur -= delta;
+                    depth += layer;
+                    h = 1.0 - SAMPLE_TEXTURE2D_GRAD(_HeightMap, sampler_HeightMap, cur, dx, dy).r;
+                }
+                float after = h - depth, before = prevH - prevDepth;
+                float w = after / min(-1e-4, after - before);
+                return cur + delta * saturate(w);
+            }
+
             // How much a light reaches a face: a soft wrapped Lambert, nudged towards a two-band ramp by _Stylize.
             half Diffuse(half ndl)
             {
@@ -315,6 +347,22 @@ Shader "HotPatata/Industrial"
 
                 half3 normalWS = normalize(input.normalWS);
                 bool decal = _Decal > 0.5;
+
+                // relief: the eye in the box-mapping frame (scaled object space, metres), faded out with distance
+                float reliefUV = 0.0;
+                float3 viewTS = float3(0, 0, 1);
+                if (_ParallaxStrength > 0.0 && !decal)
+                {
+                    float3 toEye = _WorldSpaceCameraPos - input.positionWS;
+                    float fade = saturate(2.0 - 2.0 * length(toEye) / max(1.0, _ParallaxFade));   // full to half the distance, then out
+                    float3 eyeOS = TransformWorldToObjectDir(toEye, false) * ObjectScale();
+                    float3 faceOS = cross(tangentOS, bitangentOS);
+                    viewTS = normalize(float3(dot(tangentOS, eyeOS), dot(bitangentOS, eyeOS), dot(faceOS, eyeOS)));
+                    reliefUV = _ParallaxStrength * fade / max(0.01, _TileSize);
+                }
+                #if !defined(_ANTITILE)
+                    if (reliefUV > 0.0 && viewTS.z > 0.0) uv = ParallaxOcclusion(uv, viewTS, reliefUV);
+                #endif
                 float2 mapUV = decal ? input.uv : uv;   // a decal is drawn with its own UVs, not box mapped
                 half4 texel4;
                 half3 tn;
@@ -323,6 +371,13 @@ Shader "HotPatata/Industrial"
                     if (!decal)
                     {
                         HexData hex = MakeHex(uv);
+                        if (reliefUV > 0.0 && viewTS.z > 0.0)
+                        {
+                            // under hex tiling one offset step (three height samples) is enough for the soft relief of concrete
+                            half height = HexSample(TEXTURE2D_ARGS(_HeightMap, sampler_HeightMap), hex).r;
+                            uv -= viewTS.xy / max(viewTS.z, 0.25) * reliefUV * (1.0 - height) * 0.5;
+                            hex = MakeHex(uv);
+                        }
                         texel4 = HexSample(TEXTURE2D_ARGS(_BaseMap, sampler_BaseMap), hex);
                         tn = HexNormal(TEXTURE2D_ARGS(_BumpMap, sampler_BumpMap), hex, _BumpScale);
                         gloss = HexSample(TEXTURE2D_ARGS(_GlossMap, sampler_GlossMap), hex).r;

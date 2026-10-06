@@ -727,7 +727,8 @@ base, the HUD (#24) follows.
   screen is gone. While any menu is on top, the IMGUI `AimReticle` draws nothing.
 - **Menu backdrop** (`Assets/Prefabs/Menu/MenuBackdrop.prefab`, one instance in `Bootstrap`). A closed factory hall in
   the industrial look (§25.2, matching the UI theme): concrete floor, brick walls and roof on steel trusses, columns,
-  machines, a belt of crates, ducts, and the logo on a dark sign hung from a yellow gantry. No sun: warm hanging lamps
+  machines, a belt of crates, ducts, mouldings, doors, windows, pipes and props along the walls (`IndustrialDetails`), and the logo
+  on a dark sign hung from a yellow gantry. No sun: warm hanging lamps
   and wall lamps, with the interior fill and exposure `LookBuilder` gives the plant (`LookBuilder.IsInterior`). It is
   the home of the in-world menu (above), where the four slots' characters pass the live potato in arcs, hand to hand
   (`MenuHotPotato`). The holder faces the next catcher, a catch squashes the catcher and bystanders cheer, wave or hop.
@@ -1806,6 +1807,23 @@ with no collider and marked `CourseDecoration`, and never on anything that moves
 walls only; *arrow*, *stencil*, *number* or *line* on floors only). Procedural placeholders (`IndustrialTextureFactory`) are written when the
 folders are empty: three tileable grunge masks and five decals; delete them when you add real ones.
 
+**Relief.** Every textured surface has a height map (`_HeightMap`: the set's displacement map, `_disp` or `_Displacement`, else its AO map
+as a stand-in) and a depth in metres per surface (`Surface.relief`: 2.8 cm for bricks, about 2 cm for blocks and corrugated panels, 1 cm for tiles
+and grit, a few millimetres for concrete and metals). The shader ray-marches it (parallax occlusion, up to 16 steps at grazing angles, in the box
+mapping's frame) so mortar joints and grooves sink; a hex-tiled material takes one offset step instead. The relief fades out between half and all of
+`_ParallaxFade` (24 m). It is visual only: collisions stay the boxes.
+
+**Mouldings, frames and props** (`IndustrialDetails`, `IndustrialSigns`). After the rooms are built, the walls are read from the colliders: a
+*wall run* is a stretch of static wall with a static floor at its foot and nothing at all (obstacle, trigger, machine) within 0.92 m in front of it,
+up to head height. Each run is split into bays by pilasters (base, yellow-and-black caution band, shaft, two-step capital, bolts) and gets a
+baseboard, a dado rail and a wainscot panel frame; by the room's seed a bay may hold a framed door, electrical cabinets (conduits, indicator
+lamps, an electrical warning sign), a valve station (riser, flanges, hand wheel, gauge), barrels, a pallet of crates or a workbench (vice, toolbox,
+pegboard). A run may carry a pipe (flanges, brackets) and a cable tray; tall walls get framed windows, and each room paints its zone number (00–10)
+and a direction arrow at its entrance. Cornices run under every ceiling; steel angles with bolts line the open edges of static slabs. Signs are
+procedural PNGs in `Textures/Industrial/Signs` (warning, electrical, arrow, information, zone numbers; replace a file to restyle it), drawn as decals,
+never in hazard red. Everything is a collider-free `CourseDecoration`, never on anything that moves, and kept 0.85 m from every intended pass
+arc. The menu hall gets the same dressing from runs placed by hand between its machines and columns. About 4,300 pieces in the plant.
+
 **What you can download (nothing is required: every surface works now, from the borrowed sets and the procedural layers).** Free CC0 sets from
 [ambientCG](https://ambientcg.com) and [Poly Haven](https://polyhaven.com) (I did not check specific asset ids; search these terms):
 
@@ -1825,18 +1843,18 @@ folders are empty: three tileable grunge masks and five decals; delete them when
 | `Grunge` (optional) | grunge, dirt, streak masks | one greyscale file (white = clean, black = dirt), tileable |
 | `Decals` (optional) | decals: stains, cracks, leaks, stencils, arrows, tape | PNG with alpha |
 
-Required per surface: base colour and an **OpenGL** normal; recommended: roughness; metals: metalness; optional: AO. Ignore height, displacement and
-opacity. Square power-of-two, tileable, 1K–2K. File names end in `_BaseColor`, `_Normal`, `_Roughness`, `_Metallic`, `_AO` (ambientCG's `_Color`,
+Required per surface: base colour and an **OpenGL** normal; recommended: roughness and displacement (relief); metals: metalness; optional: AO.
+Ignore opacity. Square power-of-two, tileable, 1K–2K. File names end in `_BaseColor`, `_Normal`, `_Roughness`, `_Metallic`, `_AO` (ambientCG's `_Color`,
 `_NormalGL`, `_Roughness`, `_Metalness`, `_AmbientOcclusion` and Poly Haven's `_diff`, `_nor_gl`, `_rough`, `_metal`, `_ao`, with a trailing `_2k`,
 work as they are). `IndustrialTextureImporter` sets the import on a texture's first import (base colour sRGB; normal as a Normal map; roughness,
-metallic, AO and grunge linear; all Repeat, trilinear, mip maps, aniso 8, High Quality, 2048 max; decals sRGB with alpha as transparency, Clamp).
+metallic, AO, displacement and grunge linear; all Repeat, trilinear, mip maps, aniso 8, High Quality, 2048 max; decals sRGB with alpha as transparency, Clamp).
 A DirectX normal map gets *Flip Normal Y* automatically. Then run **HotPatata/Course/Assign Industrial Textures**, tune **Tile Size (m)** on the
 material (never its Tiling), and rebuild the plant to move the decals. Record every set in `Textures/Industrial/CREDITS.md`.
 
 **Result so far.** The plant reads as a believable dark factory with ambientCG's four sets; borrowed sets give each room its own character until
 real ones are added. Render time on the lab matches the KayKit look in the Editor (four views, 1080p: about 1.1–1.5 ms both) with 80% fewer
 triangles; the plant's hex-tiled materials sample each map three times (12 samples per pixel on those surfaces) and its ~130 lamps are the main cost:
-neither is measured on a player build yet. Limitations: no reflection probe (metals are dull rather than mirror-like), no height maps, decals have no
-normal map. Tests: `IndustrialLookTests`, `IndustrialLabTests`, `IndustrialPlantTests` (closed in 26 directions from every route point, passes clear,
+neither is measured on a player build yet. Limitations: no reflection probe (metals are dull rather than mirror-like), parallax relief has no self-shadowing,
+decals have no normal map; the detail pieces add draw calls (SRP Batcher, same shader) still to be measured on a player build. Tests: `IndustrialLookTests`, `IndustrialLabTests`, `IndustrialPlantTests` (closed in 26 directions from every route point, passes clear,
 signals one-to-one, every checkpoint resets, transit flights reach their pads, no sun, diverse surfaces and decals). Before/after:
 [`images/industrial-lab`](images/industrial-lab), [`images/industrial-plant`](images/industrial-plant). Decision: pending the owner's play-test.

@@ -41,6 +41,10 @@ Material:
         m_Texture: {fileID: 2800000, guid: b24561699fad45748892119b3c0946f3, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _HeightMap:
+        m_Texture: {fileID: 2800000, guid: e97194394dfb52b4c8f4aeecb16310be, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _MetallicMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -73,6 +77,9 @@ Material:
     - _OcclusionStrength: 1
     - _OffsetFactor: 0
     - _OffsetUnits: 0
+    - _ParallaxFade: 24
+    - _ParallaxSteps: 16
+    - _ParallaxStrength: 0.006
     - _RampSmoothness: 0.12
     - _RampThreshold: 0.05
     - _RimPower: 3.5
