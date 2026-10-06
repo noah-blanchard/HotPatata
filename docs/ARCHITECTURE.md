@@ -1996,4 +1996,5 @@ already reached is simply burning; a new run puts it out.
 **Budgets and limits:** scene file small (the scatter and terrain are assets), 60 fps at 1080p with four players is a human
 gate (M12.8). Known limits: the 108 m cave is lit by the sun beyond the 75 m shadow distance at its far end (torches carry
 it); the water has no planar reflection; the trees are cards, not scans; the synthesised ambience is a placeholder for
-recordings. Tests: `NatureLookTests`, `TimeOfDayTests`, `PatataWildsTests`.
+recordings. Tests: `NatureLookTests`, `TimeOfDayTests`, `PatataWildsTests`. Views at dawn (as the editor shows the scene):
+[`images/patata-wilds`](images/patata-wilds). Decision: pending the owner's play-test.
