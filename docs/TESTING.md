@@ -34,23 +34,19 @@
 | `PlayerCharacterTests` | PlayMode | each slot shows its character and its ring (colour + shape); a slot change swaps the character and the animator follows; the first-person player sees only the shadow of theirs; in third person the potato rides the right palm; a held throw waits with the arm cocked and throws on release |
 | `PassFeelTests` | PlayMode | **pass-feel regression suite**: catches at 4/8/12 m moving and jumping, the assist never creates range |
 | `PrefabKitTests` | PlayMode | M2 greybox kit (moving/falling platforms, rotating bar, kill zone, checkpoint, finish) |
-| `CourseTests` | PlayMode | M5 course Act 1: structure, checkpoints, finish, rematch, start checkpoint, launch pad; #23 the results screen opens on finish with the run time and its Rematch button restarts the run |
-| `FactoryCourseTests` | PlayMode | course Acts 2–3: belts, elevators, sweepers, crushers, mega slide |
+| `ObstacleKitTests` | PlayMode | the obstacle systems as reusable pieces (docs/OBSTACLES.md), each kit prefab alone on a test floor beside PassSandbox: belts carry both ways, elevators and pistons lift, a sweeper hits a standing player and can be jumped, a crusher catches a standing player and spares a crouched one; and the logic ignores the look and the names: the boulder variant moves and carries, the drawbridge variant stands up and lies across while its plate is held, a subclass overrides the path, and a visual driver follows the state |
+| `ObstaclePrefabTests` | EditMode | the obstacle prefab contract (docs/OBSTACLES.md §4): every obstacle prefab of the project (kit and variants) passes `ObstaclePrefabValidator`, the validator catches each break (moving part is the root, missing waypoint, collider in a hand-made visual, mesh collider, non-gameplay layer, no kinematic body, hazard without kill trigger, replicated system without its network companion), the example variants are Prefab Variants of the kit, the look passes leave hand-made visuals alone |
 | `ZoneRuleTests` | EditMode | #68 pure rules: fuse-zone severity, flight-sweep geometry, actuator motion, transit exit arc |
 | `BombObstacleTests` | PlayMode | #68 kit on the PassSandbox floor: fuse zones, curtains and windows, gates, plates, doors, arch checkpoint, tubes |
-| `PlaytestCourseTests` | PlayMode | M10.4 `PlaytestCourse`: every beat wired, nine checkpoints with two arches, the podium gate, finish and rematch |
 | `KitSkinTests` | EditMode | KayKit kit (ARCHITECTURE §25.1): palette families, exact box tiling, unstretched pieces on the grid, edge-standing platforms as blocks |
-| `PatataParkTests` | PlayMode | `PatataPark`: every beat wired and drawn in KayKit pieces, nine checkpoints with two arches, the podium gate, finish and rematch |
 | `IndustrialLookTests` | EditMode | industrial look (ARCHITECTURE §25.2): the bevelled box stays inside its box and faces outward, the material library (every surface, anti-tiling keyword, a texture each), grunge and decal placeholders and their import, the decal material, themes, texture file names and folders (displacement maps are linear, the signs folder is decals), relief (a height map and a shallow depth on every textured surface), signs as decals without hazard red, the look set's scope |
-| `IndustrialLabTests` | PlayMode | `IndustrialLab`: checkpoints and finish, passes clear ceilings, solids and decoration, bevelled visuals inside their colliders, every industrial material drawn |
-| `IndustrialPlantTests` | PlayMode | `IndustrialPlant`: nine checkpoints, climbs, drops and spread, every kit obstacle present, the building closed in 26 directions from every route point, passes clear, signals one-to-one, no sun, many warm lamps, a bright neutral fill and its own exposure volume, diverse floors/walls/ceilings and decals (never on moving surfaces), mouldings and props in every room (collider-free, never on a mover), no two rooms' floors overlapping at one height, listed last in the menu with nine spawn choices, every checkpoint resets then finish and rematch, the atrium plate pass, every transit flight reaches its pad |
-| `PatataWorksTests` | PlayMode | enclosed route and ceilings, sampled pass clearance and decoration, signal/transit wiring, explicit catches through the atrium ring and transit exits, nine checkpoint resets, finish/rematch and its place in the menu |
+| `IndustrialPlantTests` | PlayMode | `IndustrialPlant`: nine checkpoints, climbs, drops and spread, every kit obstacle present, the building closed in 26 directions from every route point, passes clear, signals one-to-one, no sun, many warm lamps, a bright neutral fill and its own exposure volume, diverse floors/walls/ceilings and decals (never on moving surfaces), mouldings and props in every room (collider-free, never on a mover), no two rooms' floors overlapping at one height, the level list (PatataWilds, the plant with nine spawn choices, PassSandbox) and nothing else in the build, every checkpoint resets then finish and rematch, the atrium plate pass, every transit flight reaches its pad |
 | `NatureLookTests` | EditMode | nature look (ARCHITECTURE §25.3): every library material on `HotPatata/Nature` with its maps and mapping, foliage cut-out/two-sided/wind, the gameplay variants (banded hazard, rotten planks, slot logs, lantern), Poly Haven file names, the skies as cubemaps, generated shapes inside their box (rock may bulge 30 cm out of its sides, never above its top) and identical on every build, the rock skirt hidden under its slab and widening below, trees deterministic and within their LOD budgets |
 | `TimeOfDayTests` | EditMode | PatataWilds' day: the blender's step (blend forward, snap back and over big jumps), segments and checkpoint times, the five presets in order (dawn low, noon high, dusk low and cool) |
 | `PatataWildsTests` | PlayMode | `PatataWilds` (PROJECT_SPEC §15c): route spread, turns, climb and drop, 25 checkpoints and the summit finish, the summit fuse overrides, passes clear of solids, ceilings, decoration and scattered plants (normal passes at most 14 m), signals one-to-one, campfires instead of pads (catch when reached, out on restart), water always over a kill zone, the time of day following the checkpoint, no mesh collider and generated visuals inside their colliders, banded hazards, 3D ambience on the SFX group, first in the menu with 25 spawn choices, Hold the Rope with two players, every checkpoint resets then finish and rematch, every transit flight reaches its pad |
 
 EditMode tests live in `Assets/Tests/EditMode/`. PlayMode tests live in `Assets/Tests/PlayMode/`: they load
-`PassSandbox` (or `PrototypeCourse`, `PlaytestCourse`) through `SandboxTestBase` and drive players through
+`PassSandbox` (or `IndustrialPlant`, `PatataWilds`) through `SandboxTestBase` and drive players through
 `PlayerInputReader.Scripted`. After touching the bomb obstacles run `ZoneRuleTests`, `BombObstacleTests` and
 `BombStateTests`; after a course builder change, the tests of that course.
 
@@ -66,12 +62,14 @@ unity command test_status                                      # results also in
 
 Run only the suites for the system you touched, not the whole project every time. After any throw/catch tuning
 change, run `PassFeelTests`. After a movement change, run `SprintSlideTests` and `MovementTests`. After a course
-change, run `CourseTests` / `FactoryCourseTests`. After a kit look change (`KitSkin`, `KayKitKitBuilder`), run
-`KitSkinTests` and the course suites; after an industrial look change (shader, materials, `IndustrialLabBuilder`), run
-`IndustrialLookTests`, `IndustrialLabTests` and `IndustrialPlantTests`. After a nature change (`HotPatata/Nature`, the
+change, run that course's suite. After an obstacle system or kit prefab change (`MovingPlatform`, `SignalActuator`,
+`FallingPlatform`, `RotatingObstacle`, `BombTransit`, zones, `ObstacleVisualDriver`, `ObstaclePrefabValidator`, a prefab or a
+variant), run `ObstaclePrefabTests`, `ObstacleKitTests`, `PrefabKitTests` and `BombObstacleTests`. After a kit look change
+(`KitSkin`, `KayKitKitBuilder`), run `KitSkinTests` and the course suites; after an industrial look change (shader,
+materials, `IndustrialPlantBuilder`), run `IndustrialLookTests` and `IndustrialPlantTests`. After a nature change (`HotPatata/Nature`, the
 nature materials, `NatureShapes`, `NatureTreeBuilder`, `PatataWildsLook`, `PatataWildsBuilder`, `NatureDressing`), rebuild
 PatataWilds and run `NatureLookTests`, `TimeOfDayTests`, `KitSkinTests` and `PatataWildsTests`; after a change to the
-level list (`CourseKit.RegisterInMenu`), also `PatataWorksTests`, `IndustrialPlantTests` and `MenuStationTests`.
+level list (`CourseKit.RegisterInMenu`), also `IndustrialPlantTests` and `MenuStationTests`.
 
 After a font asset change, run `FontAssetTests` and a local Player build. Editor compilation and PlayMode tests do
 not exercise the asset serialization step that rejects `DontSave` font dependencies.

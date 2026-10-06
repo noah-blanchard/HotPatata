@@ -10,13 +10,16 @@ namespace HotPatata
     /// clock (<see cref="Progress"/>), so it is identical on every machine once replicated
     /// (<see cref="NetworkSignalActuator"/>). Riders are carried (<see cref="IPlatformCarrier"/>). A door's lethal
     /// lower edge (<see cref="lethalWhileClosing"/>) is only armed while it closes. Closed again on every section reset.
+    /// Generic (docs/OBSTACLES.md §4): the moving part, the waypoints and the source are references, never names; with
+    /// <see cref="rotateWithWaypoints"/> the part also turns from the closed waypoint's rotation to the open one's (a swinging gate,
+    /// a drawbridge), and subclasses may override <see cref="PositionAt"/> / <see cref="RotationAt"/>.
     /// </summary>
     [DefaultExecutionOrder(-50)]   // move before players update, so riders get this frame's delta
-    public class SignalActuator : MonoBehaviour, IPlatformCarrier, IResettable
+    public class SignalActuator : MonoBehaviour, IPlatformCarrier, IResettable, IObstacleState
     {
         [SerializeField, Tooltip("A component implementing ISignalSource (BombGate, PressurePlate).")]
         MonoBehaviour source;
-        [SerializeField, Tooltip("The part that moves (Visual + Collision live under it).")]
+        [SerializeField, Tooltip("The part that moves (its visual and colliders live under it). Never this object itself.")]
         Transform platform;
         [SerializeField] Transform waypointClosed;
         [SerializeField] Transform waypointOpen;
@@ -24,6 +27,8 @@ namespace HotPatata
         float travelSeconds = 1f;
         [SerializeField, Tooltip("Optional kill volume armed only while the actuator closes (a door's lower edge).")]
         Collider lethalWhileClosing;
+        [SerializeField, Tooltip("Also turn the moving part from the closed waypoint's rotation to the open one's (a swinging gate, a drawbridge).")]
+        bool rotateWithWaypoints;
 
         double changeTime;
         float fromProgress;
@@ -40,6 +45,22 @@ namespace HotPatata
         /// <summary>0 = closed, 1 = open.</summary>
         public float CurrentProgress => Progress(changeTime, fromProgress, opening, travelSeconds, NetMode.ServerTime);
         public Vector3 FrameDelta { get; private set; }
+
+        public Transform Platform => platform;
+        public Transform WaypointClosed => waypointClosed;
+        public Transform WaypointOpen => waypointOpen;
+        public Collider LethalEdge => lethalWhileClosing;
+        public float TravelSeconds => travelSeconds;
+        float IObstacleState.Progress => CurrentProgress;
+        bool IObstacleState.Active => opening;
+
+        /// <summary>The world position of the moving part at <paramref name="progress"/> (0 closed .. 1 open). Override for another path.</summary>
+        protected virtual Vector3 PositionAt(Transform closed, Transform open, float progress) =>
+            Vector3.Lerp(closed.position, open.position, Mathf.SmoothStep(0f, 1f, progress));
+
+        /// <summary>The world rotation of the moving part at <paramref name="progress"/>, or null to leave it (the default unless <see cref="rotateWithWaypoints"/>).</summary>
+        protected virtual Quaternion? RotationAt(Transform closed, Transform open, float progress) =>
+            rotateWithWaypoints ? Quaternion.Slerp(closed.rotation, open.rotation, Mathf.SmoothStep(0f, 1f, progress)) : null;
 
         /// <summary>Where the actuator is (0 closed .. 1 open) at <paramref name="now"/>. Pure (EditMode tested).</summary>
         public static float Progress(double changeTime, float fromProgress, bool opening, float travelSeconds, double now)
@@ -66,12 +87,15 @@ namespace HotPatata
 
         void Update()
         {
+            if (platform == null || waypointClosed == null || waypointOpen == null) return;
             float p = CurrentProgress;
-            Vector3 target = Vector3.Lerp(waypointClosed.position, waypointOpen.position, Mathf.SmoothStep(0f, 1f, p));
+            Vector3 target = PositionAt(waypointClosed, waypointOpen, p);
             Vector3 delta = target - platform.position;
             // A reset (or first frame) snaps the platform; never drag riders along with a snap.
             FrameDelta = initialised && delta.sqrMagnitude < 4f ? delta : Vector3.zero;
             platform.position = target;
+            var rotation = RotationAt(waypointClosed, waypointOpen, p);
+            if (rotation.HasValue) platform.rotation = rotation.Value;
             initialised = true;
 
             if (lethalWhileClosing != null) lethalWhileClosing.enabled = !opening && p > 0f && p < 1f;

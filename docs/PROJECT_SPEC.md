@@ -744,6 +744,10 @@ Avoid in the first level:
 
 ## 15. First level blueprint
 
+> **Removed course.** `PrototypeCourse` was removed in the project cleanup; this blueprint stays as the design record and
+> its built layout is archived in [`OBSTACLES.md`](OBSTACLES.md) §3.2. The kept courses are PatataWilds (§15c) and the
+> industrial plant.
+
 Working level:
 
 **Training Facility**
@@ -813,6 +817,9 @@ Display at minimum:
 ---
 
 ## 15b. Second level blueprint — PatataWorks (#83)
+
+> **Removed course.** `PatataWorks` was removed in the project cleanup; its layouts became the industrial plant's and its
+> sections are archived in [`OBSTACLES.md`](OBSTACLES.md) §3.2. The enclosed-course rules below still apply to the plant.
 
 Added after the three open-sky courses (`PrototypeCourse`, `PlaytestCourse`, `PatataPark`), which are all one straight
 lane of floating platforms along +Z. The second full course is a **place**: an old potato factory at sunset, a closed
@@ -1018,9 +1025,9 @@ Do not implement unless this file is changed:
 - progression;
 - cosmetics;
 - multiple bomb types;
-- multiple courses (exceptions: `PlaytestCourse`, the course that tests the #68 obstacles, and `PatataPark`, the
-  KayKit course, live beside `PrototypeCourse`; `PatataWorks`, the second full course, is the enclosed factory of
-  §15b, #83; `PatataWilds`, the third, is the outdoor course of §15c, M12, an owner decision). Still no campaign, no level
+- multiple courses (exceptions, owner decisions: `PatataWilds`, the outdoor course of §15c, M12, and `IndustrialPlant`, the
+  closed factory built on §15b's rules, beside `PassSandbox`; the earlier `PrototypeCourse`, `PlaytestCourse`, `PatataPark`
+  and `PatataWorks` were removed in the cleanup, archived in OBSTACLES.md §3.2). Still no campaign, no level
   select beyond the Bootstrap level list, and no procedural levels (PatataWilds' generated trees, plants and terrain are
   art with fixed seeds, not a generated route);
 - Steam-specific integration;

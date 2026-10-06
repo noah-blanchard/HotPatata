@@ -8,7 +8,7 @@ namespace HotPatata
     /// through its <see cref="claimGate"/> during this section attempt; PROJECT_SPEC §12.3). After that, a section reset
     /// returns the team to this checkpoint's spawn slots and hands the bomb to <see cref="CarrierSlot"/>.
     /// </summary>
-    public class Checkpoint : MonoBehaviour
+    public class Checkpoint : MonoBehaviour, IObstacleState
     {
         [SerializeField] int id;
         [SerializeField] Collider trigger;
@@ -34,6 +34,8 @@ namespace HotPatata
         public Transform BombAnchor => bombAnchor;
         public BombGate ClaimGate => claimGate;
         public bool Activated { get; private set; }
+        float IObstacleState.Progress => Activated ? 1f : 0f;
+        bool IObstacleState.Active => Activated;
 
         void Awake() => Paint(inactiveColor);
 

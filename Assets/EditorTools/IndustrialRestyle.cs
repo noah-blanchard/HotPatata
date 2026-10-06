@@ -53,7 +53,7 @@ namespace HotPatata.Editor
             foreach (var r in root.GetComponentsInChildren<Renderer>(true))
             {
                 var current = r.sharedMaterial;
-                if (current == null) continue;
+                if (current == null || CustomVisual.Covers(r)) continue;   // a variant's own model stays
                 var skin = r.GetComponent<KitSkin>();
                 string target = Target(current.name, skin, theme);
                 if (target == null) continue;   // industrial already, or a gameplay cue

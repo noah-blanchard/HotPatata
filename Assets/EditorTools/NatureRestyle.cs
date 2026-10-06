@@ -10,7 +10,7 @@ namespace HotPatata.Editor
     /// instances only (ARCHITECTURE §25.3), as <see cref="IndustrialRestyle"/> does for the plant: a mover becomes a log raft, a
     /// hazard a stained log with charred bands, a falling platform rotten planks, a gate's frame mossy logs, a tube's pipes blazed
     /// hollow logs in the slot colour. Gameplay cues keep their own materials on purpose (fuse zones, laser beams, pads, icons,
-    /// plates, launch pads). Colliders, sizes and layers are never touched: a <see cref="KitSkin"/> only gets another shape and material.
+    /// plates, launch pads) and hand-made visuals (<see cref="CustomVisual"/>) are left alone. Colliders, sizes and layers are never touched: a <see cref="KitSkin"/> only gets another shape and material.
     /// </summary>
     public static class NatureRestyle
     {
@@ -57,6 +57,7 @@ namespace HotPatata.Editor
             {
                 var current = r.sharedMaterial;
                 if (current == null || r.GetComponentInParent<LaunchPad>() != null) continue;   // the launch pad's spring is its cue
+                if (CustomVisual.Covers(r)) continue;                                           // a variant's own model
                 var skin = r.GetComponent<KitSkin>();
                 var (shape, target) = Target(current.name, skin, theme);
                 if (target == null) continue;   // nature already, or a gameplay cue

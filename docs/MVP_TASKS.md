@@ -20,17 +20,18 @@ playtest and cannot be closed by code.
 | M2 Greybox prefab kit | done | |
 | M3 Network proof | done (host authority, lag-compensated catch) | M3.7: test on two physical machines |
 | M4 Session and lobby | done, verified with real Relay sessions | |
-| M5 First greybox course | done, then extended to Acts 2–3 (~680 m, 7 checkpoints) | group playtest of the full course |
+| M5 First greybox course | done, then extended to Acts 2–3 (~680 m, 7 checkpoints); the course was removed in the cleanup (layout archived in OBSTACLES.md §3.2) | |
 | M6 UX and readability | partly covered by earlier work (see each task); UI Toolkit base (#14), main menu and lobby (#15), pause menu (#16), settings screen (#17) and results screen (#23) in place, their layouts in UXML editable in UI Builder (#76), the "Sunny toy box" look with a living 3D menu backdrop, the in-world menu (#79: stations with camera travel, the lobby on the island) | verify M6.1/M6.2 at range, player-facing progress UI, ping only if needed |
 | M7 Test and harden | not started (bot latency runs cover part of M7.3) | all |
 | M8 Post-validation polish | gated on M7.4; some pulled forward through M9 | |
 | M9 Movement and look pass | done (pulled forward by the owner) | |
-| M10 Bomb obstacles (#68) | done (pulled forward by the owner, M7.4 gate lifted for it) | group playtest of `PlaytestCourse` |
-| Spike #87 industrial look | `IndustrialLab` and the full closed `IndustrialPlant` (11 rooms, 9 checkpoints, every obstacle) built in the industrial look, with a material library, anti-tiling and decals (ARCHITECTURE §25.2) | play-test, real textures per surface (optional), performance on a player build, adopt/revise/reject decision |
-| M11 Second course (#83) | factory built; automated verification in M11.6 | 2-player timing/clear, host + 3 clients, 1080p/60 fps |
+| M10 Bomb obstacles (#68) | done (pulled forward by the owner, M7.4 gate lifted for it); `PlaytestCourse` removed in the cleanup, the obstacles live on in the kept courses | group playtest of the obstacles (now in PatataWilds and the plant) |
+| Spike #87 industrial look | the full closed `IndustrialPlant` (11 rooms, 9 checkpoints, every obstacle) built in the industrial look, with a material library, anti-tiling and decals (ARCHITECTURE §25.2) | play-test, real textures per surface (optional), performance on a player build, adopt/revise/reject decision |
+| M11 Second course (#83) | factory built, then removed in the cleanup; its layouts became the industrial plant's | |
 | M12 Third course: PatataWilds | built: 25 sections in 5 acts, nature look from Poly Haven, campfire checkpoints, dawn to dusk; automated verification in M12.8 | 2-player 20+ min clear, host + 3 clients, 1080p/60 fps, readability review |
+| Cleanup and generic obstacles | done: only `PatataWilds`, `IndustrialPlant` and `PassSandbox` (plus `Bootstrap`) remain; every obstacle system is generic (references, `IObstacleState`, `ObstacleVisualDriver`, `CustomVisual`, overridable poses, `ObstaclePrefabValidator`), with two example variants; the obstacle catalogue is `docs/OBSTACLES.md` | |
 
-**Next up:** the group playtest of `PlaytestCourse` (M10.4), then M6 and M7 (M7.4 external playtest gates any other
+**Next up:** the group playtest of PatataWilds and the plant (M12.8, M10.4), then M6 and M7 (M7.4 external playtest gates any other
 new mechanic). M3.7 is the oldest open gate.
 
 ---

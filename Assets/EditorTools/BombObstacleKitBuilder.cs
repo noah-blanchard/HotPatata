@@ -351,19 +351,19 @@ namespace HotPatata.Editor
         /// <summary>Resizes an actuator's moving part (and its lethal edge) and sets its open offset from the closed pose.</summary>
         public static void ResizeActuator(GameObject actuator, Vector3 size, Vector3 travel)
         {
-            var t = actuator.transform;
-            var platform = t.Find("Platform");
+            var a = actuator.GetComponent<SignalActuator>();
+            var platform = a.Platform;
             platform.localPosition = Vector3.zero;
             platform.Find("Visual").localScale = size;
             platform.Find("Collision").GetComponent<BoxCollider>().size = size;
-            var kill = platform.Find("Kill");
+            var kill = a.LethalEdge != null ? a.LethalEdge.transform : null;
             if (kill != null)
             {
                 kill.localPosition = new Vector3(0f, -size.y / 2f - 0.1f, 0f);   // reaches 0.25 m below the lower edge
                 kill.GetComponent<BoxCollider>().size = new Vector3(size.x - 0.2f, 0.3f, size.z + 0.3f);
             }
-            t.Find("Waypoint_Closed").localPosition = Vector3.zero;
-            t.Find("Waypoint_Open").localPosition = travel;
+            a.WaypointClosed.localPosition = Vector3.zero;
+            a.WaypointOpen.localPosition = travel;
         }
 
         // ------------------------------------------------------------------ transit: tubes and cannons

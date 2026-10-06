@@ -134,7 +134,7 @@ namespace HotPatata.Editor
             NatureAudioFactory.EnsureClips();
             NatureKit.BuildCampfirePrefab();
             if (AssetDatabase.LoadAssetAtPath<Mesh>(NatureTreeBuilder.MeshPath("Grass", 0, 0)) == null) NatureTreeBuilder.BuildAll();
-            var scene = IndustrialLabBuilder.PrepareScene(ScenePath, out var section);
+            var scene = PrepareCourseScene(ScenePath, out var section);
             var sections = Sections();
             Route.Clear();
             Outdoors.Clear();
@@ -193,7 +193,7 @@ namespace HotPatata.Editor
             section.gameObject.AddComponent<CourseRoute>().Configure(Route.ToArray(), Outdoors.ToArray());
             LookBuilder.ApplyToScene(scene);
             Physics.SyncTransforms();
-            PatataWorksBuilder.ValidatePasses();
+            ValidatePasses();
             var dressing = NatureDressing.Dress(section, GroupName, Footprints);
             Debug.Log($"[PatataWildsBuilder] {restyled} kit renderers redrawn in the nature look; {dressing}");
             EditorSceneManager.MarkSceneDirty(scene);
@@ -307,8 +307,8 @@ namespace HotPatata.Editor
                 var actuator = c.GetComponentInParent<SignalActuator>();
                 var rotator = c.GetComponentInParent<RotatingObstacle>();
                 Transform a = null, b = null;
-                if (mover != null) { a = mover.transform.Find("Waypoint_A"); b = mover.transform.Find("Waypoint_B"); }
-                if (actuator != null) { a = actuator.transform.Find("Waypoint_Closed"); b = actuator.transform.Find("Waypoint_Open"); }
+                if (mover != null) { a = mover.WaypointA; b = mover.WaypointB; }
+                if (actuator != null) { a = actuator.WaypointClosed; b = actuator.WaypointOpen; }
                 if (a != null && b != null) { var moved = bounds; moved.center += b.position - a.position; bounds.Encapsulate(moved); }
                 if (rotator != null) { float reach = Vector3.Distance(rotator.transform.position, bounds.center) + bounds.extents.magnitude; bounds.Encapsulate(new Bounds(rotator.transform.position, Vector3.one * reach * 2f)); }
                 bounds.Expand(2f);

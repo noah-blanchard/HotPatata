@@ -9,10 +9,12 @@ namespace HotPatata
     /// The whole animation is a pure function of ONE number, the (server) time at which it was triggered,
     /// so every machine shows the same thing: the host decides when it triggers and replicates that time
     /// (see <see cref="NetworkFallingPlatform"/>). Restored by the RunManager on every section reset.
+    /// Generic (docs/OBSTACLES.md §4): the falling part and the trigger are references, so any visual under the body falls;
+    /// subclasses may override <see cref="ApplyPose(double)"/> (crumble instead of drop), still from the elapsed time only.
     /// </summary>
-    public class FallingPlatform : MonoBehaviour, IResettable
+    public class FallingPlatform : MonoBehaviour, IResettable, IObstacleState
     {
-        [SerializeField, Tooltip("The part that shakes and falls (Visual + Collision live under it).")]
+        [SerializeField, Tooltip("The part that shakes and falls (its visual and colliders live under it). Never this object itself.")]
         Transform body;
         [SerializeField, Tooltip("Trigger volume just above the surface; a player inside starts the collapse.")]
         Collider trigger;
@@ -29,7 +31,16 @@ namespace HotPatata
         public event Action<double> TriggerTimeChanged;
 
         public double TriggerTime => triggerTime;
-        double Elapsed => triggerTime < 0.0 ? -1.0 : NetMode.ServerTime - triggerTime;
+        /// <summary>Seconds since the platform was triggered, or -1 while it stands.</summary>
+        protected double Elapsed => triggerTime < 0.0 ? -1.0 : NetMode.ServerTime - triggerTime;
+        public Transform Body => body;
+        public Collider Trigger => trigger;
+        public float WarningDelay => warningDelay;
+        protected Vector3 StartPosition => startPosition;
+
+        /// <summary>0 while it stands, then up to 1 at the end of the warning shake; 1 once it falls.</summary>
+        float IObstacleState.Progress => IsIdle ? 0f : Mathf.Clamp01((float)(Elapsed / Mathf.Max(0.01f, warningDelay)));
+        bool IObstacleState.Active => !IsIdle;
 
         public bool IsIdle => triggerTime < 0.0;
         public bool HasFallen => Elapsed >= warningDelay;
@@ -47,15 +58,20 @@ namespace HotPatata
 
         void Update() => ApplyPose();
 
+        void ApplyPose()
+        {
+            if (body != null) ApplyPose(Elapsed);
+        }
+
         public void SetTriggerTime(double time, bool notify = true)
         {
             triggerTime = time;
             if (notify) TriggerTimeChanged?.Invoke(time);
         }
 
-        void ApplyPose()
+        /// <summary>Poses the body <paramref name="e"/> seconds after the trigger (negative: standing).</summary>
+        protected virtual void ApplyPose(double e)
         {
-            double e = Elapsed;
             if (e < 0.0)
             {
                 body.gameObject.SetActive(true);

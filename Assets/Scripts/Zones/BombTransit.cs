@@ -11,8 +11,10 @@ namespace HotPatata
     /// basket. No fuse burns meanwhile. The bomb state machine itself lives in <see cref="BombController"/>; this
     /// component only answers where the bomb waits, when it leaves and on which arc. The active exit and release time
     /// are replicated (<see cref="NetworkBombTransit"/>) for the exit's warning light and tone.
+    /// Generic (docs/OBSTACLES.md §4): a tube and a cannon differ only by their data (delay, exits) and their look; every exit is
+    /// a set of references (hold, muzzle, pad), so any model can be a transit.
     /// </summary>
-    public class BombTransit : MonoBehaviour, IResettable
+    public class BombTransit : MonoBehaviour, IResettable, IObstacleState
     {
         [Serializable]
         public class Exit
@@ -45,6 +47,9 @@ namespace HotPatata
         /// <summary>Server time at which the bomb leaves the active exit.</summary>
         public double ReleaseAt => releaseAt;
         public Exit GetExit(int i) => exits[i];
+        bool IObstacleState.Active => activeExit >= 0;
+        /// <summary>From 0 when the bomb goes in to 1 when it comes out.</summary>
+        float IObstacleState.Progress => activeExit < 0 ? 0f : delay <= 0f ? 1f : Mathf.Clamp01(1f - (float)(releaseAt - NetMode.ServerTime) / delay);
 
         /// <summary>
         /// The launch velocity that carries the bomb from <paramref name="from"/> to <paramref name="to"/> in

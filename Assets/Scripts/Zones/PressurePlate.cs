@@ -9,12 +9,13 @@ namespace HotPatata
     /// the actuator (which is replicated); a client's answer is only used for the pad's own look.
     /// </summary>
     [RequireComponent(typeof(Zone))]
-    public class PressurePlate : MonoBehaviour, ISignalSource
+    public class PressurePlate : MonoBehaviour, ISignalSource, IObstacleState
     {
         readonly HashSet<Player> inside = new HashSet<Player>();
         Zone zone;
 
         public bool Active { get; private set; }
+        float IObstacleState.Progress => Active ? 1f : 0f;
 
         void Awake() => zone = GetComponent<Zone>();
 

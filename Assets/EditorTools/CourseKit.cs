@@ -5,7 +5,6 @@ using HotPatata;
 using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
-using Random = System.Random;
 
 namespace HotPatata.Editor
 {
@@ -13,8 +12,8 @@ namespace HotPatata.Editor
     public enum KitRole { Ground, Wall, Mover, Falling, Belt, Slide, Hazard, Gate, Floor, Ceiling, Brick, Frame, Stairs, Pillar, Truss, Railing, Roof, Grating, Rubber, Accent, Lamp, Glow, Rust }
 
     /// <summary>
-    /// Shared editor helpers for the course and kit builders (<see cref="CourseBuilder"/>,
-    /// <c>PlaytestCourseBuilder</c>, <c>BombObstacleKitBuilder</c>): placing kit prefabs, sizing movers,
+    /// Shared editor helpers for the course and kit builders (<see cref="KitPrefabBuilder"/>,
+    /// <c>BombObstacleKitBuilder</c>, <c>IndustrialPlantBuilder</c>, <c>PatataWildsBuilder</c>): placing kit prefabs, sizing movers,
     /// writing serialized fields, materials, primitives and the collider-free backdrop.
     /// </summary>
     public static class CourseKit
@@ -36,7 +35,7 @@ namespace HotPatata.Editor
 
         /// <summary>
         /// Lists a course in the build settings and in the menu's level list (NetworkBootstrap) with its checkpoint count. One shared
-        /// place, so builders never fight over the order: PatataWilds is first, PatataWorks keeps its place, the plant goes last.
+        /// place, so builders never fight over the order: PatataWilds is first, the plant keeps its place (second when new).
         /// </summary>
         public static void RegisterInMenu(string sceneName, string scenePath, int checkpoints, MenuSlot slot)
         {
@@ -73,6 +72,57 @@ namespace HotPatata.Editor
                 PrefabUtility.SaveAsPrefabAsset(root, NetworkPrefab);
             }
             finally { PrefabUtility.UnloadPrefabContents(root); }
+        }
+
+        // ------------------------------------------------------------------ course scenes
+
+        /// <summary>The course a missing course scene is copied from (its run, spawns, bomb, camera and networking).</summary>
+        public const string CourseTemplatePath = "Assets/Scenes/IndustrialPlant.unity";
+
+        /// <summary>
+        /// Opens <paramref name="scenePath"/> (copied from <see cref="CourseTemplatePath"/> when missing) and clears its generated
+        /// geometry: the run, spawns, bomb, camera and networking stay. Returns the section to build in.
+        /// </summary>
+        public static UnityEngine.SceneManagement.Scene PrepareCourseScene(string scenePath, out Transform section)
+        {
+            if (AssetDatabase.LoadAssetAtPath<SceneAsset>(scenePath) == null && !AssetDatabase.CopyAsset(CourseTemplatePath, scenePath))
+                throw new InvalidOperationException("Could not create " + scenePath);
+            var scene = UnityEditor.SceneManagement.EditorSceneManager.OpenScene(scenePath);
+            var run = Object.FindFirstObjectByType<RunManager>();
+            if (run == null) throw new InvalidOperationException("Course template has no RunManager");
+            section = Object.FindObjectsByType<PlayerSpawn>(FindObjectsSortMode.None)
+                .First(sp => sp.GetComponentInParent<Checkpoint>() == null).transform.parent;
+            while (section.parent != null) section = section.parent;
+            foreach (var child in section.Cast<Transform>().ToArray())
+                if (child.GetComponentsInChildren<Checkpoint>(true).Length > 0 || child.GetComponent<KillZone>() != null)
+                    Object.DestroyImmediate(child.gameObject);
+            foreach (var decoration in scene.GetRootGameObjects().Where(g => g.GetComponentsInChildren<Renderer>(true).Length > 0 &&
+                         g.GetComponentsInChildren<MonoBehaviour>(true).Length == 0).ToArray())
+                Object.DestroyImmediate(decoration);
+            var previous = section.GetComponent<CourseRoute>();
+            if (previous != null) Object.DestroyImmediate(previous);
+            return scene;
+        }
+
+        /// <summary>
+        /// Every declared pass of the open scene is reachable, its opening is wider than the catch radius plus the margin, and
+        /// no sampled point has a structural ceiling within <see cref="PassCorridor.CeilingMargin"/> above it. Throws otherwise.
+        /// </summary>
+        public static void ValidatePasses()
+        {
+            var tune = AssetDatabase.LoadAssetAtPath<GameTuning>("Assets/ScriptableObjects/Tuning/GameTuning.asset");
+            var samples = new List<Vector3>();
+            foreach (var corridor in Object.FindObjectsByType<PassCorridor>(FindObjectsSortMode.None))
+            {
+                if (!corridor.TrySample(tune, samples)) throw new InvalidOperationException("Unreachable " + corridor.name);
+                if (corridor.Opening > 0 && corridor.Opening < tune.catchRadius + PassCorridor.OpeningMargin)
+                    throw new InvalidOperationException("Opening too small: " + corridor.name);
+                foreach (var point in samples)
+                    foreach (var hit in Physics.RaycastAll(point, Vector3.up, PassCorridor.CeilingMargin,
+                        LayerMask.GetMask("Environment"), QueryTriggerInteraction.Ignore))
+                        if (hit.collider.GetComponentInParent<CourseCeiling>() != null)
+                            throw new InvalidOperationException($"Ceiling clearance: {corridor.name} at {point} hits {hit.collider.name}");
+            }
         }
 
         // ------------------------------------------------------------------ groups
@@ -132,14 +182,13 @@ namespace HotPatata.Editor
         {
             string dir = prefabName.StartsWith("Platform_") ? PlatformsDir : ObstaclesDir;
             var go = Place(parent, dir + prefabName, name, a, Quaternion.identity);
-            var t = go.transform;
-            t.Find("Waypoint_A").position = a;
-            t.Find("Waypoint_B").position = b;
-            var platform = t.Find("Platform");
-            platform.position = a;
-            platform.Find("Visual").localScale = size;
-            platform.Find("Collision").GetComponent<BoxCollider>().size = size;
             var mp = go.GetComponent<MovingPlatform>();
+            mp.WaypointA.position = a;
+            mp.WaypointB.position = b;
+            var platform = mp.Platform;
+            platform.position = a;
+            platform.Find("Visual").localScale = size;   // a kit box (Visual + Collision); a variant with its own visual is placed as it is
+            platform.Find("Collision").GetComponent<BoxCollider>().size = size;
             SetField(mp, "speed", p => p.floatValue = speed);
             SetField(mp, "startPhase", p => p.floatValue = phase);
             SetField(mp, "motion", p => p.enumValueIndex = (int)MovingPlatform.Motion.Dwell);
@@ -159,10 +208,10 @@ namespace HotPatata.Editor
             var a = new Vector3(floor.x, high, floor.z);
             var b = new Vector3(floor.x, low, floor.z);
             var go = Place(parent, ObstaclesDir + "Obstacle_Crusher", name, a, Quaternion.identity);
-            var t = go.transform;
-            t.Find("Waypoint_A").position = a;
-            t.Find("Waypoint_B").position = b;
-            var platform = t.Find("Platform");
+            var mover = go.GetComponent<MovingPlatform>();
+            mover.WaypointA.position = a;
+            mover.WaypointB.position = b;
+            var platform = mover.Platform;
             platform.position = a;
             var size = new Vector3(width, thickness, length);
             platform.Find("Visual").localScale = size;
@@ -170,7 +219,7 @@ namespace HotPatata.Editor
             var kill = platform.Find("Kill");
             kill.localPosition = new Vector3(0f, -thickness / 2f - 0.05f, 0f);
             kill.GetComponent<BoxCollider>().size = new Vector3(width - 0.2f, 0.3f, length - 0.2f);   // reaches 0.2 m below the slab
-            SetField(go.GetComponent<MovingPlatform>(), "startPhase", p => p.floatValue = phase);
+            SetField(mover, "startPhase", p => p.floatValue = phase);
             return go;
         }
 
@@ -604,69 +653,6 @@ namespace HotPatata.Editor
             var rb = go.AddComponent<Rigidbody>();
             rb.isKinematic = true;
             rb.useGravity = false;
-        }
-
-        // ------------------------------------------------------------------ backdrop
-
-        public static void Prim(Transform parent, PrimitiveType type, Vector3 localPos, Vector3 scale, Material mat)
-        {
-            var go = GameObject.CreatePrimitive(type);
-            Object.DestroyImmediate(go.GetComponent<Collider>());   // decoration only: never in the way of a pass
-            go.name = type.ToString();
-            go.transform.SetParent(parent, false);
-            go.transform.localPosition = localPos;
-            go.transform.localScale = scale;
-            var r = go.GetComponent<Renderer>();
-            r.sharedMaterial = mat;
-            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        }
-
-        /// <summary>
-        /// Floating islands (with trees) and clouds on both sides of the course, collider-free and at |x| >= 30 m so they
-        /// never enter a pass path (ARCHITECTURE §4). Deterministic for a given seed.
-        /// </summary>
-        public static void BuildBackdrop(Transform parent, int seed, int islands, float islandZMin, float islandZMax,
-                                         int clouds, float cloudZMin, float cloudZMax)
-        {
-            var rng = new Random(seed);
-            float R(float a, float b) => a + (float)rng.NextDouble() * (b - a);
-            var island = Mat("Backdrop_Island");
-            var trunk = Mat("Backdrop_Trunk");
-            var leaves = Mat("Backdrop_Leaves");
-            var cloud = Mat("Backdrop_Cloud");
-
-            for (int i = 0; i < islands; i++)
-            {
-                float side = i % 2 == 0 ? -1f : 1f;
-                var root = new GameObject($"Island_X{i}").transform;
-                root.SetParent(parent, false);
-                root.SetPositionAndRotation(new Vector3(side * R(45f, 125f), R(-22f, 30f), R(islandZMin, islandZMax)), Quaternion.Euler(0f, R(0f, 360f), 0f));
-                float w = R(16f, 26f);
-                Prim(root, PrimitiveType.Sphere, Vector3.zero, new Vector3(w, w * 0.275f, w * 0.85f), island);
-                Prim(root, PrimitiveType.Sphere, new Vector3(0f, -w * 0.225f, 0f), new Vector3(w * 0.65f, w * 0.55f, w * 0.55f), island);
-                int trees = rng.Next(1, 5);
-                for (int t = 0; t < trees; t++)
-                {
-                    var p = new Vector3(R(-w * 0.3f, w * 0.3f), 0f, R(-w * 0.25f, w * 0.25f));
-                    float h = R(0.8f, 1.5f);
-                    Prim(root, PrimitiveType.Cylinder, p + Vector3.up * (w * 0.14f + h), new Vector3(0.5f, h, 0.5f), trunk);
-                    float s = R(2.5f, 3.1f);
-                    Prim(root, PrimitiveType.Sphere, p + Vector3.up * (w * 0.14f + 2f * h + s * 0.3f), new Vector3(s, s * 0.9f, s), leaves);
-                }
-            }
-            for (int i = 0; i < clouds; i++)
-            {
-                float side = i % 2 == 0 ? -1f : 1f;
-                var root = new GameObject("Cloud").transform;
-                root.SetParent(parent, false);
-                root.position = new Vector3(side * R(30f, 170f), R(-40f, 55f), R(cloudZMin, cloudZMax));
-                int puffs = rng.Next(3, 6);
-                for (int k = 0; k < puffs; k++)
-                {
-                    float s = R(4.5f, 8f);
-                    Prim(root, PrimitiveType.Sphere, new Vector3(R(-7f, 7f), R(-0.6f, 1.8f), R(-2.5f, 1.2f)), new Vector3(s, s * 0.72f, s), cloud);
-                }
-            }
         }
     }
 }

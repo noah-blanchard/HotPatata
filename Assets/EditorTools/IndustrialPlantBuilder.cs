@@ -77,7 +77,7 @@ namespace HotPatata.Editor
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode) return;
             IndustrialMaterialBuilder.Ensure(false);
-            var scene = IndustrialLabBuilder.PrepareScene(ScenePath, out var section);
+            var scene = PrepareCourseScene(ScenePath, out var section);
             var rooms = Rooms();
             int restyled = 0;
             RebuildGroup(section, GroupName, root =>
@@ -125,7 +125,7 @@ namespace HotPatata.Editor
             int decals = 0;
             foreach (var spec in rooms) decals += IndustrialDecals.Scatter(section.Find(GroupName + "/" + spec.name), spec.length, spec.ceiling, 17);
             Debug.Log($"[IndustrialPlantBuilder] {restyled} KayKit renderers redrawn, {details} detail pieces, {decals} decals scattered");
-            PatataWorksBuilder.ValidatePasses();
+            ValidatePasses();
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
             Register();
@@ -156,10 +156,10 @@ namespace HotPatata.Editor
         }
 
         /// <summary>
-        /// Lists the plant in the build settings and, last, in the menu's level list (NetworkBootstrap), with its nine checkpoints,
+        /// Lists the plant in the build settings and in the menu's level list (NetworkBootstrap, second after PatataWilds), with its nine checkpoints,
         /// so it can be play-tested from the menu, online included.
         /// </summary>
-        static void Register() => RegisterInMenu(GroupName, ScenePath, All<Checkpoint>().Length, MenuSlot.Last);
+        static void Register() => RegisterInMenu(GroupName, ScenePath, All<Checkpoint>().Length, MenuSlot.Keep);
 
         static T[] All<T>() where T : Object => Object.FindObjectsByType<T>(FindObjectsSortMode.None);
 
