@@ -1723,8 +1723,9 @@ they were, only the look does.
 
 ### 25.2 Industrial look (spike #87)
 
-A semi-realistic alternative to the KayKit kit, tried on two maps of its own (neither is in the menu, `NetworkBootstrap.gameplayScenes` or
-the build settings: open them in the Editor and play):
+A semi-realistic alternative to the KayKit kit, tried on two maps of its own. `IndustrialPlant` is in the build settings and last in
+the menu's level list (`NetworkBootstrap.gameplayScenes`, nine spawn choices; PatataWorks stays first), so it plays from the menu,
+online included; `IndustrialLab` is opened in the Editor:
 
 - **`IndustrialPlant`** (`Assets/Scenes/IndustrialPlant.unity`, menu **HotPatata/Course/Build Industrial Plant**, `IndustrialPlantBuilder`): the
   showcase, a full closed factory of eleven rooms, about 680 m, nine checkpoints. Rooms are built along +Z and turned as units, as in

@@ -127,9 +127,45 @@ namespace HotPatata.Editor
             PatataWorksBuilder.ValidatePasses();
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
+            Register();
             AssetDatabase.SaveAssets();
             Debug.Log("[IndustrialPlantBuilder] Industrial plant built: eleven closed rooms, nine checkpoints, every obstacle of the kit.");
         }
+
+        /// <summary>
+        /// Lists the plant in the build settings and, last, in the menu's level list (NetworkBootstrap), with its nine checkpoints,
+        /// so it can be play-tested from the menu, online included. PatataWorks stays first.
+        /// </summary>
+        static void Register()
+        {
+            var scenes = EditorBuildSettings.scenes.ToList();
+            if (!scenes.Any(s => s.path == ScenePath)) scenes.Add(new EditorBuildSettingsScene(ScenePath, true));
+            EditorBuildSettings.scenes = scenes.ToArray();
+            const string networkPrefab = "Assets/Prefabs/Network/NetworkManager.prefab";
+            var root = PrefabUtility.LoadPrefabContents(networkPrefab);
+            try
+            {
+                var so = new SerializedObject(root.GetComponent<NetworkBootstrap>());
+                var names = so.FindProperty("gameplayScenes");
+                var counts = so.FindProperty("sceneCheckpoints");
+                int index = -1;
+                for (int i = 0; i < names.arraySize; i++)
+                    if (names.GetArrayElementAtIndex(i).stringValue == GroupName) index = i;
+                if (index < 0)
+                {
+                    index = names.arraySize;
+                    names.InsertArrayElementAtIndex(index);
+                    counts.arraySize = Mathf.Max(counts.arraySize, index + 1);
+                }
+                names.GetArrayElementAtIndex(index).stringValue = GroupName;
+                counts.GetArrayElementAtIndex(index).intValue = All<Checkpoint>().Length;
+                so.ApplyModifiedPropertiesWithoutUndo();
+                PrefabUtility.SaveAsPrefabAsset(root, networkPrefab);
+            }
+            finally { PrefabUtility.UnloadPrefabContents(root); }
+        }
+
+        static T[] All<T>() where T : Object => Object.FindObjectsByType<T>(FindObjectsSortMode.None);
 
         // ------------------------------------------------------------------ helpers
 

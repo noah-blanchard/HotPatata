@@ -128,7 +128,8 @@ MonoBehaviour:
   - PlaytestCourse
   - PrototypeCourse
   - PassSandbox
-  sceneCheckpoints: 0900000009000000090000000700000001000000
+  - IndustrialPlant
+  sceneCheckpoints: 090000000900000009000000070000000100000009000000
   port: 7777
   tuning: {fileID: 11400000, guid: 35604efc4188ead42afe90813d44683f, type: 2}
 --- !u!114 &8943435544806325941

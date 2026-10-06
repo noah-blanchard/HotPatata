@@ -196,6 +196,19 @@ namespace HotPatata.Tests
         }
 
         [Test]
+        public void ThePlant_IsListedInTheMenuAfterPatataWorks_WithNineSpawnChoices()
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Network/NetworkManager.prefab");
+            var so = new SerializedObject(prefab.GetComponent<NetworkBootstrap>());
+            var names = so.FindProperty("gameplayScenes");
+            int index = Enumerable.Range(0, names.arraySize).FirstOrDefault(i => names.GetArrayElementAtIndex(i).stringValue == "IndustrialPlant");
+            Assert.AreEqual("IndustrialPlant", names.GetArrayElementAtIndex(index).stringValue);
+            Assert.Greater(index, 0, "PatataWorks stays first");
+            Assert.AreEqual(9, so.FindProperty("sceneCheckpoints").GetArrayElementAtIndex(index).intValue);
+            Assert.IsTrue(EditorBuildSettings.scenes.Any(s => s.enabled && s.path.EndsWith("/IndustrialPlant.unity")));
+        }
+
+        [Test]
         public void FloorsOfTwoRooms_NeverOverlapAtTheSameHeight()
         {
             // Two coplanar slabs of different rooms (different themes) would fight over one surface and flicker.
