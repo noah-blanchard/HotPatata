@@ -12,7 +12,7 @@ throwing a live bomb between them.
   2.13, Multiplayer Services (Relay sessions, linked to Unity Cloud project HotPatata), Multiplayer Play Mode.
 - **Target:** Windows PC (primary). Linux and macOS builds ship with each release, best effort (macOS unsigned).
 - **Scenes:**
-  - `Bootstrap` (entry: the in-world menu and lobby on the menu island);
+  - `Bootstrap` (entry: the in-world menu and lobby in the menu's factory hall);
   - `PassSandbox` (one bomb, the kit demo, the pass range);
   - `PrototypeCourse` (~680 m, 7 checkpoints, 3 acts);
   - `PlaytestCourse` (~10 min, 9 checkpoints, the classic kit plus the #68 bomb obstacles);

@@ -98,7 +98,7 @@ namespace HotPatata.Editor
                 ConfigureSun(light, yaw);
             }
             ApplyRenderSettings(scene.name, yaw);
-            if (scene.name == "IndustrialPlant")
+            if (IsInterior(scene.name))
             {
                 // No sun at all: a directional light's shadows are camera-relative (cascades, a shadow distance), so under a roof
                 // the floor would light up as you approach. The lamps (point lights, no shadows) are the only light, the same
@@ -140,6 +140,9 @@ namespace HotPatata.Editor
             EditorUtility.SetDirty(volume);
             EditorSceneManager.MarkSceneDirty(scene);
         }
+
+        /// <summary>The closed industrial scenes, lit by lamps only: the plant, and the menu's factory hall (Bootstrap).</summary>
+        public static bool IsInterior(string sceneName) => sceneName == "IndustrialPlant" || sceneName == "Bootstrap";
 
         public const string PlantProfilePath = "Assets/Settings/Look/HotPatata_Look_Plant.asset";
         public const float PlantExposure_EV = 0.45f;

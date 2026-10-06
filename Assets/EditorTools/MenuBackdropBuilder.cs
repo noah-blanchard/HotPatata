@@ -14,13 +14,13 @@ namespace HotPatata.Editor
 {
     /// <summary>
     /// Builds the living menu backdrop (ARCHITECTURE §6.2) as one prefab, <c>Assets/Prefabs/Menu/MenuBackdrop.prefab</c>,
-    /// and places its instance in <c>Bootstrap</c> with the menu camera, sky and fog. On a small KayKit island the four
-    /// slots' characters pass the live potato from hand to hand (<see cref="MenuHotPotato"/>); flags sway, stars spin, little
-    /// platforms bob, clouds drift, sparkles float, and the camera drifts slowly. Everything in it is visual: copies of the
+    /// and places its instance in <c>Bootstrap</c> with the menu camera. In a closed factory hall drawn in the industrial look
+    /// (§25.2, matching the UI theme) the four slots' characters pass the live potato from hand to hand on a marked bay
+    /// (<see cref="MenuHotPotato"/>); lamps hang from the trusses, dust drifts in their light, and the camera drifts slowly. Everything in it is visual: copies of the
     /// players' characters and the bomb's visual, never their gameplay components, and no colliders that matter.
-    /// The menu itself lives on the island too (#79): four stations (Title, Play, Level, Lobby), each a world-space board
+    /// The menu itself lives in the hall too (#79): four stations (Title, Play, Level, Lobby), each a world-space board
     /// with a Cinemachine camera spot and a framing volume (vignette), the lobby stage the players step onto, and the
-    /// menu camera's brain and rig. Sun, sky, fog and grade come from <see cref="LookBuilder"/>, as in every scene.
+    /// menu camera's brain and rig. Fill, fog and grade come from <see cref="LookBuilder"/> (an interior: no sun).
     /// Idempotent: rebuild after changing it (menu HotPatata/Menu/Build Menu Backdrop), never edit it by hand.
     /// </summary>
     public static class MenuBackdropBuilder
@@ -101,15 +101,16 @@ namespace HotPatata.Editor
             try
             {
                 var t = root.transform;
-                BuildSun(t);
-                BuildIsland(Group(t, "Island"));
-                BuildProps(Group(t, "Props"));
-                BuildFloaters(Group(t, "Floaters"));
-                PatataParkBuilder.BuildKayKitBackdrop(Group(t, "FarIslands"), 8642, 14, 25f, 200f);
-                var clouds = Group(t, "Clouds");
-                BuildBackdrop(clouds, 9753, 0, 0f, 0f, 26, 10f, 240f);
-                clouds.gameObject.AddComponent<MenuCloudDrift>().Configure(1.4f, 190f);
-                BuildSparkles(t);
+                IndustrialMaterialBuilder.Ensure(false);
+                using (UseLookSet(LookSet.Industrial))
+                using (UseTheme(HallTheme))
+                {
+                    BuildHall(Group(t, "Hall"));
+                    BuildHallDressing(Group(t, "Dressing"));
+                    BuildHallLights(Group(t, "Lights"));
+                }
+                foreach (var c in t.GetComponentsInChildren<Collider>()) Object.DestroyImmediate(c);   // nothing walks here
+                BuildDust(t);
 
                 var show = Group(t, "Show");
                 var players = BuildPlayers(show, tuning, controller);
@@ -135,76 +136,132 @@ namespace HotPatata.Editor
             return go.transform;
         }
 
-        static void BuildSun(Transform parent)
+        // ------------------------------------------------------------------ the hall (industrial look, ARCHITECTURE §25.2)
+
+        /// <summary>The hall's floor, walls and ceiling materials: the menu matches the industrial plant and the UI theme.</summary>
+        static readonly SurfaceTheme HallTheme = new SurfaceTheme(IndustrialDir + "Industrial_Floor_Concrete", IndustrialDir + "Industrial_Wall_Brick",
+                                                                   IndustrialDir + "Industrial_Ceiling_Concrete");
+        const float HallX = 24f, HallBack = 22f, HallFront = -24f, HallHeight = 16f;
+
+        /// <summary>
+        /// A closed factory hall around every station and camera: concrete floor, brick walls, a concrete roof on steel trusses
+        /// and columns along the walls. The show plays on a marked bay in the middle; the logo hangs on a steel gantry at the
+        /// back. Nothing stands between a camera spot and its board.
+        /// </summary>
+        static void BuildHall(Transform p)
         {
-            var sun = new GameObject("Sun").AddComponent<Light>();
-            sun.transform.SetParent(parent, false);
-            sun.type = LightType.Directional;
-            LookBuilder.ConfigureSun(sun, LookBuilder.SunYaw(ScenePath));   // the golden-hour sun (ARCHITECTURE §25)
-        }
-
-        /// <summary>The island: a green top on stone layers that narrow downwards, a yellow terrace and a blue step at the back.</summary>
-        static void BuildIsland(Transform parent)
-        {
-            Block(parent, "Ground", new Vector3(0f, -1f, 0.8f), new Vector3(16f, 2f, 12f), KitRole.Ground);
-            Block(parent, "Rock_1", new Vector3(0f, -3f, 0.8f), new Vector3(12f, 2f, 9f), KitRole.Wall);
-            Block(parent, "Rock_2", new Vector3(0f, -5f, 0.8f), new Vector3(8f, 2f, 6f), KitRole.Wall);
-            Block(parent, "Rock_3", new Vector3(0f, -7f, 0.8f), new Vector3(4f, 2f, 3f), KitRole.Wall);
-            Block(parent, "Terrace", new Vector3(-5f, 0.5f, 5.3f), new Vector3(5f, 1f, 3f), KitRole.Falling);
-            Block(parent, "Step", new Vector3(5.5f, 1f, 5.3f), new Vector3(3f, 2f, 3f), KitRole.Mover);
-            foreach (var c in parent.GetComponentsInChildren<Collider>()) Object.DestroyImmediate(c);   // nothing walks here
-        }
-
-        static void BuildProps(Transform parent)
-        {
-            var mat = Mat(KitMaterial);
-            Prop(parent, "arch_wide", KitColor.Blue, new Vector3(0f, 0f, 6.1f), 0f, mat, shadows: true);
-            Prop(parent, "signage_finish_wide", KitColor.Neutral, new Vector3(0f, 0f, 6.3f), 0f, mat, shadows: true, y: 3.1f);
-            Prop(parent, "spring_pad", KitColor.Green, new Vector3(-4f, 1f, 5.2f), 0f, mat, shadows: true);
-            Prop(parent, "cone", KitColor.Red, new Vector3(-7.3f, 0f, -1.2f), 20f, mat, shadows: true);
-            Prop(parent, "cone", KitColor.Red, new Vector3(7.2f, 0f, -3.6f), -15f, mat, shadows: true);
-            Prop(parent, "ball", KitColor.Blue, new Vector3(5.8f, 0f, -3.4f), 0f, mat, shadows: true);
-            Prop(parent, "barrier_1x1x1", KitColor.Yellow, new Vector3(-7.2f, 0f, 2.2f), 0f, mat, shadows: true);
-            Prop(parent, "pillar_1x1x2", KitColor.Neutral, new Vector3(7.2f, 0f, 1.5f), 0f, mat, shadows: true);
-
-            // Flags in the wind.
-            Sway(Prop(parent, "flag_A", KitColor.Red, new Vector3(6.8f, 0f, 4.4f), -30f, mat, shadows: true), 4f, 2.2f, 0f);
-            Sway(Prop(parent, "flag_B", KitColor.Yellow, new Vector3(-7.2f, 0f, 3.2f), 25f, mat, shadows: true), 5f, 2.7f, 0.8f);
-            Sway(Prop(parent, "flag_C", KitColor.Blue, new Vector3(-6.4f, 1f, 5.6f), 10f, mat, shadows: true), 4f, 2.4f, 1.6f);
-
-            // Collectables floating and spinning above the island.
-            Spin(Prop(parent, "star", KitColor.Yellow, new Vector3(-2.2f, 4.4f, 4.2f), 0f, mat), 90f, 0.3f, 3.1f, 0f);
-            Spin(Prop(parent, "star", KitColor.Yellow, new Vector3(3.2f, 5.1f, 4.8f), 0f, mat), 70f, 0.35f, 3.6f, 1.2f);
-            Spin(Prop(parent, "heart", KitColor.Red, new Vector3(-5.2f, 2.8f, -1.2f), 0f, mat), 60f, 0.25f, 2.8f, 0.6f);
-            Spin(Prop(parent, "diamond", KitColor.Blue, new Vector3(5.4f, 2.6f, -1.4f), 0f, mat), 80f, 0.25f, 3.3f, 2.1f);
-            Spin(Prop(parent, "hoop", KitColor.Red, new Vector3(8.6f, 4.6f, 6.4f), 0f, mat), 20f, 0.4f, 5f, 0.3f);
-        }
-
-        /// <summary>Little platforms bobbing in the air around the island.</summary>
-        static void BuildFloaters(Transform parent)
-        {
-            (Vector3 at, Vector3 size, KitRole role, float phase)[] floaters =
+            float width = 2 * HallX, depth = HallBack - HallFront, midZ = (HallBack + HallFront) / 2;
+            Block(p, "Floor", new Vector3(0, -0.5f, midZ), new Vector3(width, 1, depth), KitRole.Floor);
+            Block(p, "Ceiling", new Vector3(0, HallHeight + 0.5f, midZ), new Vector3(width, 1, depth), KitRole.Ceiling);
+            foreach (float x in new[] { -HallX - 0.5f, HallX + 0.5f })
+                Block(p, "Wall", new Vector3(x, HallHeight / 2, midZ), new Vector3(1, HallHeight + 2, depth + 2), KitRole.Wall);
+            foreach (float z in new[] { HallFront - 0.5f, HallBack + 0.5f })
+                Block(p, "End wall", new Vector3(0, HallHeight / 2, z), new Vector3(width + 2, HallHeight + 2, 1), KitRole.Wall);
+            for (float z = HallFront + 4; z < HallBack; z += 6)
             {
-                (new Vector3(10.5f, 2.2f, 3.5f), new Vector3(3f, 0.8f, 3f), KitRole.Mover, 0f),
-                (new Vector3(-10.8f, 3.4f, 1.5f), new Vector3(2.5f, 0.8f, 2.5f), KitRole.Falling, 1.4f),
-                (new Vector3(6.5f, 6f, 9.5f), new Vector3(2f, 0.6f, 2f), KitRole.Ground, 2.3f),
-                (new Vector3(-7.5f, 6.8f, 9f), new Vector3(2.2f, 0.6f, 2.2f), KitRole.Mover, 3.1f)
-            };
-            int i = 0;
-            foreach (var (at, size, role, phase) in floaters)
-            {
-                var pivot = Group(parent, "Floater_" + i++);
-                pivot.localPosition = at;
-                var block = Block(pivot, "Block", Vector3.zero, size, role);
-                block.transform.localPosition = Vector3.zero;   // Block places in world space
-                foreach (var c in pivot.GetComponentsInChildren<Collider>()) Object.DestroyImmediate(c);
-                pivot.gameObject.AddComponent<MenuFloat>().Configure(0.35f, 4.5f + phase, 0f, 0f, 0f, phase);
+                IndustrialKit.Detail(p, "Roof truss", new Vector3(0, HallHeight - 0.4f, z), new Vector3(width - 0.4f, 0.6f, 0.35f), KitRole.Truss);
+                IndustrialKit.Detail(p, "Roof truss flange", new Vector3(0, HallHeight - 0.05f, z), new Vector3(width - 0.4f, 0.08f, 0.8f), KitRole.Truss);
             }
+            foreach (float x in new[] { -HallX + 1.2f, HallX - 1.2f })
+                for (float z = HallFront + 6; z < HallBack; z += 12)
+                {
+                    Block(p, "Column", new Vector3(x, HallHeight / 2, z), new Vector3(0.9f, HallHeight, 0.9f), KitRole.Pillar);
+                    IndustrialKit.ColumnTrim(p, "Column trim", new Vector3(x, 0, z), HallHeight, 0.9f);
+                }
+            // the show's bay, marked on the floor, and the joints of the slab
+            IndustrialKit.EdgeStrip(p, "Bay line", 0, 0, -4.2f, 0.25f, 14f);
+            IndustrialKit.EdgeStrip(p, "Bay line", 0, 0, 6.2f, 0.25f, 14f);
+            IndustrialKit.EdgeStrip(p, "Bay line", -7f, 0, 1f, 10.6f, 0.25f);
+            IndustrialKit.EdgeStrip(p, "Bay line", 7f, 0, 1f, 10.6f, 0.25f);
+            for (float z = HallFront + 6; z < HallBack; z += 6) IndustrialKit.Seam(p, "Floor joint", 0, 0, z, width - 2);
         }
 
-        static void BuildSparkles(Transform parent)
+        /// <summary>Steel and machinery round the walls, the logo gantry, a belt with crates at the back, ducts and pipes.</summary>
+        static void BuildHallDressing(Transform p)
         {
-            var go = new GameObject("Sparkles");
+            // the logo gantry: two painted columns, a beam, and a dark steel plate behind the Title board
+            foreach (float x in new[] { -6.2f, 6.2f })
+            {
+                Block(p, "Gantry column", new Vector3(x, 6.5f, 8.8f), new Vector3(0.7f, 13f, 0.7f), KitRole.Frame);
+                IndustrialKit.ColumnTrim(p, "Gantry trim", new Vector3(x, 0, 8.8f), 13f, 0.7f);
+            }
+            Block(p, "Gantry beam", new Vector3(0, 12.6f, 8.8f), new Vector3(13.4f, 0.8f, 0.8f), KitRole.Frame);
+            Block(p, "Logo plate", new Vector3(0, 7.6f, 8.5f), new Vector3(11f, 7f, 0.3f), KitRole.Rubber);   // dark, so the logo stands out; behind the Title board even at its turned edge
+            foreach (float x in new[] { -3.5f, 3.5f })
+                IndustrialKit.Detail(p, "Plate chain", new Vector3(x, 11.65f, 8.5f), new Vector3(0.06f, 1.1f, 0.06f), KitRole.Truss);
+
+            // machines along both walls (out of every camera's line to its board)
+            foreach (float x in new[] { -20.5f, 20.5f })
+                foreach (float z in new[] { -10f, 2f, 14f })
+                    Machine(p, "Machine", new Vector3(x, 3f, z), new Vector3(5f, 6f, 7f));
+
+            // a belt along the back wall carrying crates, on painted legs
+            Block(p, "Belt", new Vector3(0, 1.1f, 16.5f), new Vector3(30f, 0.4f, 2.4f), KitRole.Rubber);
+            for (float x = -14f; x <= 14f; x += 4f)
+                foreach (float z in new[] { 15.5f, 17.5f })
+                    Block(p, "Belt leg", new Vector3(x, 0.45f, z), new Vector3(0.25f, 0.9f, 0.25f), KitRole.Truss);
+            foreach (var (x, size) in new[] { (-10f, 1.2f), (-3.5f, 1f), (2.5f, 1.4f), (9f, 1f) })
+                Crate(p, new Vector3(x, 1.3f + size / 2, 16.5f), size);
+
+            // crate stacks in the back corners
+            foreach (var (x, z) in new[] { (-15.5f, 11f), (-13f, 12.5f), (14.5f, 10.5f), (16.5f, 12f) })
+            {
+                Crate(p, new Vector3(x, 0.8f, z), 1.6f);
+                if ((x < 0) == (z > 12)) Crate(p, new Vector3(x + 0.1f, 2.4f, z - 0.1f), 1.4f);
+            }
+
+            // ducts and pipes along the walls
+            foreach (float x in new[] { -HallX + 0.5f, HallX - 0.5f })
+            {
+                IndustrialKit.Detail(p, "Duct", new Vector3(x, 11f, 0), new Vector3(0.7f, 0.7f, HallBack - HallFront - 4), KitRole.Rust);
+                IndustrialKit.Detail(p, "Pipe", new Vector3(x, 8.6f, 0), new Vector3(0.35f, 0.35f, HallBack - HallFront - 4), KitRole.Grating);
+            }
+            IndustrialKit.Detail(p, "Back duct", new Vector3(0, 12.5f, HallBack - 0.6f), new Vector3(2 * HallX - 4, 0.8f, 0.8f), KitRole.Rust);
+        }
+
+        static void Machine(Transform p, string name, Vector3 center, Vector3 size)
+        {
+            Block(p, name, center, size, KitRole.Pillar);
+            IndustrialKit.Detail(p, name + " band", center + new Vector3(0, size.y * 0.15f, 0), new Vector3(size.x + 0.04f, size.y * 0.3f, size.z - 1f), KitRole.Rubber);
+            IndustrialKit.Detail(p, name + " lamp", center + new Vector3(-Mathf.Sign(center.x) * (size.x / 2 + 0.05f), size.y * 0.35f, 0), new Vector3(0.12f, 0.25f, 0.25f), KitRole.Lamp);
+        }
+
+        static void Crate(Transform p, Vector3 center, float size)
+        {
+            Block(p, "Crate", center, Vector3.one * size, KitRole.Frame);
+            IndustrialKit.Detail(p, "Crate band", center, new Vector3(size + 0.04f, size * 0.12f, size + 0.04f), KitRole.Truss);
+        }
+
+        /// <summary>
+        /// The hall's light: warm hanging lamps on a grid under the roof, a warm wash on the show, the logo and the boards, cold
+        /// wall lamps. No sun: the hall is closed, and LookBuilder gives Bootstrap the industrial interior fill and exposure.
+        /// </summary>
+        static void BuildHallLights(Transform p)
+        {
+            var warm = new Color(1f, 0.72f, 0.45f);
+            foreach (float z in new[] { -16f, -6f, 4f, 14f })
+                foreach (float x in new[] { -13f, 0f, 13f })
+                {
+                    if (z == 4f && x == 0f) continue;   // the logo hangs there
+                    var at = new Vector3(x, 12f, z);
+                    IndustrialKit.Detail(p, "Lamp chain", new Vector3(x, 14f, z), new Vector3(0.06f, 4f, 0.06f), KitRole.Truss);
+                    IndustrialKit.Detail(p, "Lamp shade", at + Vector3.up * 0.18f, new Vector3(1.2f, 0.22f, 1.2f), KitRole.Truss);
+                    IndustrialKit.Detail(p, "Lamp bulb", at, new Vector3(0.8f, 0.14f, 0.8f), KitRole.Lamp);
+                    LookBuilder.PracticalLamp(p, at - Vector3.up * 0.6f, warm, 70f, 26f, "Lamp light");
+                }
+            LookBuilder.PracticalLamp(p, new Vector3(0f, 6f, -2f), warm, 45f, 16f, "Show light");
+            LookBuilder.PracticalLamp(p, new Vector3(0f, 9f, 2f), warm, 40f, 14f, "Logo light");
+            LookBuilder.PracticalLamp(p, new Vector3(-9f, 6f, -8f), warm, 30f, 14f, "Play light");
+            LookBuilder.PracticalLamp(p, new Vector3(10f, 6f, -8f), warm, 30f, 14f, "Level light");
+            foreach (float x in new[] { -HallX + 1.6f, HallX - 1.6f })
+                foreach (float z in new[] { -12f, 0f, 12f })
+                    LookBuilder.PracticalLamp(p, new Vector3(x, 6f, z), new Color(0.6f, 0.78f, 1f), 18f, 14f, "Wall lamp light");
+        }
+
+        /// <summary>Dust motes drifting in the lamp light (the island's sparkles, now dim and warm).</summary>
+        static void BuildDust(Transform parent)
+        {
+            var go = new GameObject("Dust");
             go.transform.SetParent(parent, false);
             go.transform.localPosition = new Vector3(0f, 3f, 2f);
             var ps = go.AddComponent<ParticleSystem>();
@@ -215,12 +272,12 @@ namespace HotPatata.Editor
             main.prewarm = true;
             main.startLifetime = new ParticleSystem.MinMaxCurve(6f, 9f);
             main.startSpeed = new ParticleSystem.MinMaxCurve(0.05f, 0.25f);
-            main.startSize = new ParticleSystem.MinMaxCurve(0.06f, 0.16f);
-            main.startColor = new ParticleSystem.MinMaxGradient(new Color(1f, 0.95f, 0.7f, 0.9f), new Color(1f, 1f, 1f, 0.6f));
+            main.startSize = new ParticleSystem.MinMaxCurve(0.03f, 0.08f);
+            main.startColor = new ParticleSystem.MinMaxGradient(new Color(1f, 0.85f, 0.6f, 0.35f), new Color(0.9f, 0.85f, 0.8f, 0.2f));
             main.maxParticles = 120;
             main.simulationSpace = ParticleSystemSimulationSpace.World;
             var emission = ps.emission;
-            emission.rateOverTime = 12f;
+            emission.rateOverTime = 18f;
             var shape = ps.shape;
             shape.shapeType = ParticleSystemShapeType.Box;
             shape.scale = new Vector3(26f, 7f, 18f);
@@ -414,23 +471,6 @@ namespace HotPatata.Editor
             }
             stage.gameObject.AddComponent<MenuLobbyStage>().Configure(tuning, show, spots, plates);
         }
-
-        // ------------------------------------------------------------------ props
-
-        static Transform Prop(Transform parent, string model, KitColor color, Vector3 at, float yaw, Material mat, bool shadows = false, float y = 0f)
-        {
-            PatataParkBuilder.Prop(parent, model, color, at + Vector3.up * y, yaw, mat);
-            var go = parent.GetChild(parent.childCount - 1);
-            if (shadows)
-                foreach (var r in go.GetComponentsInChildren<Renderer>()) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
-            return go;
-        }
-
-        static void Sway(Transform t, float degrees, float period, float phase) =>
-            t.gameObject.AddComponent<MenuFloat>().Configure(0f, 0f, 0f, degrees, period, phase);
-
-        static void Spin(Transform t, float degreesPerSecond, float bob, float bobPeriod, float phase) =>
-            t.gameObject.AddComponent<MenuFloat>().Configure(bob, bobPeriod, degreesPerSecond, 0f, 0f, phase);
 
         // ------------------------------------------------------------------ scene: camera and sky
 
