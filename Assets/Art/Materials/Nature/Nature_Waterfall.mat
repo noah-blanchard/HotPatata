@@ -1,0 +1,51 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Nature_Waterfall
+  m_Shader: {fileID: 4800000, guid: 8f607dbc79d94314d955d9699c7daf2e, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _FoamMap:
+        m_Texture: {fileID: 2800000, guid: 415b31ffd12be8543aa4f9f1713730c1, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _WaveMap:
+        m_Texture: {fileID: 2800000, guid: 18ca8023dea040341b5abafe7e24c127, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _Clarity: 0.2
+    - _DepthRange: 2.5
+    - _FlowSpeed: 6
+    - _FoamDepth: 3
+    - _FoamScale: 2
+    - _Reflection: 1
+    - _Refraction: 0.04
+    - _Smoothness: 0.92
+    - _WaveScale: 2.5
+    - _WaveStrength: 0.6
+    m_Colors:
+    - _DeepColor: {r: 0.04, g: 0.11999995, b: 0.10999996, a: 1}
+    - _FoamColor: {r: 0.92, g: 0.95, b: 0.93, a: 1}
+    - _ShallowColor: {r: 0.55, g: 0.64, b: 0.62, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

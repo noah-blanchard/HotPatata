@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using HotPatata;
 using UnityEditor;
 using UnityEngine;
@@ -25,6 +26,54 @@ namespace HotPatata.Editor
 
         /// <summary>Crusher underside above the floor when down: a crouched or sliding player (1.0 m) fits, a standing one (1.8 m) does not.</summary>
         public const float CrusherLowClearance = 1.45f;
+
+        // ------------------------------------------------------------------ the menu's level list
+
+        /// <summary>Where a course goes in the Bootstrap level list: first, kept where it is (second when new), or last.</summary>
+        public enum MenuSlot { First, Keep, Last }
+
+        public const string NetworkPrefab = "Assets/Prefabs/Network/NetworkManager.prefab";
+
+        /// <summary>
+        /// Lists a course in the build settings and in the menu's level list (NetworkBootstrap) with its checkpoint count. One shared
+        /// place, so builders never fight over the order: PatataWilds is first, PatataWorks keeps its place, the plant goes last.
+        /// </summary>
+        public static void RegisterInMenu(string sceneName, string scenePath, int checkpoints, MenuSlot slot)
+        {
+            var scenes = UnityEditor.EditorBuildSettings.scenes.ToList();
+            if (!scenes.Any(s => s.path == scenePath)) scenes.Add(new UnityEditor.EditorBuildSettingsScene(scenePath, true));
+            UnityEditor.EditorBuildSettings.scenes = scenes.ToArray();
+            var root = PrefabUtility.LoadPrefabContents(NetworkPrefab);
+            try
+            {
+                var so = new SerializedObject(root.GetComponent<NetworkBootstrap>());
+                var names = so.FindProperty("gameplayScenes");
+                var counts = so.FindProperty("sceneCheckpoints");
+                counts.arraySize = Mathf.Max(counts.arraySize, names.arraySize);
+                int index = -1;
+                for (int i = 0; i < names.arraySize; i++)
+                    if (names.GetArrayElementAtIndex(i).stringValue == sceneName) index = i;
+                int target = slot == MenuSlot.First ? 0 : slot == MenuSlot.Last ? names.arraySize - (index >= 0 ? 1 : 0)
+                           : index >= 0 ? index : Mathf.Min(1, names.arraySize);
+                if (index < 0)
+                {
+                    names.InsertArrayElementAtIndex(Mathf.Min(target, names.arraySize));
+                    counts.InsertArrayElementAtIndex(Mathf.Min(target, counts.arraySize));
+                    index = Mathf.Min(target, names.arraySize - 1);
+                }
+                else if (index != target)
+                {
+                    names.MoveArrayElement(index, target);
+                    counts.MoveArrayElement(index, target);
+                    index = target;
+                }
+                names.GetArrayElementAtIndex(index).stringValue = sceneName;
+                counts.GetArrayElementAtIndex(index).intValue = checkpoints;
+                so.ApplyModifiedPropertiesWithoutUndo();
+                PrefabUtility.SaveAsPrefabAsset(root, NetworkPrefab);
+            }
+            finally { PrefabUtility.UnloadPrefabContents(root); }
+        }
 
         // ------------------------------------------------------------------ groups
 
@@ -277,8 +326,8 @@ namespace HotPatata.Editor
         public const string PalettePath = "Assets/ScriptableObjects/Kit/KayKitPalette.asset";
         public const string KitMaterial = "KayKit_Toon", KitHazardMaterial = "KayKit_Hazard", KitBeltMaterial = "KayKit_Belt";
 
-        /// <summary>The look set the kit draws with: KayKit everywhere, Industrial (ARCHITECTURE §25.2) only where a builder asks.</summary>
-        public enum LookSet { KayKit, Industrial }
+        /// <summary>The look set the kit draws with: KayKit everywhere, Industrial (ARCHITECTURE §25.2) or Nature (§25.3) only where a builder asks.</summary>
+        public enum LookSet { KayKit, Industrial, Nature }
 
         static LookSet currentLookSet = LookSet.KayKit;
 
@@ -312,7 +361,7 @@ namespace HotPatata.Editor
             public void Dispose() => currentTheme = previous;
         }
 
-        /// <summary>Draws the floor, wall and ceiling roles inside the scope with the theme's materials (industrial look only).</summary>
+        /// <summary>Draws the floor, wall and ceiling roles inside the scope with the theme's materials (industrial and nature looks).</summary>
         public static IDisposable UseTheme(SurfaceTheme theme) => new ThemeScope(theme);
 
         public const string IndustrialDir = "Industrial/";
@@ -322,7 +371,36 @@ namespace HotPatata.Editor
 
         /// <summary>One look per role of the course: the piece family, the KayKit colour and the material, in the current look set.</summary>
         public static (KitShape shape, KitColor color, string material) Look(KitRole role) =>
-            currentLookSet == LookSet.Industrial ? IndustrialLook(role) : KayKitLook(role);
+            currentLookSet == LookSet.Industrial ? IndustrialLook(role) : currentLookSet == LookSet.Nature ? NatureLook(role) : KayKitLook(role);
+
+        public const string NatureDir = "Nature/";
+
+        /// <summary>
+        /// The nature look (ARCHITECTURE §25.3, PatataWilds): rough rock slabs in the theme's ground, cliff and cave-roof materials,
+        /// logs (rafts, posts, palisades, rams) and planks (bridges, decks). Hazards are rust-stained logs with charred bands (the
+        /// bands stop them relying on colour alone, spec §19); falling platforms are pale rotten planks, always the same.
+        /// </summary>
+        static (KitShape shape, KitColor color, string material) NatureLook(KitRole role) => role switch
+        {
+            KitRole.Ground or KitRole.Floor or KitRole.Stairs or KitRole.Roof => (KitShape.RoughBox, KitColor.Neutral, currentTheme.Floor),
+            KitRole.Wall or KitRole.Brick => (KitShape.RoughBox, KitColor.Neutral, currentTheme.Wall),
+            KitRole.Ceiling => (KitShape.RoughBox, KitColor.Neutral, currentTheme.Ceiling),
+            KitRole.Mover => (KitShape.Logs, KitColor.Neutral, NatureDir + "Nature_BarkBrown"),
+            KitRole.Pillar => (KitShape.Logs, KitColor.Neutral, NatureDir + "Nature_PineBark"),
+            KitRole.Truss or KitRole.Rust => (KitShape.Logs, KitColor.Neutral, NatureDir + "Nature_BarkDark"),
+            KitRole.Frame or KitRole.Railing => (KitShape.Logs, KitColor.Neutral, NatureDir + "Nature_RoughWood"),
+            KitRole.Gate => (KitShape.Logs, KitColor.Neutral, NatureDir + "Nature_RoughWood"),
+            KitRole.Accent => (KitShape.Planks, KitColor.Neutral, NatureDir + NatureMaterialBuilder.BlazeName),
+            KitRole.Hazard => (KitShape.Logs, KitColor.Neutral, NatureDir + NatureMaterialBuilder.HazardName),
+            KitRole.Falling => (KitShape.Planks, KitColor.Neutral, NatureDir + NatureMaterialBuilder.FallingName),
+            KitRole.Lamp => (KitShape.BevelBox, KitColor.Neutral, NatureDir + NatureMaterialBuilder.LanternName),
+            KitRole.Glow => (KitShape.BevelBox, KitColor.Neutral, NatureDir + NatureMaterialBuilder.EmberName),
+            KitRole.Slide => (KitShape.RoughBox, KitColor.Neutral, NatureDir + "Nature_Mud"),
+            KitRole.Grating => (KitShape.Planks, KitColor.Neutral, NatureDir + "Nature_Planks"),
+            KitRole.Belt => (KitShape.Logs, KitColor.Neutral, NatureDir + NatureMaterialBuilder.BeltName),
+            KitRole.Rubber => (KitShape.Planks, KitColor.Neutral, NatureDir + "Nature_MossWood"),
+            _ => KayKitLook(role)
+        };
 
         /// <summary>
         /// The industrial look (ARCHITECTURE §25.2): bevelled boxes in the room theme's floor, wall and ceiling materials, painted, raw

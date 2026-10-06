@@ -186,11 +186,11 @@ namespace HotPatata.Editor
             public bool normalIsDirectX;
         }
 
-        static Texture2D Find(string folder, params string[] suffixes)
+        static Texture2D Find(string root, string folder, params string[] suffixes)
         {
-            if (!AssetDatabase.IsValidFolder(TextureDir + folder)) return null;
+            if (!AssetDatabase.IsValidFolder(root + folder)) return null;
             // by path, so a folder holding two sets always gives the same pick
-            foreach (var path in AssetDatabase.FindAssets("t:Texture2D", new[] { TextureDir + folder }).Select(AssetDatabase.GUIDToAssetPath).OrderBy(p => p))
+            foreach (var path in AssetDatabase.FindAssets("t:Texture2D", new[] { root + folder }).Select(AssetDatabase.GUIDToAssetPath).OrderBy(p => p))
             {
                 string name = System.Text.RegularExpressions.Regex.Replace(Path.GetFileNameWithoutExtension(path).ToLowerInvariant(), @"[_-](1|2|4|8|16)k$", "");
                 if (suffixes.Any(s => name.EndsWith("_" + s) || name.EndsWith("-" + s))) return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
@@ -198,20 +198,23 @@ namespace HotPatata.Editor
             return null;
         }
 
-        /// <summary>The maps found in a texture folder, by file name (see <see cref="IndustrialTextureImporter"/>).</summary>
-        public static TextureSet FindSet(string folder)
+        /// <summary>The maps found in an industrial texture folder, by file name (see <see cref="IndustrialTextureImporter"/>).</summary>
+        public static TextureSet FindSet(string folder) => FindSet(TextureDir, folder);
+
+        /// <summary>The maps found in <paramref name="root"/> + <paramref name="folder"/> by file name (the nature library shares this, ARCHITECTURE §25.3).</summary>
+        public static TextureSet FindSet(string root, string folder)
         {
             var set = new TextureSet
             {
-                color = Find(folder, "basecolor", "albedo", "color", "diff", "diffuse"),
-                normal = Find(folder, "normalgl", "nor_gl", "normal_gl", "normal"),
-                rough = Find(folder, "roughness", "rough"),
-                metal = Find(folder, "metalness", "metallic", "metal"),
-                ao = Find(folder, "ambientocclusion", "ao", "occlusion")
+                color = Find(root, folder, "basecolor", "albedo", "color", "diff", "diffuse"),
+                normal = Find(root, folder, "normalgl", "nor_gl", "normal_gl", "normal"),
+                rough = Find(root, folder, "roughness", "rough"),
+                metal = Find(root, folder, "metalness", "metallic", "metal"),
+                ao = Find(root, folder, "ambientocclusion", "ao", "occlusion")
             };
-            if (set.normal == null) { set.normal = Find(folder, "normaldx", "nor_dx", "normal_dx"); set.normalIsDirectX = set.normal != null; }
-            if (set.rough == null) set.gloss = Find(folder, "gloss", "smoothness");
-            set.height = Find(folder, "displacement", "disp", "height");
+            if (set.normal == null) { set.normal = Find(root, folder, "normaldx", "nor_dx", "normal_dx"); set.normalIsDirectX = set.normal != null; }
+            if (set.rough == null) set.gloss = Find(root, folder, "gloss", "smoothness");
+            set.height = Find(root, folder, "displacement", "disp", "height");
             return set;
         }
 
@@ -269,7 +272,7 @@ namespace HotPatata.Editor
         }
 
         /// <summary>A height map is data: a set imported before the importer knew displacement maps may still be sRGB.</summary>
-        static void MakeLinear(Texture2D texture)
+        internal static void MakeLinear(Texture2D texture)
         {
             if (texture == null) return;
             var importer = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(texture)) as TextureImporter;
