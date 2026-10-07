@@ -344,7 +344,7 @@ namespace HotPatata.Editor
             Deck(p, "Heart floor", -8, 8, 40, 54, 0);
             AddMover(p, "Platform_Moving", "Heart shuttle", new Vector3(0, -0.5f, 29), new Vector3(0, -0.5f, 37), new Vector3(6, 1, 6), 2f, 0f, 0.3f);
             ArchCheckpoint(p, "CP_15", 15, new Vector3(0, 0, 64), FuseFor(15), new Vector3(0, 0, 57));
-            DressCheckpoint(p, p.Find("CP_15").GetComponent<Checkpoint>(), new Vector3(-3.8f, 0, 64));
+            NatureKit.CampfireCheckpoint(p, p.Find("CP_15").GetComponent<Checkpoint>(), new Vector3(-3.8f, 0, 64));
             Pass(p, "To the shuttle", new Vector3(0, 1.5f, 22), new Vector3(0, 1.5f, 31), timed: true);
             Pass(p, "Heart arch", new Vector3(0, 1.5f, 52), new Vector3(0, 1.5f, 62), opening: 3f);
             foreach (float z in new[] { 14f, 50f }) NatureKit.Torch(p, new Vector3(-6.7f, 0, z), 7f, 13f);
@@ -558,7 +558,7 @@ namespace HotPatata.Editor
             AddMover(p, "Platform_Moving", "Summit shuttle", new Vector3(0, -0.5f, 33), new Vector3(0, -0.5f, 41), new Vector3(6, 1, 6), 2f, 0f, 0.3f);
             Deck(p, "Summit", -10, 10, 44, 84, 0);
             ArchCheckpoint(p, "CP_25", 25, new Vector3(0, 0, 54), FuseFor(25), new Vector3(0, 0, 48));
-            DressCheckpoint(p, p.Find("CP_25").GetComponent<Checkpoint>(), new Vector3(3.8f, 0, 54));
+            NatureKit.CampfireCheckpoint(p, p.Find("CP_25").GetComponent<Checkpoint>(), new Vector3(3.8f, 0, 54));
             Place(p, GameplayDir + "FinishZone", "FinishZone", new Vector3(0, 0, 68), Quaternion.identity);
             NatureKit.Campfire(p, new Vector3(0, 0, 78), null, 2.2f);
             Pass(p, "Summit arch", new Vector3(0, 1.5f, 42), new Vector3(0, 1.5f, 52), timed: true, opening: 3.2f);
