@@ -127,7 +127,7 @@ As built: the `Bootstrap` scene holds `BootstrapEntry`, which instantiates the p
 (`Assets/Prefabs/Network`: `NetworkManager` + `UnityTransport` + `NetworkBootstrap`) exactly once. `NetworkBootstrap`
 runs the session flow (Host Online / Join with code / Play Local / Direct IP, the level from `gameplayScenes`) and
 `SessionService` wraps Multiplayer Services (§13.1); the menu and the lobby are in-world UI Toolkit boards in the
-menu's factory hall, driven by `MenuView` (§6.2, #79).
+menu's misty forest clearing, driven by `MenuView` (§6.2, #79).
 
 ### `Lobby`
 
@@ -532,14 +532,14 @@ base, the HUD (#24) follows.
 
 - **Main menu and lobby: the in-world menu** (`MenuView`, #15, #79). `NetworkBootstrap` is logic only (the session
   flow, the command line, no drawing); it exposes its phase (`Menu`, `Working`, `Lobby`, `InGame`), status, last
-  message, selected level and spawn point, and the lobby list. The menu is **part of the hall**: each step is a
+  message, selected level and spawn point, and the lobby list. The menu is **part of the clearing**: each step is a
   **station**, a board (a world-space `UIDocument`) with a Cinemachine camera spot, and choosing an option flies the
   camera to the next station. `MenuView`, which `NetworkBootstrap` adds outside batch mode (headless bots run without
   UI), builds every station's board and shows the station `MenuFlow` points at:
 
   | Station | Board (`StationScreens.cs`, UXML) | What it holds |
   |---|---|---|
-  | Title | `TitleStation` (`StationTitle`), the root: Back does nothing | the HOT PATATA logo on its sign in the hall (the potato show below it) and one prompt: PLAY |
+  | Title | `TitleStation` (`StationTitle`), the root: Back does nothing | the HOT PATATA logo floating over the clearing (the potato show below it, in the mist) and one prompt: PLAY |
   | Play | `PlayStation` (`StationPlay`) | your name, Host Online (to Level), the game code (`CodeDials`) + Join, Play Local (to Level), Settings (the settings screen over the scene), the LAN / testing toggle (address, Join IP, Host on LAN to Level), the last error, the working line ("Joining ...") |
   | Level | `LevelStation` (`StationLevel`) | level and spawn point, then the button for why you came: Host Online, Host on LAN, Play Local, or Done for the host from the lobby; Back; the working line ("Creating your game...") |
   | Lobby | `LobbyStation` (`StationLobby`) | the game code ticket (Copy code), a card per player (slot chip, name, HOST and YOU badges) and per free seat, the host's level + Change level (to Level) + Start, else "Waiting for the host to start...", Leave; Back asks before leaving |
@@ -619,17 +619,20 @@ base, the HUD (#24) follows.
   for the host to restart..." and can leave (behind a `ConfirmScreen`). Back does nothing. `RunResultsUI`, placed in
   each course scene, pushes it while the run is `Completed` and pops it when the run starts again. The old IMGUI
   screen is gone. While any menu is on top, the IMGUI `AimReticle` draws nothing.
-- **Menu backdrop** (`Assets/Prefabs/Menu/MenuBackdrop.prefab`, one instance in `Bootstrap`). A closed factory hall in
-  the industrial look (§25.2, matching the UI theme): concrete floor, brick walls and roof on steel trusses, columns,
-  machines, a belt of crates, ducts, mouldings, doors, windows, pipes and props along the walls (`IndustrialDetails`), and the logo
-  on a dark sign hung from a yellow gantry. No sun: warm hanging lamps
-  and wall lamps, with the interior fill and exposure `LookBuilder` gives the plant (`LookBuilder.IsInterior`). It is
-  the home of the in-world menu (above), where the four slots' characters pass the live potato in arcs, hand to hand
-  (`MenuHotPotato`). The holder faces the next catcher, a catch squashes the catcher and bystanders cheer, wave or hop.
+- **Menu backdrop** (`Assets/Prefabs/Menu/MenuBackdrop.prefab`, one instance in `Bootstrap`). A forest clearing at a misty
+  golden dawn in the nature look (§25.3; `MenuBackdropBuilder.Forest.cs`): a grass floor, flat round the show and rising far off;
+  trees all round (broadleaf and firs from 15 m, giant oaks beyond 34 m, one instanced `FoliageSet`, `Menu_Foliage`) that
+  dissolve into the mist, never standing on a camera spot's line to its board or the show; grass, ferns and bushes in the
+  clearing; light shafts behind the show; the mist on the floor (`MistField`). **No wall, no sky, no horizon**: the light is
+  `MenuForestLook` (through `NatureDayLook`, one held moment: a low sun behind the show shining towards the title camera, a haze
+  from 10 to 80 m, a low mist), and the menu camera clears to the haze's colour (`MenuForestLook.Haze`), so the far trees melt
+  into it. From the Title station the four slots' characters, about 21 m away, stand as silhouettes against the bright mist
+  while they pass the live potato in arcs, hand to hand (`MenuHotPotato`); the lobby stage is 9.5 m from its camera, in front
+  of the haze and under a warm stage light, so the joined players step forward out of the mist into colour. It is the home of
+  the in-world menu (above). The holder faces the next catcher, a catch squashes the catcher and bystanders cheer, wave or hop.
   The wick sparks faster (`GameTuning.fuseSparkRates`) until the fuse runs out in the game's own explosion
   (`ExplosionFx`, its flash always reduced at least 60 %, more if the player asked through `flashReduction`); the
-  holder flinches, the others cheer, and a new potato pops in, on a bay marked on the floor. Dust drifts in the lamp
-  light, and on the Title station the camera drifts slowly (`MenuCameraDrift` on the Title spot, scaled by `viewEffectsStrength`).
+  holder flinches, the others cheer, and a new potato pops in. Motes drift in the low sun, and on the Title station the camera drifts slowly (`MenuCameraDrift` on the Title spot, scaled by `viewEffectsStrength`).
   - **Visual only.** The show's players are copies of each slot's character prefab (`PlayerCharacter`, driven by
     `MenuCharacter.controller`, its states named after the Mixamo clips; the potato leaves the `HandSocket` at the
     moment `PlayerCharacterBuilder` measured on the Throw clip), the potato a copy of the bomb's `Visual` and
