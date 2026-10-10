@@ -12,7 +12,7 @@ throwing a live bomb between them.
   2.13, Multiplayer Services (Relay sessions, linked to Unity Cloud project HotPatata), Multiplayer Play Mode.
 - **Target:** Windows PC (primary). Linux and macOS builds ship with each release, best effort (macOS unsigned).
 - **Scenes:**
-  - `Bootstrap` (entry: the in-world menu and lobby in the menu's factory hall);
+  - `Bootstrap` (entry: the in-world menu and lobby in a misty forest clearing at dawn);
   - `PatataWilds` (realistic outdoor course: forest, river, cliffs, dawn to dusk; 25 checkpoints in 5 acts, first in the
     menu; 20+ min target pending playtest);
   - `PatataCanopy` (tree-top course over the void in the same nature look; 25 checkpoints in 5 acts, every section with a

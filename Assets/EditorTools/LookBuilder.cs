@@ -125,6 +125,7 @@ namespace HotPatata.Editor
             if (scene.name == PatataWildsLook.SceneName) PatataWildsLook.Apply(scene);
             if (scene.name == PatataCanopyBuilder.SceneName) PatataCanopyLook.Apply(scene);
             if (scene.name == PatataTempleBuilder.SceneName) PatataTempleLook.Apply(scene);
+            if (scene.name == MenuForestLook.SceneName) MenuForestLook.Apply(scene);
 
             var volume = scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<Volume>(true)).FirstOrDefault(v => v.isGlobal && v.priority <= 0f);
             if (volume == null)
@@ -139,8 +140,8 @@ namespace HotPatata.Editor
             EditorSceneManager.MarkSceneDirty(scene);
         }
 
-        /// <summary>The closed industrial scenes, lit by lamps only: the plant, and the menu's factory hall (Bootstrap).</summary>
-        public static bool IsInterior(string sceneName) => sceneName == "IndustrialPlant" || sceneName == "Bootstrap";
+        /// <summary>The closed industrial scenes, lit by lamps only: the plant (the menu is a forest clearing since the misty menu).</summary>
+        public static bool IsInterior(string sceneName) => sceneName == "IndustrialPlant";
 
         public const string PlantProfilePath = "Assets/Settings/Look/HotPatata_Look_Plant.asset";
         public const float PlantExposure_EV = 0.45f;
