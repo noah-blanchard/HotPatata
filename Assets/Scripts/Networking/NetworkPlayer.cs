@@ -171,7 +171,8 @@ namespace HotPatata
                 Time = SimulationClock.ServerNow,
                 Position = transform.position,
                 CarrierId = carrierId,
-                Offset = onCarrier ? transform.position - carrier.AnchorPosition : Vector3.zero
+                // In the carrier's frame, so a rider on a turning pivot stays where it stands (identity for the others).
+                Offset = onCarrier ? Quaternion.Inverse(carrier.AnchorRotation) * (transform.position - carrier.AnchorPosition) : Vector3.zero
             };
         }
 
@@ -203,7 +204,7 @@ namespace HotPatata
             }
 
             bool riding = state.CarrierId != 0 && state.CarrierId == rider.CarrierId;
-            Vector3 position = rider.Blend(world, carrier.AnchorPosition, riding, dt, t.riderBlendSeconds, t.riderSnapDistance);
+            Vector3 position = rider.Blend(world, carrier.AnchorPosition, carrier.AnchorRotation, riding, dt, t.riderBlendSeconds, t.riderSnapDistance);
             transform.position = position;
             lastWritten = position;
             wroteLast = true;

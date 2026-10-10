@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e42d60a4f1ee9c4797b8145e47d9795, type: 3}
+  m_Name: TimeOfDay 2 Morning
+  m_EditorClassIdentifier: HotPatata::HotPatata.TimeOfDayPreset
+  sunElevation: 28.476562
+  sunYaw: 95
+  sunColor: {r: 1, g: 0.9, b: 0.74, a: 1}
+  sunIntensity: 1.55
+  shadowStrength: 0.72
+  ambientSky: {r: 0.46, g: 0.56, b: 0.56, a: 1}
+  ambientEquator: {r: 0.52, g: 0.56, b: 0.44, a: 1}
+  ambientGround: {r: 0.2, g: 0.22, b: 0.15, a: 1}
+  fogColor: {r: 0.66, g: 0.72, b: 0.66, a: 1}
+  fogStart: 90
+  fogEnd: 520
+  mistColor: {r: 0.74, g: 0.78, b: 0.7, a: 1}
+  mistDensity: 0.08
+  mistFalloff: 14
+  mistGlow: 0.35
+  shaftStrength: 0.55
+  sky: {fileID: 8900000, guid: acf4b806c48c1b74497f2cc47a962fee, type: 3}
+  skyExposure: 0.65
+  skyRotation: 285.89844
+  grade: {fileID: 11400000, guid: be724252c8988154c91b63b29057873f, type: 2}
+  wind: 0.3

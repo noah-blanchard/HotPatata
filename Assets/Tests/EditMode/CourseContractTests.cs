@@ -16,6 +16,7 @@ namespace HotPatata.Tests
         static readonly string[] Courses =
         {
             "Assets/Scenes/PatataCanopy.unity",
+            "Assets/Scenes/PatataTemple.unity",
             "Assets/Scenes/PatataWilds.unity",
             "Assets/Scenes/IndustrialPlant.unity"
         };
@@ -45,6 +46,14 @@ namespace HotPatata.Tests
         {
             Assert.Greater(SectionContract.MaxLobHeight(tuning, 1f), 20f, "next to the wall a lob climbs very high: only a roof seals it");
             Assert.Less(SectionContract.MaxLobHeight(tuning, 80f), 0f, "far away it falls short");
+        }
+
+        [Test]
+        public void SpreadReach_GrowsWithTheFirstSourcesHourglass()
+        {
+            Assert.AreEqual(SectionContract.SpreadMargin, SectionContract.MaxSpread(tuning, 0f), 1e-5f, "no hourglass: only the step between two plates");
+            Assert.AreEqual(tuning.sprintSpeed * 5f + SectionContract.SpreadMargin, SectionContract.MaxSpread(tuning, 5f), 1e-4f,
+                            "a five-second hourglass: a sprint further");
         }
 
         [Test]

@@ -28,17 +28,18 @@ namespace HotPatata.Editor
 
         // ------------------------------------------------------------------ the menu's level list
 
-        /// <summary>Where a course goes in the Bootstrap level list: first, kept where it is (second when new), or last.</summary>
-        public enum MenuSlot { First, Keep, Last }
+        /// <summary>Where a course goes in the Bootstrap level list: first, kept where it is (second when new), third, or last.</summary>
+        public enum MenuSlot { First, Keep, Third, Last }
 
         public const string NetworkPrefab = "Assets/Prefabs/Network/NetworkManager.prefab";
 
         /// <summary>
-        /// Lists a course in the build settings and in the menu's level list (NetworkBootstrap) with its checkpoint count. One shared
-        /// place, so builders never fight over the order: PatataWilds is first, PatataCanopy and the plant keep their places
-        /// (a new one goes second), PassSandbox is last.
+        /// Lists a course in the build settings and in the menu's level list (NetworkBootstrap) with its checkpoint count and the
+        /// players it needs online (<paramref name="minPlayers"/>, PROJECT_SPEC §15e: PatataTemple needs three). One shared place,
+        /// so builders never fight over the order: PatataWilds is first, PatataCanopy and the plant keep their places (a new one
+        /// goes second), PatataTemple is third, PassSandbox is last.
         /// </summary>
-        public static void RegisterInMenu(string sceneName, string scenePath, int checkpoints, MenuSlot slot)
+        public static void RegisterInMenu(string sceneName, string scenePath, int checkpoints, MenuSlot slot, int minPlayers = 2)
         {
             var scenes = UnityEditor.EditorBuildSettings.scenes.ToList();
             if (!scenes.Any(s => s.path == scenePath)) scenes.Add(new UnityEditor.EditorBuildSettingsScene(scenePath, true));
@@ -49,31 +50,138 @@ namespace HotPatata.Editor
                 var so = new SerializedObject(root.GetComponent<NetworkBootstrap>());
                 var names = so.FindProperty("gameplayScenes");
                 var counts = so.FindProperty("sceneCheckpoints");
+                var mins = so.FindProperty("sceneMinPlayers");
                 counts.arraySize = Mathf.Max(counts.arraySize, names.arraySize);
+                for (int i = mins.arraySize; i < names.arraySize; i++)
+                {
+                    mins.InsertArrayElementAtIndex(i);
+                    mins.GetArrayElementAtIndex(i).intValue = 2;
+                }
                 int index = -1;
                 for (int i = 0; i < names.arraySize; i++)
                     if (names.GetArrayElementAtIndex(i).stringValue == sceneName) index = i;
-                int target = slot == MenuSlot.First ? 0 : slot == MenuSlot.Last ? names.arraySize - (index >= 0 ? 1 : 0)
-                           : index >= 0 ? index : Mathf.Min(1, names.arraySize);
+                int target = slot switch
+                {
+                    MenuSlot.First => 0,
+                    MenuSlot.Last => names.arraySize - (index >= 0 ? 1 : 0),
+                    MenuSlot.Third => Mathf.Min(2, names.arraySize - (index >= 0 ? 1 : 0)),
+                    _ => index >= 0 ? index : Mathf.Min(1, names.arraySize)
+                };
                 if (index < 0)
                 {
-                    names.InsertArrayElementAtIndex(Mathf.Min(target, names.arraySize));
+                    int at = Mathf.Min(target, names.arraySize);
+                    names.InsertArrayElementAtIndex(at);
                     counts.InsertArrayElementAtIndex(Mathf.Min(target, counts.arraySize));
-                    index = Mathf.Min(target, names.arraySize - 1);
+                    mins.InsertArrayElementAtIndex(Mathf.Min(target, mins.arraySize));
+                    index = at;
                 }
                 else if (index != target)
                 {
                     names.MoveArrayElement(index, target);
                     counts.MoveArrayElement(index, target);
+                    mins.MoveArrayElement(index, target);
                     index = target;
                 }
                 names.GetArrayElementAtIndex(index).stringValue = sceneName;
                 counts.GetArrayElementAtIndex(index).intValue = checkpoints;
+                mins.GetArrayElementAtIndex(index).intValue = Mathf.Max(1, minPlayers);
                 so.ApplyModifiedPropertiesWithoutUndo();
                 PrefabUtility.SaveAsPrefabAsset(root, NetworkPrefab);
             }
             finally { PrefabUtility.UnloadPrefabContents(root); }
         }
+
+        // ------------------------------------------------------------------ section pieces shared by the nature courses (PatataCanopy, PatataTemple)
+
+        /// <summary>A bramble screen filling a hole across the section (x0..x1 at z), from <paramref name="y"/> up <paramref name="height"/>.</summary>
+        public static GameObject ScreenAcross(Transform p, string name, float x0, float x1, float z, float y, float height)
+        {
+            var go = Place(p, BombObstacleKitBuilder.Screen, name, new Vector3((x0 + x1) / 2, y, z), Quaternion.identity);
+            BombObstacleKitBuilder.ResizeScreen(go, x1 - x0 - 0.7f, height - 0.35f);
+            return go;
+        }
+
+        /// <summary>A bramble screen filling a hole along the section (z0..z1 at x).</summary>
+        public static GameObject ScreenAlong(Transform p, string name, float z0, float z1, float x, float y, float height)
+        {
+            var go = Place(p, BombObstacleKitBuilder.Screen, name, new Vector3(x, y, (z0 + z1) / 2), Quaternion.Euler(0, 90, 0));
+            BombObstacleKitBuilder.ResizeScreen(go, z1 - z0 - 0.7f, height - 0.35f);
+            return go;
+        }
+
+        /// <summary>A laser curtain filling a passage across the section (x0..x1 at z).</summary>
+        public static GameObject CurtainAcross(Transform p, string name, float x0, float x1, float z, float y, float height)
+        {
+            var go = Place(p, BombObstacleKitBuilder.LaserCurtain, name, new Vector3((x0 + x1) / 2, y, z), Quaternion.identity);
+            BombObstacleKitBuilder.ResizeCurtain(go, x1 - x0 - 0.6f, height - 0.3f);
+            return go;
+        }
+
+        public static GameObject CurtainAlong(Transform p, string name, float z0, float z1, float x, float y, float height)
+        {
+            var go = Place(p, BombObstacleKitBuilder.LaserCurtain, name, new Vector3(x, y, (z0 + z1) / 2), Quaternion.Euler(0, 90, 0));
+            BombObstacleKitBuilder.ResizeCurtain(go, z1 - z0 - 0.6f, height - 0.3f);
+            return go;
+        }
+
+        public static GameObject SwitchFor(Transform p, string name, Vector3 at, MonoBehaviour source, bool activeWhenOpen, params GameObject[] targets)
+        {
+            var go = Place(p, BombObstacleKitBuilder.Switch, name, at, Quaternion.identity);
+            BombObstacleKitBuilder.WireSwitch(go, source, activeWhenOpen, targets);
+            return go;
+        }
+
+        public static PassCorridor Pass(Transform p, string name, Vector3 from, Vector3 to, PassCorridor.ArcKind kind = PassCorridor.ArcKind.Normal,
+                                 bool timed = false, float opening = 0, float flight = 0)
+        {
+            var go = new GameObject("Pass " + name);
+            go.transform.SetParent(p, false);
+            go.transform.position = from;
+            var pass = go.AddComponent<PassCorridor>();
+            pass.Configure(to, kind, flight, timed, opening);
+            return pass;
+        }
+
+        public static void TransitPasses(Transform parent, GameObject go)
+        {
+            var transit = go.GetComponent<BombTransit>();
+            for (int i = 0; i < transit.ExitCount; i++)
+            {
+                var e = transit.GetExit(i);
+                if (!e.pad.gameObject.activeInHierarchy) continue;
+                Pass(parent, go.name + " exit " + i, e.muzzle.position, transit.AimPoint(i), PassCorridor.ArcKind.Fixed, flight: e.flightTime);
+            }
+        }
+
+        /// <summary>A section's contract (§13.20): what it forces, the shortcuts it locks (world space at build time).</summary>
+        public static void Contract(Transform p, string force, params SectionContract.Shortcut[] locks)
+        {
+            var go = new GameObject("Contract");
+            go.transform.SetParent(p, false);
+            go.AddComponent<SectionContract>().Configure(force, locks);
+        }
+
+        public static SectionContract.Shortcut GapLock(string name, Vector3 from, Vector3 to) => SectionContract.Lock(name, SectionContract.ShortcutKind.Gap, from, to);
+        public static SectionContract.Shortcut ClimbLock(string name, Vector3 from, Vector3 to) => SectionContract.Lock(name, SectionContract.ShortcutKind.Climb, from, to);
+        public static SectionContract.Shortcut LobLock(string name, Vector3 from, Vector3 wallTop) => SectionContract.Lock(name, SectionContract.ShortcutKind.Lob, from, wallTop);
+
+        /// <summary>
+        /// The contract of a section for <paramref name="players"/> (PROJECT_SPEC §15e): what it forces, why fewer fail
+        /// (<paramref name="twoFail"/>, "With two: ..."), and the shortcuts it locks.
+        /// </summary>
+        public static void Contract(Transform p, string force, int players, string twoFail, params SectionContract.Shortcut[] locks)
+        {
+            var go = new GameObject("Contract");
+            go.transform.SetParent(p, false);
+            go.AddComponent<SectionContract>().Configure(force, players, twoFail, locks);
+        }
+
+        /// <summary>
+        /// Two sources one body cannot hold in turn (§13.21-13.22): <paramref name="from"/> (the first, maybe an hourglass) to
+        /// <paramref name="to"/>, the walk between them going through <paramref name="via"/> (round the walls).
+        /// </summary>
+        public static SectionContract.Shortcut SpreadLock(string name, Vector3 from, Vector3 to, params Vector3[] via) =>
+            SectionContract.Lock(name, SectionContract.ShortcutKind.Spread, from, to, via);
 
         // ------------------------------------------------------------------ course scenes
 

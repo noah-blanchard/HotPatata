@@ -5,7 +5,7 @@ courses used it, including the courses that were removed. Rules live in [`PROJEC
 level grammar, §20 tuning); the components in [`ARCHITECTURE.md`](ARCHITECTURE.md) §10. This file is the reference
 for designing new maps from the kit.
 
-Kept maps: `PassSandbox` (the kit demo and the pass range), `IndustrialPlant`, `PatataWilds` and `PatataCanopy`. `Bootstrap`
+Kept maps: `PassSandbox` (the kit demo and the pass range), `IndustrialPlant`, `PatataWilds`, `PatataCanopy` and `PatataTemple`. `Bootstrap`
 is the menu.
 
 ---
@@ -60,7 +60,11 @@ or **both** (empty). A plain 2.4 × 2 m window is "both": a player climbs throug
 | Bomb gate (ring) | `BombGate_Ring` | `BombGate` (+ `NetworkBombGate`) | active for `holdSeconds` after the thrown bomb flies through it (0 = latched until reset); carrying the bomb through does not count |
 | Checkpoint arch | `BombGate_Arch` | latched `BombGate` | a checkpoint with `claimGate` activates only once a pass went through its arch this section (§13.17) |
 | Pressure plate | `PressurePlate` | `PressurePlate` | active while any player stands on it, carrier included |
-| Hands-free plate | `Variants/PressurePlate_HandsFree` | `PressurePlate` (`countCarrier` off) | the carrier does not count: the holder must have passed the bomb first, and a catch on the plate lets it go (§13.19); blue, with a "throw first" glyph |
+| Hands-free plate | `Variants/PressurePlate_HandsFree` | `PressurePlate` (`countCarrier` off) | the carrier does not count, nor the thrower while the bomb flies: the holder must have passed the bomb first, and a catch on the plate lets it go (§13.19); blue, with a "throw first" glyph |
+| Heavy plate | `Variants/PressurePlate_Heavy` | `PressurePlate` (`requiredBodies` 2, hands-free) + `PlateGauge` | needs two empty-handed players at once (§13.21); 3.6 m, terracotta, two footprints that light one per body, the "two bodies" glyph; `MakeHourglass` adds a sand ring and its replication to a placed one |
+| Hourglass plate | `Variants/PressurePlate_Hourglass` | `PressurePlate` (`memorySeconds` 5, hands-free) + `NetworkPressurePlate` + `PlateGauge` | stays active for its sand after the last body steps off (§13.22); a ring of amber lamps empties, the pad pulses meanwhile |
+| Sun beam | `Gameplay/SunBeam` | `SunBeam` (+ `SunBeamVisual`) | a source: active while a body cuts the light anywhere along it (or, with `activeWhileWhole`, while it reaches the eye) (§13.23); the bomb never cuts it; resize with `ResizeSunBeam`; a gold shaft that stops at the body, a stone eye lit while whole |
+| Pivot | `Variants/Actuator_Bridge_Pivot` | `SignalActuator` (`rotateWithWaypoints`, waypoints at one point) | a slab that turns about its centre while its source is active (a quarter turn in 6 s by default, 12 s on the temple), carrying its riders round and turning their view (§13.24); `ConfigurePivot` sets its size, turn and time |
 | Switch | `Actuator_Switch` | `SignalSwitch` (+ `NetworkSignalActuator`) | an actuator that turns its targets (a curtain, a screen, a fuse zone: any object) on or off at half travel; `activeWhenOpen` picks which way; one source, reset like any actuator (§13.19) |
 | Door | `Actuator_Door` | `SignalActuator` (+ `NetworkSignalActuator`) | a portcullis that closes completely; its lower edge is lethal only while it closes |
 | Bridge | `Actuator_Bridge` | `SignalActuator` | extends over a gap while its source is active |
@@ -109,6 +113,10 @@ laser beams, pads, icons, plates, launch pads, tube slot lamps) are never restyl
 | Laser curtain | posts and beams | posts and beams | cairns, beams kept |
 | Body screen | vine strands, field, sign (cue kept in every look) | same | same, frame of rough logs |
 | Hands-free plate | blue checker, "throw first" glyph (cue kept) | same | same |
+| Heavy plate | terracotta checker, two footprints, "two bodies" glyph (cue kept) | same | same |
+| Hourglass plate | the hands-free plate and a ring of amber sand lamps (cue kept) | same | same |
+| Sun beam | gold shaft, stone slit and eye (cue kept) | same | same; carved masonry on the temple |
+| Pivot | slab on a drum | slab | log raft on a drum; a stone slab on the temple |
 | Door | portcullis | portcullis | palisade of upright logs |
 | Checkpoint | square pad | square pad | campfire that lights up (pad hidden) |
 | Water | — | — | lethal surface, kill zone 0.3 m below |
@@ -145,6 +153,19 @@ Lethal parts always carry stripes or bands, never colour alone (§19).
 
   The fuse drops to 5.0 s from CP21 and to 4.5 s from CP24. Its sections have no contract yet: the M13 review found
   shortcuts in about 15 of them (MVP_TASKS M14).
+- **`PatataTemple`.** Three acts, 15 sections for **three players** (PROJECT_SPEC §15e), every one with a contract that says why
+  two fail (§5 below). A causeway up a jungle valley, a ring round the great pyramid, a skyway to the altar on its summit, on
+  octagonal courts. How it uses the kit and the four systems for three:
+  - **Heavy plates**: two hold, the third carries (La Dalle lourde, Le Seuil and La Réunion with an hourglass, Le Puits' lift,
+    L'Autel's bridge).
+  - **Hourglass plates**: the relay (La Relève, three times in Le Couloir des pièges: the holder in a shrine raises the herse,
+    a tap inside lets them in); the cycle of three wings (Le Partage, La Croisée).
+  - **Sun beams**: cut from a shuttle (L'Œil du soleil, Le Gué des trois pierres), down each wing in a cycle (Les Rayons
+    croisés), behind lasers to turn a pivot (L'Autel).
+  - **Pivots**: the holder in a shrine (Le Pivot) or behind lasers (La Rose, L'Autel) turns the slab to the docks; let go, it
+    carries the pair for twelve seconds, longer than a fuse.
+  - **Tubes**: two stone heads to the west and east wings (Les Têtes de pierre). **Shrines** keep a holder out of any throw.
+  The fuse drops to 5.0 s from CP8 and to 4.5 s from CP13.
 - **`PatataCanopy`.** Five acts, 25 sections in the tree tops (PROJECT_SPEC §15d), every one with a contract (§5 below).
   Built on the void; puzzle sections under a leaf roof that every cross wall reaches. How it uses the kit:
   - **Body screens with curtains** in the same wall: the bomb through the brambles, the runners through the lasers (Le
@@ -375,3 +396,16 @@ Then check every shortcut a team will try:
 `CourseContractCheck` (menu **HotPatata/Course/Check Section Contracts**, and `CourseContractTests`) measures the declared
 shortcuts and scans every body screen (walked round, hopped over) and laser curtain (flown round, flown over). It warns; it
 never fails a build.
+
+**A section for three** (PROJECT_SPEC §15e) also says why two players fail (`Contract(p, force, 3, "With two: ...", locks)`, or the
+temple's `Trio`). Two players fail when the section needs two tasks at once; the usual ways to lock it:
+
+- **The pair and the third.** One holds the way while the bomb must stay alive longer than a fuse (a ride, a chamber behind a
+  wall): nobody catches their own throw, so a lone carrier explodes. Put the holder where no throw reaches them (a `Shrine`, an
+  alcove, behind lasers), or the holder and the carrier juggle: catch, throw back, step on again.
+- **The heavy plate.** Two empty hands: a throw in the air is still the thrower's, so two players never hold it by juggling.
+- **The cycle.** Three ways, each opened from another place; two players always leave one empty.
+- **The spread.** Two sources one body might hold in turn: `SpreadLock(name, a, b, via...)` measures the walk between them
+  (round the walls) against a sprint through the first one's hourglass.
+- **The holder left behind** is let through by someone already across (a ring thrown through, an hourglass tapped, a pivot that
+  turns back): that way must need someone across, or two players solve it.

@@ -7,7 +7,7 @@
 
 ---
 
-# Status (last updated 2026-10-06)
+# Status (last updated 2026-10-10)
 
 A ticked box is verified by the automated tests (see [`TESTING.md`](TESTING.md)), by recorded bot/latency runs, or
 by the owner's own play. An unticked box in a finished milestone is a **human gate**: it needs a group or external
@@ -31,9 +31,10 @@ playtest and cannot be closed by code.
 | M12 Third course: PatataWilds | built: 25 sections in 5 acts, nature look from Poly Haven, campfire checkpoints, dawn to dusk; automated verification in M12.8 | 2-player 20+ min clear, host + 3 clients, 1080p/60 fps, readability review |
 | M13 Fourth course: PatataCanopy | built: 25 sections in 5 acts in the tree tops, every section with a contract; three new generic systems (body screen, hands-free plate, switch) and the section-contract check; automated verification in M13.6; atmosphere pass built (M13.7: its own cooler day, a height mist, giant trees, a forest floor that follows the course, leaf roofs, god rays, fireflies) | 2-player clear, every puzzle forced and fun at 2 and at 4, host + 3 clients, 1080p/60 fps, readability review (in the mist) |
 | M14 PatataWilds contracts | not started | give every PatataWilds section a contract and close its shortcuts (M14) |
+| M15 Fifth course: PatataTemple | built: 15 sections in 3 acts for **three players**, every section with a contract that says why two fail; four systems for three (heavy plate, hourglass plate, sun beam, pivot carrying its riders), a level's minimum players in the menu; its own valley, pyramid, day and storm; automated verification in M15.6 | a clear by three, every puzzle failing with two and fun with four, host + 2 clients, 1080p/60 fps, readability review (the storm) |
 | Cleanup and generic obstacles | done: only `PatataWilds`, `IndustrialPlant` and `PassSandbox` (plus `Bootstrap`) remain; every obstacle system is generic (references, `IObstacleState`, `ObstacleVisualDriver`, `CustomVisual`, overridable poses, `ObstaclePrefabValidator`), with two example variants; the obstacle catalogue is `docs/OBSTACLES.md` | |
 
-**Next up:** the group playtest of PatataCanopy (M13.6), then M14 (PatataWilds contracts), the group playtest of PatataWilds
+**Next up:** the group playtest of PatataCanopy (M13.6) and of PatataTemple with three (M15.6), then M14 (PatataWilds contracts), the group playtest of PatataWilds
 and the plant (M12.8, M10.4), then M6 and M7 (M7.4 external playtest gates any other
 new mechanic). M3.7 is the oldest open gate.
 
@@ -1508,6 +1509,69 @@ Acceptance criteria:
 
 - [ ] every PatataWilds section declares a contract and `CourseContractCheck` reports nothing;
 - [ ] `PatataWildsTests` pass; a group playtest confirms each signature puzzle is forced.
+
+---
+
+# Milestone 15 — Fifth course: PatataTemple
+
+Asked for by the owner: in the vein of PatataCanopy (built for two), a course whose every section needs three players, with
+real challenges to think through as three; a jungle temple in ruins, its own layout (not Canopy's staircase over a forest). The
+design was grilled with the owner first (three minimum, four new systems, ruins in the jungle, 15 sections, coordination, voices
+assumed, short holds, a pivot that carries its riders, dawn to storm). PROJECT_SPEC §13.21–13.24 and §15e; ARCHITECTURE §4,
+§10.6 and §25.4.
+
+Automated validation (2026-10-10, Unity 6000.3.25f1): `PatataTempleTests` (9), `TrioObstacleTests` (3), `TrioSystemTests` (8),
+`CourseContractTests` (9), `ObstaclePrefabTests` (11), `ZoneRuleTests` (12), `RiderReconstructionTests` (5),
+`CarrierRegistryTests` (6), `ConfigurationTests` (12), `BombObstacleTests` (16), `ObstacleKitTests` (11), `PrefabKitTests` (9),
+`IndustrialPlantTests` (14) and `PatataCanopyTests` (18) pass; the contract check finds nothing on the temple.
+
+## M15.1 — Spec amendment
+
+- [x] PROJECT_SPEC §13.19 (a bomb in flight is still its thrower's), §13.20 (a section for three, the spread), §13.21 heavy
+  plate, §13.22 hourglass plate, §13.23 sun beam, §13.24 pivot, §15e (the blueprint and the grammar for three), §16, §17.2 and
+  §20. Nothing renumbered.
+
+## M15.2 — The systems for three
+
+- [x] `PressurePlate.requiredBodies` and `memorySeconds` (replicated by `NetworkPressurePlate`), the thrower excluded while the
+  bomb flies on every hands-free plate; `SunBeam`; turning carriers (`IPlatformCarrier.FrameRotation`/`AnchorRotation`,
+  `PlayerMotor.Carry`, the rider's offset in the carrier's frame);
+- [x] prefabs `PressurePlate_Heavy`, `PressurePlate_Hourglass`, `Actuator_Bridge_Pivot` (variants) and `SunBeam`, their cues
+  (`PlateGauge`, `SunBeamVisual`, `SignalIndicator`'s sand pulse), all passing `ObstaclePrefabValidator`; PassSandbox's
+  `KitDemo/TrioObstacles`.
+
+## M15.3 — A level's minimum players and contracts for three
+
+- [x] `NetworkBootstrap.sceneMinPlayers` (written by `CourseKit.RegisterInMenu`): "(3+ players)" in the level list, the lobby's
+  Start disabled and `StartLevel` refusing below it;
+- [x] `SectionContract.minPlayers`, `twoFail` and the `Spread` lock (the walk between two sources through `via` points);
+  `CourseContractCheck` warns when a section for three says nothing of why two fail.
+
+## M15.4 — Course builder
+
+- [x] `PatataTempleBuilder` builds 15 sections turned by their own angles (a causeway, a ring at 60° round the pyramid, the
+  well, a skyway 22 m over the ring), octagonal courts, stone roofs, kill planes; `CheckFootprints` tests turned footprints and
+  heights;
+- [x] every section declares its contract for three and its passes; the build validates the passes and logs no contract finding;
+- [x] the level list: PatataWilds, PatataCanopy, PatataTemple, IndustrialPlant, PassSandbox; fires at the checkpoints, arches at
+  5, 10 and 15, the altar's beacon; `Rebuild All Courses` builds it.
+
+## M15.5 — The valley and the look
+
+- [x] the valley (no forest of trunks): its floor, the river, the canopy carpet under every floor, emergent giants far off, the
+  stepped pyramid under the kill planes, ruined towers, jungle plants (Poly Haven calathea and anthurium), stone columns that
+  never cross a lower section; Poly Haven masonry and five pure skies, credited;
+- [x] `PatataTempleLook` (misty dawn to storm) and `TempleStorm` (rain that dies on roofs, lightning scaled by
+  `viewEffectsStrength` and `flashReduction`).
+
+## M15.6 — Tests and playtests
+
+- [x] `PatataTempleTests`, `TrioObstacleTests`, `TrioSystemTests` and `CourseContractTests` pass;
+- [ ] a first clear by three players; every puzzle fails with two (as its contract says) and stays fun with four;
+- [ ] host plus two clients online, through the whole course (the pivots' riders under latency);
+- [ ] 60 fps at 1080p on a mid-range PC, four players (the canopy is instanced);
+- [ ] readability review: the heavy slab's footprints, the sand rings, the beams and eyes, the shrines, in every act's light and
+  in the storm; the owner's look review.
 
 ---
 

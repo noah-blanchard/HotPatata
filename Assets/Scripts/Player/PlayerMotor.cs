@@ -188,8 +188,20 @@ namespace HotPatata
             }
 
             // --- Move ---------------------------------------------------------------------------
-            // Ride a carrier (moving platform, belt): add the distance it moved this frame (it updates before us).
-            Vector3 carry = ridingPlatform is UnityEngine.Object c && c != null ? ridingPlatform.FrameDelta : Vector3.zero;
+            // Ride a carrier (moving platform, belt, pivot): add the distance it moved this frame (it updates before us),
+            // swing round its anchor if it turned, and turn the view with it (PROJECT_SPEC §13.24).
+            Vector3 carry = Vector3.zero;
+            if (ridingPlatform is UnityEngine.Object c && c != null)
+            {
+                var turn = ridingPlatform.FrameRotation;
+                carry = Carry(transform.position, ridingPlatform.FrameDelta, ridingPlatform.AnchorPosition, turn);
+                float yawTurn = CarriedYaw(turn);
+                if (yawTurn != 0f)
+                {
+                    player.Look.SetYaw(player.Look.Yaw + yawTurn);
+                    transform.rotation = player.Look.YawRotation;
+                }
+            }
             ridingPlatform = null;   // OnControllerColliderHit sets it again if we are still on one
             var flags = controller.Move(Velocity * dt + carry);
             if ((flags & CollisionFlags.Above) != 0 && verticalVelocity > 0f) verticalVelocity = 0f;
@@ -199,6 +211,19 @@ namespace HotPatata
             ProbeGround();
             SmoothCrouch(t, dt);
         }
+
+        /// <summary>
+        /// How far a rider at <paramref name="feet"/> is carried this frame by a carrier that slid by <paramref name="delta"/>
+        /// and turned by <paramref name="turn"/> about its (new) <paramref name="anchor"/>. Pure (EditMode tested).
+        /// </summary>
+        public static Vector3 Carry(Vector3 feet, Vector3 delta, Vector3 anchor, Quaternion turn)
+        {
+            Vector3 moved = feet + delta;
+            return anchor + turn * (moved - anchor) - feet;
+        }
+
+        /// <summary>The yaw (degrees, signed) a rider's view turns with a carrier that turned by <paramref name="turn"/>.</summary>
+        public static float CarriedYaw(Quaternion turn) => Mathf.DeltaAngle(0f, turn.eulerAngles.y);
 
         // ------------------------------------------------------------------ horizontal models
 
