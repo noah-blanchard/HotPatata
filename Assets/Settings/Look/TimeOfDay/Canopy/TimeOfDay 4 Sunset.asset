@@ -21,11 +21,11 @@ MonoBehaviour:
   ambientEquator: {r: 0.58, g: 0.44, b: 0.38, a: 1}
   ambientGround: {r: 0.16, g: 0.14, b: 0.14, a: 1}
   fogColor: {r: 0.72, g: 0.58, b: 0.5, a: 1}
-  fogStart: 35
-  fogEnd: 280
+  fogStart: 30
+  fogEnd: 220
   mistColor: {r: 0.72, g: 0.62, b: 0.58, a: 1}
-  mistDensity: 0.07
-  mistFalloff: 11
+  mistDensity: 0.11
+  mistFalloff: 14
   mistGlow: 0.55
   shaftStrength: 0.6
   sky: {fileID: 8900000, guid: a5074093d6297c648bf45cdd65130f8e, type: 3}

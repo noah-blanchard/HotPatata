@@ -34,7 +34,6 @@ namespace HotPatata.Editor
         const float CoverHalf = 14f;    // half the width of a leaf roof: over the decks and the void beside them
         const float KillDrop = 10f;     // a fall dies this far under a section's lowest floor
         const float Gap = 14f;          // a gap only a bridge or a mover crosses (a slide-jump with a mantle reaches 12.75 m)
-        const float ForestFloor = -40f; // the forest floor far below the first deck
 
         /// <summary>The shorter hold fuse (spec Â§20): 5 s from checkpoint 15 (act 4), 4.5 s from checkpoint 20 (act 5).</summary>
         public static float FuseFor(int id) => id >= 20 ? 4.5f : id >= 15 ? 5f : 0f;
@@ -98,6 +97,7 @@ namespace HotPatata.Editor
         {
             public Vector3 origin;
             public float yaw, length, floorY;
+            public float topY;               // its highest floor or roof (measured once built)
         }
 
         static readonly List<Footprint> Footprints = new List<Footprint>();
@@ -122,6 +122,8 @@ namespace HotPatata.Editor
             Route.Clear();
             Outdoors.Clear();
             Footprints.Clear();
+            Supports.Clear();
+            var rooms = new List<Transform>();
             int restyled = 0;
             RebuildGroup(section, GroupName, group =>
             {
@@ -136,6 +138,7 @@ namespace HotPatata.Editor
                         var theme = spec.act == 3 ? Oak : Crown;
                         var room = new GameObject(spec.name).transform;
                         room.SetParent(group, false);
+                        rooms.Add(room);
                         float lowest = Mathf.Min(0f, spec.dy);
                         killTop = lowest - KillDrop;
                         using (UseTheme(theme))
@@ -160,7 +163,8 @@ namespace HotPatata.Editor
                     }
                     CheckFootprints();
                     Physics.SyncTransforms();
-                    string dressing; using (UseTheme(Crown)) dressing = Dress(group);
+                    MeasureTops(rooms);
+                    string dressing; using (UseTheme(Crown)) dressing = Forest(group);
                     SafetyNet(group);
                     Debug.Log("[PatataCanopyBuilder] " + dressing);
                 }
@@ -198,20 +202,34 @@ namespace HotPatata.Editor
         /// <summary>A last kill zone under everything: nothing falls out of the world.</summary>
         static void SafetyNet(Transform group)
         {
-            var go = Place(group, GameplayDir + "KillZone", "Safety net", new Vector3(0, ForestFloor - 2f, 0), Quaternion.identity);
+            float y = ground.Lowest - 8f;   // under the forest floor's lowest point
+            var go = Place(group, GameplayDir + "KillZone", "Safety net", new Vector3(0, y, 0), Quaternion.identity);
             var bounds = new Bounds(Footprints[0].origin, Vector3.zero);
             foreach (var f in Footprints) bounds.Encapsulate(f.origin);
-            go.transform.position = new Vector3(bounds.center.x, ForestFloor - 2f, bounds.center.z);
+            go.transform.position = new Vector3(bounds.center.x, y, bounds.center.z);
             go.transform.localScale = new Vector3(bounds.size.x + 400f, 4f, bounds.size.z + 400f);
         }
 
         // ------------------------------------------------------------------ pieces (section space: +Z forward, floor of the start at y = 0)
 
-        /// <summary>A plank deck (top at <paramref name="y"/>), held up by a trunk that runs down to the forest (decoration).</summary>
+        /// <summary>A plank deck (top at <paramref name="y"/>), held up by trunks that run down to the forest floor (decoration): one, or one
+        /// every ~22 m along a long deck.</summary>
         static GameObject Deck(Transform p, string name, float x0, float x1, float z0, float z1, float y, bool trunk = true)
         {
             var go = Block(p, name, new Vector3((x0 + x1) / 2, y - 0.5f, (z0 + z1) / 2), new Vector3(x1 - x0, 1, z1 - z0), KitRole.Grating);
-            if (trunk && (x1 - x0) * (z1 - z0) >= 30f) Support(p, name, new Vector3((x0 + x1) / 2, y - 1f, (z0 + z1) / 2), Mathf.Clamp(Mathf.Min(x1 - x0, z1 - z0) * 0.3f, 1f, 3f));
+            if (trunk && (x1 - x0) * (z1 - z0) >= 30f)
+            {
+                float thickness = Mathf.Clamp(Mathf.Min(x1 - x0, z1 - z0) * 0.3f, 1f, 3f);
+                bool alongZ = z1 - z0 >= x1 - x0;
+                float span = alongZ ? z1 - z0 : x1 - x0;
+                int count = Mathf.Max(1, Mathf.RoundToInt(span / 22f));
+                for (int i = 0; i < count; i++)
+                {
+                    float t = (i + 0.5f) / count;
+                    var top = alongZ ? new Vector3((x0 + x1) / 2, y - 1f, Mathf.Lerp(z0, z1, t)) : new Vector3(Mathf.Lerp(x0, x1, t), y - 1f, (z0 + z1) / 2);
+                    Support(p, top, thickness);
+                }
+            }
             return go;
         }
 
@@ -219,12 +237,9 @@ namespace HotPatata.Editor
         static GameObject Solid(Transform p, string name, float x0, float x1, float z0, float z1, float top, float bottom = -1f) =>
             Block(p, name, new Vector3((x0 + x1) / 2, (top + bottom) / 2, (z0 + z1) / 2), new Vector3(x1 - x0, top - bottom, z1 - z0), KitRole.Wall);
 
-        /// <summary>A trunk under a deck, down to the forest floor (collider-free).</summary>
-        static void Support(Transform p, string name, Vector3 top, float thickness)
-        {
-            const float depth = 36f;
-            NatureKit.Detail(p, name + " trunk", top - Vector3.up * depth / 2f, new Vector3(thickness, depth, thickness), KitRole.Pillar);
-        }
+        /// <summary>A trunk under a deck, down to the forest floor (collider-free, instanced): grown once the floor is known (<see cref="Forest"/>).</summary>
+        static void Support(Transform p, Vector3 top, float thickness) =>
+            Supports.Add(new SupportRequest { parent = p, localTop = top, thickness = thickness });
 
         /// <summary>A leaf roof whose underside is at <paramref name="y"/> (a ceiling for the passes, CourseCeiling). It casts no shadow: the sun still dapples the decks.</summary>
         static GameObject LeafRoof(Transform p, string name, float x0, float x1, float z0, float z1, float y)
@@ -426,74 +441,6 @@ namespace HotPatata.Editor
             marker.transform.SetParent(p, false);
             marker.transform.localPosition = local;
             NatureKit.Ambient(marker.transform, kind.ToString(), Vector3.zero, kind, 0.7f, 45f);
-        }
-
-        // ------------------------------------------------------------------ the forest below (decoration only)
-
-        /// <summary>
-        /// The forest the canopy stands in: a floor far below and trees on it, kept clear of every section (their footprint and the
-        /// void beside them) unless their crown stays well under its decks. Deterministic, collider-free.
-        /// </summary>
-        static string Dress(Transform group)
-        {
-            var root = new GameObject("Forest").transform;
-            root.SetParent(group, false);
-            var rects = new List<(Rect rect, float floor)>();
-            foreach (var f in Footprints)
-            {
-                var rot = Quaternion.Euler(0, f.yaw, 0);
-                var a = f.origin + rot * new Vector3(-CoverHalf - 4f, 0, -Hub - 4f);
-                var b = f.origin + rot * new Vector3(CoverHalf + 4f, 0, f.length + Hub + 4f);
-                rects.Add((Rect.MinMaxRect(Mathf.Min(a.x, b.x), Mathf.Min(a.z, b.z), Mathf.Max(a.x, b.x), Mathf.Max(a.z, b.z)), f.floorY));
-            }
-            float minX = rects.Min(r => r.rect.xMin) - 80f, maxX = rects.Max(r => r.rect.xMax) + 80f;
-            float minZ = rects.Min(r => r.rect.yMin) - 80f, maxZ = rects.Max(r => r.rect.yMax) + 80f;
-
-            var floor = Cube("Forest floor", root, new Vector3((minX + maxX) / 2, ForestFloor - 0.5f, (minZ + maxZ) / 2),
-                             new Vector3(maxX - minX, 1f, maxZ - minZ), NatureMaterialBuilder.Load("Nature_ForestFloor"), "Default");
-            floor.AddComponent<CourseDecoration>();
-
-            var rng = new System.Random(77);
-            float R(float lo, float hi) => lo + (float)rng.NextDouble() * (hi - lo);
-            var species = new[] { NatureTreeBuilder.Species.Broadleaf, NatureTreeBuilder.Species.Fir, NatureTreeBuilder.Species.Pine };
-            int trees = 0, giants = 0;
-            float Distance(Vector3 at) => rects.Min(r => new Vector2(Mathf.Max(0f, Mathf.Max(r.rect.xMin - at.x, at.x - r.rect.xMax)),
-                                                                     Mathf.Max(0f, Mathf.Max(r.rect.yMin - at.z, at.z - r.rect.yMax))).magnitude);
-            for (float x = minX; x < maxX; x += 16f)
-                for (float z = minZ; z < maxZ; z += 16f)
-                {
-                    var at = new Vector3(x + R(-6f, 6f), ForestFloor, z + R(-6f, 6f));
-                    float away = Distance(at);
-                    if (away > 60f) continue;   // a band of forest along the course: what a player can see
-
-                    var s = species[rng.Next(species.Length)];
-                    var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(NatureTreeBuilder.PrefabPath(s, rng.Next(NatureTreeBuilder.Variants)));
-                    if (prefab == null) continue;
-                    var tree = (GameObject)PrefabUtility.InstantiatePrefab(prefab, root);
-                    tree.transform.SetPositionAndRotation(at, Quaternion.Euler(0, R(0f, 360f), 0));
-                    tree.transform.localScale = Vector3.one * R(2.2f, 3.2f);
-                    var bounds = NatureKit.WorldBounds(tree);
-                    var box = Rect.MinMaxRect(bounds.min.x, bounds.min.z, bounds.max.x, bounds.max.z);
-                    if (rects.Any(r => r.rect.Overlaps(box) && bounds.max.y > r.floor - 12f)) { Object.DestroyImmediate(tree); continue; }
-                    foreach (var c in tree.GetComponentsInChildren<Collider>(true)) Object.DestroyImmediate(c);
-                    if (tree.GetComponent<CourseDecoration>() == null) tree.AddComponent<CourseDecoration>();
-                    trees++;
-                    // now and then a giant of the canopy, rising past the course, its whole crown clear of every section
-                    if (away > 20f && rng.NextDouble() < 0.12)
-                    {
-                        var giantPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(NatureTreeBuilder.PrefabPath(NatureTreeBuilder.Species.Broadleaf, rng.Next(NatureTreeBuilder.Variants)));
-                        var giant = (GameObject)PrefabUtility.InstantiatePrefab(giantPrefab, root);
-                        giant.name = "Giant " + giant.name;
-                        giant.transform.SetPositionAndRotation(at + new Vector3(R(-4f, 4f), 0, R(-4f, 4f)), Quaternion.Euler(0, R(0f, 360f), 0));
-                        giant.transform.localScale = Vector3.one * R(5.5f, 7f);
-                        var gb = NatureKit.WorldBounds(giant);
-                        if (rects.Any(r => r.rect.Overlaps(Rect.MinMaxRect(gb.min.x, gb.min.z, gb.max.x, gb.max.z)))) { Object.DestroyImmediate(giant); continue; }
-                        foreach (var c in giant.GetComponentsInChildren<Collider>(true)) Object.DestroyImmediate(c);
-                        if (giant.GetComponent<CourseDecoration>() == null) giant.AddComponent<CourseDecoration>();
-                        giants++;
-                    }
-                }
-            return $"forest: {trees} trees, {giants} giant trunks";
         }
     }
 }

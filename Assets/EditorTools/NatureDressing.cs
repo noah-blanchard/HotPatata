@@ -76,8 +76,9 @@ namespace HotPatata.Editor
             var terrain = Terrain(root, rooms, out var heights);
             var foliage = Scatter(root, rooms, heights);
             int props = HeroProps(root, rooms, heights);
+            Mist(root, rooms, heights);
             AssetDatabase.SaveAssets();
-            return $"{skirts} rock skirts, terrain {terrain} chunks, {foliage} plants and rocks, {props} scanned props";
+            return $"{skirts} rock skirts, terrain {terrain} chunks, {foliage} plants and rocks, {props} scanned props, a mist field";
         }
 
         // ------------------------------------------------------------------ terrain
@@ -157,60 +158,43 @@ namespace HotPatata.Editor
                     field.points[i, j] = new Vector3(p.x, h, p.z);
                     field.act[i, j] = nearestRoom.act;
                 }
-            // chunks of 16 x 16 cells, a mesh asset each
-            const int chunk = 16;
-            int count = 0;
+            // chunks of 16 x 16 cells, a mesh asset each (shared with PatataCanopy's forest floor)
             var terrainRoot = new GameObject("Terrain").transform;
             terrainRoot.SetParent(root, false);
-            foreach (var old in Directory.GetFiles(GeneratedDir, "PatataWilds_Terrain_*.asset")) AssetDatabase.DeleteAsset(old.Replace('\\', '/'));
-            for (int ci = 0; ci < field.nx - 1; ci += chunk)
-                for (int cj = 0; cj < field.nz - 1; cj += chunk)
-                {
-                    var verts = new List<Vector3>();
-                    var tris = new List<int>();
-                    var acts = new int[6];
-                    var index = new Dictionary<(int, int), int>();
-                    int V(int i, int j)
-                    {
-                        if (!index.TryGetValue((i, j), out int k)) { k = verts.Count; verts.Add(field.points[i, j]); index[(i, j)] = k; }
-                        return k;
-                    }
-                    for (int i = ci; i < Mathf.Min(ci + chunk, field.nx - 1); i++)
-                        for (int j = cj; j < Mathf.Min(cj + chunk, field.nz - 1); j++)
-                            foreach (var t in new[] { (i, j, i, j + 1, i + 1, j + 1), (i, j, i + 1, j + 1, i + 1, j) })
-                            {
-                                var a = field.points[t.Item1, t.Item2];
-                                var b = field.points[t.Item3, t.Item4];
-                                var c = field.points[t.Item5, t.Item6];
-                                if (field.inside[t.Item1, t.Item2] && field.inside[t.Item3, t.Item4] && field.inside[t.Item5, t.Item6]) continue;
-                                var centroid = (a + b + c) / 3f;
-                                if (rooms.Any(r => r.Distance(centroid, out _) < -0.1f)) continue;   // never a roof over a section
-                                if (Vector3.Cross(b - a, c - a).y <= 0.0001f) continue;             // folded by the snapping
-                                tris.Add(V(t.Item1, t.Item2)); tris.Add(V(t.Item3, t.Item4)); tris.Add(V(t.Item5, t.Item6));
-                                acts[Mathf.Clamp(field.act[t.Item1, t.Item2], 0, 5)]++;
-                            }
-                    if (tris.Count == 0) continue;
-                    var center = verts.Aggregate(Vector3.zero, (s, v) => s + v) / verts.Count;
-                    var local = verts.Select(v => v - center).ToList();
-                    var mesh = new Mesh { name = $"PatataWilds_Terrain_{ci}_{cj}", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
-                    mesh.SetVertices(local);
-                    mesh.SetTriangles(tris, 0);
-                    mesh.RecalculateNormals();
-                    mesh.RecalculateTangents();
-                    mesh.RecalculateBounds();
-                    AssetDatabase.CreateAsset(mesh, $"{GeneratedDir}{mesh.name}.asset");
-                    var go = new GameObject(mesh.name);
-                    go.transform.SetParent(terrainRoot, false);
-                    go.transform.position = center;
-                    go.AddComponent<MeshFilter>().sharedMesh = mesh;
-                    var r = go.AddComponent<MeshRenderer>();
-                    int act = System.Array.IndexOf(acts, acts.Max());
-                    r.sharedMaterial = NatureMaterialBuilder.Load(act <= 2 ? "Nature_ForestFloor" : act <= 4 ? "Nature_RocksGround" : "Nature_Grass");
-                    r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
-                    go.AddComponent<NatureTerrain>();
-                    count++;
-                }
+            bool Keep((int i, int j) a, (int i, int j) b, (int i, int j) c)
+            {
+                if (field.inside[a.i, a.j] && field.inside[b.i, b.j] && field.inside[c.i, c.j]) return false;
+                Vector3 pa = field.points[a.i, a.j], pb = field.points[b.i, b.j], pc = field.points[c.i, c.j];
+                var centroid = (pa + pb + pc) / 3f;
+                if (rooms.Any(r => r.Distance(centroid, out _) < -0.1f)) return false;   // never a roof over a section
+                return Vector3.Cross(pb - pa, pc - pa).y > 0.0001f;                        // not folded by the snapping
+            }
+            int count = NatureTerrainMesh.Build(terrainRoot, field.points, Keep, (i, j) => field.act[i, j],
+                act => NatureMaterialBuilder.Load(act <= 2 ? "Nature_ForestFloor" : act <= 4 ? "Nature_RocksGround" : "Nature_Grass"),
+                GeneratedDir, "PatataWilds_Terrain");
             return count;
+        }
+
+        // ------------------------------------------------------------------ mist
+
+        /// <summary>
+        /// The mist floor (<see cref="MistField"/>, ARCHITECTURE §25.3): in a section its lowest floor (the river bed, the gorge's
+        /// foot), outside it the terrain, a little under both, so a morning mist lies in the gorges and over the river.
+        /// </summary>
+        static void Mist(Transform root, List<Room> rooms, Heightfield field)
+        {
+            float Height(float x, float z)
+            {
+                var p = new Vector3(x, 0, z);
+                foreach (var r in rooms) if (r.Distance(p, out _) < 0f) return r.floor - 1.5f;
+                if (field.Sample(x, z, out float y)) return y - 3f;
+                return rooms.OrderBy(r => r.Distance(p, out _)).First().top;
+            }
+            var area = new Rect(field.x0, field.z0, (field.nx - 1) * Cell, (field.nz - 1) * Cell);
+            var (texture, rect) = NatureTerrainMesh.BakeMistFloor(Height, area, 512, 3, GeneratedDir + "PatataWilds_MistFloor.asset");
+            var go = new GameObject("Mist");
+            go.transform.SetParent(root, false);
+            go.AddComponent<MistField>().Configure(texture, rect, 0.85f);
         }
 
         // ------------------------------------------------------------------ rock skirts
@@ -291,7 +275,7 @@ namespace HotPatata.Editor
         }
 
         /// <summary>Batches for every variant of a scanned model, sized so a scale of 1 is <paramref name="height"/> metres tall.</summary>
-        static FoliageSet.Batch[] ModelBatches(FoliageSet set, string model, string material, float height, float[] distances, int[] meshLods, bool[] shadows,
+        internal static FoliageSet.Batch[] ModelBatches(FoliageSet set, string model, string material, float height, float[] distances, int[] meshLods, bool[] shadows,
                                               float minScale, float maxScale)
         {
             var mat = NatureMaterialBuilder.Load(material);
@@ -310,7 +294,7 @@ namespace HotPatata.Editor
 
         // ------------------------------------------------------------------ scatter
 
-        static FoliageSet.Batch Batch(FoliageSet set, string name, Mesh[] lods, Material[] materials, float[] distances, bool[] shadows, float minScale, float maxScale)
+        internal static FoliageSet.Batch Batch(FoliageSet set, string name, Mesh[] lods, Material[] materials, float[] distances, bool[] shadows, float minScale, float maxScale)
         {
             var b = new FoliageSet.Batch { name = name, lods = lods, materials = materials, lodDistances = distances, lodShadows = shadows, minScale = minScale, maxScale = maxScale };
             set.batches.Add(b);
@@ -322,7 +306,7 @@ namespace HotPatata.Editor
         // every intended pass arc, by 2 m cell: no plant or rock may come within the decoration clearance of one
         static Dictionary<(int, int, int), List<Vector3>> arcCells;
 
-        static void IndexArcs(List<Vector3> samples)
+        internal static void IndexArcs(List<Vector3> samples)
         {
             arcCells = new Dictionary<(int, int, int), List<Vector3>>();
             foreach (var p in samples)
@@ -333,7 +317,7 @@ namespace HotPatata.Editor
             }
         }
 
-        static bool TouchesAnArc(FoliageSet.Batch batch, Vector3 p, float yaw, float scale)
+        internal static bool TouchesAnArc(FoliageSet.Batch batch, Vector3 p, float yaw, float scale)
         {
             if (arcCells == null) return false;
             var local = batch.LocalBounds(0);

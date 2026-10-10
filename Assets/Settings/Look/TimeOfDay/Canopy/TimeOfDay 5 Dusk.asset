@@ -22,10 +22,10 @@ MonoBehaviour:
   ambientGround: {r: 0.1, g: 0.11, b: 0.12, a: 1}
   fogColor: {r: 0.18, g: 0.23, b: 0.33, a: 1}
   fogStart: 30
-  fogEnd: 220
+  fogEnd: 180
   mistColor: {r: 0.24, g: 0.3, b: 0.36, a: 1}
-  mistDensity: 0.08
-  mistFalloff: 12
+  mistDensity: 0.13
+  mistFalloff: 15
   mistGlow: 0.15
   shaftStrength: 0
   sky: {fileID: 8900000, guid: 6a65dd9ebe18e4448aea5cc09dac125a, type: 3}
