@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Sky_PatataWilds
+  m_Name: Sky_PatataCanopy
   m_Shader: {fileID: 4800000, guid: d56b2e6979675cb49881745b42ca2f63, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -34,13 +34,13 @@ Material:
     m_Ints: []
     m_Floats:
     - _Blend: 0
-    - _ExposureA: 1
-    - _ExposureB: 0.55
+    - _ExposureA: 0.85
+    - _ExposureB: 0.5
     - _HorizonFog: 0.6
     - _HorizonHeight: 0.12
     - _RotationA: 218.78415
     - _RotationB: 163.78906
-    - _Saturation: 1
+    - _Saturation: 0.75
     m_Colors:
     - _Tint: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []

@@ -14,22 +14,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: HotPatata::HotPatata.TimeOfDayPreset
   sunElevation: 5
   sunYaw: 262
-  sunColor: {r: 0.62, g: 0.62, b: 0.95, a: 1}
-  sunIntensity: 0.55
-  shadowStrength: 0.55
-  ambientSky: {r: 0.26, g: 0.3, b: 0.46, a: 1}
-  ambientEquator: {r: 0.32, g: 0.28, b: 0.36, a: 1}
-  ambientGround: {r: 0.12, g: 0.11, b: 0.14, a: 1}
-  fogColor: {r: 0.28, g: 0.29, b: 0.42, a: 1}
-  fogStart: 35
-  fogEnd: 260
-  mistColor: {r: 0.34, g: 0.35, b: 0.48, a: 1}
-  mistDensity: 0.022
-  mistFalloff: 4
-  mistGlow: 0.2
+  sunColor: {r: 0.6, g: 0.66, b: 0.95, a: 1}
+  sunIntensity: 0.45
+  shadowStrength: 0.5
+  ambientSky: {r: 0.22, g: 0.28, b: 0.38, a: 1}
+  ambientEquator: {r: 0.24, g: 0.26, b: 0.3, a: 1}
+  ambientGround: {r: 0.1, g: 0.11, b: 0.12, a: 1}
+  fogColor: {r: 0.18, g: 0.23, b: 0.33, a: 1}
+  fogStart: 30
+  fogEnd: 220
+  mistColor: {r: 0.24, g: 0.3, b: 0.36, a: 1}
+  mistDensity: 0.08
+  mistFalloff: 12
+  mistGlow: 0.15
   shaftStrength: 0
   sky: {fileID: 8900000, guid: 6a65dd9ebe18e4448aea5cc09dac125a, type: 3}
-  skyExposure: 1.8
+  skyExposure: 1.5
   skyRotation: 45.95793
-  grade: {fileID: 11400000, guid: 6c99ded14295b07408b888bb6a33541d, type: 2}
-  wind: 0.7
+  grade: {fileID: 11400000, guid: 14ae6fe60c99a3f47b3c220462675a71, type: 2}
+  wind: 0.55

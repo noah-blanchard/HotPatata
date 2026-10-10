@@ -15,18 +15,18 @@ RenderSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 10
   m_Fog: 1
-  m_FogColor: {r: 0.82, g: 0.68, b: 0.6, a: 1}
+  m_FogColor: {r: 0.66, g: 0.72, b: 0.7, a: 1}
   m_FogMode: 1
   m_FogDensity: 0.01
-  m_LinearFogStart: 22
-  m_LinearFogEnd: 230
-  m_AmbientSkyColor: {r: 0.4, g: 0.46, b: 0.62, a: 1}
-  m_AmbientEquatorColor: {r: 0.68, g: 0.56, b: 0.5, a: 1}
-  m_AmbientGroundColor: {r: 0.22, g: 0.2, b: 0.19, a: 1}
+  m_LinearFogStart: 35
+  m_LinearFogEnd: 260
+  m_AmbientSkyColor: {r: 0.42, g: 0.5, b: 0.56, a: 1}
+  m_AmbientEquatorColor: {r: 0.5, g: 0.54, b: 0.48, a: 1}
+  m_AmbientGroundColor: {r: 0.18, g: 0.2, b: 0.16, a: 1}
   m_AmbientIntensity: 1
   m_AmbientMode: 1
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 2100000, guid: a045779547347834ab17cbeef499801b, type: 2}
+  m_SkyboxMaterial: {fileID: 2100000, guid: 3a9120b521efb5f47b9415bde3b84f3e, type: 2}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -12560,7 +12560,7 @@ MonoBehaviour:
   priority: 1
   blendDistance: 0
   weight: 0
-  sharedProfile: {fileID: 11400000, guid: 6aa09441a994dec49bf93f3aa4268879, type: 2}
+  sharedProfile: {fileID: 11400000, guid: f032ed8d6e3562949a17ccaf1d73f913, type: 2}
 --- !u!4 &151850263
 Transform:
   m_ObjectHideFlags: 0
@@ -52812,7 +52812,7 @@ MonoBehaviour:
   priority: 1
   blendDistance: 0
   weight: 0
-  sharedProfile: {fileID: 11400000, guid: 6c99ded14295b07408b888bb6a33541d, type: 2}
+  sharedProfile: {fileID: 11400000, guid: 14ae6fe60c99a3f47b3c220462675a71, type: 2}
 --- !u!4 &627260603
 Transform:
   m_ObjectHideFlags: 0
@@ -53756,7 +53756,7 @@ MonoBehaviour:
   priority: 1
   blendDistance: 0
   weight: 0
-  sharedProfile: {fileID: 11400000, guid: b035397b9f5bde146b2a2db1f66c9269, type: 2}
+  sharedProfile: {fileID: 11400000, guid: b78626d9b369a964facb56b5cb1529ac, type: 2}
 --- !u!4 &647419998
 Transform:
   m_ObjectHideFlags: 0
@@ -73393,7 +73393,7 @@ MonoBehaviour:
   priority: 1
   blendDistance: 0
   weight: 1
-  sharedProfile: {fileID: 11400000, guid: c867138875f70ee46a909a763db69e47, type: 2}
+  sharedProfile: {fileID: 11400000, guid: dfbb4501b9123434fa8cd9d3008b6319, type: 2}
 --- !u!4 &892825211
 Transform:
   m_ObjectHideFlags: 0
@@ -82780,6 +82780,7 @@ GameObject:
   - component: {fileID: 1010645916}
   - component: {fileID: 1010645918}
   - component: {fileID: 1010645917}
+  - component: {fileID: 1010645919}
   m_Layer: 0
   m_Name: Directional Light
   m_TagString: Untagged
@@ -82817,7 +82818,7 @@ MonoBehaviour:
   m_UsePipelineSettings: 1
   m_AdditionalLightsShadowResolutionTier: 2
   m_CustomShadowLayers: 0
-  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieSize: {x: 26, y: 26}
   m_LightCookieOffset: {x: 0, y: 0}
   m_SoftShadowQuality: 0
   m_RenderingLayersMask:
@@ -82841,8 +82842,8 @@ Light:
   m_Enabled: 1
   serializedVersion: 12
   m_Type: 1
-  m_Color: {r: 1, g: 0.68, b: 0.44, a: 1}
-  m_Intensity: 1.6
+  m_Color: {r: 1, g: 0.8, b: 0.62, a: 1}
+  m_Intensity: 1.35
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -82851,7 +82852,7 @@ Light:
     m_Type: 2
     m_Resolution: -1
     m_CustomResolution: -1
-    m_Strength: 0.82
+    m_Strength: 0.7
     m_Bias: 0.05
     m_NormalBias: 0.4
     m_NearPlane: 0.2
@@ -82873,7 +82874,7 @@ Light:
       e32: 0
       e33: 1
     m_UseCullingMatrixOverride: 0
-  m_Cookie: {fileID: 0}
+  m_Cookie: {fileID: 2800000, guid: ef7682ca456fe804486b22d9b854e5e8, type: 3}
   m_DrawHalo: 0
   m_Flare: {fileID: 0}
   m_RenderMode: 0
@@ -82896,6 +82897,20 @@ Light:
   m_LightUnit: 1
   m_LuxAtDistance: 1
   m_EnableSpotReflector: 1
+--- !u!114 &1010645919
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1010645915}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e6f3b3450942da74694c62f3dcadff42, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: HotPatata::HotPatata.LeafDapple
+  sway: 0.35
+  drift: 0.04
 --- !u!1001 &1011769190
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -119851,7 +119866,7 @@ MonoBehaviour:
   priority: 1
   blendDistance: 0
   weight: 0
-  sharedProfile: {fileID: 11400000, guid: ca65eee8265bb1648a89a3678c43d606, type: 2}
+  sharedProfile: {fileID: 11400000, guid: 00e1dba9ddaeb8b458ded3ec15e9394a, type: 2}
 --- !u!4 &1515779088
 Transform:
   m_ObjectHideFlags: 0
@@ -157940,11 +157955,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: HotPatata::HotPatata.TimeOfDayBlender
   tuning: {fileID: 11400000, guid: 35604efc4188ead42afe90813d44683f, type: 2}
   presets:
-  - {fileID: 11400000, guid: 0e5f0df76ac5c8140a691f33c8d07ecf, type: 2}
-  - {fileID: 11400000, guid: cdf5907c4518a024e88434dfc8d0d176, type: 2}
-  - {fileID: 11400000, guid: e6e50c714e405094bae9d7d1bee87aab, type: 2}
-  - {fileID: 11400000, guid: 009313c576ec33546a0cec38d9063d92, type: 2}
-  - {fileID: 11400000, guid: 0618af206a49ad04d821517a2a30f387, type: 2}
+  - {fileID: 11400000, guid: 4590e97e6f2f6284eb0500da7769b149, type: 2}
+  - {fileID: 11400000, guid: 22d556dbfb9d2924a89bad3eaad81bd0, type: 2}
+  - {fileID: 11400000, guid: 09748e009cf9df44abccda0b1c666e8a, type: 2}
+  - {fileID: 11400000, guid: 176e7338f3a56b749906a8f41d87e121, type: 2}
+  - {fileID: 11400000, guid: 5e2629e1420ec7d4fb233538ad74c808, type: 2}
   checkpointTimes:
   - 0
   - 0.16
@@ -157979,7 +157994,7 @@ MonoBehaviour:
   - {fileID: 647419997}
   - {fileID: 1515779087}
   - {fileID: 627260602}
-  skyTemplate: {fileID: 2100000, guid: a045779547347834ab17cbeef499801b, type: 2}
+  skyTemplate: {fileID: 2100000, guid: 3a9120b521efb5f47b9415bde3b84f3e, type: 2}
   windDirection: {x: 0.8, y: 0.6}
   windGustSpeed: 1
 --- !u!4 &2006648304
