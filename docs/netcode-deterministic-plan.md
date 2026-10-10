@@ -1,8 +1,33 @@
 # Netcode plan: remote players vs. time-driven level objects (moving platforms and beyond)
 
-> Status: **proposal, nothing implemented**. This file is the diagnosis and the staged plan behind the issue
-> "Désynchro joueur / plateformes mobiles: passer à des plateformes déterministes par tick". It changes no gameplay
-> rule. When a stage ships, move what it settles into `ARCHITECTURE.md` §13 and `OBSTACLES.md`, and update this file.
+> Status: **stages 0–3 built** (#92); stages 4–6 open, stage 7 not planned. This file is the diagnosis and the staged
+> plan behind #92 ("Player / moving platform desync"). It changes no gameplay rule. What the built stages settled lives
+> in `ARCHITECTURE.md` §13.1–13.2, `OBSTACLES.md` §4.4 and `TESTING.md` §2–3.
+>
+> | Stage | State | As built |
+> |---|---|---|
+> | 0 Measure | built | `NetSyncProbe` (F7, `[Sync]` lines: rider gap, hazard verdicts, throw prediction vs verdict), `SyncStats`, `-patataBotMove Ride` |
+> | 1 Relative riders | built | `IPlatformCarrier.CarrierId/Moves/AnchorPosition`, `CarrierRegistry`, `RiderReconstruction` driven by `NetworkPlayer` |
+> | 2 Clock and stamps | built | `SimulationClock` (one sample per frame, slewed and monotonic on clients); the owner's per-tick `NetworkPlayer.PlayerStamp` |
+> | 3 Hazard rewind | built | `ITimePosed` on movers, `HazardRewind` on the host, `hazardRewindCap` |
+> | 4–5 | open | throw prediction at host time; plate readouts and reset ordering |
+> | 6 | only if needed | custom snapshot, if board/leave transitions still show in playtests |
+>
+> Decisions taken while building:
+>
+> - **`CarrierId` is derived at load, not serialized** (§2.2 below said "builders write it"). It is a hash of the scene
+>   name and the sibling-index path, the same on every machine, so it needs no builder change and no course rebuild, and
+>   hand-placed PassSandbox pieces work too. `CarrierRegistryTests` checks uniqueness in every course scene.
+> - **The stamp carries the owner's `ServerNow` as a double**, not an integer tick: it is the exact time the owner drew
+>   the level at. `SimulationClock` still exposes `ServerTick` / `SectionTick` / `TickAlpha`. Stamps are sent once per
+>   network tick.
+> - **The offline tick** is the physics rate. There is no extra tuning field.
+> - **D (catches on carriers)** is covered by stage 1, which rebuilds the receiver's catch centre on the platform.
+>   Making `FlightHistory` tick-exact is deferred, to keep the catch feel and `PassFeelTests` unchanged.
+> - **Validation status:**
+>   - covered by EditMode and PlayMode tests: unit maths, carrier-id uniqueness, offline regressions;
+>   - still open: the online criteria of §4 (latency matrix, 95% verdict agreement). They are measured with the stage 0
+>     tools and stay a human gate.
 
 ## 0. Summary
 

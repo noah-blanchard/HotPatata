@@ -334,17 +334,18 @@ Assets/
 ├── Scenes/               Bootstrap, PatataWilds, PatataCanopy, IndustrialPlant, PassSandbox
 ├── ScriptableObjects/    Tuning/GameTuning.asset, Kit/KayKitPalette.asset (generated)
 ├── Scripts/
-│   ├── Core/             GameTuning, NetMode, SectionClock, IResettable, PatataLog, Settings, AudioVolumes
+│   ├── Core/             GameTuning, NetMode, SimulationClock, SectionClock, IResettable, PatataLog, SyncStats,
+│   │                     Settings, AudioVolumes
 │   ├── Networking/       NetworkBootstrap, BootstrapEntry, SessionService, NetworkPlayer/Bomb/RunState/FallingPlatform,
 │   │                     NetworkBombGate/SignalActuator/BombTransit
-│   ├── Player/           Player, PlayerMotor, PlayerLook, PlayerThrower, PlayerCatcher, PlayerCatchVolume,
+│   ├── Player/           Player, PlayerMotor, RiderReconstruction, PlayerLook, PlayerThrower, PlayerCatcher, PlayerCatchVolume,
 │   │                     FirstPersonCamera, PlayerViewFeel, SpeedEffects, PlayerPresentation, PlayerAnimator,
 │   │                     PlayerCharacter, PlayerShapeMesh, PlayerPause, ...
 │   ├── Bomb/             BombController, BombFuse, BombPhysics, CatchResolver, FlightHistory, AimAssist,
 │   │                     ThrowBallistics, BombAudio, BombPresentation, ExplosionFx, ProceduralSfx
-│   ├── Run/              RunManager, Checkpoint, KillZone, FinishZone, PlayerZone, PlayerSpawner, PlayerSpawn
+│   ├── Run/              RunManager, Checkpoint, KillZone, HazardRewind, FinishZone, PlayerZone, PlayerSpawner, PlayerSpawn
 │   ├── Obstacles/        MovingPlatform, RotatingObstacle, FallingPlatform, Conveyor, LaunchPad, IPlatformCarrier,
-│   │                     IObstacleState, ObstacleVisualDriver (§10.7)
+│   │                     CarrierRegistry, ITimePosed, IObstacleState, ObstacleVisualDriver (§10.7)
 │   ├── Kit/              KitSkin, KitPalette (KayKit visuals, §25.1), NatureShapes (generated nature shapes, §25.3),
 │   │                     CustomVisual (a hand-made visual the look passes skip, §10.7)
 │   ├── Nature/           TimeOfDayPreset, TimeOfDayBlender, CampfirePresentation, FoliageSet, FoliageInstancer,
@@ -358,7 +359,7 @@ Assets/
 │   │                     ConfirmScreen, ResultsScreen, RunResultsUI, AimReticle
 │   ├── Debug/            DebugHud, LocalPlayerSwitcher, PlayerBot
 │   └── DebugTools/       Editor/dev-build only: LatencySimulator, ThrowDebugOverlay, ThrowTelemetry, PassPartner,
-│                         UISampleScreen
+│                         UISampleScreen, NetSyncProbe (network time-frame diagnostics, F7)
 ├── Settings/             URP assets (PC_RPAsset, PC_Renderer), Look/HotPatata_Look.asset, Look/MenuFocus_<Station>.asset,
 │                         Look/TimeOfDay/ (PatataWilds' presets and grades, written by LookBuilder)
 ├── Tests/
@@ -1005,8 +1006,17 @@ Expose:
 - start phase.
 
 Must be deterministic enough for networked play: the position is `MovingPlatform.Evaluate(SectionClock.Now, ...)`,
-a pure function. Anything that carries riders implements `IPlatformCarrier` (`FrameDelta`), which `PlayerMotor`
-adds to its move while grounded on it (moving platforms, elevators, pistons, `Conveyor` belts).
+a pure function. `SectionClock` is a façade over `SimulationClock` (§13.1): one sample of the network time per frame,
+monotonic on clients. Every time-driven mover also implements `ITimePosed` (`TryPoseAt(serverTime)`, `LethalAt`): it
+can say where its moving part was at any time, which the host uses to judge remote players against moving hazards
+(§13.1). Anything that carries riders implements `IPlatformCarrier`:
+
+- `FrameDelta`, which `PlayerMotor` adds to its move while grounded on it (moving platforms, elevators, pistons,
+  `Conveyor` belts);
+- `CarrierId`: the same number on every machine, derived at load by `CarrierRegistry` from the scene and the
+  sibling-index path (never names), and checked unique by `CarrierRegistryTests`;
+- `Moves` (false for a belt);
+- `AnchorPosition`: the origin of a rider's offset when riders are synced relative to the carrier (§13.1).
 Lethal obstacles (sweeper, windmill, crusher) are on the `Hazard` layer, striped, with a child `KillZone` trigger.
 A crusher never closes below 1.45 m, so crouching or sliding under it is safe. `MovingPlatform.Evaluate` is pure and
 also has a `Dwell` mode (wait at the ends, then ease), used by elevators and pistons.
@@ -1239,7 +1249,7 @@ and on the host):
 
 | Concern | Who decides | How it reaches others |
 |---|---|---|
-| Player movement, aim | owning client (owner-authoritative `NetworkTransform`) | transform + replicated pitch |
+| Player movement, aim | owning client (owner-authoritative `NetworkTransform`) | world transform + replicated pitch; on a moving carrier, the owner's per-tick `PlayerStamp` (carrier id + offset) and every other machine rebuilds the rider on the carrier as it draws it (`RiderReconstruction`) |
 | Throw | host | owner sends `RequestThrow(origin, velocity)`; host clamps speed, checks the release point, then `TryThrow` |
 | Catch | host | owner sends `RequestCatch`; host opens that player's catch window; `CatchResolver` decides once |
 | Bomb state, carrier, fuse, explosion | host only | `NetworkBomb` snapshot (one atomic `NetworkVariable`) + fuse fraction; clients mirror it via `BombController.ApplyMirror` and raise the same events |
@@ -1254,6 +1264,30 @@ first free slot. Level objects are kept in sync by deriving their state from sha
 `SectionClock`, falling platforms from one replicated trigger time (`NetworkFallingPlatform`). Moves that are
 teleports (resets, respawns) are sent as teleports (`NetworkPlayer.SyncTeleport`), otherwise other machines
 interpolate the player across the level and sweep them through triggers.
+
+Remote players against time-driven level objects (the analysis and the staged plan are in
+[`netcode-deterministic-plan.md`](netcode-deterministic-plan.md)):
+
+- **One clock.** `SimulationClock.ServerNow` is NGO's network time sampled once per frame. On a client, NGO's
+  corrections are slewed in (at most `clockMaxSlew`, a snap only past `clockSnapSeconds`), so the level never runs
+  backwards. On the host and offline it is the raw time. Every pose and readout of a time-driven object uses it:
+  `SectionClock`, actuators, falling platforms, gates and transit.
+- **Player stamps.** Once per network tick, the owner sends a `NetworkPlayer.PlayerStamp`:
+  - the `ServerNow` it drew the level at;
+  - its feet;
+  - the moving carrier it stands on, if any (`CarrierId`), and its offset from the carrier's `AnchorPosition`.
+
+  A teleport sends a fresh stamp with no carrier.
+- **Riders.** A remote player on a moving carrier is drawn at that offset from the carrier as THIS machine draws it,
+  so they stay glued to it whatever the latency. `NetworkPlayer.LateUpdate` runs after NGO applies the transform in
+  PreLateUpdate, and before the held bomb is placed. Boarding and leaving blend over `riderBlendSeconds`; only the
+  offset is smoothed; a jump larger than `riderSnapDistance` is a teleport and snaps. The host's copy is placed the
+  same way, so plates, checkpoints, catch centres and triggers see the rider on the platform.
+- **Moving hazards** (§13.2 has the cap). A `KillZone` under an `ITimePosed` mover (rotating bar, crusher, a closing
+  door's edge) does not fail the section on the host for a remote player's trigger; that trigger is only logged.
+  `HazardRewind` judges each stamp instead: the player's capsule at the stamp's feet against every armed moving zone
+  posed at the stamp's time, plus the midpoint from the previous stamp. The host's own player, static zones (water,
+  void) and offline play keep the trigger.
 
 ### 13.2 Catch lag compensation (M3.5)
 
@@ -1277,7 +1311,13 @@ client→client; ~450 ms still 0/14, beyond the cap (raising `catchLagCompensati
 cost of longer freezes before explosions).
 
 Movement posture is replicated too: the owner writes `PackedState` on `NetworkPlayer` (§7.1), so the host's catch
-sweeps and `FlightHistory` use a crouching or sliding player's real catch centre.
+sweeps and `FlightHistory` use a crouching or sliding player's real catch centre. A receiver riding a moving platform is
+rebuilt on it (§13.1), so their catch centre is on the platform too. `FlightHistory` itself still records host-frame
+samples; making it tick-exact is deferred (netcode plan, stage 3 note).
+
+Moving hazards use the same idea for deaths (`HazardRewind`, §13.1). The host poses a moving lethal zone at the time a
+remote player's stamp says they saw it. That time is clamped to `[now − GameTuning.hazardRewindCap, now]` (0.35 s), so a
+client can only make itself older, never claim a future time to slip past a hazard.
 
 ## 14. Session flow
 
