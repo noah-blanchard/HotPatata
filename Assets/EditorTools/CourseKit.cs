@@ -28,17 +28,18 @@ namespace HotPatata.Editor
 
         // ------------------------------------------------------------------ the menu's level list
 
-        /// <summary>Where a course goes in the Bootstrap level list: first, kept where it is (second when new), or last.</summary>
-        public enum MenuSlot { First, Keep, Last }
+        /// <summary>Where a course goes in the Bootstrap level list: first, kept where it is (second when new), third, or last.</summary>
+        public enum MenuSlot { First, Keep, Third, Last }
 
         public const string NetworkPrefab = "Assets/Prefabs/Network/NetworkManager.prefab";
 
         /// <summary>
-        /// Lists a course in the build settings and in the menu's level list (NetworkBootstrap) with its checkpoint count. One shared
-        /// place, so builders never fight over the order: PatataWilds is first, PatataCanopy and the plant keep their places
-        /// (a new one goes second), PassSandbox is last.
+        /// Lists a course in the build settings and in the menu's level list (NetworkBootstrap) with its checkpoint count and the
+        /// players it needs online (<paramref name="minPlayers"/>, PROJECT_SPEC §15e: PatataTemple needs three). One shared place,
+        /// so builders never fight over the order: PatataWilds is first, PatataCanopy and the plant keep their places (a new one
+        /// goes second), PatataTemple is third, PassSandbox is last.
         /// </summary>
-        public static void RegisterInMenu(string sceneName, string scenePath, int checkpoints, MenuSlot slot)
+        public static void RegisterInMenu(string sceneName, string scenePath, int checkpoints, MenuSlot slot, int minPlayers = 2)
         {
             var scenes = UnityEditor.EditorBuildSettings.scenes.ToList();
             if (!scenes.Any(s => s.path == scenePath)) scenes.Add(new UnityEditor.EditorBuildSettingsScene(scenePath, true));
@@ -49,26 +50,41 @@ namespace HotPatata.Editor
                 var so = new SerializedObject(root.GetComponent<NetworkBootstrap>());
                 var names = so.FindProperty("gameplayScenes");
                 var counts = so.FindProperty("sceneCheckpoints");
+                var mins = so.FindProperty("sceneMinPlayers");
                 counts.arraySize = Mathf.Max(counts.arraySize, names.arraySize);
+                for (int i = mins.arraySize; i < names.arraySize; i++)
+                {
+                    mins.InsertArrayElementAtIndex(i);
+                    mins.GetArrayElementAtIndex(i).intValue = 2;
+                }
                 int index = -1;
                 for (int i = 0; i < names.arraySize; i++)
                     if (names.GetArrayElementAtIndex(i).stringValue == sceneName) index = i;
-                int target = slot == MenuSlot.First ? 0 : slot == MenuSlot.Last ? names.arraySize - (index >= 0 ? 1 : 0)
-                           : index >= 0 ? index : Mathf.Min(1, names.arraySize);
+                int target = slot switch
+                {
+                    MenuSlot.First => 0,
+                    MenuSlot.Last => names.arraySize - (index >= 0 ? 1 : 0),
+                    MenuSlot.Third => Mathf.Min(2, names.arraySize - (index >= 0 ? 1 : 0)),
+                    _ => index >= 0 ? index : Mathf.Min(1, names.arraySize)
+                };
                 if (index < 0)
                 {
-                    names.InsertArrayElementAtIndex(Mathf.Min(target, names.arraySize));
+                    int at = Mathf.Min(target, names.arraySize);
+                    names.InsertArrayElementAtIndex(at);
                     counts.InsertArrayElementAtIndex(Mathf.Min(target, counts.arraySize));
-                    index = Mathf.Min(target, names.arraySize - 1);
+                    mins.InsertArrayElementAtIndex(Mathf.Min(target, mins.arraySize));
+                    index = at;
                 }
                 else if (index != target)
                 {
                     names.MoveArrayElement(index, target);
                     counts.MoveArrayElement(index, target);
+                    mins.MoveArrayElement(index, target);
                     index = target;
                 }
                 names.GetArrayElementAtIndex(index).stringValue = sceneName;
                 counts.GetArrayElementAtIndex(index).intValue = checkpoints;
+                mins.GetArrayElementAtIndex(index).intValue = Mathf.Max(1, minPlayers);
                 so.ApplyModifiedPropertiesWithoutUndo();
                 PrefabUtility.SaveAsPrefabAsset(root, NetworkPrefab);
             }

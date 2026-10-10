@@ -48,6 +48,14 @@ namespace HotPatata.Tests
         }
 
         [Test]
+        public void SpreadReach_GrowsWithTheFirstSourcesHourglass()
+        {
+            Assert.AreEqual(SectionContract.SpreadMargin, SectionContract.MaxSpread(tuning, 0f), 1e-5f, "no hourglass: only the step between two plates");
+            Assert.AreEqual(tuning.sprintSpeed * 5f + SectionContract.SpreadMargin, SectionContract.MaxSpread(tuning, 5f), 1e-4f,
+                            "a five-second hourglass: a sprint further");
+        }
+
+        [Test]
         public void Scan_FindsAScreenYouWalkRound_UntilWallsCloseItsEnds()
         {
             // Far below everything, in the scene the runner has open, removed afterwards.

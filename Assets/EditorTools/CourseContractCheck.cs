@@ -31,7 +31,11 @@ namespace HotPatata.Editor
             int body = LayerMask.GetMask("Environment", "Hazard", BodyScreen.LayerName);
             var roots = scene.GetRootGameObjects();
 
+            var plates = roots.SelectMany(r => r.GetComponentsInChildren<PressurePlate>(true)).ToList();
             foreach (var contract in roots.SelectMany(r => r.GetComponentsInChildren<SectionContract>(true)))
+            {
+                if (contract.MinPlayers >= 3 && string.IsNullOrWhiteSpace(contract.TwoFail))
+                    problems.Add($"{Path(contract.transform)}: a section for {contract.MinPlayers} says nothing of why two fail");
                 foreach (var s in contract.Shortcuts)
                 {
                     string where = $"{Path(contract.transform)} '{s.name}'";
@@ -59,8 +63,17 @@ namespace HotPatata.Editor
                             if (reach >= need) problems.Add($"{where}: the wall top is not sealed by a roof, a lob clears it by {reach - need:F1} m");
                             break;
                         }
+                        case SectionContract.ShortcutKind.Spread:
+                        {
+                            var first = plates.FirstOrDefault(p => p.GetComponent<BoxCollider>() is BoxCollider b && b.bounds.Contains(from + Vector3.up * 0.3f));
+                            float memory = first != null ? first.MemorySeconds : 0f;
+                            float apart = Vector3.Distance(from, to), reach = SectionContract.MaxSpread(tuning, memory);
+                            if (apart <= reach) problems.Add($"{where}: {apart:F1} m apart, one body holds both (a sprint through a {memory:F1} s hourglass covers {reach:F1} m)");
+                            break;
+                        }
                     }
                 }
+            }
 
             foreach (var screen in roots.SelectMany(r => r.GetComponentsInChildren<BodyScreen>(false)))
                 foreach (var box in screen.GetComponentsInChildren<BoxCollider>(false).Where(b => b.gameObject.layer == LayerMask.NameToLayer(BodyScreen.LayerName)))
