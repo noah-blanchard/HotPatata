@@ -17,8 +17,21 @@ namespace HotPatata
         void OnTriggerEnter(Collider other)
         {
             var player = other.GetComponentInParent<Player>();
-            if (player != null && RunManager.Instance != null)
-                RunManager.Instance.FailSection("PlayerFell", $"player={player} zone={name}");
+            if (player == null || RunManager.Instance == null) return;
+
+            if (NetMode.IsNetworked && NetMode.IsAuthority && !player.IsLocal) NoteRemoteHit(player);
+            RunManager.Instance.FailSection("PlayerFell", $"player={player} zone={name}");
+        }
+
+        // Diagnostics (docs/netcode-deterministic-plan.md stage 0): the host judged a remote player from its own copy.
+        void NoteRemoteHit(Player player)
+        {
+            bool moving = GetComponentInParent<MovingPlatform>() != null || GetComponentInParent<RotatingObstacle>() != null ||
+                          GetComponentInParent<SignalActuator>() != null;
+            if (moving) SyncStats.HazardTriggerHits++;
+            else SyncStats.StaticKills++;
+            int rtt = player.Net != null && player.Net.IsSpawned ? NetMode.RttMsFor(player.Net.OwnerClientId) : 0;
+            PatataLog.Sync($"hazard trigger {(moving ? "moving" : "static")} zone={name} player={player} rtt={rtt}ms");
         }
     }
 }

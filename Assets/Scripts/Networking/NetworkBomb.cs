@@ -58,6 +58,8 @@ namespace HotPatata
         Player predictedThrower;
         Vector3 predictedOrigin, predictedVelocity;
         float predictedStart, predictedStop;
+        Player predictedReceiver;   // diagnostics: who the drawing stopped at (null = the world, or nothing in range)
+        bool predictedWorldHit;
         bool sawThrown;
         int environmentMask;
 
@@ -156,6 +158,8 @@ namespace HotPatata
             predictedOrigin = origin;
             predictedVelocity = velocity;
             predictedStart = Time.time;
+            predictedReceiver = null;
+            predictedWorldHit = false;
 
             // Where the drawing stops: first reach of another player, or the first thing it would hit.
             float g = ThrowBallistics.Gravity(bomb.Tuning);
@@ -168,18 +172,20 @@ namespace HotPatata
                 if (Physics.SphereCast(previous, BombRadius, delta.normalized, out var hit, delta.magnitude, environmentMask, QueryTriggerInteraction.Ignore))
                 {
                     predictedStop = t - PredictionStep + PredictionStep * (hit.distance / Mathf.Max(1e-4f, delta.magnitude));
+                    predictedWorldHit = true;
                     break;
                 }
-                bool reached = false;
+                Player reached = null;
                 foreach (var p in Player.All)
                 {
                     if (p == null || p == thrower || p.CatchVolume == null) continue;
                     float d = CatchResolver.ReachDistance(p.Tuning, previous, next, p.CatchVolume.CatchCenter, out _);
-                    if (d <= CatchResolver.ReachFor(p, delta)) reached = true;
+                    if (d <= CatchResolver.ReachFor(p, delta)) reached = p;
                 }
-                if (reached)
+                if (reached != null)
                 {
                     predictedStop = t;
+                    predictedReceiver = reached;
                     break;
                 }
                 previous = next;
@@ -201,11 +207,27 @@ namespace HotPatata
             if (outcome || rejected || lostIt || Time.time - predictedStart > PredictionHorizon + RejectedAfter)
             {
                 predicting = false;
+                if (sawThrown) NotePredictionOutcome(state);
                 return;
             }
 
             float t = Mathf.Min(Time.time - predictedStart, predictedStop);
             transform.position = ThrowBallistics.PositionAt(predictedOrigin, predictedVelocity, ThrowBallistics.Gravity(bomb.Tuning), t);
+        }
+
+        // Diagnostics (docs/netcode-deterministic-plan.md stage 0): did the local drawing agree with the host's verdict?
+        // A receiver reached on screen should end in their catch (if they pressed), a world hit in an explosion.
+        void NotePredictionOutcome(BombState state)
+        {
+            string predicted = predictedReceiver != null ? $"receiver {predictedReceiver}" : predictedWorldHit ? "world hit" : "nothing";
+            bool caught = state == BombState.CaughtGrace || state == BombState.Held;
+            string host = caught ? $"caught by {(bomb.Carrier != null ? bomb.Carrier.ToString() : "?")}" : state.ToString();
+            bool agreed = predictedReceiver != null ? caught && bomb.Carrier == predictedReceiver
+                        : predictedWorldHit ? state == BombState.Exploding || state == BombState.Resetting
+                        : !caught;
+            if (agreed) SyncStats.ThrowAgreed++;
+            else SyncStats.ThrowDisagreed++;
+            PatataLog.Sync($"throw predicted={predicted} host={host} {(agreed ? "agree" : "DISAGREE")} rtt={NetMode.RttMs}ms");
         }
 
         void LateUpdate()

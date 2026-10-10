@@ -28,5 +28,12 @@ namespace HotPatata
         {
             if (Enabled) UnityEngine.Debug.Log("[Run] " + message);
         }
+
+        /// <summary>Network time-frame diagnostics (docs/netcode-deterministic-plan.md stage 0): riders, hazard verdicts, throw prediction.</summary>
+        [Conditional("UNITY_EDITOR"), Conditional("DEVELOPMENT_BUILD")]
+        public static void Sync(string message)
+        {
+            if (Enabled) UnityEngine.Debug.Log("[Sync] " + message);
+        }
     }
 }
