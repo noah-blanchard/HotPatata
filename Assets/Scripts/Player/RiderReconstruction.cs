@@ -14,7 +14,7 @@ namespace HotPatata
     {
         /// <summary>The carrier being used (kept while blending out after leaving it); 0 = none.</summary>
         public int CarrierId { get; private set; }
-        /// <summary>Smoothed offset from the carrier's anchor.</summary>
+        /// <summary>Smoothed offset from the carrier's anchor, in the carrier's frame.</summary>
         public Vector3 Offset { get; private set; }
         /// <summary>0 = the replicated world position .. 1 = rebuilt on the carrier.</summary>
         public float Weight { get; private set; }
@@ -45,9 +45,16 @@ namespace HotPatata
         /// The position to draw this frame. <paramref name="world"/> is the replicated world position,
         /// <paramref name="anchor"/> the current anchor of carrier <see cref="CarrierId"/> on this machine.
         /// </summary>
-        public Vector3 Blend(Vector3 world, Vector3 anchor, bool riding, float dt, float blendSeconds, float snapDistance)
+        public Vector3 Blend(Vector3 world, Vector3 anchor, bool riding, float dt, float blendSeconds, float snapDistance) =>
+            Blend(world, anchor, Quaternion.identity, riding, dt, blendSeconds, snapDistance);
+
+        /// <summary>
+        /// The same for a carrier that turns: the offset is in the carrier's frame, <paramref name="anchorRotation"/> its
+        /// rotation as this machine draws it.
+        /// </summary>
+        public Vector3 Blend(Vector3 world, Vector3 anchor, Quaternion anchorRotation, bool riding, float dt, float blendSeconds, float snapDistance)
         {
-            Vector3 rebuilt = anchor + Offset;
+            Vector3 rebuilt = anchor + anchorRotation * Offset;
             if (!riding && (rebuilt - world).sqrMagnitude > snapDistance * snapDistance)
             {
                 Clear();   // left by a teleport (reset, respawn): snap, never sweep through the level

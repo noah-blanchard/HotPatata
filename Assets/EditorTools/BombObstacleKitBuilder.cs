@@ -17,7 +17,7 @@ namespace HotPatata.Editor
     /// it after changing a builder. Also adds <see cref="BombZoneSweep"/> to the Bomb prefab. The Resize helpers keep
     /// prefab instances resizable with plain property overrides (no added or removed children).
     /// </summary>
-    public static class BombObstacleKitBuilder
+    public static partial class BombObstacleKitBuilder
     {
         const string IconDir = "Assets/Art/Textures/Icons/";
         const string BombPrefab = "Assets/Prefabs/Bomb/Bomb.prefab";
@@ -67,6 +67,7 @@ namespace HotPatata.Editor
             MakePrefab(Screen + ".prefab", true, BuildScreen);
             MakePrefab(Switch + ".prefab", true, BuildSwitch);
             BuildHandsFreePlate();
+            BuildTrioKit();
             EnsureBombComponents();
             AssetDatabase.SaveAssets();
             Debug.Log("[BombObstacleKitBuilder] bomb obstacle kit built");
@@ -917,6 +918,7 @@ namespace HotPatata.Editor
                          0, Color.black, 1f, 0f);
             MakeUnlitMaterial("Screen_Field", new Color(0.35f, 0.9f, 0.4f, 0.1f), null, false);
             MakeUnlitMaterial("Icon_Screen", new Color(0.6f, 1f, 0.55f, 1f), Icon("BombThrough"), false);
+            BuildTrioMaterials();
             AssetDatabase.SaveAssets();
         }
 
@@ -951,13 +953,14 @@ namespace HotPatata.Editor
             DrawIcon("Snowflake", Snowflake);
             DrawIcon("BombThrough", BombThrough);
             DrawIcon("ThrowFirst", ThrowFirst);
+            DrawIcon("TwoBodies", TwoBodies);
             for (int s = 1; s <= TubeSlots; s++)
             {
                 int pips = s;
                 DrawIcon($"Pips{s}", p => Pips(p, pips));
             }
             AssetDatabase.Refresh();
-            foreach (var name in new[] { "NoCarry", "Flame", "Snowflake", "BombThrough", "ThrowFirst", "Pips1", "Pips2", "Pips3" })
+            foreach (var name in new[] { "NoCarry", "Flame", "Snowflake", "BombThrough", "ThrowFirst", "TwoBodies", "Pips1", "Pips2", "Pips3" })
             {
                 var importer = (TextureImporter)AssetImporter.GetAtPath(IconDir + name + ".png");
                 importer.textureType = TextureImporterType.Default;

@@ -24,5 +24,11 @@ namespace HotPatata
 
         /// <summary>World position of the carried part this frame: the origin of a rider's offset.</summary>
         Vector3 AnchorPosition { get; }
+
+        /// <summary>World rotation of the carried part this frame: the frame of a rider's offset (identity unless it turns).</summary>
+        Quaternion AnchorRotation => Quaternion.identity;
+
+        /// <summary>How far the carried part turned this frame about <see cref="AnchorPosition"/> (world space; identity unless it turns).</summary>
+        Quaternion FrameRotation => Quaternion.identity;
     }
 }

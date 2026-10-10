@@ -33,7 +33,9 @@ namespace HotPatata
             if (source is not ISignalSource signal) return;
             bool on = signal.Active;
             float glow = on ? 1f : 0f;
-            if (on && source is BombGate gate && gate.RemainingSeconds < warnSeconds)
+            bool closing = source is BombGate gate && gate.RemainingSeconds < warnSeconds
+                           || source is PressurePlate plate && plate.MemorySeconds > 0f && !plate.Held;   // an hourglass running out
+            if (on && closing)
                 glow = 0.45f + 0.55f * (0.5f + 0.5f * Mathf.Cos(Time.time * Mathf.PI * 4f));   // about to close
 
             block ??= new MaterialPropertyBlock();   // Update can come before Awake when the Editor drives play mode

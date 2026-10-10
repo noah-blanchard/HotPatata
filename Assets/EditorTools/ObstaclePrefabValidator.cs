@@ -110,6 +110,8 @@ namespace HotPatata.Editor
                 if (transit != null) Need(new SerializedObject(m).FindProperty("exit").intValue < transit.ExitCount, m, "exit index has no exit");
             }
             foreach (var g in root.GetComponentsInChildren<BombGate>(true)) Networked(g, typeof(NetworkBombGate));
+            foreach (var p in root.GetComponentsInChildren<PressurePlate>(true))
+                if (p.MemorySeconds > 0f) Networked(p, typeof(NetworkPressurePlate));   // an hourglass's release time is the host's
             foreach (var z in root.GetComponentsInChildren<Zone>(true))
             {
                 Need(z.Volume != null && z.Volume.isTrigger, z, "volume must be a trigger BoxCollider");
