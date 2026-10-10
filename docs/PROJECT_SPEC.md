@@ -747,7 +747,8 @@ Question:
 > Who holds the way open, and who has the bomb?
 
 A **hands-free plate** is a pressure plate that does not count its carrier: the holder must have passed the bomb first,
-and catching on the plate lets it go. A **switch** is an actuator that turns things on or off instead of moving them: a
+and catching on the plate lets it go. While the bomb flies (or rides a tube), it is still its thrower's: a throw does not
+free the thrower to count (M15, §13.21). A **switch** is an actuator that turns things on or off instead of moving them: a
 laser curtain cut while a plate is held, a bramble hedge parted for a few seconds after a ring, spores cleared from a
 bridge. Like every actuator it has one source (§13.15), travels, replicates, and goes back to rest on a section reset.
 
@@ -766,6 +767,60 @@ it is drawn. The reach a shortcut is measured against comes from the tuning (§2
 - the void is the default: every walkable metre is deliberate.
 
 `SectionContract` holds the contract in the scene; `CourseContractCheck` measures it (warnings, never a build gate).
+
+A section of a course for three (§15e) also states **why two players fail** ("With two: ..."), and may lock a **spread**: two
+sources one body cannot hold in turn, the walk between them (round the walls) longer than a sprint through the first one's
+hourglass.
+
+### 13.21 Heavy plate (M15)
+
+Question:
+
+> Can two of you hold the way while the third carries?
+
+A **heavy plate** is a hands-free plate that needs **two** counted players on it at once. The carrier never counts, and
+**a bomb in flight is still its thrower's**: while it flies (or rides a tube) its thrower does not count either, on every
+hands-free plate. So two players can never juggle the bomb on a heavy plate to hold it: it takes two empty hands and a third
+player with the bomb. One source still drives one actuator (§13.15).
+
+Primary levers: where the carrier must go while it is held, whether it has an hourglass (§13.22).
+
+### 13.22 Hourglass plate (M15)
+
+Question:
+
+> Who relieves the holder?
+
+An **hourglass plate** stays active a few seconds (its sand, 4–6 s) after the last counted player stepped off; a ring of lamps
+empties as the sand runs. It lets a holder leave and catch up, or lets two plates be held "at once" by players who juggle the
+bomb between them. The host decides the release time and replicates it. A plate may be both heavy and an hourglass.
+
+Primary levers: the sand, the walk from the plate to what it opens (longer than the sand: one body cannot do both).
+
+### 13.23 Sun beam (M15)
+
+Question:
+
+> Who stands in the light?
+
+A **sun beam** is a signal source: a shaft of light from a slit to a stone eye, active while **a body cuts it** anywhere along
+its length (or, set the other way, while the light reaches the eye). It counts every player, carrier included; the bomb never
+cuts it. Because it can be cut from far away (from a ledge, from a passing shuttle, while walking down a wing), the one who
+cuts it is rarely where it opens.
+
+Primary levers: where the light runs (over a shuttle's path, down a wing, behind lasers), where it ends (a pillar, an eye).
+
+### 13.24 Pivot (M15)
+
+Question:
+
+> Where does the holder send the team?
+
+A **pivot** is a slab that turns about its centre (a quarter turn in about twelve seconds) while its source is active, and back
+when it is not. It **carries its riders round** and turns their view with them (online, a rider's offset is kept in the slab's
+frame). Its two headings join two pairs of docks; riding it outlasts a fuse, so the bomb on it needs a pair.
+
+Primary levers: which docks each heading joins, where its holder stands (behind lasers, in a shrine), the turn's duration.
 
 ---
 
@@ -1056,13 +1111,68 @@ The shorter hold fuse: 5.0 s from checkpoint 15, 4.5 s from checkpoint 20 (§20)
 
 ---
 
+## 15e. Fifth level blueprint — PatataTemple (M15)
+
+Asked for by the owner: in the vein of PatataCanopy (built for two), a course whose every section **needs three players**,
+with real challenges that take three to think through. A temple in ruins over a jungle valley, in the nature look (stone instead
+of planks). Third in the Bootstrap level list. Built by `PatataTempleBuilder` (ARCHITECTURE §4).
+
+Working level:
+
+**PatataTemple**
+
+Target:
+
+- **3 acts, 15 sections, 15 checkpoints**, one per section; about 1.4 km, 15–20 minutes;
+- **three players minimum** online: the menu shows "(3+ players)" and the host's Start waits for the third; a fourth relays;
+- **coordination**: a puzzle reads in about twenty seconds (who goes where), then asks for a synchronised execution;
+- **voices assumed** (friends on a call), but every role reads in the scenery (glyphs, colours, lamps);
+- no holder stands still more than about eight seconds: hourglasses relieve them, and the roles turn.
+
+### The grammar for three
+
+Nobody catches their own throw and the fuse burns 6 s (5 s, then 4.5 s): **keeping the bomb alive longer than a fuse takes a
+pair**. With one source per actuator (§17.2), "three" comes from **two tasks at once**:
+
+- **the pair and the third**: one holds the way (a hands-free or heavy plate, a cut beam) while the pair keeps the bomb moving
+  for longer than a fuse; a holder never stands where the carrier can throw to them (a shrine, an alcove, behind lasers);
+- **the heavy plate**: two empty hands and the carrier;
+- **the cycle of three wings**: each wing's way is opened from another wing.
+
+A holder left behind is let through by someone already across (a ring thrown through, an hourglass plate tapped, a pivot that
+turns back). Every contract says why two fail (§13.20).
+
+### Temple rules
+
+- **The void is the default** (as §15d): stone decks over the jungle's canopy, a kill plane 10 m under each section's lowest
+  floor; scenery never lies within a jump of a floor, it stays under the kill planes.
+- **The route is the temple's own:** a causeway bending up the valley (act 1), a ring of three-wing sections round the great
+  stepped pyramid, its corners at 60° (act 2), then the well up 30 m to a skyway that circles the temple and ends on the altar
+  over the pyramid's summit (act 3). Sections meet on **octagonal courts** open to the sky, at any angle.
+- **Puzzle sections stand under a stone roof** 7 m above the floor, between their courts; every cross wall, divide and laser
+  lintel reaches it.
+- **Gaps that must be bridged are 14 m**, faces that must not be climbed 5 m or more (§13.20).
+- **Checkpoints are fires** on the courts; arches at checkpoints 5, 10 and 15 (§13.17).
+
+### Route
+
+| Act (time of day) | Checkpoints | Sections and what each forces |
+|---|---|---|
+| 1 La Chaussée (misty dawn): one system at a time | 1–5 | La Dalle lourde (two hold the heavy slab, the carrier crosses and throws back through a ring that raises the holders' bridge); La Relève (the holder in an alcove raises the herse, inside an empty hand taps the hourglass plate whose herse lets the holder in); Le Pivot (the holder in a shrine turns the slab to the east dock, the pair rides it back into the enclosure, a ring throw raises the holder's bridge); L'Œil du soleil (a rider on the shuttle cuts the beam over the chasm, the herse rises for the pair, the rider joins through the lasers); Le Seuil (a heavy slab with a 4 s hourglass, everyone runs 26 m to the great herse, the arch) |
+| 2 Les Trois Ailes (white noon): the ring round the pyramid | 6–10 | Le Partage (three wings, each herse raised by an hourglass plate in another wing: juggle through the brambles, let go together); Les Têtes de pierre (the nave's herse held from beyond the west lasers, the bomb crosses only by two stone heads, the third waits at the exit); Les Rayons croisés (a beam down each wing opens another wing: stay in the light until the next is through); La Rose (the nave's holder behind the lasers turns the pivot to the docks, the pair rides it to the exit, the holder walks it after); La Réunion (two wings' runners hold the heavy slab for the east bridge, the arch) |
+| 3 Le Sanctuaire (storm): up, round the temple, the altar | 11–15 | Le Puits (a heavy slab with an hourglass brings the lift down the 30 m shaft, all ride up); Le Couloir des pièges (three relays of La Relève, roles turning, a sweeper); Le Gué des trois pierres (three stones cross in step, the east rider cuts the beam over the last stretch, the herse rises for the pair); La Croisée (the wings again: an hourglass raises the nave bridge, another the east herse, the east light the west herse); L'Autel (the heavy slab's bridge, the holder in the light behind the lasers turns the last pivot, the arch, the beacon) |
+
+The shorter hold fuse: 5.0 s from checkpoint 8, 4.5 s from checkpoint 13 (§20).
+
+---
+
 ## 16. Multiplayer product behavior
 
 Target session:
 
 - one player hosts;
 - friends join by code;
-- 2–4 players;
+- 2–4 players (PatataTemple needs three, §15e: the host's Start waits for them);
 - cooperative;
 - no public matchmaking required for MVP.
 
@@ -1112,7 +1222,7 @@ Do not implement unless this file is changed:
 - cosmetics;
 - multiple bomb types;
 - multiple courses (exceptions, owner decisions: `PatataWilds`, the outdoor course of §15c, M12, `PatataCanopy`, the
-  tree-top course of §15d, M13, and `IndustrialPlant`, the closed factory built on §15b's rules, beside `PassSandbox`; the earlier `PrototypeCourse`, `PlaytestCourse`, `PatataPark`
+  tree-top course of §15d, M13, `PatataTemple`, the temple for three of §15e, M15, and `IndustrialPlant`, the closed factory built on §15b's rules, beside `PassSandbox`; the earlier `PrototypeCourse`, `PlaytestCourse`, `PatataPark`
   and `PatataWorks` were removed in the cleanup, archived in OBSTACLES.md §3.2). Still no campaign, no level
   select beyond the Bootstrap level list, and no procedural levels (PatataWilds' generated trees, plants and terrain are
   art with fixed seeds, not a generated route);
@@ -1207,6 +1317,9 @@ At minimum:
 | Water (`PatataWilds`) | lethal: a kill zone 0.3 m under every surface |
 | Fourth course (`PatataCanopy`, §15d) | 25 checkpoints in 5 acts, about 2 km |
 | Hold fuse override (`PatataCanopy`) | 5.0 s from CP15, 4.5 s from CP20 |
+| Fifth course (`PatataTemple`, §15e) | 15 checkpoints in 3 acts, about 1.4 km, three players minimum |
+| Hold fuse override (`PatataTemple`) | 5.0 s from CP8, 4.5 s from CP13 |
+| Heavy plate / hourglass sand / pivot turn (§13.21–13.24) | 2 bodies / 4–6 s / a quarter turn in 12 s (the well's lift 5 s) |
 | Locked gap / locked face / roof over a puzzle (§13.20) | 14 m / 5 m (3.4 m minimum) / 7 m above the floor |
 | Ceiling clearance over a pass corridor (§15b) | intended arc apex + 1.5 m |
 | Target frame rate | 60 fps |
