@@ -89,6 +89,8 @@ namespace HotPatata
             displayName.OnValueChanged += (_, n) => player.SetDisplayName(n.ToString());
             ApplySlot(slot.Value);
 
+            if (IsServer && !IsOwner) stamp.OnValueChanged += OnStampOnHost;   // moving hazards are judged at the owner's time
+
             if (IsOwner)
             {
                 BecomeLocal();
@@ -97,7 +99,13 @@ namespace HotPatata
             PatataLog.Run($"Player spawned slot={slot.Value} owner={OwnerClientId} local={IsOwner}");
         }
 
-        public override void OnNetworkDespawn() => PatataLog.Run($"Player despawned slot={slot.Value}");
+        public override void OnNetworkDespawn()
+        {
+            stamp.OnValueChanged -= OnStampOnHost;
+            PatataLog.Run($"Player despawned slot={slot.Value}");
+        }
+
+        void OnStampOnHost(PlayerStamp previous, PlayerStamp current) => HazardRewind.Judge(player, previous, current);
 
         void ApplySlot(int s)
         {

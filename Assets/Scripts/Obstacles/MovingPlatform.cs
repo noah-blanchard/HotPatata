@@ -12,7 +12,7 @@ namespace HotPatata
     /// visual under its moving part behaves as a moving platform; subclasses may override <see cref="PositionAt"/> (a curved path).
     /// </summary>
     [DefaultExecutionOrder(-50)]   // move before players update, so riders get this frame's delta
-    public class MovingPlatform : MonoBehaviour, IPlatformCarrier, IObstacleState
+    public class MovingPlatform : MonoBehaviour, IPlatformCarrier, IObstacleState, ITimePosed
     {
         public enum Motion
         {
@@ -80,6 +80,26 @@ namespace HotPatata
         /// <summary>The world position of the moving part at <paramref name="u"/> along A→B. Override for another path (still a pure function of u).</summary>
         protected virtual Vector3 PositionAt(Vector3 a, Vector3 b, float u) => Vector3.Lerp(a, b, u);
 
+        /// <summary>Where along A→B (0..1) the platform is at <paramref name="sectionTime"/>. The one formula Update and <see cref="TryPoseAt"/> share.</summary>
+        float ProgressAt(float sectionTime, float length) => Evaluate(sectionTime, length, speed, startPhase, motion, dwellFraction);
+
+        public Transform PosedTransform => platform;
+
+        /// <summary>Where the moving part is at any server time of the current section (<see cref="ITimePosed"/>). It only translates.</summary>
+        public bool TryPoseAt(double serverTime, out Vector3 position, out Quaternion rotation)
+        {
+            position = default;
+            rotation = platform != null ? platform.rotation : Quaternion.identity;
+            double start = SimulationClock.SectionStart;
+            if (platform == null || waypointA == null || waypointB == null || serverTime < start) return false;
+            Vector3 a = waypointA.position, b = waypointB.position;
+            float length = Vector3.Distance(a, b);
+            position = length < 0.01f ? platform.position : PositionAt(a, b, ProgressAt((float)(serverTime - start), length));
+            return true;
+        }
+
+        public bool LethalAt(double serverTime, Collider zone) => true;   // a crusher's strip is always armed
+
         void OnEnable() => CarrierId = CarrierRegistry.Register(this);
 
         void OnDisable() => CarrierRegistry.Unregister(CarrierId, this);
@@ -91,7 +111,7 @@ namespace HotPatata
             float length = Vector3.Distance(a, b);
             if (length < 0.01f) return;
 
-            float u = Evaluate(SectionClock.Now, length, speed, startPhase, motion, dwellFraction);
+            float u = ProgressAt(SectionClock.Now, length);
             Vector3 target = PositionAt(a, b, u);
 
             Vector3 delta = target - platform.position;

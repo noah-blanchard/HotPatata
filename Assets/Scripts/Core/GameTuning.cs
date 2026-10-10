@@ -215,6 +215,12 @@ namespace HotPatata
                  "never sweep across the level.")]
         [Min(0.5f)] public float riderSnapDistance = 3f;
 
+        [Header("Network - remote players vs moving hazards (docs/netcode-deterministic-plan.md §2.4)")]
+        [Tooltip("Online, host only. How far back (seconds) the host rewinds a moving hazard (rotating bar, crusher, closing " +
+                 "door) to judge a remote player at the time that player saw it. A client claiming an older time is judged " +
+                 "at this cap: it can only make itself older, never skip a hazard.")]
+        [Range(0f, 0.5f)] public float hazardRewindCap = 0.35f;
+
         [Header("Network - simulation clock (docs/netcode-deterministic-plan.md §2.1)")]
         [Tooltip("Client only. When NGO corrects its estimate of the server time, the level clock runs at most this much " +
                  "faster or slower (0.1 = ±10%) until it has caught up, instead of jumping back.")]

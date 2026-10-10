@@ -99,6 +99,12 @@ MonoBehaviour:
   catchFrontBias: 0.25
   catchCenterHeight: 1.3
   catchLagCompensation: 0.35
+  riderBlendSeconds: 0.15
+  riderOffsetSmoothing: 15
+  riderSnapDistance: 3
+  hazardRewindCap: 0.35
+  clockMaxSlew: 0.1
+  clockSnapSeconds: 0.5
   beepIntervals:
   - 1
   - 0.55
@@ -135,3 +141,10 @@ MonoBehaviour:
   menuTravelSeconds: 1.1
   menuStepSeconds: 0.6
   resetDelay: 1
+  timeOfDayBlendSeconds: 24
+  timeOfDaySnapActs: 0.6
+  campfireIgniteSeconds: 1.4
+  campfireLightIntensity: 4.5
+  campfireLightRange: 14
+  campfireFlicker: 0.18
+  campfireIgniteBurst: 40

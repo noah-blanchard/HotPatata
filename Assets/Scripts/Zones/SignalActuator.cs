@@ -15,7 +15,7 @@ namespace HotPatata
     /// a drawbridge), and subclasses may override <see cref="PositionAt"/> / <see cref="RotationAt"/>.
     /// </summary>
     [DefaultExecutionOrder(-50)]   // move before players update, so riders get this frame's delta
-    public class SignalActuator : MonoBehaviour, IPlatformCarrier, IResettable, IObstacleState
+    public class SignalActuator : MonoBehaviour, IPlatformCarrier, IResettable, IObstacleState, ITimePosed
     {
         [SerializeField, Tooltip("A component implementing ISignalSource (BombGate, PressurePlate).")]
         MonoBehaviour source;
@@ -66,6 +66,39 @@ namespace HotPatata
         /// <summary>The world rotation of the moving part at <paramref name="progress"/>, or null to leave it (the default unless <see cref="rotateWithWaypoints"/>).</summary>
         protected virtual Quaternion? RotationAt(Transform closed, Transform open, float progress) =>
             rotateWithWaypoints ? Quaternion.Slerp(closed.rotation, open.rotation, Mathf.SmoothStep(0f, 1f, progress)) : null;
+
+        public Transform PosedTransform => platform;
+
+        /// <summary>The moving part's pose at <paramref name="serverTime"/>, from the current change record (<see cref="ITimePosed"/>).</summary>
+        public bool TryPoseAt(double serverTime, out Vector3 position, out Quaternion rotation)
+        {
+            position = default;
+            rotation = default;
+            if (platform == null || waypointClosed == null || waypointOpen == null) return false;
+            float p = Progress(changeTime, fromProgress, opening, travelSeconds, serverTime);
+            position = PositionAt(waypointClosed, waypointOpen, p);
+            rotation = RotationAt(waypointClosed, waypointOpen, p) ?? platform.rotation;
+            return true;
+        }
+
+        /// <summary>
+        /// The lethal edge is armed only while closing (<see cref="LethalWhileClosingAt"/>); any other lethal volume under
+        /// the actuator always is.
+        /// </summary>
+        public bool LethalAt(double serverTime, Collider zone) =>
+            zone != lethalWhileClosing || LethalWhileClosingAt(changeTime, fromProgress, opening, travelSeconds, serverTime);
+
+        /// <summary>
+        /// Is a closing actuator's lethal edge armed at <paramref name="time"/>? Only between fully open and fully closed while
+        /// closing, and never before the change that started the closing (what came before was an opening: not lethal).
+        /// Pure (EditMode tested).
+        /// </summary>
+        public static bool LethalWhileClosingAt(double changeTime, float fromProgress, bool opening, float travelSeconds, double time)
+        {
+            if (opening || time < changeTime) return false;
+            float p = Progress(changeTime, fromProgress, false, travelSeconds, time);
+            return p > 0f && p < 1f;
+        }
 
         /// <summary>Where the actuator is (0 closed .. 1 open) at <paramref name="now"/>. Pure (EditMode tested).</summary>
         public static float Progress(double changeTime, float fromProgress, bool opening, float travelSeconds, double now)
