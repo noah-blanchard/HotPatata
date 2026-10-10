@@ -94,11 +94,18 @@ namespace HotPatata
                     QueryTriggerInteraction.Ignore))
                 return false;
             var c = hit.collider.GetComponentInParent<IPlatformCarrier>();
-            if (c == null || c is Conveyor) return false;   // a belt does not move: nothing to measure
+            if (c == null || !c.Moves) return false;   // a belt does not move: nothing to measure
 
-            carrier = c is Component component ? component.GetInstanceID() : 0;
+            carrier = c.CarrierId;
             gap = feet.y - hit.point.y;
             return true;
+        }
+
+        static string RebuiltTag(int slot)
+        {
+            foreach (var p in Player.All)
+                if (p != null && p.PlayerId == slot && p.Net != null && p.Net.RebuiltOnCarrier) return "  (rebuilt on carrier)";
+            return "";
         }
 
         void OnGUI()
@@ -108,7 +115,7 @@ namespace HotPatata
 
             var text = new System.Text.StringBuilder("NET SYNC (F7)\n");
             for (int s = 0; s < riding.Length; s++)
-                if (riding[s]) text.Append($"slot {s} on carrier: gap {lastGap[s] * 100f:F1} cm\n");
+                if (riding[s]) text.Append($"slot {s} on carrier: gap {lastGap[s] * 100f:F1} cm{RebuiltTag(s)}\n");
             text.Append($"hazard hits (host): trigger {SyncStats.HazardTriggerHits}  rewound {SyncStats.HazardRewindHits}  static {SyncStats.StaticKills}\n");
             text.Append($"throw prediction: agree {SyncStats.ThrowAgreed}  disagree {SyncStats.ThrowDisagreed}   rtt {NetMode.RttMs} ms");
 

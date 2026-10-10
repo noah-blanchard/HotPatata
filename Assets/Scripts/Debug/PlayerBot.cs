@@ -133,10 +133,9 @@ namespace HotPatata
         {
             top = default;
             float best = float.MaxValue;
-            foreach (var mp in FindObjectsByType<MovingPlatform>(FindObjectsSortMode.None))
-                Consider(mp.Platform, ref best, ref top);
-            foreach (var sa in FindObjectsByType<SignalActuator>(FindObjectsSortMode.None))
-                Consider(sa.Platform, ref best, ref top);
+            foreach (var carrier in CarrierRegistry.All)
+                if (carrier.Moves && carrier is MonoBehaviour mb)
+                    Consider(mb is MovingPlatform mp ? mp.Platform : mb is SignalActuator sa ? sa.Platform : null, ref best, ref top);
             return best < float.MaxValue;
         }
 

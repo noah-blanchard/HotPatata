@@ -11,6 +11,8 @@ namespace HotPatata
     ///   client --RequestThrow/RequestCatch/ClaimCatch--> host validates and applies
     ///   host --Locked / TeleportOwner--> owning client
     ///   owner --SubmitName--> host sanitises it --displayName--> everyone (late joiners included)
+    ///   owner --ride (carrier id + offset)--> everyone: a rider on a moving carrier is rebuilt against the carrier as
+    ///   each machine draws it (<see cref="RiderReconstruction"/>, docs/netcode-deterministic-plan.md §2.3)
     /// Offline (not spawned) this component does nothing and Player behaves exactly as before.
     /// </summary>
     [RequireComponent(typeof(Player))]
@@ -20,6 +22,21 @@ namespace HotPatata
         const float MaxReleaseDistance = 3f;       // metres between the claimed release point and the thrower's eyes
         const float PitchSendThreshold = 0.25f;    // degrees
 
+        /// <summary>Which moving carrier the owner stands on (<see cref="IPlatformCarrier.CarrierId"/>, 0 = none) and its offset from the carrier's anchor.</summary>
+        public struct RideState : INetworkSerializable, System.IEquatable<RideState>
+        {
+            public int CarrierId;
+            public Vector3 Offset;
+
+            public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+            {
+                serializer.SerializeValue(ref CarrierId);
+                serializer.SerializeValue(ref Offset);
+            }
+
+            public bool Equals(RideState o) => CarrierId == o.CarrierId && Offset == o.Offset;
+        }
+
         readonly NetworkVariable<int> slot = new NetworkVariable<int>(-1);   // server-written
         readonly NetworkVariable<bool> locked = new NetworkVariable<bool>(false);   // server-written
         readonly NetworkVariable<FixedString64Bytes> displayName = new NetworkVariable<FixedString64Bytes>();   // server-written, sanitised
@@ -27,6 +44,12 @@ namespace HotPatata
             NetworkVariableBase.DefaultReadPerm, NetworkVariableWritePermission.Owner);   // owner-written
         readonly NetworkVariable<byte> moveState = new NetworkVariable<byte>((byte)MoveState.Ground,
             NetworkVariableBase.DefaultReadPerm, NetworkVariableWritePermission.Owner);   // owner-written: PlayerMotor.PackedState
+        readonly NetworkVariable<RideState> ride = new NetworkVariable<RideState>(default,
+            NetworkVariableBase.DefaultReadPerm, NetworkVariableWritePermission.Owner);   // owner-written: the carrier it stands on
+
+        readonly RiderReconstruction rider = new RiderReconstruction();
+        Vector3 lastWritten, lastReplicated;
+        bool wroteLast;
 
         Player player;
         Unity.Netcode.Components.NetworkTransform netTransform;
@@ -38,6 +61,10 @@ namespace HotPatata
         public float RemotePitch => pitch.Value;
         /// <summary>The owner's <see cref="PlayerMotor.PackedState"/> (slide/crouch/sprint), so every copy has the same posture.</summary>
         public byte RemoteMoveState => moveState.Value;
+        /// <summary>The owner's carrier and offset (replicated).</summary>
+        public RideState Ride => ride.Value;
+        /// <summary>This copy is drawn (partly) relative to a moving carrier.</summary>
+        public bool RebuiltOnCarrier => rider.Active;
 
         public override void OnNetworkSpawn()
         {
@@ -92,10 +119,63 @@ namespace HotPatata
 
         void LateUpdate()
         {
-            if (!IsSpawned || !IsOwner) return;
+            if (!IsSpawned) return;
+            if (!IsOwner)
+            {
+                PlaceRemoteRider();
+                return;
+            }
             if (Mathf.Abs(pitch.Value - player.Look.Pitch) > PitchSendThreshold) pitch.Value = player.Look.Pitch;
             byte state = player.Motor.PackedState;
             if (moveState.Value != state) moveState.Value = state;
+            PublishRide();
+        }
+
+        /// <summary>Owner: which moving carrier we stand on after this frame's move, and where on it.</summary>
+        void PublishRide()
+        {
+            var carrier = player.Motor.RidingCarrier;
+            var next = carrier != null && carrier.Moves && carrier.CarrierId != 0
+                ? new RideState { CarrierId = carrier.CarrierId, Offset = transform.position - carrier.AnchorPosition }
+                : default;
+            var current = ride.Value;
+            float threshold = player.Tuning.riderOffsetSendThreshold;
+            if (next.CarrierId != current.CarrierId || (next.Offset - current.Offset).sqrMagnitude > threshold * threshold)
+                ride.Value = next;
+        }
+
+        /// <summary>
+        /// Remote copy, after NGO has applied the replicated world position (PreLateUpdate) and before the held bomb is
+        /// put in the hand (NetworkBomb, order 1000). On a moving carrier, draw the player at the owner's offset from the
+        /// carrier as this machine draws it. The host's copy is placed the same way, so its rules (plates, checkpoints,
+        /// catch centres, kill zones) see the rider on the platform, not inside it.
+        /// </summary>
+        void PlaceRemoteRider()
+        {
+            Vector3 world = transform.position;
+            // NGO writes the replicated position every frame; if it did not, this is still our own last write.
+            if (wroteLast && world == lastWritten) world = lastReplicated;
+            lastReplicated = world;
+            wroteLast = false;
+
+            var state = ride.Value;
+            var t = player.Tuning;
+            float dt = Time.deltaTime;
+            rider.Retarget(state.CarrierId, state.Offset, dt, t.riderOffsetSmoothing);
+            if (!rider.Active) return;
+
+            var carrier = CarrierRegistry.Get(rider.CarrierId);
+            if (carrier == null)
+            {
+                rider.Clear();   // a carrier this machine does not have (should not happen: same scene everywhere)
+                return;
+            }
+
+            bool riding = state.CarrierId != 0 && state.CarrierId == rider.CarrierId;
+            Vector3 position = rider.Blend(world, carrier.AnchorPosition, riding, dt, t.riderBlendSeconds, t.riderSnapDistance);
+            transform.position = position;
+            lastWritten = position;
+            wroteLast = true;
         }
 
         // ------------------------------------------------------------------ host -> players
@@ -106,7 +186,9 @@ namespace HotPatata
         /// </summary>
         public void SyncTeleport(Vector3 position, Quaternion rotation)
         {
-            if (IsOwner && netTransform != null) netTransform.Teleport(position, rotation, transform.localScale);
+            if (!IsOwner) return;
+            ride.Value = default;   // a teleport always leaves the carrier (plan rule 7)
+            if (netTransform != null) netTransform.Teleport(position, rotation, transform.localScale);
         }
 
         /// <summary>Host only: tell this player why their catch failed.</summary>

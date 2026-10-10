@@ -46,6 +46,11 @@ namespace HotPatata
         public float CurrentProgress => Progress(changeTime, fromProgress, opening, travelSeconds, NetMode.ServerTime);
         public Vector3 FrameDelta { get; private set; }
 
+        public int CarrierId { get; private set; }
+        /// <summary>A switch (no moving part) carries nobody.</summary>
+        public bool Moves => platform != null;
+        public Vector3 AnchorPosition => platform != null ? platform.position : transform.position;
+
         public Transform Platform => platform;
         public Transform WaypointClosed => waypointClosed;
         public Transform WaypointOpen => waypointOpen;
@@ -77,6 +82,10 @@ namespace HotPatata
                 source = null;
             }
         }
+
+        void OnEnable() => CarrierId = CarrierRegistry.Register(this);
+
+        void OnDisable() => CarrierRegistry.Unregister(CarrierId, this);
 
         void FixedUpdate()
         {

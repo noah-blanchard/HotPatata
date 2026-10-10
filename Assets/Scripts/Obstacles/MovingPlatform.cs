@@ -37,6 +37,10 @@ namespace HotPatata
         /// <summary>How far the platform moved this frame (used to carry riders).</summary>
         public Vector3 FrameDelta { get; private set; }
 
+        public int CarrierId { get; private set; }
+        public bool Moves => platform != null;
+        public Vector3 AnchorPosition => platform != null ? platform.position : transform.position;
+
         public Transform Platform => platform;
         public Transform WaypointA => waypointA;
         public Transform WaypointB => waypointB;
@@ -75,6 +79,10 @@ namespace HotPatata
 
         /// <summary>The world position of the moving part at <paramref name="u"/> along A→B. Override for another path (still a pure function of u).</summary>
         protected virtual Vector3 PositionAt(Vector3 a, Vector3 b, float u) => Vector3.Lerp(a, b, u);
+
+        void OnEnable() => CarrierId = CarrierRegistry.Register(this);
+
+        void OnDisable() => CarrierRegistry.Unregister(CarrierId, this);
 
         void Update()
         {
