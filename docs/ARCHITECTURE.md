@@ -281,8 +281,10 @@ scene by hand. Second in `NetworkBootstrap.gameplayScenes` (`MenuSlot.Keep`), 25
   never meets it. Decks (`KitRole.Grating`, planks) stand on collider-free trunks down to the forest floor.
 - **The void.** A kill plane 10 m under each section's lowest floor (`killTop`); rising bridges (`RisingBridge`, a bridge
   actuator) rest 2 m under it, out of reach, and rise 1.5 s when their source is active; a safety net lies under the forest.
-- **Roofs.** A covered section gets a leaf roof (`LeafRoof`: a `CourseCeiling` block drawn as mossy logs, no shadow) 7 m over
-  its floor from junction to junction, 28 m wide; its cross walls (`WallAcross`, `WallAlong`, upright logs) reach it. The
+- **Roofs.** A covered section gets a leaf roof (`LeafRoof`: a `CourseCeiling` block, no shadow) 7 m over its floor from
+  junction to junction, 28 m wide. Its opaque mat (`Nature_LeafCanopy`) fills the top 40 cm of the block; the lower 60 cm hold
+  leaf cards lying almost flat (`CanopyMat`, instanced), so from below it reads as a ceiling of leaves, and tufts of leaves
+  (`CanopyTuft`) sit on top. No card ever hangs under a roof's underside, nor under another roof's; its cross walls (`WallAcross`, `WallAlong`, upright logs) reach it. The
   hollow oak (act 3) builds its own walls and roofs (`OakShell`), with stepped roofs where the floor climbs.
 - **Systems.** `ScreenAcross`/`ScreenAlong` (body screens in wall holes), `CurtainAcross`/`CurtainAlong`, `Ring` and
   `RingOnPass` (a ring hung at the middle of a declared pass, facing it), `HandsFreePlate`, `SwitchFor`
@@ -290,17 +292,29 @@ scene by hand. Second in `NetworkBootstrap.gameplayScenes` (`MenuSlot.Keep`), 25
   shuttle's moving part rides with it.
 - **Contracts.** Every section calls `Contract(force, locks)` (`SectionContract`, shortcuts stored in its own space);
   the build logs `CourseContractCheck` findings after `ValidatePasses` (none at M13).
-- **Look.** The nature look (§25.3) with two themes (crown: planks, log walls, mossy branch roofs; oak: bark); the day from
-  dawn to dusk through `PatataWildsLook` (the same five moments, by checkpoint); `NatureRestyle` on every section.
-- **Forest** (`Dress`, decoration only): a forest floor 40 m down, about 1,000 generated tree prefabs within 60 m of the
-  course and a few giant broadleaf trees rising past it, none of them over a section unless its crown stays 12 m under the
-  decks.
+- **Look.** The nature look (§25.3) with two themes (crown: planks, log walls, leaf roofs; oak: bark); its own cooler day
+  from dawn to dusk (`PatataCanopyLook`, the same five moments as PatataWilds, by checkpoint), a height mist on the forest
+  floor (`MistField`) and a leaf cookie on the sun (`LeafDapple`); `NatureRestyle` on every section.
+- **Forest** (`PatataCanopyBuilder.Forest.cs`, decoration only, M13.7): a forest floor (terrain chunks, no collider) that
+  follows the course, `Drop` = 40 m under each section's lowest floor, rolling and rising a little away from it; the posts
+  under the decks are deck trunks (one every ~22 m along a long deck) from that floor to the deck's underside; giant oaks and
+  redwoods (`NatureTreeBuilder.Giant`, 70-95 m, each in three instanced parts: roots, bole, crown) every ~16 m along both sides
+  of every section, their bole outside its footprint and their crown at least `CrownClearance` (12 m) over its highest floor or
+  roof, a strip of sky (`SkyStrip`) left over the open sections; more giants every ~24 m out to 280 m, an understory (the
+  PatataWilds species, 1.4-2.8x) and ground cover (ferns, bushes, rocks, logs, stumps, moss). Everything is one `FoliageSet`
+  (`PatataCanopy_Foliage`, about 26,000 instances) drawn by a `FoliageInstancer`; no instance comes within the decoration
+  clearance of a pass arc, the course's solids and zones, or another giant's bole.
+- **Atmosphere** (`PatataCanopyBuilder.Atmosphere.cs`): light shafts (`HotPatata/LightShaft`) hanging from the crowns beside the
+  course, clear of every pass arc for each moment's sun; dust motes in them, leaves falling from the aisle's giants and
+  fireflies in the last two acts (beside the decks and down in the mist, from sunset), three emitter prefabs
+  (`Assets/Prefabs/Nature/Atmosphere_*`) placed as small instances.
 - **Fuse:** `FuseFor(id)`: 5.0 s from checkpoint 15, 4.5 s from checkpoint 20.
 
 Tests: `PatataCanopyTests` (25 checkpoints, one finish, a contract per section, fuse overrides, passes clear of ceilings,
 solids and decoration, normal passes at most 14.5 m, signals one-to-one, three switches with targets, hands-free plates,
 body screens on their layer, campfires, the level list, the Lucioles, Pont-levis, La Plaque and spore puzzles, every
-checkpoint resets, every transit exit is catchable) and `CourseContractTests`.
+checkpoint resets, every transit exit is catchable; the forest, the deck trunks, the leaf roofs, the mist and the light
+shafts) and `CourseContractTests`.
 
 ---
 
@@ -1892,8 +1906,9 @@ in `Assets/Art/Models/Nature/Generated` (and tree prefabs with an LOD group in `
 - **Scanned props:** a few Poly Haven boulders, cliff faces, stumps and dead trunks on the terrain near the cliffs
   (`CourseDecoration`).
 
-**Time of day** (`PatataWildsLook`, applied by `LookBuilder` after the shared look; never set by hand): five
-`TimeOfDayPreset` assets (`Assets/Settings/Look/TimeOfDay`: sun, trilight, haze, sky, a grade volume profile, wind), each
+**Time of day** (`NatureDayLook`, applied by `LookBuilder` after the shared look with each course's table: `PatataWildsLook`,
+`PatataCanopyLook`; never set by hand): five `TimeOfDayPreset` assets per course (`Assets/Settings/Look/TimeOfDay`, and its
+`Canopy` folder: sun, trilight, haze, mist, light shafts, sky, a grade volume profile, wind), each
 sky's photographed sun measured once (`MeasureSun`, a latitude-longitude unwrap) so the sky turns to put it where the
 preset's sun is; the scene shows dawn and gets a `TimeOfDayBlender` rig with one global grade volume per preset.
 `TimeOfDayBlender` (presentation only) keys the time on `RunManager.CurrentCheckpoint` (decided by the host, mirrored):
@@ -1901,6 +1916,15 @@ dawn at the start, dusk at checkpoint 25, a step forward blended over `GameTunin
 back or a jump bigger than `timeOfDaySnapActs` (a restart, a practice start, a late join) shown at once; a section reset
 keeps the checkpoint, so it never changes the light. It interpolates the sun, the ambient, the fog, the two-cubemap sky,
 the grade weights and the wind, and switches the reflected sky at mid-blend. No baking, no realtime probe.
+
+**Height mist** (`HotPatataFog.hlsl`, every HotPatata shader calls `HP_MixFog` in place of `MixFog`): under URP's linear haze,
+an exponential mist that pools on a floor and thins with height, integrated in closed form along the view ray. The floor
+follows the ground: a height texture over the course (a `MistField` baked by the course builder: PatataWilds' section beds and
+terrain, PatataCanopy's forest floor). The field pushes the shader globals (and clears them when disabled, so a scene without
+one is drawn exactly as before); `TimeOfDayBlender` pushes each frame the blended moment's colour, density, falloff, glow towards
+the sun and light-shaft strength; in the editor the field shows the first moment. Additive particles are dimmed by the mist,
+never tinted. Readability: at deck height, 40 m over PatataCanopy's floor, the mist veils a 14.5 m pass by less than 15 %, and
+the haze starts beyond 30 m.
 
 **Campfires** (`CampfirePresentation`): read `Checkpoint.Activated` only; catch over `campfireIgniteSeconds` (flames,
 an ember burst times 1 - flash reduction, a flickering light also scaled by flash reduction, smoke, a crackle); a checkpoint
@@ -1912,9 +1936,13 @@ it); the water has no planar reflection; the trees are cards, not scans; the syn
 recordings. Tests: `NatureLookTests`, `TimeOfDayTests`, `PatataWildsTests`. Views at dawn (as the editor shows the scene):
 [`images/patata-wilds`](images/patata-wilds). Decision: pending the owner's play-test.
 
-**PatataCanopy (M13)** uses the same look and day (`LookBuilder` applies `PatataWildsLook` to both scenes): decks are
-planks, cross walls upright log walls (`Nature_LogWall`), leaf roofs mossy branch bundles that cast no shadow (so the sun
-still reaches the decks), the oak bark; the gameplay cues (brambles, lasers, plates, spores, rings) keep their own
-materials. Its forest is placed prefabs, not a `FoliageSet`: no terrain, a flat forest floor 40 m down under the fog.
-Known limits: the roofs are boxes of logs, not foliage; about 1,000 tree prefabs (not instanced) are a performance risk to
-measure (M13.6).
+**PatataCanopy (M13, atmosphere M13.7)** uses the same nature look with its own, cooler day (`PatataCanopyLook`: a
+green-teal haze and mist, a softer sun, a paler sky, `_Saturation` on its `HotPatata/SkyBlend` copy): decks are planks,
+cross walls upright log walls (`Nature_LogWall`), leaf roofs a mat of leaves seen from below that casts no shadow, the oak
+bark; the gameplay cues (brambles, lasers, plates, spores, rings) keep their own materials. The sun carries a tiling leaf
+cookie (`LeafDapple.png`, 26 m, the deepest shade at 72 % light; `_LIGHT_COOKIES` in `HotPatata/Nature` and
+`HotPatata/Stylized`), swayed by `LeafDapple` with the wind. Its forest is one instanced `FoliageSet` over a terrain that
+follows the course (§4). Light shafts (`HotPatata/LightShaft`): a unit quad laid along the sun's direction bent towards the
+vertical (`_Vertical`) and turned to the camera, additive, faded near the camera, against geometry and far away, strength =
+the moment's `shaftStrength`. Known limits: the giants are generated cards and tubes, not scans; the shafts and cookie are
+not real volumetric light; 60 fps at 1080p with four players is to measure on a player build (M13.7).

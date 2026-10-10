@@ -29,7 +29,7 @@ playtest and cannot be closed by code.
 | Spike #87 industrial look | the full closed `IndustrialPlant` (11 rooms, 9 checkpoints, every obstacle) built in the industrial look, with a material library, anti-tiling and decals (ARCHITECTURE §25.2) | play-test, real textures per surface (optional), performance on a player build, adopt/revise/reject decision |
 | M11 Second course (#83) | factory built, then removed in the cleanup; its layouts became the industrial plant's | |
 | M12 Third course: PatataWilds | built: 25 sections in 5 acts, nature look from Poly Haven, campfire checkpoints, dawn to dusk; automated verification in M12.8 | 2-player 20+ min clear, host + 3 clients, 1080p/60 fps, readability review |
-| M13 Fourth course: PatataCanopy | built: 25 sections in 5 acts in the tree tops, every section with a contract; three new generic systems (body screen, hands-free plate, switch) and the section-contract check; automated verification in M13.6 | 2-player clear, every puzzle forced and fun at 2 and at 4, host + 3 clients, 1080p/60 fps, readability review |
+| M13 Fourth course: PatataCanopy | built: 25 sections in 5 acts in the tree tops, every section with a contract; three new generic systems (body screen, hands-free plate, switch) and the section-contract check; automated verification in M13.6; atmosphere pass built (M13.7: its own cooler day, a height mist, giant trees, a forest floor that follows the course, leaf roofs, god rays, fireflies) | 2-player clear, every puzzle forced and fun at 2 and at 4, host + 3 clients, 1080p/60 fps, readability review (in the mist) |
 | M14 PatataWilds contracts | not started | give every PatataWilds section a contract and close its shortcuts (M14) |
 | Cleanup and generic obstacles | done: only `PatataWilds`, `IndustrialPlant` and `PassSandbox` (plus `Bootstrap`) remain; every obstacle system is generic (references, `IObstacleState`, `ObstacleVisualDriver`, `CustomVisual`, overridable poses, `ObstaclePrefabValidator`), with two example variants; the obstacle catalogue is `docs/OBSTACLES.md` | |
 
@@ -1468,8 +1468,33 @@ Acceptance criteria:
   transit catches, the plate/ring, switch and spore puzzles) and `CourseContractTests` pass;
 - [ ] a first clear by two players; every puzzle is solvable and forced with two players, and still fun with four;
 - [ ] host plus three clients online, through the whole course;
-- [ ] 60 fps at 1080p on a mid-range PC, four players (the forest is about 1,000 tree prefabs, not instanced: watch it);
+- [ ] 60 fps at 1080p on a mid-range PC, four players (the forest is instanced since M13.7; see its budget there);
 - [ ] readability review: brambles versus lasers, hands-free plates, rings over the void, spores, in every act's light.
+
+## M13.7 — Atmosphere
+
+The owner found the canopy "floating in the sky with the trees underneath": a chill, slightly foggy, packed forest with the
+course in the middle. Decoration and presentation only: no rule, collider, layer or pass changes (ARCHITECTURE §4, §25.3).
+
+Acceptance criteria:
+
+- [x] PatataCanopy has its own cooler day (`PatataCanopyLook` through `NatureDayLook`, presets in
+  `Assets/Settings/Look/TimeOfDay/Canopy`); PatataWilds keeps its warm day;
+- [x] a height mist (`HotPatataFog.hlsl`, `MistField`) pools on the forest floor: thick at dawn, thin at noon, back at sunset and
+  dusk; the floor shows faintly straight down; at deck height it veils the longest pass by less than 15 %; PatataWilds gets
+  a morning mist in its gorges and over the river; every other scene is drawn as before;
+- [x] the forest floor follows the course (about 40 m under each section's lowest floor); the posts under the decks are trunks
+  that reach it; the safety net lies under it;
+- [x] giant oaks and redwoods (70-95 m) beside the course, their crowns at least 12 m over its highest roof or floor and a strip
+  of sky left over the open sections; more giants, an understory and the ground cover out to the haze, all instanced
+  (`FoliageSet`); none within the decoration clearance of a pass arc;
+- [x] leaf roofs read as a ceiling of leaves from below (nothing under their underside, nothing under another roof's);
+- [x] god rays (`HotPatata/LightShaft`) clear of every pass arc whatever the time of day, dust motes, falling leaves, fireflies
+  from sunset (`AtmosphereFade`), a subtle leaf cookie on the sun (`LeafDapple`);
+- [x] `PatataCanopyTests`, `PatataWildsTests`, `NatureLookTests`, `TimeOfDayTests` and `CourseContractTests` pass;
+- [ ] the owner's look review in play, every act's light; readability of throws and teammates in the mist (with M13.6);
+- [ ] 60 fps at 1080p on a mid-range PC with four players (measured in the editor at dawn, act 1: about 7,000 draw calls,
+  9.5M triangles, 15 ms CPU and 10 ms GPU on the dev machine, editor overhead included).
 
 ---
 
