@@ -77,6 +77,8 @@ namespace HotPatata
         public PlayerStamp Stamp => stamp.Value;
         /// <summary>This copy is drawn (partly) relative to a moving carrier.</summary>
         public bool RebuiltOnCarrier => rider.Active;
+        /// <summary>Remote copy: the world position NGO replicated this frame, before any rebuilding on a carrier (diagnostics).</summary>
+        public Vector3 ReplicatedPosition => lastReplicated;
 
         public override void OnNetworkSpawn()
         {
