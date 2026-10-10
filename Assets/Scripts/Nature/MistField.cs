@@ -39,6 +39,13 @@ namespace HotPatata
             Push(color, density, falloff, glow, shafts);
         }
 
+        // In the editor (no day running) the still mist is pushed every frame: a rebuilt floor texture or a reload never leaves the
+        // shaders pointing at a texture that is gone. In play the blender pushes the blended moment instead.
+        void Update()
+        {
+            if (!Application.isPlaying) Push(color, density, falloff, glow, shafts);
+        }
+
         void OnDisable()
         {
             if (Active == this) Active = null;

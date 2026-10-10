@@ -103,6 +103,7 @@ namespace HotPatata.Editor
         static readonly List<Footprint> Footprints = new List<Footprint>();
         static readonly List<Vector3> Route = new List<Vector3>();
         static readonly List<bool> Outdoors = new List<bool>();
+        static readonly List<int> SectionActs = new List<int>();
         static int currentAct;
         static float killTop;            // the current section's kill plane (local): falls die here, retracted bridges hide under it
 
@@ -122,7 +123,9 @@ namespace HotPatata.Editor
             Route.Clear();
             Outdoors.Clear();
             Footprints.Clear();
+            SectionActs.Clear();
             Supports.Clear();
+            Roofs.Clear();
             var rooms = new List<Transform>();
             int restyled = 0;
             RebuildGroup(section, GroupName, group =>
@@ -157,6 +160,7 @@ namespace HotPatata.Editor
                         Route.Add(origin + rotation * new Vector3(0, spec.dy + 1f, spec.length * 0.85f));
                         Outdoors.Add(spec.outdoors);
                         Outdoors.Add(spec.outdoors);
+                        SectionActs.Add(spec.act);
                         Footprints.Add(new Footprint { origin = origin, yaw = yaw, length = spec.length, floorY = origin.y + lowest });
                         origin += rotation * Vector3.forward * spec.length + Vector3.up * spec.dy;
                         yaw += 90f * spec.turn;
@@ -165,6 +169,7 @@ namespace HotPatata.Editor
                     Physics.SyncTransforms();
                     MeasureTops(rooms);
                     string dressing; using (UseTheme(Crown)) dressing = Forest(group);
+                    dressing += ", " + Atmosphere(group);
                     SafetyNet(group);
                     Debug.Log("[PatataCanopyBuilder] " + dressing);
                 }
@@ -241,11 +246,20 @@ namespace HotPatata.Editor
         static void Support(Transform p, Vector3 top, float thickness) =>
             Supports.Add(new SupportRequest { parent = p, localTop = top, thickness = thickness });
 
-        /// <summary>A leaf roof whose underside is at <paramref name="y"/> (a ceiling for the passes, CourseCeiling). It casts no shadow: the sun still dapples the decks.</summary>
+        /// <summary>
+        /// A leaf roof whose underside is at <paramref name="y"/> (a ceiling for the passes, CourseCeiling): a dense mat of leaves, solid to the
+        /// eye from below, with tufts of leaves on top (<see cref="Forest"/>, never under its underside). It casts no shadow: the sun's
+        /// leaf cookie dapples the decks.
+        /// </summary>
         static GameObject LeafRoof(Transform p, string name, float x0, float x1, float z0, float z1, float y)
         {
             var go = Block(p, name, new Vector3((x0 + x1) / 2, y + 0.5f, (z0 + z1) / 2), new Vector3(x1 - x0, 1, z1 - z0), KitRole.Ceiling);
-            CourseKit.Skin(go.transform.Find("Visual").gameObject, KitShape.Logs, KitColor.Neutral, Mat(CurrentTheme.Ceiling));   // a roof of mossy branches
+            // the opaque mat is the top 40 % of the box; the lower 60 cm hold the leaf cards seen from below (Forest)
+            var visual = go.transform.Find("Visual");
+            visual.localPosition = new Vector3(0f, 0.3f, 0f);
+            visual.localScale = new Vector3(1f, 0.4f, 1f);
+            CourseKit.Skin(visual.gameObject, KitShape.BevelBox, KitColor.Neutral, NatureMaterialBuilder.Load(NatureMaterialBuilder.LeafCanopyName));
+            Roofs.Add(go.transform);
             go.AddComponent<CourseCeiling>();
             foreach (var r in go.GetComponentsInChildren<Renderer>()) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             return go;

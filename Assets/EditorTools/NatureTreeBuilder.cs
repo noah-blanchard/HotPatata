@@ -87,7 +87,62 @@ namespace HotPatata.Editor
             for (int v = 0; v < DeckTrunkRadius.Length; v++)
                 for (int lod = 0; lod < 2; lod++)
                     Save(DeckTrunk(v, lod).ToMesh($"DeckTrunk_{v}_LOD{lod}", true), MeshPath("DeckTrunk", v, lod));
+            for (int v = 0; v < Variants; v++)
+                for (int lod = 0; lod < 2; lod++)
+                {
+                    Save(CanopyTuft(v, lod).ToMesh($"CanopyTuft_{v}_LOD{lod}"), MeshPath("CanopyTuft", v, lod));
+                    Save(CanopyMat(v, lod).ToMesh($"CanopyMat_{v}_LOD{lod}"), MeshPath("CanopyMat", v, lod));
+                }
             AssetDatabase.SaveAssets();
+        }
+
+        /// <summary>
+        /// The underside of a leaf roof (PatataCanopy): a 6 m tile of leaf cards lying almost flat, overlapping three deep, every
+        /// corner between 0.03 and 0.57 m above the tile's origin (the roof's underside), facing down, so from below the roof reads as
+        /// a ceiling of leaves.
+        /// </summary>
+        static Builder CanopyMat(int variant, int lod)
+        {
+            var rng = new Random(7500 + variant * 13);
+            var b = new Builder { Height = 1f };
+            int cards = lod == 0 ? 34 : 12;
+            var above = new Vector3(0f, 3f, 0f);   // normals point out of the roof: down
+            for (int k = 0; k < cards; k++)
+            {
+                float yaw = R(rng, 0f, Mathf.PI * 2f);
+                var up = new Vector3(Mathf.Cos(yaw), R(rng, -0.11f, 0.11f), Mathf.Sin(yaw)).normalized;
+                var side = Vector3.Cross(up, Vector3.up).normalized;
+                float size = lod == 0 ? R(rng, 1.7f, 2.3f) : R(rng, 2.8f, 3.4f);
+                var foot = new Vector3(R(rng, -3f, 3f), 0.3f, R(rng, -3f, 3f)) - up * size * 0.5f;
+                foot.y = 0.3f - up.y * size * 0.5f;
+                b.Card(foot, up, side, size, size, above, 1f, 0.2f);
+            }
+            return b;
+        }
+
+        /// <summary>
+        /// A tuft of leaves for the top of a leaf roof (PatataCanopy): a low dome of cards about 6 m wide, every card above its
+        /// base (nothing ever hangs under the roof's underside, where the passes are).
+        /// </summary>
+        static Builder CanopyTuft(int variant, int lod)
+        {
+            var rng = new Random(7300 + variant * 11);
+            var b = new Builder { Height = 3f };
+            int cards = lod == 0 ? 42 : 14;
+            var center = new Vector3(0f, -1f, 0f);
+            for (int k = 0; k < cards; k++)
+            {
+                float angle = R(rng, 0f, Mathf.PI * 2f), r = Mathf.Sqrt(R(rng, 0f, 1f)) * 3f;
+                var foot = new Vector3(Mathf.Cos(angle) * r, R(rng, 0.05f, 0.6f) * (1f - r / 3.4f) + 0.05f, Mathf.Sin(angle) * r);
+                var outward = new Vector3(foot.x, 0f, foot.z).normalized;
+                var up = (Vector3.up * R(rng, 0.6f, 1.2f) + outward * (r / 3f) * 0.8f + new Vector3(R(rng, -0.2f, 0.2f), 0f, R(rng, -0.2f, 0.2f))).normalized;
+                var side = Vector3.Cross(up, Vector3.up);
+                if (side.sqrMagnitude < 1e-3f) side = Vector3.right;
+                side = side.normalized;   // horizontal: no corner dips under the card's foot
+                float size = lod == 0 ? R(rng, 1.6f, 2.4f) : R(rng, 2.6f, 3.2f);
+                b.Card(foot, up, side, size, size, center, 1f, 0.9f);
+            }
+            return b;
         }
 
         /// <summary>A giant's roots, bole and crown (the same seed, so the parts meet).</summary>

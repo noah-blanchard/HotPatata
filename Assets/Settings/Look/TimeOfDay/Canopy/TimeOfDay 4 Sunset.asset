@@ -24,7 +24,7 @@ MonoBehaviour:
   fogStart: 30
   fogEnd: 220
   mistColor: {r: 0.72, g: 0.62, b: 0.58, a: 1}
-  mistDensity: 0.11
+  mistDensity: 0.085
   mistFalloff: 14
   mistGlow: 0.55
   shaftStrength: 0.6

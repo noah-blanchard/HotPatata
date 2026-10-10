@@ -35,6 +35,7 @@ namespace HotPatata.Editor
         }
 
         static readonly List<SupportRequest> Supports = new List<SupportRequest>();
+        static readonly List<Transform> Roofs = new List<Transform>();   // the leaf roofs, dressed with tufts once placed
 
         /// <summary>The forest floor: a heightfield of TerrainCell cells.</summary>
         sealed class Ground
@@ -123,7 +124,7 @@ namespace HotPatata.Editor
             var (mistFloor, mistRect) = NatureTerrainMesh.BakeMistFloor(g.Sample, Rect.MinMaxRect(minX, minZ, maxX, maxZ), 256, 3, MistFloorPath);
             var mist = new GameObject("Mist");
             mist.transform.SetParent(root, false);
-            mist.AddComponent<MistField>().Configure(mistFloor, mistRect, 0.95f);
+            mist.AddComponent<MistField>().Configure(mistFloor, mistRect, 0.85f);   // the floor always shows a little through it
 
             string forest = Plant(root);
             return $"forest floor {chunks} chunks, {forest}";
@@ -199,7 +200,7 @@ namespace HotPatata.Editor
             var rects = Footprints.Select(f => FootRect(f)).ToArray();
 
             // ---- batches
-            float[] giantNear = { 90f, 260f, 750f }, rootsRange = { 70f, 200f };
+            float[] giantNear = { 70f, 190f, 420f }, rootsRange = { 55f, 140f };   // beyond ~400 m the haze has them
             bool[] giantShadows = { true, true, false };
             var giants = new Dictionary<NatureTreeBuilder.Giant, FoliageSet.Batch[][]>();
             foreach (NatureTreeBuilder.Giant kind in System.Enum.GetValues(typeof(NatureTreeBuilder.Giant)))
@@ -216,7 +217,7 @@ namespace HotPatata.Editor
                         var materials = part == 2 ? new[] { NatureMaterialBuilder.Load(bark), NatureMaterialBuilder.Load(leaves) } : new[] { NatureMaterialBuilder.Load(bark) };
                         var batch = NatureDressing.Batch(set, $"{k} {v}", lods, materials, part == 0 ? rootsRange : giantNear,
                                                          part == 0 ? new[] { false, false } : giantShadows, 0.75f, 1.4f);
-                        batch.shadowDistance = 140f;
+                        batch.shadowDistance = 90f;
                         perVariant[v][part] = batch;
                     }
                 }
@@ -225,7 +226,7 @@ namespace HotPatata.Editor
             var deckTrunks = Enumerable.Range(0, NatureTreeBuilder.DeckTrunkRadius.Length).Select(v =>
             {
                 var b = NatureDressing.Batch(set, "DeckTrunk " + v, new[] { M("DeckTrunk", v, 0), M("DeckTrunk", v, 1) }, new[] { NatureMaterialBuilder.Load("Nature_PineBark") },
-                                             new[] { 110f, 420f }, new[] { true, false }, 0.6f, 1.6f);
+                                             new[] { 90f, 300f }, new[] { true, false }, 0.6f, 1.6f);
                 b.shadowDistance = 90f;
                 return b;
             }).ToArray();
@@ -233,20 +234,20 @@ namespace HotPatata.Editor
                 .ToDictionary(s => s, s => Enumerable.Range(0, NatureTreeBuilder.Variants).Select(v =>
                 {
                     var lods = new[] { M(s.ToString(), v, 0), M(s.ToString(), v, 1), M(s.ToString(), v, 2) };
-                    var b = NatureDressing.Batch(set, $"{s} {v}", lods, NatureTreeBuilder.MaterialsFor(s, lods[0]), new[] { 70f, 170f, 420f }, new[] { true, false, false }, 1.4f, 2.8f);
+                    var b = NatureDressing.Batch(set, $"{s} {v}", lods, NatureTreeBuilder.MaterialsFor(s, lods[0]), new[] { 55f, 140f, 300f }, new[] { true, false, false }, 1.4f, 2.8f);
                     b.shadowDistance = 60f;
                     return b;
                 }).ToArray());
             var bushes = Enumerable.Range(0, NatureTreeBuilder.Variants).Select(v =>
             {
                 var lods = new[] { M("Bush", v, 0), M("Bush", v, 1), M("Bush", v, 2) };
-                return NatureDressing.Batch(set, "Bush " + v, lods, NatureTreeBuilder.MaterialsFor(NatureTreeBuilder.Species.Bush, lods[0]), new[] { 55f, 120f, 220f }, new[] { false, false, false }, 1f, 2f);
+                return NatureDressing.Batch(set, "Bush " + v, lods, NatureTreeBuilder.MaterialsFor(NatureTreeBuilder.Species.Bush, lods[0]), new[] { 45f, 100f, 170f }, new[] { false, false, false }, 1f, 2f);
             }).ToArray();
             var ferns = Enumerable.Range(0, NatureTreeBuilder.Variants).Select(v =>
-                NatureDressing.Batch(set, "Fern " + v, new[] { M("Fern", v, 0) }, new[] { NatureMaterialBuilder.Load("Nature_Fern") }, new[] { 90f }, new[] { false }, 1.8f, 3.4f)).ToArray();
+                NatureDressing.Batch(set, "Fern " + v, new[] { M("Fern", v, 0) }, new[] { NatureMaterialBuilder.Load("Nature_Fern") }, new[] { 75f }, new[] { false }, 1.8f, 3.4f)).ToArray();
             var rocks = Enumerable.Range(0, NatureTreeBuilder.Variants).Select(v =>
-                NatureDressing.Batch(set, "Rock " + v, new[] { M("Rock", v, 0), M("Rock", v, 1) }, new[] { NatureMaterialBuilder.Load("Nature_MossyRock") }, new[] { 70f, 220f }, new[] { false, false }, 0.8f, 3f)).ToArray();
-            float[] mid = { 60f, 150f, 300f };
+                NatureDressing.Batch(set, "Rock " + v, new[] { M("Rock", v, 0), M("Rock", v, 1) }, new[] { NatureMaterialBuilder.Load("Nature_MossyRock") }, new[] { 60f, 160f }, new[] { false, false }, 0.8f, 3f)).ToArray();
+            float[] mid = { 50f, 120f, 220f };
             int[] lodsMid = { 2, 4, 6 };
             bool[] noShadow = { false, false, false };
             var logs = NatureDressing.ModelBatches(set, "dead_tree_trunk", "Nature_Prop_DeadTrunk1", 1.2f, mid, lodsMid, noShadow, 1.2f, 2.4f)
@@ -266,6 +267,44 @@ namespace HotPatata.Editor
                 int v = s.thickness < 1.6f ? 0 : s.thickness < 2.4f ? 1 : 2;
                 bins.Add(deckTrunks[v], new Vector3(top.x, foot, top.z), R(0f, 360f), scale);
                 posts++;
+            }
+
+            // ---- tufts of leaves over the leaf roofs (from their top down to their underside at most, never under it)
+            var tufts = Enumerable.Range(0, NatureTreeBuilder.Variants).Select(v =>
+                NatureDressing.Batch(set, "CanopyTuft " + v, new[] { M("CanopyTuft", v, 0), M("CanopyTuft", v, 1) }, new[] { NatureMaterialBuilder.Load("Nature_Leaves_Broad") },
+                                     new[] { 70f, 240f }, new[] { false, false }, 0.8f, 1.3f)).ToArray();
+            var mats = Enumerable.Range(0, NatureTreeBuilder.Variants).Select(v =>
+                NatureDressing.Batch(set, "CanopyMat " + v, new[] { M("CanopyMat", v, 0), M("CanopyMat", v, 1) }, new[] { NatureMaterialBuilder.Load("Nature_Leaves_Broad") },
+                                     new[] { 60f, 220f }, new[] { false, false }, 0.95f, 1.05f)).ToArray();
+            int roofTufts = 0;
+            var roofBoxes = Roofs.Select(r => r.GetComponent<Collider>().bounds).ToList();
+            // a leaf card never reaches under another roof's underside (two roofs step past each other in the oak and the last act)
+            bool UnderAnotherRoof(Bounds own, Bounds leaves) => roofBoxes.Any(r => r != own && leaves.max.x > r.min.x && leaves.min.x < r.max.x
+                && leaves.max.z > r.min.z && leaves.min.z < r.max.z && leaves.min.y < r.min.y - 0.01f && leaves.max.y > r.min.y - PassCorridor.CeilingMargin);
+            foreach (var roof in Roofs)
+            {
+                var box = roof.GetComponent<Collider>().bounds;
+                // the underside: leaf cards from the underside up (never under it), tiled edge to edge
+                for (float x = box.min.x + 2.5f; x < box.max.x + 0.5f; x += 4.5f)
+                    for (float z = box.min.z + 2.5f; z < box.max.z + 0.5f; z += 4.5f)
+                    {
+                        var at = new Vector3(Mathf.Min(x + R(-0.8f, 0.8f), box.max.x - 2f), box.min.y, Mathf.Min(z + R(-0.8f, 0.8f), box.max.z - 2f));
+                        var mat = Pick(mats);
+                        float matYaw = R(0f, 360f);
+                        if (!NatureDressing.TouchesAnArc(mat, at, matYaw, 1f) && !UnderAnotherRoof(box, WorldBox(mat, at, matYaw, 1f))) bins.Add(mat, at, matYaw, 1f);
+                    }
+                for (float x = box.min.x + 1.5f; x < box.max.x - 1.5f; x += 4.5f)
+                    for (float z = box.min.z + 1.5f; z < box.max.z - 1.5f; z += 4.5f)
+                    {
+                        bool edge = x - box.min.x < 4.5f || box.max.x - x < 4.5f || z - box.min.z < 4.5f || box.max.z - z < 4.5f;
+                        var at = new Vector3(Mathf.Clamp(x + R(-1.2f, 1.2f), box.min.x + 0.2f, box.max.x - 0.2f), edge ? box.min.y + 0.15f : box.max.y - 0.3f,
+                                             Mathf.Clamp(z + R(-1.2f, 1.2f), box.min.z + 0.2f, box.max.z - 0.2f));
+                        var batch = Pick(tufts);
+                        float yaw = R(0f, 360f), scale = R(0.8f, 1.3f);
+                        if (NatureDressing.TouchesAnArc(batch, at, yaw, scale) || UnderAnotherRoof(box, WorldBox(batch, at, yaw, scale))) continue;
+                        bins.Add(batch, at, yaw, scale);
+                        roofTufts++;
+                    }
             }
 
             // ---- the giants
@@ -391,7 +430,7 @@ namespace HotPatata.Editor
             var go = new GameObject("Foliage");
             go.transform.SetParent(root, false);
             go.AddComponent<FoliageInstancer>().Configure(set);
-            return $"{posts} deck trunks, {aisle} giants beside the course, {forest} in the forest, {under} understory trees, {cover} plants and rocks ({bins.Count} instances)";
+            return $"{posts} deck trunks, {roofTufts} roof tufts, {aisle} giants beside the course, {forest} in the forest, {under} understory trees, {cover} plants and rocks ({bins.Count} instances)";
         }
     }
 }

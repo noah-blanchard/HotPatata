@@ -131,7 +131,7 @@ namespace HotPatata.Editor
 
         // gameplay variants (Material Variants: they inherit their parent's textures and override a few values)
         public const string HazardName = "Nature_Hazard", FallingName = "Nature_Falling", BeltName = "Nature_LogDrive",
-            LanternName = "Nature_LanternGlass", EmberName = "Nature_Ember", BlazeName = "Nature_Blaze";
+            LanternName = "Nature_LanternGlass", EmberName = "Nature_Ember", BlazeName = "Nature_Blaze", LeafCanopyName = "Nature_LeafCanopy";
         public static string PipeName(int slot) => "Nature_Pipe_" + slot;
         // the tube and cannon slot colours, as in the KayKit and industrial kits (each mouth-exit pair: a colour and a pip count)
         static readonly Color[] PipeColors = { new Color(0.25f, 0.85f, 0.45f), new Color(0.62f, 0.45f, 1f), new Color(1f, 0.6f, 0.8f) };
@@ -179,6 +179,13 @@ namespace HotPatata.Editor
                 m.SetFloat("_BaseSaturation", 0.75f);
             });
             Variant(BeltName, Load("Nature_PineBark"), refill, m => m.SetColor("_BaseColor", new Color(0.95f, 0.9f, 0.85f)));
+            Variant(LeafCanopyName, Load("Nature_ForestLeaves"), refill, m =>
+            {
+                // PatataCanopy's leaf roofs seen from under them: a dense mat of green leaves (it reads as solid: the bomb never passes)
+                m.SetColor("_BaseColor", new Color(0.24f, 0.33f, 0.17f));   // the shade behind the leaf cards of the underside
+                m.SetFloat("_BaseSaturation", 1.1f);
+                m.SetFloat("_TileSize", 2f);
+            });
             Variant(BlazeName, roughWood, refill, m =>
             {
                 // a painted trail blaze (wayfinding): bright, unlit-looking paint on wood

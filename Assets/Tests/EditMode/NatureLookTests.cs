@@ -140,5 +140,42 @@ namespace HotPatata.Tests
                     finally { Object.DestroyImmediate(a); Object.DestroyImmediate(b); }
                 }
         }
+
+        [Test]
+        public void Giants_TowerOverTheDecks_InTightParts_WithinTheirBudgets()
+        {
+            foreach (NatureTreeBuilder.Giant g in System.Enum.GetValues(typeof(NatureTreeBuilder.Giant)))
+                for (int v = 0; v < NatureTreeBuilder.Variants; v++)
+                    for (int lod = 0; lod < 3; lod++)
+                    {
+                        var parts = Enumerable.Range(0, 3).Select(p => AssetDatabase.LoadAssetAtPath<Mesh>(NatureTreeBuilder.MeshPath(NatureTreeBuilder.GiantKind(g, p), v, lod))).ToArray();
+                        string name = $"{g} {v} LOD{lod}";
+                        Assert.IsNotNull(parts[1], name + " bole (HotPatata/Nature/Build Canopy Giants)");
+                        Assert.IsNotNull(parts[2], name + " crown");
+                        if (lod < 2) Assert.IsNotNull(parts[0], name + " roots");
+                        int triangles = parts.Where(m => m != null).Sum(m => Enumerable.Range(0, m.subMeshCount).Sum(i => m.GetTriangles(i).Length)) / 3;
+                        Assert.LessOrEqual(triangles, NatureTreeBuilder.LodBudget[lod], name);
+                        var bole = parts[1].bounds;
+                        var crown = parts[2].bounds;
+                        Assert.Greater(crown.max.y, 70f, name + " stands 70 m and more");
+                        Assert.Greater(crown.min.y, 45f, name + ": its crown starts high above the decks (40 m above the floor)");
+                        Assert.Less(Mathf.Max(bole.extents.x, bole.extents.z), 4.5f, name + ": a tight bole, so it stands right beside the course");
+                        if (parts[0] != null) Assert.Less(parts[0].bounds.max.y, 12f, name + ": the roots stay on the ground");
+                    }
+        }
+
+        [Test]
+        public void LeafRoofCards_NeverHangUnderTheirOrigin()
+        {
+            foreach (var kind in new[] { "CanopyMat", "CanopyTuft" })
+                for (int v = 0; v < NatureTreeBuilder.Variants; v++)
+                    for (int lod = 0; lod < 2; lod++)
+                    {
+                        var mesh = AssetDatabase.LoadAssetAtPath<Mesh>(NatureTreeBuilder.MeshPath(kind, v, lod));
+                        Assert.IsNotNull(mesh, kind + " " + v);
+                        Assert.GreaterOrEqual(mesh.bounds.min.y, 0f, kind + " " + v + ": nothing under the roof's underside, where the passes are");
+                        if (kind == "CanopyMat") Assert.LessOrEqual(mesh.bounds.max.y, 0.6f, "the underside's cards stay inside the roof's lower 60 cm");
+                    }
+        }
     }
 }
