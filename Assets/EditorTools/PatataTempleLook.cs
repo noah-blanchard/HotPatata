@@ -7,7 +7,7 @@ namespace HotPatata.Editor
     /// jungle day in five moments over three acts. A misty golden dawn on the forecourt (act 1), a white, hard noon in the three wings
     /// (act 2), then the air grows heavy and a tropical storm closes in over the sanctuary (act 3): a low, dark, green-grey sky, a weak
     /// sun, a near haze. The mist pools in the gorge 40 m under the stone (its <see cref="MistField"/> follows the jungle floor): thick
-    /// at dawn and in the storm, thin at noon. The storm's rain and lightning are presentation only (TempleStorm): no
+    /// at dawn and in the storm, thin at noon. The storm's rain and lightning are presentation only (<see cref="TempleStorm"/>): no
     /// wind bends a flight (spec §17.2) and every flash honours <c>flashReduction</c>. Never set by hand: change this table and re-apply.
     /// </summary>
     public static class PatataTempleLook

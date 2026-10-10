@@ -3,6 +3,7 @@ using System.Linq;
 using HotPatata;
 using UnityEditor;
 using UnityEngine;
+using static HotPatata.Editor.CourseKit;
 using Random = System.Random;
 
 namespace HotPatata.Editor
@@ -123,7 +124,66 @@ namespace HotPatata.Editor
             int pyramid = Pyramid(root, out var pyramidBox);
             int towers = Towers(root, pyramidBox);
             string plants = Plant(root, pyramidBox);
-            return $"valley floor {chunks} chunks, river {reaches} reaches, {columns} ruined columns, pyramid {pyramid} cells, {towers} towers, {plants}";
+            Storm(root);
+            return $"valley floor {chunks} chunks, river {reaches} reaches, {columns} ruined columns, pyramid {pyramid} cells, {towers} towers, {plants}, the storm";
+        }
+
+        /// <summary>
+        /// The last act's storm (<see cref="TempleStorm"/>): rain round the camera whose drops die on any solid (it never rains
+        /// under a roof), and a cold directional light for the lightning, off between flashes. Presentation only.
+        /// </summary>
+        static void Storm(Transform root)
+        {
+            var go = new GameObject("Storm");
+            go.transform.SetParent(root, false);
+            var rainGo = new GameObject("Rain");
+            rainGo.transform.SetParent(go.transform, false);
+            var rain = rainGo.AddComponent<ParticleSystem>();
+            rain.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            var main = rain.main;
+            main.loop = true;
+            main.startLifetime = 1.4f;
+            main.startSpeed = 0f;
+            main.startSize = 0.05f;
+            main.maxParticles = 6000;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.startColor = new Color(0.75f, 0.8f, 0.85f, 0.45f);
+            var emission = rain.emission;
+            emission.rateOverTime = 3200f;
+            var shape = rain.shape;
+            shape.shapeType = ParticleSystemShapeType.Box;
+            shape.scale = new Vector3(70f, 1f, 70f);
+            var velocity = rain.velocityOverLifetime;
+            velocity.enabled = true;
+            velocity.space = ParticleSystemSimulationSpace.World;
+            velocity.x = new ParticleSystem.MinMaxCurve(0f);
+            velocity.y = new ParticleSystem.MinMaxCurve(-22f);
+            velocity.z = new ParticleSystem.MinMaxCurve(0f);
+            var collision = rain.collision;
+            collision.enabled = true;
+            collision.type = ParticleSystemCollisionType.World;
+            collision.mode = ParticleSystemCollisionMode.Collision3D;
+            collision.quality = ParticleSystemCollisionQuality.Low;
+            collision.collidesWith = LayerMask.GetMask("Environment", "Hazard");
+            collision.lifetimeLoss = 1f;
+            var renderer = rainGo.GetComponent<ParticleSystemRenderer>();
+            renderer.renderMode = ParticleSystemRenderMode.Stretch;
+            renderer.velocityScale = 0.05f;
+            renderer.lengthScale = 1.5f;
+            renderer.sharedMaterial = MakeUnlitMaterial("Temple_Rain", new Color(0.78f, 0.82f, 0.88f, 0.4f), null, false);
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+            var flashGo = new GameObject("Lightning");
+            flashGo.transform.SetParent(go.transform, false);
+            flashGo.transform.rotation = Quaternion.Euler(62f, 200f, 0f);
+            var flash = flashGo.AddComponent<Light>();
+            flash.type = LightType.Directional;
+            flash.color = new Color(0.78f, 0.84f, 1f);
+            flash.intensity = 0f;
+            flash.shadows = LightShadows.None;
+
+            var tuning = AssetDatabase.LoadAssetAtPath<GameTuning>("Assets/ScriptableObjects/Tuning/GameTuning.asset");
+            go.AddComponent<TempleStorm>().Configure(tuning, rain, flash, AnimationCurve.EaseInOut(3.2f, 0f, 4f, 1f));
         }
 
         // ------------------------------------------------------------------ the river

@@ -103,6 +103,23 @@ namespace HotPatata.Tests
             Assert.That(Vector3.Distance(drawn, new Vector3(0f, 0f, -3f)), Is.LessThan(1e-3f), "the offset turns with the pivot");
         }
 
+        // ------------------------------------------------------------------ the temple's storm (presentation, spec §19)
+
+        [Test]
+        public void Lightning_RisesAndFalls_NeverAStep()
+        {
+            Assert.AreEqual(0f, TempleStorm.Pulse(-0.1f, 0.6f));
+            Assert.AreEqual(0f, TempleStorm.Pulse(0.7f, 0.6f));
+            Assert.Less(TempleStorm.Pulse(0.02f, 0.6f), 0.05f, "it starts dark");
+            float previous = 0f;
+            for (float t = 0f; t <= 0.6f; t += 0.01f)
+            {
+                float v = TempleStorm.Pulse(t, 0.6f);
+                Assert.Less(Mathf.Abs(v - previous), 0.2f, $"no jump at {t:F2} s");
+                previous = v;
+            }
+        }
+
         // ------------------------------------------------------------------ sun beam (§13.23)
 
         [Test]
