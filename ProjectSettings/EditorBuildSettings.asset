@@ -20,5 +20,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/PatataCanopy.unity
     guid: 1dcf5d3abfa65b0468c5295ec1aba504
+  - enabled: 1
+    path: Assets/Scenes/PatataTemple.unity
+    guid: 9c7743ab68929a347bc3f543376ec50b
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0

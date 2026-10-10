@@ -45,6 +45,9 @@ namespace HotPatata
         /// <summary>0 = closed, 1 = open.</summary>
         public float CurrentProgress => Progress(changeTime, fromProgress, opening, travelSeconds, SimulationClock.ServerNow);
         public Vector3 FrameDelta { get; private set; }
+        /// <summary>How far the moving part turned this frame (a pivot, a swinging gate): riders turn with it.</summary>
+        public Quaternion FrameRotation { get; private set; } = Quaternion.identity;
+        public Quaternion AnchorRotation => platform != null ? platform.rotation : transform.rotation;
 
         public int CarrierId { get; private set; }
         /// <summary>A switch (no moving part) carries nobody.</summary>
@@ -141,7 +144,13 @@ namespace HotPatata
             FrameDelta = initialised && delta.sqrMagnitude < 4f ? delta : Vector3.zero;
             platform.position = target;
             var rotation = RotationAt(waypointClosed, waypointOpen, p);
-            if (rotation.HasValue) platform.rotation = rotation.Value;
+            FrameRotation = Quaternion.identity;
+            if (rotation.HasValue)
+            {
+                var turn = rotation.Value * Quaternion.Inverse(platform.rotation);
+                if (initialised && Quaternion.Angle(Quaternion.identity, turn) < 45f) FrameRotation = turn;   // never swing riders with a snap
+                platform.rotation = rotation.Value;
+            }
             initialised = true;
 
             if (lethalWhileClosing != null) lethalWhileClosing.enabled = !opening && p > 0f && p < 1f;

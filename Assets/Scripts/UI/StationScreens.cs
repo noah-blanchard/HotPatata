@@ -261,6 +261,7 @@ namespace HotPatata
             Show(hostControls, host);
             Show(waiting, !host);
             levelName.text = MenuParts.LevelSummary(Bootstrap);
+            start.SetEnabled(Bootstrap.LobbyHasEnoughPlayers);   // a level for three waits for its third player
 
             var players = Bootstrap.LobbyPlayers();
             string signature = string.Join("|", players.Select(p => p.Label + p.IsHost + p.IsYou)) + "/" + Bootstrap.LobbyMaxPlayers;

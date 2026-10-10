@@ -99,7 +99,8 @@ try {
         $hdr = $files.hdri.($h.res).hdr
         if ($null -eq $hdr) { Write-Warning "$($h.id): no HDR at $($h.res)"; continue }
         Save-File $hdr.url (Join-Path $ProjectRoot "Assets/Art/Sky/HDRI/$([IO.Path]::GetFileName($hdr.url))")
-        Add-Credit 'HDRI' $h.id "PatataWilds act $($h.act) sky ($($h.res))"
+        $used = if ($h.used) { "$($h.used) ($($h.res))" } else { "PatataWilds act $($h.act) sky ($($h.res))" }
+        Add-Credit 'HDRI' $h.id $used
     }
 }
 finally {
