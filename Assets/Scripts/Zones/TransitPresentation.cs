@@ -34,7 +34,7 @@ namespace HotPatata
         void Update()
         {
             int active = transit.ActiveExit;
-            float left = active >= 0 ? (float)(transit.ReleaseAt - NetMode.ServerTime) : float.MaxValue;
+            float left = active >= 0 ? (float)(transit.ReleaseAt - SimulationClock.ServerNow) : float.MaxValue;
             for (int i = 0; i < exitLamps.Length; i++)
             {
                 var lamp = exitLamps[i];

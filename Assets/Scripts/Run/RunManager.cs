@@ -49,8 +49,10 @@ namespace HotPatata
 
         public RunState State => Mirror ? netState.State : state;
         public int ResetCount => Mirror ? netState.ResetCount : resetCount;
-        /// <summary>Seconds since the current section attempt began; the time base for level motion.</summary>
-        public float SectionTime => (float)(NetMode.ServerTime - (Mirror ? netState.SectionStart : sectionStart));
+        /// <summary>Server time at which the current section attempt began.</summary>
+        public double SectionStart => Mirror ? netState.SectionStart : sectionStart;
+        /// <summary>Seconds since the current section attempt began; the time base for level motion (<see cref="SimulationClock"/>).</summary>
+        public float SectionTime => SimulationClock.SectionTime;
         /// <summary>Total run time; frozen at completion.</summary>
         public float RunTime => Mirror ? netState.RunTime : runTime;
         public Checkpoint CurrentCheckpoint => Mirror ? CheckpointById(netState.CheckpointId) : checkpoint;
@@ -61,7 +63,11 @@ namespace HotPatata
         public event Action<Checkpoint> CheckpointActivated;
         public event Action<float> RunCompleted;
 
-        void Awake() => Instance = this;
+        void Awake()
+        {
+            Instance = this;
+            SimulationClock.Configure(tuning);
+        }
 
         void Start()
         {

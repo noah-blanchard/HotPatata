@@ -32,7 +32,7 @@ namespace HotPatata
 
         public double TriggerTime => triggerTime;
         /// <summary>Seconds since the platform was triggered, or -1 while it stands.</summary>
-        protected double Elapsed => triggerTime < 0.0 ? -1.0 : NetMode.ServerTime - triggerTime;
+        protected double Elapsed => triggerTime < 0.0 ? -1.0 : SimulationClock.ServerNow - triggerTime;
         public Transform Body => body;
         public Collider Trigger => trigger;
         public float WarningDelay => warningDelay;

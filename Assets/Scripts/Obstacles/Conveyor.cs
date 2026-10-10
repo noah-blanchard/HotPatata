@@ -31,6 +31,11 @@ namespace HotPatata
 
         public Vector3 FrameDelta => Velocity * Time.deltaTime;
 
+        // The belt itself never moves: a rider's world position already matches on every machine (no relative sync).
+        public int CarrierId => 0;
+        public bool Moves => false;
+        public Vector3 AnchorPosition => transform.position;
+
         void OnEnable() => ApplyScroll();
 
         void OnValidate() => ApplyScroll();

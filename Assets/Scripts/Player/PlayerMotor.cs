@@ -52,6 +52,8 @@ namespace HotPatata
         float mantleProgress, mantleExitSpeed;
 
         public bool Grounded { get; private set; }
+        /// <summary>The carrier this player stood on during this frame's move (null when airborne or on plain ground). Owner only.</summary>
+        public IPlatformCarrier RidingCarrier => Grounded && ridingPlatform is UnityEngine.Object c && c != null ? ridingPlatform : null;
         public Vector3 Velocity => horizontalVelocity + Vector3.up * verticalVelocity;
         public MoveState State { get; private set; } = MoveState.Air;
         /// <summary>The capsule is short: sliding, crouch-walking, or kept low by a ceiling.</summary>

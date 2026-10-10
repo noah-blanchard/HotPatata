@@ -204,6 +204,30 @@ namespace HotPatata
                  "Also the cap against abuse: the lag it can hide is about this value minus ~0.1 s.")]
         [Range(0f, 0.5f)] public float catchLagCompensation = 0.35f;
 
+        [Header("Network - riders on moving carriers (docs/netcode-deterministic-plan.md §2.3)")]
+        [Tooltip("Seconds a remote player takes to blend between their world position and their position rebuilt on a moving " +
+                 "platform, when they board it or leave it. 0 = snap.")]
+        [Range(0f, 0.5f)] public float riderBlendSeconds = 0.15f;
+        [Tooltip("How fast (1/s) a remote rider's offset on the platform follows the owner's updates. Higher = snappier, " +
+                 "lower = smoother steps while they walk on it.")]
+        [Min(1f)] public float riderOffsetSmoothing = 15f;
+        [Tooltip("Metres between a leaving rider's rebuilt and replicated positions above which it is a teleport: snap, " +
+                 "never sweep across the level.")]
+        [Min(0.5f)] public float riderSnapDistance = 3f;
+
+        [Header("Network - remote players vs moving hazards (docs/netcode-deterministic-plan.md §2.4)")]
+        [Tooltip("Online, host only. How far back (seconds) the host rewinds a moving hazard (rotating bar, crusher, closing " +
+                 "door) to judge a remote player at the time that player saw it. A client claiming an older time is judged " +
+                 "at this cap: it can only make itself older, never skip a hazard.")]
+        [Range(0f, 0.5f)] public float hazardRewindCap = 0.35f;
+
+        [Header("Network - simulation clock (docs/netcode-deterministic-plan.md §2.1)")]
+        [Tooltip("Client only. When NGO corrects its estimate of the server time, the level clock runs at most this much " +
+                 "faster or slower (0.1 = ±10%) until it has caught up, instead of jumping back.")]
+        [Range(0.01f, 0.5f)] public float clockMaxSlew = 0.1f;
+        [Tooltip("Client only. A clock error larger than this (seconds) is a real desync: snap instead of slewing.")]
+        [Range(0.1f, 2f)] public float clockSnapSeconds = 0.5f;
+
         [Header("Bomb - feedback")]
         [Tooltip("Seconds between beeps for the four fuse stages: calm, medium, urgent, critical.")]
         public float[] beepIntervals = { 1.0f, 0.55f, 0.28f, 0.12f };

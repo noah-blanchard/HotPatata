@@ -8,12 +8,16 @@ namespace HotPatata
     /// is flying toward it, it presses catch as it gets close. While not holding the bomb it can move in a
     /// <see cref="Pattern"/> so passes to a moving or jumping receiver can be practised alone.
     /// It plays through the same input path (and therefore the same network rules) as a human.
-    /// Enabled with the -patataBot command-line flag, or on the idle player in PassSandbox with F4 (dev builds).
+    /// Enabled with the -patataBot command-line flag, or on the idle player in PassSandbox with F4 (dev builds);
+    /// -patataBotMove &lt;pattern&gt; picks the pattern. <see cref="Pattern.Ride"/> is a network diagnostic
+    /// (docs/netcode-deterministic-plan.md stage 0): the bot hops onto the nearest moving platform and stays on it.
     /// </summary>
     [RequireComponent(typeof(Player))]
     public class PlayerBot : MonoBehaviour
     {
-        public enum Pattern { Stand, Strafe, Jump, RunAcross }
+        public enum Pattern { Stand, Strafe, Jump, RunAcross, Ride }
+
+        const float BoardAfterReset = 1f;   // seconds: let the host's respawn teleport land before boarding again
 
         public static bool Enabled;
         /// <summary>How bots move while waiting for a pass (solo practice).</summary>
@@ -30,6 +34,9 @@ namespace HotPatata
         float heldSince = -1f;
         float chargeUntil = -1f;
         float patternClock;
+        int boardedForReset = -1;
+        int seenResetCount = -1;
+        float resetSeenAt;
 
         void Awake() => player = GetComponent<Player>();
 
@@ -81,6 +88,11 @@ namespace HotPatata
         {
             patternClock += Time.deltaTime;
             input.Move = Vector2.zero;
+            if (Movement == Pattern.Ride)
+            {
+                Board();
+                return;   // stand still and let the platform carry us
+            }
             if (carrying) return;   // stand still to throw
 
             switch (Movement)
@@ -95,6 +107,55 @@ namespace HotPatata
                     input.Move = new Vector2(Mathf.Repeat(patternClock, 4f) < 2f ? 1f : -1f, 0f);
                     break;
             }
+        }
+
+        /// <summary>
+        /// <see cref="Pattern.Ride"/>: once per section attempt, teleport onto the top of the nearest moving carrier that is
+        /// not lethal (no crusher). Debug only; it goes through <see cref="Player.TeleportTo"/> like any teleport.
+        /// </summary>
+        void Board()
+        {
+            var run = RunManager.Instance;
+            if (run == null || run.State != RunState.Playing) return;
+            if (run.ResetCount != seenResetCount)
+            {
+                seenResetCount = run.ResetCount;
+                resetSeenAt = Time.time;
+            }
+            if (boardedForReset == seenResetCount || Time.time - resetSeenAt < BoardAfterReset) return;
+            if (!TryFindRide(out Vector3 top)) return;
+
+            boardedForReset = seenResetCount;
+            player.TeleportTo(top, transform.rotation);
+        }
+
+        bool TryFindRide(out Vector3 top)
+        {
+            top = default;
+            float best = float.MaxValue;
+            foreach (var carrier in CarrierRegistry.All)
+                if (carrier.Moves && carrier is MonoBehaviour mb)
+                    Consider(mb is MovingPlatform mp ? mp.Platform : mb is SignalActuator sa ? sa.Platform : null, ref best, ref top);
+            return best < float.MaxValue;
+        }
+
+        void Consider(Transform part, ref float best, ref Vector3 top)
+        {
+            if (part == null || part.GetComponentInChildren<KillZone>(true) != null) return;
+            bool any = false;
+            Bounds bounds = default;
+            foreach (var c in part.GetComponentsInChildren<Collider>())
+            {
+                if (c.isTrigger) continue;
+                if (any) bounds.Encapsulate(c.bounds);
+                else bounds = c.bounds;
+                any = true;
+            }
+            if (!any) return;
+            float d = (bounds.center - transform.position).sqrMagnitude;
+            if (d >= best) return;
+            best = d;
+            top = new Vector3(bounds.center.x, bounds.max.y + 0.05f, bounds.center.z);
         }
 
         /// <summary>The player in the next slot (wrapping), so with 3+ players passes also go client to client.</summary>

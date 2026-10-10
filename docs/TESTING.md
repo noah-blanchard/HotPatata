@@ -14,6 +14,10 @@
 | `AimAssistTests` | EditMode | release-time aim assist and arc maths (spec §8.3) |
 | `FlightHistoryTests` | EditMode | the host's flight record used for lag-compensated catches |
 | `MovingPlatformTests` | EditMode | `MovingPlatform.Evaluate`, the pure clock-to-position maths |
+| `SimulationClockTests` | EditMode | #92 the client clock: in step it follows the frame, NGO corrections are slewed (never backwards, at most `clockMaxSlew`), a real desync snaps; offline it is the local clock |
+| `CarrierRegistryTests` | EditMode | #92 carrier ids: stable FNV-1a hash, follows the sibling path not the name, unique in every course scene and PassSandbox |
+| `RiderReconstructionTests` | EditMode | #92 a remote rider glued to the carrier as drawn locally whatever the lagging world position, board and leave blends without a pop, the offset smoothed, a teleport snaps |
+| `HazardRewindTests` | EditMode | #92 the host's rewound hazard verdict: capsule vs (rotated) box, a box carried with its mover to another time, the verdict at the claimed time and not now, the claim cap, a door's edge armed only while closing, a moving platform posed at any time by the formula it moves by |
 | `SessionServiceTests` | EditMode | M4: code cleanup and player-facing error wording |
 | `SettingsTests` | EditMode | M6.5: player settings layer (tuning defaults, JSON parsing, clamping, fallback, mixer decibels) |
 | `InputRebindingTests` | EditMode | #18: rebindable bindings per device, conflicts, saved overrides reaching a player's copy, reset |
@@ -108,7 +112,13 @@ not exercise the asset serialization step that rejects `DontSave` font dependenc
 - **Offline only:** F4 turns the idle player into a catch/throw-back bot (`PassPartner`), and F5 cycles its movement.
   `PassSandbox` has a 4 / 8 / 12 / 16 m range lane on its east side.
 - The debug HUD (`DebugHud`) shows run state, resets, checkpoint, time and ping (`NetMode.RttMs`).
-- Logs use the `[Bomb]` / `[Run]` / `[Throw]` prefixes (`PatataLog`). Mirror lines on clients are tagged `(mirror)`.
+- **F7** toggles `NetSyncProbe` (netcode plan stage 0, online only). It shows:
+  - each remote rider's gap to the moving carrier under them, tagged when rebuilt on the carrier;
+  - the host's moving-hazard verdicts (the ignored trigger vs the rewound one);
+  - the client's throw prediction against the host's verdict.
+
+  It logs `[Sync]` lines: `rider slot=N carrier=id gap mean/min/max` every 2 s, `hazard ...` and `throw predicted=... host=...`.
+- Logs use the `[Bomb]` / `[Run]` / `[Throw]` / `[Sync]` prefixes (`PatataLog`). Mirror lines on clients are tagged `(mirror)`.
   Do not grep logs for "error": the name `ApplyMirror` contains it.
 
 ---
@@ -126,6 +136,7 @@ not exercise the asset serialization step that rejects `DontSave` font dependenc
 | `-patataCheckpoint <id>` | the run starts at that checkpoint (host / local; `RunOptions.StartCheckpoint`) |
 | `-patataName <name>` | player name for this process instead of the saved one (two instances on one PC share `PlayerPrefs`); bots keep "Player N" without it |
 | `-patataBot` | the local player is a bot (`PlayerBot`) |
+| `-patataBotMove <pattern>` | the bot's movement: `Stand`, `Strafe`, `Jump`, `RunAcross` or `Ride` (hops onto the nearest moving platform that is not a crusher, after each reset, and stays on it) |
 | `-patataLatency <ms>` | Network Simulator latency (Editor / dev builds only) |
 | `-patataQuit <s>` / `-patataLeaveAfter <s>` | quit / leave the session after s seconds |
 
@@ -173,6 +184,23 @@ Measured with bots:
 | ~450 ms | | 0/14: beyond the `catchLagCompensation` cap (0.35 s) |
 
 How the compensation works: [`ARCHITECTURE.md`](ARCHITECTURE.md) §13.2.
+
+### Remote players vs moving level objects (#92)
+
+What to measure: [`netcode-deterministic-plan.md`](netcode-deterministic-plan.md) §4. Run it with bots at
+`-patataLatency` 0 / 50 / 100 / 150 (one way, so 0–300 ms RTT), host + client and host + 2 clients (client → client):
+
+```text
+HotPatata.exe -batchmode -nographics -patataHost -patataBot -patataBotMove Ride -patataScene PassSandbox -patataLatency <ms> -patataQuit 90 -logFile host.log
+HotPatata.exe -batchmode -nographics -patataJoin 127.0.0.1 -patataBot -patataBotMove Ride -patataLatency <ms> -patataQuit 85 -logFile client.log
+```
+
+- **Riders:** `[Sync] rider` lines on every peer. The gap should stay within ±5 cm (it was about speed × (RTT + 0.1 s)
+  before stage 1). `PassSandbox` has two moving carriers; for elevators and lifts use `-patataScene IndustrialPlant`
+  (or a course) with `-patataCheckpoint`.
+- **Hazards:** with `-patataBotMove RunAcross` near a rotating bar, the host logs each ignored trigger and each rewound
+  hit (`[Sync] hazard ...`). The two should agree almost always; a disagreement is the lag that stage 3 removes.
+- **Throws:** `[Sync] throw ... agree|DISAGREE` on clients (stage 4 will act on these).
 
 ### Still open
 

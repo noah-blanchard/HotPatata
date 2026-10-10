@@ -32,7 +32,7 @@ namespace HotPatata
             {
                 if (!PassedThisSection) return 0f;
                 if (holdSeconds <= 0f) return float.PositiveInfinity;
-                return Mathf.Max(0f, holdSeconds - (float)(NetMode.ServerTime - passedAt));
+                return Mathf.Max(0f, holdSeconds - (float)(SimulationClock.ServerNow - passedAt));
             }
         }
         public bool Active => RemainingSeconds > 0f;

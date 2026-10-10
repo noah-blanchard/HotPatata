@@ -26,7 +26,8 @@ namespace HotPatata
     ///   -patataAutoStart &lt;n&gt;                             host starts the level once n players are in the lobby
     ///   -patataCheckpoint &lt;id&gt;                          start the run at that checkpoint (host / local)
     ///   -patataName &lt;name&gt;                             player name for this process (instead of the saved one)
-    ///   -patataBot   -patataScene &lt;name&gt;   -patataQuit &lt;s&gt;   -patataLatency &lt;ms&gt;
+    ///   -patataBot   -patataBotMove &lt;Stand|Strafe|Jump|RunAcross|Ride&gt;
+    ///   -patataScene &lt;name&gt;   -patataQuit &lt;s&gt;   -patataLatency &lt;ms&gt;
     /// </summary>
     [DefaultExecutionOrder(-1000)]
     public class NetworkBootstrap : MonoBehaviour
@@ -135,6 +136,9 @@ namespace HotPatata
                 switch (args[i])
                 {
                     case "-patataBot": PlayerBot.Enabled = true; break;
+                    case "-patataBotMove" when i + 1 < args.Length && Enum.TryParse(args[i + 1], true, out PlayerBot.Pattern pattern):
+                        PlayerBot.Movement = pattern;
+                        break;
                     case "-patataScene" when i + 1 < args.Length: sceneIndex = Mathf.Max(0, Array.IndexOf(gameplayScenes, args[i + 1])); break;
                     case "-patataLatency" when i + 1 < args.Length && int.TryParse(args[i + 1], out int ms): SimulateLatency(ms); break;
                     case "-patataAutoStart" when i + 1 < args.Length && int.TryParse(args[i + 1], out int n): autoStartPlayers = n; break;

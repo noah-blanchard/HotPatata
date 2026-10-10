@@ -49,7 +49,7 @@ namespace HotPatata
         public Exit GetExit(int i) => exits[i];
         bool IObstacleState.Active => activeExit >= 0;
         /// <summary>From 0 when the bomb goes in to 1 when it comes out.</summary>
-        float IObstacleState.Progress => activeExit < 0 ? 0f : delay <= 0f ? 1f : Mathf.Clamp01(1f - (float)(releaseAt - NetMode.ServerTime) / delay);
+        float IObstacleState.Progress => activeExit < 0 ? 0f : delay <= 0f ? 1f : Mathf.Clamp01(1f - (float)(releaseAt - SimulationClock.ServerNow) / delay);
 
         /// <summary>
         /// The launch velocity that carries the bomb from <paramref name="from"/> to <paramref name="to"/> in

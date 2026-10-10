@@ -293,6 +293,23 @@ Subclass the system and override its pose:
 Keep the override a **pure function** of the value it is given (derived from the shared clock), so every machine shows the
 same thing. Riders are carried by translation only.
 
+The base classes already do the network part for a subclass, through the same virtual methods. A brand-new mover (not a
+subclass) must do it itself (netcode plan §2.2–2.4):
+
+- **Carrier** (anything a player rides): implement `IPlatformCarrier`:
+  - `FrameDelta`;
+  - `Moves`;
+  - `AnchorPosition` (the carried part's position);
+  - `CarrierId`, with `CarrierRegistry.Register(this)` in `OnEnable` and `Unregister` in `OnDisable`. The id comes from
+    the scene and the sibling path; never give two carriers the same transform.
+- **Time-driven** (moves with the clock or a replicated event time): implement `ITimePosed`:
+  - `PosedTransform`;
+  - `TryPoseAt(serverTime)`: the pose at any time, from the same pure function `Update` uses;
+  - `LethalAt(serverTime, zone)`.
+
+  A child `KillZone` then becomes a moving hazard. Online, the host judges remote players against it at the time they
+  saw it (`HazardRewind`), not from its own lagging copy.
+
 Example (from `ObstacleKitTests`), a platform that arcs 2 m up between its waypoints:
 
 ```csharp
