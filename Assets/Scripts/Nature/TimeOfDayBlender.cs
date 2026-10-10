@@ -9,8 +9,9 @@ namespace HotPatata
     /// clients), so every machine shows the same sky; a section reset keeps the checkpoint, so it never changes the light. A step
     /// forward (a new checkpoint) blends over <see cref="GameTuning.timeOfDayBlendSeconds"/> per act; a step back (a restart) or a
     /// big jump (a practice start, a late join) is shown at once. The presets are authored by <c>LookBuilder</c>; this only
-    /// interpolates them: the sun, the sky fill, the haze, the two-cubemap sky, the grade volumes' weights, the plants' wind and
-    /// the sky the surfaces reflect. It never touches a rule.
+    /// interpolates them: the sun, the sky fill, the haze, the height mist and the light shafts (through the scene's
+    /// <see cref="MistField"/>), the two-cubemap sky, the grade volumes' weights, the plants' wind and the sky the surfaces
+    /// reflect. It never touches a rule.
     /// </summary>
     public class TimeOfDayBlender : MonoBehaviour
     {
@@ -66,10 +67,25 @@ namespace HotPatata
             if (presets == null || presets.Length == 0) return;
             float target = Target;
             float next = started ? Step(Current, target, Time.deltaTime, tuning != null ? tuning.timeOfDayBlendSeconds : 24f, tuning != null ? tuning.timeOfDaySnapActs : 0.6f) : target;
-            if (started && Mathf.Approximately(next, Current)) return;
-            started = true;
-            Current = next;
-            Apply(Current);
+            if (!started || !Mathf.Approximately(next, Current))
+            {
+                started = true;
+                Current = next;
+                Apply(Current);
+            }
+            ApplyMist(Current);
+        }
+
+        /// <summary>The height mist and the light shafts of the moment, every frame (the field may have woken after the blender).</summary>
+        void ApplyMist(float t)
+        {
+            var field = MistField.Active;
+            if (field == null) return;
+            var (i, f) = Segment(presets.Length, t);
+            var a = presets[i];
+            var b = presets[Mathf.Min(i + 1, presets.Length - 1)];
+            field.Push(Color.Lerp(a.mistColor, b.mistColor, f), Mathf.Lerp(a.mistDensity, b.mistDensity, f), Mathf.Lerp(a.mistFalloff, b.mistFalloff, f),
+                       Mathf.Lerp(a.mistGlow, b.mistGlow, f), Mathf.Lerp(a.shaftStrength, b.shaftStrength, f));
         }
 
         /// <summary>The time of day at checkpoint <paramref name="id"/> (clamped to the table; 0 when there is none).</summary>

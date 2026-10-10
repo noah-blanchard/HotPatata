@@ -1,5 +1,6 @@
-// Unlit particle / trail / flash shader: texture x colour x vertex colour, fogged. The blend is chosen per material
-// (additive for sparks and flashes, alpha for streaks and rings).
+// Unlit particle / trail / flash shader: texture x colour x vertex colour, fogged (the haze and the nature courses' height
+// mist, HotPatataFog.hlsl). The blend is chosen per material (additive for sparks, flashes, motes and fireflies, which the
+// mist dims instead of tinting; alpha for streaks, rings and leaves).
 Shader "HotPatata/Particle"
 {
     Properties
@@ -25,6 +26,7 @@ Shader "HotPatata/Particle"
             #pragma multi_compile_fog
             #pragma multi_compile_instancing
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "HotPatataFog.hlsl"
 
             TEXTURE2D(_BaseMap); SAMPLER(sampler_BaseMap);
             CBUFFER_START(UnityPerMaterial)
@@ -34,14 +36,15 @@ Shader "HotPatata/Particle"
             CBUFFER_END
 
             struct Attributes { float4 positionOS : POSITION; float2 uv : TEXCOORD0; half4 color : COLOR; UNITY_VERTEX_INPUT_INSTANCE_ID };
-            struct Varyings { float4 positionCS : SV_POSITION; float2 uv : TEXCOORD0; half4 color : COLOR; half fog : TEXCOORD1; UNITY_VERTEX_OUTPUT_STEREO };
+            struct Varyings { float4 positionCS : SV_POSITION; float2 uv : TEXCOORD0; half4 color : COLOR; half fog : TEXCOORD1; float3 positionWS : TEXCOORD2; UNITY_VERTEX_OUTPUT_STEREO };
 
             Varyings vert(Attributes input)
             {
                 Varyings o;
                 UNITY_SETUP_INSTANCE_ID(input);
                 UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
-                o.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+                o.positionWS = TransformObjectToWorld(input.positionOS.xyz);
+                o.positionCS = TransformWorldToHClip(o.positionWS);
                 o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 o.color = input.color;
                 o.fog = ComputeFogFactor(o.positionCS.z);
@@ -51,7 +54,13 @@ Shader "HotPatata/Particle"
             half4 frag(Varyings i) : SV_Target
             {
                 half4 c = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, i.uv) * _BaseColor * i.color;
-                c.rgb = MixFog(c.rgb, i.fog);
+                if (_DstBlend == 1.0)
+                {
+                    // additive: the mist hides it rather than tinting it
+                    if (_HP_MistParams.x > 0.0) c.rgb *= 1.0 - HP_MistAmount(i.positionWS);
+                    c.rgb = MixFog(c.rgb, i.fog);
+                }
+                else c.rgb = HP_MixFog(c.rgb, i.fog, i.positionWS);
                 return c;
             }
             ENDHLSL

@@ -131,6 +131,7 @@ Shader "HotPatata/Industrial"
 
             #include "HotPatataIndustrialInput.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "HotPatataFog.hlsl"
 
             struct Attributes
             {
@@ -489,7 +490,7 @@ Shader "HotPatata/Industrial"
                 color += _RimColor.rgb * mainLight.color * fresnel * _RimStrength * lerp(0.25, 1.4, backlight) * lerp(0.4, 1.0, shadow);
 
                 color += _EmissionColor.rgb;
-                color = MixFog(color, input.fogFactor);
+                color = HP_MixFog(color, input.fogFactor, input.positionWS);
                 return half4(color, decal ? saturate(texel4.a * _BaseColor.a) : 1.0);
             }
             ENDHLSL

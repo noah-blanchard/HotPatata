@@ -49,6 +49,7 @@ Shader "HotPatata/Water"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "HotPatataFog.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareOpaqueTexture.hlsl"
 
@@ -155,7 +156,7 @@ Shader "HotPatata/Water"
                 half spec = pow(saturate(dot(normalWS, h)), 600.0 * _Smoothness) * 6.0 * (1.0 - foam);
                 color += mainLight.color * spec * mainLight.shadowAttenuation;
 
-                color = MixFog(color, i.fogFactor);
+                color = HP_MixFog(color, i.fogFactor, i.positionWS);
                 return half4(color, 1.0);
             }
             ENDHLSL
