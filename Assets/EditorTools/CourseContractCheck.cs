@@ -67,8 +67,8 @@ namespace HotPatata.Editor
                         {
                             var first = plates.FirstOrDefault(p => p.GetComponent<BoxCollider>() is BoxCollider b && b.bounds.Contains(from + Vector3.up * 0.3f));
                             float memory = first != null ? first.MemorySeconds : 0f;
-                            float apart = Vector3.Distance(from, to), reach = SectionContract.MaxSpread(tuning, memory);
-                            if (apart <= reach) problems.Add($"{where}: {apart:F1} m apart, one body holds both (a sprint through a {memory:F1} s hourglass covers {reach:F1} m)");
+                            float apart = contract.WalkLength(s), reach = SectionContract.MaxSpread(tuning, memory);
+                            if (apart <= reach) problems.Add($"{where}: a {apart:F1} m walk apart, one body holds both (a sprint through a {memory:F1} s hourglass covers {reach:F1} m)");
                             break;
                         }
                     }

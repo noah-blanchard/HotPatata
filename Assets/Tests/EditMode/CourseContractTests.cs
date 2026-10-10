@@ -16,6 +16,7 @@ namespace HotPatata.Tests
         static readonly string[] Courses =
         {
             "Assets/Scenes/PatataCanopy.unity",
+            "Assets/Scenes/PatataTemple.unity",
             "Assets/Scenes/PatataWilds.unity",
             "Assets/Scenes/IndustrialPlant.unity"
         };

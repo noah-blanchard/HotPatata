@@ -307,37 +307,6 @@ namespace HotPatata.Editor
             }
         }
 
-        /// <summary>A bramble screen filling a hole across the section (x0..x1 at z), from <paramref name="y"/> up <paramref name="height"/>.</summary>
-        static GameObject ScreenAcross(Transform p, string name, float x0, float x1, float z, float y, float height)
-        {
-            var go = Place(p, BombObstacleKitBuilder.Screen, name, new Vector3((x0 + x1) / 2, y, z), Quaternion.identity);
-            ResizeScreen(go, x1 - x0 - 0.7f, height - 0.35f);
-            return go;
-        }
-
-        /// <summary>A bramble screen filling a hole along the section (z0..z1 at x).</summary>
-        static GameObject ScreenAlong(Transform p, string name, float z0, float z1, float x, float y, float height)
-        {
-            var go = Place(p, BombObstacleKitBuilder.Screen, name, new Vector3(x, y, (z0 + z1) / 2), Quaternion.Euler(0, 90, 0));
-            ResizeScreen(go, z1 - z0 - 0.7f, height - 0.35f);
-            return go;
-        }
-
-        /// <summary>A laser curtain filling a passage across the section (x0..x1 at z).</summary>
-        static GameObject CurtainAcross(Transform p, string name, float x0, float x1, float z, float y, float height)
-        {
-            var go = Place(p, LaserCurtain, name, new Vector3((x0 + x1) / 2, y, z), Quaternion.identity);
-            ResizeCurtain(go, x1 - x0 - 0.6f, height - 0.3f);
-            return go;
-        }
-
-        static GameObject CurtainAlong(Transform p, string name, float z0, float z1, float x, float y, float height)
-        {
-            var go = Place(p, LaserCurtain, name, new Vector3(x, y, (z0 + z1) / 2), Quaternion.Euler(0, 90, 0));
-            ResizeCurtain(go, z1 - z0 - 0.6f, height - 0.3f);
-            return go;
-        }
-
         /// <summary>A vine ring on its pillar on a deck, facing along <paramref name="alongX"/> (a throw across the section) or along z.</summary>
         static BombGate Ring(Transform p, string name, Vector3 floor, float height, float hold, bool alongX)
         {
@@ -371,13 +340,6 @@ namespace HotPatata.Editor
             return go;
         }
 
-        static GameObject SwitchFor(Transform p, string name, Vector3 at, MonoBehaviour source, bool activeWhenOpen, params GameObject[] targets)
-        {
-            var go = Place(p, BombObstacleKitBuilder.Switch, name, at, Quaternion.identity);
-            WireSwitch(go, source, activeWhenOpen, targets);
-            return go;
-        }
-
         static PressurePlate HandsFreePlate(Transform p, string name, Vector3 at) =>
             Place(p, PlateHandsFree, name, at, Quaternion.identity).GetComponent<PressurePlate>();
 
@@ -387,40 +349,6 @@ namespace HotPatata.Editor
             Place(p, ObstaclesDir + "LaunchPad", name, at, Quaternion.identity);
             Zone(p, ZoneForbidden, name + " spores", at, new Vector3(3.4f, 3f, 3.4f));
         }
-
-        static PassCorridor Pass(Transform p, string name, Vector3 from, Vector3 to, PassCorridor.ArcKind kind = PassCorridor.ArcKind.Normal,
-                                 bool timed = false, float opening = 0, float flight = 0)
-        {
-            var go = new GameObject("Pass " + name);
-            go.transform.SetParent(p, false);
-            go.transform.position = from;
-            var pass = go.AddComponent<PassCorridor>();
-            pass.Configure(to, kind, flight, timed, opening);
-            return pass;
-        }
-
-        static void TransitPasses(Transform parent, GameObject go)
-        {
-            var transit = go.GetComponent<BombTransit>();
-            for (int i = 0; i < transit.ExitCount; i++)
-            {
-                var e = transit.GetExit(i);
-                if (!e.pad.gameObject.activeInHierarchy) continue;
-                Pass(parent, go.name + " exit " + i, e.muzzle.position, transit.AimPoint(i), PassCorridor.ArcKind.Fixed, flight: e.flightTime);
-            }
-        }
-
-        /// <summary>The section's contract (Â§13.20): what it forces, the shortcuts it locks (world space at build time).</summary>
-        static void Contract(Transform p, string force, params SectionContract.Shortcut[] locks)
-        {
-            var go = new GameObject("Contract");
-            go.transform.SetParent(p, false);
-            go.AddComponent<SectionContract>().Configure(force, locks);
-        }
-
-        static SectionContract.Shortcut GapLock(string name, Vector3 from, Vector3 to) => SectionContract.Lock(name, SectionContract.ShortcutKind.Gap, from, to);
-        static SectionContract.Shortcut ClimbLock(string name, Vector3 from, Vector3 to) => SectionContract.Lock(name, SectionContract.ShortcutKind.Climb, from, to);
-        static SectionContract.Shortcut LobLock(string name, Vector3 from, Vector3 wallTop) => SectionContract.Lock(name, SectionContract.ShortcutKind.Lob, from, wallTop);
 
         /// <summary>A checkpoint at the junction deck and its campfire beside it (never on a spawn, never on the way out), inside the checkpoint's zone.</summary>
         static void CP(Transform p, int id, Vector3 position, float fireSide = 1f)

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using UnityEngine;
 
 namespace HotPatata
@@ -16,7 +17,7 @@ namespace HotPatata
             Gap,     // jump from From (take-off edge) to To (landing edge): it must be out of a slide-jump's reach, mantle included
             Climb,   // from the floor at From up to the ledge at To: it must be higher than a jump plus a mantle
             Lob,     // throw over a wall whose top is To, from a thrower standing at From: a roof must seal it
-            Spread   // two sources at From and To that one body cannot hold in turn: farther apart than a sprint through From's hourglass
+            Spread   // two sources at From and To that one body cannot hold in turn: the walk between them (through Via) outlasts From's hourglass
         }
 
         [Serializable]
@@ -26,6 +27,7 @@ namespace HotPatata
             public ShortcutKind kind;
             [Tooltip("In this object's space (so it turns with its section).")] public Vector3 from;
             [Tooltip("In this object's space (so it turns with its section).")] public Vector3 to;
+            [Tooltip("Spread only: the walk between the two sources goes through these points (in this object's space).")] public Vector3[] via;
         }
 
         /// <summary>Above the wall's top, a roof closer than this seals the wall against any lob (the bomb with a margin).</summary>
@@ -60,15 +62,30 @@ namespace HotPatata
                 shortcuts[i] = new Shortcut
                 {
                     name = locks[i].name, kind = locks[i].kind,
-                    from = transform.InverseTransformPoint(locks[i].from), to = transform.InverseTransformPoint(locks[i].to)
+                    from = transform.InverseTransformPoint(locks[i].from), to = transform.InverseTransformPoint(locks[i].to),
+                    via = (locks[i].via ?? new Vector3[0]).Select(transform.InverseTransformPoint).ToArray()
                 };
         }
 
-        public static Shortcut Lock(string name, ShortcutKind kind, Vector3 from, Vector3 to) =>
-            new Shortcut { name = name, kind = kind, from = from, to = to };
+        public static Shortcut Lock(string name, ShortcutKind kind, Vector3 from, Vector3 to, params Vector3[] via) =>
+            new Shortcut { name = name, kind = kind, from = from, to = to, via = via };
 
         public Vector3 From(Shortcut s) => transform.TransformPoint(s.from);
         public Vector3 To(Shortcut s) => transform.TransformPoint(s.to);
+
+        /// <summary>The walk from a shortcut's start to its end through its <c>via</c> points (world metres).</summary>
+        public float WalkLength(Shortcut s)
+        {
+            float length = 0f;
+            var at = From(s);
+            foreach (var v in s.via ?? new Vector3[0])
+            {
+                var next = transform.TransformPoint(v);
+                length += Vector3.Distance(at, next);
+                at = next;
+            }
+            return length + Vector3.Distance(at, To(s));
+        }
 
         // ------------------------------------------------------------------ reach (pure, EditMode tested)
 

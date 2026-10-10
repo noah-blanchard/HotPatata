@@ -85,6 +85,11 @@ namespace HotPatata.Editor
             Rock("Nature_RockWall", "RockWall", 3f, null, 0f),
             Rock("Nature_RocksGround", "RocksGround", 2.5f, null, 0f),
             Rock("Nature_StoneWall", "StoneWall", 2.5f, null, 0f),
+            // PatataTemple's masonry (ARCHITECTURE §25.4): moss and grass on the faces that look up
+            Ground("Nature_TempleFloor", "TempleFloor", 3f),
+            Rock("Nature_TempleWall", "TempleWall", 3f, "Grass", 0.22f),
+            Rock("Nature_TempleRoof", "TempleRoof", 2.5f, "ForestLeaves", 0.45f),
+            Rock("Nature_TempleSlab", "TempleSlab", 2.5f, "Grass", 0.12f),
             // wood (UVs in metres on the generated logs and planks)
             Wood("Nature_PineBark", "PineBark", 1.6f),
             Wood("Nature_BarkBrown", "BarkBrown", 1.6f),
@@ -126,6 +131,8 @@ namespace HotPatata.Editor
             Leaves("Nature_Weed", "weed_plant_02", "weed_plant_02_", 1.2f),
             Leaves("Nature_Nettle", "nettle_plant", "nettle_plant_", 1.1f),
             Leaves("Nature_Moss", "moss_01", "moss_01_", 0.15f),
+            Leaves("Nature_Calathea", "calathea_orbifolia_01", "calathea_orbifolia_01_", 0.6f),     // PatataTemple's jungle floor
+            Leaves("Nature_Anthurium", "anthurium_botany_01", "anthurium_botany_01_", 0.7f),
             Spray("Nature_GrassBlades", NatureTextureFactory.Spray.Grass, 1.4f),
         };
 
