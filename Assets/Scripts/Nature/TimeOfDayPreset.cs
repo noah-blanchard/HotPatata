@@ -28,6 +28,17 @@ namespace HotPatata
         [Min(0f)] public float fogStart = 55f;
         [Min(0f)] public float fogEnd = 300f;
 
+        [Header("Mist (MistField, HotPatataFog.hlsl)")]
+        public Color mistColor = new Color(0.7f, 0.78f, 0.76f);
+        [Tooltip("Density at the mist floor (1/m, 0 = no mist).")]
+        [Min(0f)] public float mistDensity;
+        [Tooltip("Height over which the mist thins by e (m).")]
+        [Min(0.5f)] public float mistFalloff = 10f;
+        [Tooltip("How much brighter the mist looks towards the sun.")]
+        [Min(0f)] public float mistGlow = 0.3f;
+        [Tooltip("Strength of the light shafts (god rays) through the crowns.")]
+        [Min(0f)] public float shaftStrength;
+
         [Header("Sky")]
         public Cubemap sky;
         [Min(0f)] public float skyExposure = 1f;

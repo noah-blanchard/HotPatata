@@ -5,7 +5,7 @@ using UnityEditor;
 
 namespace HotPatata.Tests
 {
-    /// <summary>PatataWilds' day (ARCHITECTURE §25.3): the blender's pure rules and the presets LookBuilder writes.</summary>
+    /// <summary>The nature courses' days (ARCHITECTURE §25.3): the blender's pure rules and the presets LookBuilder writes.</summary>
     public class TimeOfDayTests
     {
         [Test]
@@ -39,11 +39,16 @@ namespace HotPatata.Tests
             for (int i = 1; i < times.Length; i++) Assert.Greater(times[i], times[i - 1]);
         }
 
-        [Test]
-        public void Presets_MakeADay_DawnLow_NoonHigh_DuskLowAndCool()
-        {
-            var presets = AssetDatabase.FindAssets("t:TimeOfDayPreset").Select(AssetDatabase.GUIDToAssetPath).OrderBy(p => p)
+        static TimeOfDayPreset[] PresetsIn(string folder) =>
+            AssetDatabase.FindAssets("t:TimeOfDayPreset", new[] { folder }).Select(AssetDatabase.GUIDToAssetPath)
+                .Where(p => System.IO.Path.GetDirectoryName(p).Replace('\\', '/') == folder).OrderBy(p => p)
                 .Select(AssetDatabase.LoadAssetAtPath<TimeOfDayPreset>).ToArray();
+
+        [TestCase("Assets/Settings/Look/TimeOfDay")]
+        [TestCase("Assets/Settings/Look/TimeOfDay/Canopy")]
+        public void Presets_MakeADay_DawnLow_NoonHigh_DuskLowAndCool(string folder)
+        {
+            var presets = PresetsIn(folder);
             Assert.AreEqual(5, presets.Length, "LookBuilder writes five moments (HotPatata/Look/Apply Look To All Scenes)");
             Assert.Less(presets[0].sunElevation, presets[1].sunElevation);
             Assert.Greater(presets[1].sunElevation, presets[2].sunElevation);
@@ -57,6 +62,31 @@ namespace HotPatata.Tests
                 Assert.IsNotNull(p.sky, p.name);
                 Assert.IsNotNull(new SerializedObject(p).FindProperty("grade").objectReferenceValue, p.name);
             }
+        }
+
+        [TestCase("Assets/Settings/Look/TimeOfDay")]
+        [TestCase("Assets/Settings/Look/TimeOfDay/Canopy")]
+        public void Mist_ThickAtDawn_ThinAtNoon_BackAtDusk(string folder)
+        {
+            var presets = PresetsIn(folder);
+            Assert.Greater(presets[0].mistDensity, presets[1].mistDensity * 2f, "a morning mist");
+            Assert.Greater(presets[4].mistDensity, presets[1].mistDensity * 2f, "the mist comes back at dusk");
+            Assert.Greater(presets[3].mistDensity, presets[2].mistDensity, "and gathers from sunset");
+        }
+
+        [Test]
+        public void Canopy_HasItsOwnCoolerDay_KeepingPassesClear()
+        {
+            var wilds = PresetsIn("Assets/Settings/Look/TimeOfDay");
+            var canopy = PresetsIn("Assets/Settings/Look/TimeOfDay/Canopy");
+            for (int i = 0; i < 5; i++)
+            {
+                Assert.AreNotSame(wilds[i], canopy[i]);
+                float warmthWilds = wilds[i].fogColor.r - wilds[i].fogColor.b, warmthCanopy = canopy[i].fogColor.r - canopy[i].fogColor.b;
+                Assert.Less(warmthCanopy, warmthWilds, canopy[i].name + ": a cooler haze than PatataWilds");
+                Assert.GreaterOrEqual(canopy[i].fogStart, 30f, canopy[i].name + ": the haze starts beyond the longest pass (14.5 m)");
+            }
+            Assert.AreEqual(5, PatataCanopyLook.MomentCount);
         }
     }
 }

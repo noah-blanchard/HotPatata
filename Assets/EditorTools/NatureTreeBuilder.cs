@@ -47,8 +47,252 @@ namespace HotPatata.Editor
                 Save(Rock(v, 0), MeshPath("Rock", v, 0));
                 Save(Rock(v, 1), MeshPath("Rock", v, 1));
             }
+            BuildGiants();
             AssetDatabase.SaveAssets();
             Debug.Log("[NatureTreeBuilder] vegetation meshes and tree prefabs ready in " + MeshDir);
+        }
+
+        // ------------------------------------------------------------------ giants (PatataCanopy, M13.7)
+
+        /// <summary>The canopy's giants: a broad oak and a redwood, 70-95 m tall, drawn instanced (no prefab).</summary>
+        public enum Giant { Oak, Redwood }
+
+        /// <summary>A giant comes in three meshes sharing one origin (the trunk's foot), so each part's box stays tight: the roots on the
+        /// ground, the bare bole, the crown high above (its box starts where the limbs leave the trunk).</summary>
+        public static readonly string[] GiantParts = { "Roots", "Bole", "Crown" };
+
+        public static string GiantKind(Giant g, int part) => g + GiantParts[part];
+
+        /// <summary>The deck trunks (the posts under the decks): this tall at scale 1, three girths, no crown (the deck is its top).</summary>
+        public const float DeckTrunkLength = 50f;
+        public static readonly float[] DeckTrunkRadius = { 0.8f, 1.2f, 1.6f };
+
+        public static (string bark, string leaves) MaterialsFor(Giant g) =>
+            g == Giant.Oak ? ("Nature_BarkBrown", "Nature_Leaves_Broad") : ("Nature_PineBark", "Nature_Leaves_Fir");
+
+        /// <summary>The giants' and the deck trunks' meshes (three levels each; the deck trunks two).</summary>
+        [MenuItem("HotPatata/Nature/Build Canopy Giants")]
+        public static void BuildGiants()
+        {
+            Directory.CreateDirectory(MeshDir.TrimEnd('/'));
+            foreach (Giant g in System.Enum.GetValues(typeof(Giant)))
+                for (int v = 0; v < Variants; v++)
+                    for (int lod = 0; lod < 3; lod++)
+                    {
+                        var parts = GrowGiant(g, v, lod);
+                        for (int p = 0; p < parts.Length; p++)
+                            if (p > 0 || lod < 2)   // the roots have two levels (hidden in the mist beyond)
+                                Save(parts[p].ToMesh($"{GiantKind(g, p)}_{v}_LOD{lod}", p < 2), MeshPath(GiantKind(g, p), v, lod));
+                    }
+            for (int v = 0; v < DeckTrunkRadius.Length; v++)
+                for (int lod = 0; lod < 2; lod++)
+                    Save(DeckTrunk(v, lod).ToMesh($"DeckTrunk_{v}_LOD{lod}", true), MeshPath("DeckTrunk", v, lod));
+            for (int v = 0; v < Variants; v++)
+                for (int lod = 0; lod < 2; lod++)
+                {
+                    Save(CanopyTuft(v, lod).ToMesh($"CanopyTuft_{v}_LOD{lod}"), MeshPath("CanopyTuft", v, lod));
+                    Save(CanopyMat(v, lod).ToMesh($"CanopyMat_{v}_LOD{lod}"), MeshPath("CanopyMat", v, lod));
+                }
+            AssetDatabase.SaveAssets();
+        }
+
+        /// <summary>
+        /// The underside of a leaf roof (PatataCanopy): a 6 m tile of leaf cards lying almost flat, overlapping three deep, every
+        /// corner between 0.03 and 0.57 m above the tile's origin (the roof's underside), facing down, so from below the roof reads as
+        /// a ceiling of leaves.
+        /// </summary>
+        static Builder CanopyMat(int variant, int lod)
+        {
+            var rng = new Random(7500 + variant * 13);
+            var b = new Builder { Height = 1f };
+            int cards = lod == 0 ? 34 : 12;
+            var above = new Vector3(0f, 3f, 0f);   // normals point out of the roof: down
+            for (int k = 0; k < cards; k++)
+            {
+                float yaw = R(rng, 0f, Mathf.PI * 2f);
+                var up = new Vector3(Mathf.Cos(yaw), R(rng, -0.11f, 0.11f), Mathf.Sin(yaw)).normalized;
+                var side = Vector3.Cross(up, Vector3.up).normalized;
+                float size = lod == 0 ? R(rng, 1.7f, 2.3f) : R(rng, 2.8f, 3.4f);
+                var foot = new Vector3(R(rng, -3f, 3f), 0.3f, R(rng, -3f, 3f)) - up * size * 0.5f;
+                foot.y = 0.3f - up.y * size * 0.5f;
+                b.Card(foot, up, side, size, size, above, 1f, 0.2f);
+            }
+            return b;
+        }
+
+        /// <summary>
+        /// A tuft of leaves for the top of a leaf roof (PatataCanopy): a low dome of cards about 6 m wide, every card above its
+        /// base (nothing ever hangs under the roof's underside, where the passes are).
+        /// </summary>
+        static Builder CanopyTuft(int variant, int lod)
+        {
+            var rng = new Random(7300 + variant * 11);
+            var b = new Builder { Height = 3f };
+            int cards = lod == 0 ? 42 : 14;
+            var center = new Vector3(0f, -1f, 0f);
+            for (int k = 0; k < cards; k++)
+            {
+                float angle = R(rng, 0f, Mathf.PI * 2f), r = Mathf.Sqrt(R(rng, 0f, 1f)) * 3f;
+                var foot = new Vector3(Mathf.Cos(angle) * r, R(rng, 0.05f, 0.6f) * (1f - r / 3.4f) + 0.05f, Mathf.Sin(angle) * r);
+                var outward = new Vector3(foot.x, 0f, foot.z).normalized;
+                var up = (Vector3.up * R(rng, 0.6f, 1.2f) + outward * (r / 3f) * 0.8f + new Vector3(R(rng, -0.2f, 0.2f), 0f, R(rng, -0.2f, 0.2f))).normalized;
+                var side = Vector3.Cross(up, Vector3.up);
+                if (side.sqrMagnitude < 1e-3f) side = Vector3.right;
+                side = side.normalized;   // horizontal: no corner dips under the card's foot
+                float size = lod == 0 ? R(rng, 1.6f, 2.4f) : R(rng, 2.6f, 3.2f);
+                b.Card(foot, up, side, size, size, center, 1f, 0.9f);
+            }
+            return b;
+        }
+
+        /// <summary>A giant's roots, bole and crown (the same seed, so the parts meet).</summary>
+        static Builder[] GrowGiant(Giant g, int variant, int lod)
+        {
+            var rng = new Random(4000 + (int)g * 131 + variant * 17);
+            bool oak = g == Giant.Oak;
+            float height = oak ? R(rng, 80f, 88f) : R(rng, 86f, 95f);
+            float crownStart = height * (oak ? R(rng, 0.68f, 0.72f) : R(rng, 0.6f, 0.64f));
+            float baseRadius = oak ? R(rng, 2f, 2.4f) : R(rng, 2.2f, 2.7f);
+            var roots = new Builder { Height = height };
+            var bole = new Builder { Height = height };
+            var crown = new Builder { Height = height };
+            int sides = lod == 0 ? 16 : lod == 1 ? 9 : 5;
+
+            // the bole: straight with a slow lean and burls, from the ground into the crown
+            int segments = lod == 0 ? 18 : lod == 1 ? 9 : 5;
+            float top = oak ? crownStart + 6f : height;
+            var trunk = new List<Vector3>();
+            var lean = new Vector3(R(rng, -1f, 1f), 0f, R(rng, -1f, 1f)).normalized * R(rng, 0.004f, 0.012f);
+            for (int i = 0; i <= segments; i++)
+            {
+                float t = i / (float)segments, y = t * top;
+                trunk.Add(new Vector3(lean.x * y * t, y, lean.z * y * t));
+            }
+            var radii = new List<float>();
+            float topRadius = oak ? baseRadius * 0.55f : 0.35f;
+            for (int i = 0; i <= segments; i++)
+            {
+                float t = i / (float)segments;
+                float r = Mathf.Lerp(baseRadius, topRadius, Mathf.Pow(t, oak ? 0.9f : 0.75f));
+                r *= 1f + 0.07f * Mathf.Sin(t * 23f + variant) * (1f - t);           // burls
+                r *= 1f + 0.55f * Mathf.Max(0f, 0.06f - t) / 0.06f;                 // the flare at the foot
+                radii.Add(r);
+            }
+            bole.Tube(trunk, radii, sides, false);
+
+            // buttress roots spreading on the ground
+            int rootCount = lod == 2 ? 0 : oak ? 7 : 6;
+            for (int k = 0; k < rootCount; k++)
+            {
+                float yaw = k * 360f / rootCount + R(rng, -14f, 14f);
+                var dir = Quaternion.Euler(0f, yaw, 0f) * Vector3.forward;
+                float reach = baseRadius + R(rng, 3.5f, 5.5f);
+                var a = dir * baseRadius * 0.55f + Vector3.up * R(rng, 6f, 8f);
+                var b = dir * (baseRadius + 1.2f) + Vector3.up * 2.2f;
+                var c = dir * reach + Vector3.up * -0.6f;
+                roots.Tube(new[] { a, b, c }, new[] { 0.95f, 0.75f, 0.25f }, lod == 0 ? 7 : 4, false);
+            }
+
+            var center = new Vector3(0f, (crownStart + height) * 0.5f, 0f);
+            if (oak)
+            {
+                // heavy limbs from the top of the bole, out and up, each ending in clusters of leaves
+                int limbs = lod == 2 ? 5 : rng.Next(6, 9);
+                for (int l = 0; l < limbs; l++)
+                {
+                    float yaw = l * 360f / limbs + R(rng, -18f, 18f);
+                    float rise = R(rng, 22f, 48f);
+                    var dir = Quaternion.Euler(-rise, yaw, 0f) * Vector3.forward;
+                    var start = TrunkPoint(trunk, R(rng, crownStart, top - 1f) / top);
+                    float length = R(rng, 11f, 16f);
+                    var end = start + dir * length;
+                    var mid = Vector3.Lerp(start, end, 0.5f) + Vector3.up * R(rng, 0.5f, 1.8f);
+                    crown.Tube(new[] { start, mid, end }, new[] { baseRadius * 0.42f, baseRadius * 0.28f, baseRadius * 0.1f }, lod == 0 ? 8 : lod == 1 ? 5 : 3, true);
+                    var clusters = new List<Vector3> { end, Vector3.Lerp(mid, end, 0.4f) + Vector3.up * 1.5f };
+                    if (lod < 2)
+                        for (int s = 0; s < 2; s++)
+                        {
+                            // a secondary branch off the limb
+                            var from = Vector3.Lerp(start, end, R(rng, 0.35f, 0.7f));
+                            var sdir = Quaternion.Euler(-R(rng, 10f, 40f), yaw + R(rng, -60f, 60f), 0f) * Vector3.forward;
+                            var tip = from + sdir * R(rng, 5f, 8f);
+                            if (lod == 0) crown.Tube(new[] { from, Vector3.Lerp(from, tip, 0.5f) + Vector3.up * 0.4f, tip }, new[] { 0.35f, 0.22f, 0.08f }, 5, true);
+                            clusters.Add(tip);
+                        }
+                    foreach (var c in clusters) LeafCluster(crown, rng, c, R(rng, 3.8f, 5.2f), center, lod, lod == 0 ? 30 : lod == 1 ? 12 : 4, lod == 2 ? 7f : lod == 1 ? 3.4f : 2.6f);
+                }
+                // a cap of leaves over the top, so the crown reads as one dome from below
+                LeafCluster(crown, rng, new Vector3(0f, height - 3f, 0f), 6f, center, lod, lod == 0 ? 36 : lod == 1 ? 14 : 5, lod == 2 ? 9f : 3.2f);
+            }
+            else
+            {
+                // a redwood: short drooping branches in whorls up the top third, dressed in needle cards
+                float step = lod == 0 ? 1.7f : lod == 1 ? 3.2f : 6f;
+                for (float y = crownStart; y < height - 1.5f; y += step * R(rng, 0.85f, 1.15f))
+                {
+                    float u = (y - crownStart) / (height - crownStart);
+                    float length = Mathf.Lerp(7.5f, 2f, u) * R(rng, 0.85f, 1.15f);
+                    int count = lod == 2 ? 3 : 5;
+                    float yawStart = R(rng, 0f, 360f);
+                    for (int k = 0; k < count; k++)
+                    {
+                        float yaw = yawStart + k * 360f / count + R(rng, -14f, 14f);
+                        var dir = Quaternion.Euler(R(rng, 4f, 20f), yaw, 0f) * Vector3.forward;   // drooping
+                        var start = TrunkPoint(trunk, y / top);
+                        var tip = start + dir * length;
+                        if (lod == 0) crown.Tube(new[] { start, Vector3.Lerp(start, tip, 0.5f) + Vector3.up * 0.3f, tip }, new[] { 0.22f, 0.14f, 0.05f }, 4, true);
+                        int cards = lod == 2 ? 1 : Mathf.Max(1, Mathf.CeilToInt(length / (lod == 0 ? 1.4f : 2.6f)));
+                        for (int c = 0; c < cards; c++)
+                        {
+                            float t = (c + 0.4f) / cards;
+                            var p = Vector3.Lerp(start, tip, t);
+                            float w = (lod == 2 ? length * 1.4f : lod == 1 ? 3.6f : 2.8f) * (1f - t * 0.3f);
+                            crown.CrossCard(p, (tip - start).normalized, lod == 2 ? length : 2.6f, w, center, R(rng, -30f, 30f), t);
+                        }
+                    }
+                }
+                crown.CrossCard(new Vector3(trunk[trunk.Count - 1].x, height - 2.5f, trunk[trunk.Count - 1].z), Vector3.up, 3.5f, 2.2f, center, 0f, 0.3f);
+            }
+            return new[] { roots, bole, crown };
+        }
+
+        /// <summary>A ball of leaf cards around <paramref name="c"/>, facing out of the crown.</summary>
+        static void LeafCluster(Builder b, Random rng, Vector3 c, float radius, Vector3 crown, int lod, int cards, float size)
+        {
+            for (int k = 0; k < cards; k++)
+            {
+                var p = c + Random3(rng) * radius * 0.75f;
+                var up = (p - c + Vector3.up * 0.8f).normalized;
+                b.Card(p - up * size * 0.5f, up, Quaternion.AngleAxis(R(rng, 0f, 180f), up) * Vector3.Cross(up, Vector3.forward).normalized, size, size, crown, 1f, 0.85f);
+            }
+        }
+
+        /// <summary>A deck trunk: a straight bark column with a flare and buttress roots at its foot (it never sways: it holds a deck).</summary>
+        static Builder DeckTrunk(int variant, int lod)
+        {
+            var rng = new Random(6100 + variant * 7);
+            var b = new Builder { Height = 1e5f };   // no sway weight
+            float r0 = DeckTrunkRadius[variant], length = DeckTrunkLength;
+            int segments = lod == 0 ? 12 : 5, sides = lod == 0 ? 12 : 6;
+            var points = new List<Vector3>();
+            var radii = new List<float>();
+            for (int i = 0; i <= segments; i++)
+            {
+                float t = i / (float)segments;
+                points.Add(new Vector3(Mathf.Sin(t * 3.1f + variant) * 0.15f, t * length, Mathf.Cos(t * 2.3f + variant) * 0.15f));
+                float r = Mathf.Lerp(r0, r0 * 0.72f, t) * (1f + 0.05f * Mathf.Sin(t * 17f + variant));
+                r *= 1f + 0.6f * Mathf.Max(0f, 0.08f - t) / 0.08f;
+                radii.Add(r);
+            }
+            b.Tube(points, radii, sides, false);
+            int rootCount = lod == 0 ? 5 : 3;
+            for (int k = 0; k < rootCount; k++)
+            {
+                var dir = Quaternion.Euler(0f, k * 360f / rootCount + R(rng, -20f, 20f), 0f) * Vector3.forward;
+                b.Tube(new[] { dir * r0 * 0.5f + Vector3.up * 3.5f, dir * (r0 + 0.8f) + Vector3.up * 1.2f, dir * (r0 + R(rng, 2f, 3f)) + Vector3.down * 0.5f },
+                       new[] { r0 * 0.4f, r0 * 0.3f, r0 * 0.12f }, lod == 0 ? 6 : 4, false);
+            }
+            return b;
         }
 
         public static (string bark, string leaves) MaterialsFor(Species s) => s switch
@@ -190,14 +434,20 @@ namespace HotPatata.Editor
                 Card(basePoint, up, Vector3.Cross(up, side), length, width, crown, 1f, branchWeight);
             }
 
-            public Mesh ToMesh(string name)
+            public Mesh ToMesh(string name, bool barkOnly = false)
             {
                 var mesh = new Mesh { name = name, indexFormat = V.Count > 65535 ? UnityEngine.Rendering.IndexFormat.UInt32 : UnityEngine.Rendering.IndexFormat.UInt16 };
                 mesh.SetVertices(V);
                 mesh.SetNormals(N);
                 mesh.SetUVs(0, UV);
                 mesh.SetColors(C);
-                if (Sub[0].Count == 0)
+                if (barkOnly)
+                {
+                    // a giant's roots or bole: bark alone, one submesh
+                    mesh.subMeshCount = 1;
+                    mesh.SetTriangles(Sub[0], 0);
+                }
+                else if (Sub[0].Count == 0)
                 {
                     // ground cover and bushes: leaves only, one submesh (one material)
                     mesh.subMeshCount = 1;

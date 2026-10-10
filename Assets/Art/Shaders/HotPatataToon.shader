@@ -82,11 +82,13 @@ Shader "HotPatata/Stylized"
             #pragma multi_compile_fragment _ _SHADOWS_SOFT
             #pragma multi_compile_fragment _ _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
             #pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION
+            #pragma multi_compile_fragment _ _LIGHT_COOKIES
             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Fog.hlsl"
             #pragma multi_compile_instancing
 
             #include "HotPatataToonInput.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "HotPatataFog.hlsl"
 
             struct Attributes
             {
@@ -278,7 +280,7 @@ Shader "HotPatata/Stylized"
                 if (_EdgeWidth > 0.0) color *= 1.0 + BevelMask(input.positionOS) * _EdgeStrength;
 
                 color += _EmissionColor.rgb;
-                color = MixFog(color, input.fogFactor);
+                color = HP_MixFog(color, input.fogFactor, input.positionWS);
                 return half4(color, 1.0);
             }
             ENDHLSL

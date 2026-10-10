@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e42d60a4f1ee9c4797b8145e47d9795, type: 3}
+  m_Name: TimeOfDay 5 Dusk
+  m_EditorClassIdentifier: HotPatata::HotPatata.TimeOfDayPreset
+  sunElevation: 5
+  sunYaw: 262
+  sunColor: {r: 0.6, g: 0.66, b: 0.95, a: 1}
+  sunIntensity: 0.45
+  shadowStrength: 0.5
+  ambientSky: {r: 0.22, g: 0.28, b: 0.38, a: 1}
+  ambientEquator: {r: 0.24, g: 0.26, b: 0.3, a: 1}
+  ambientGround: {r: 0.1, g: 0.11, b: 0.12, a: 1}
+  fogColor: {r: 0.18, g: 0.23, b: 0.33, a: 1}
+  fogStart: 30
+  fogEnd: 180
+  mistColor: {r: 0.24, g: 0.3, b: 0.36, a: 1}
+  mistDensity: 0.1
+  mistFalloff: 15
+  mistGlow: 0.15
+  shaftStrength: 0
+  sky: {fileID: 8900000, guid: 6a65dd9ebe18e4448aea5cc09dac125a, type: 3}
+  skyExposure: 1.5
+  skyRotation: 45.95793
+  grade: {fileID: 11400000, guid: 14ae6fe60c99a3f47b3c220462675a71, type: 2}
+  wind: 0.55

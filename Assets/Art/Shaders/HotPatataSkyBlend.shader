@@ -1,6 +1,7 @@
 // PatataWilds sky (ARCHITECTURE §25.3): two HDRI cubemaps blended by TimeOfDayBlender as the run moves from act to act
 // (dawn, noon, late afternoon, sunset, dusk). Each has its own exposure and rotation, so the photographed sun lines up with
-// the scene's sun; the band just above and below the horizon melts into the fog colour, so the far hills and the sky meet.
+// the scene's sun; the band just above and below the horizon melts into the fog colour, so the far hills and the sky meet,
+// and below the horizon into the height mist's colour where the nature courses have one (HotPatataFog.hlsl).
 Shader "HotPatata/SkyBlend"
 {
     Properties
@@ -15,6 +16,7 @@ Shader "HotPatata/SkyBlend"
         _Tint ("Tint", Color) = (1, 1, 1, 1)
         _HorizonFog ("Horizon Fog Band", Range(0, 1)) = 0.6
         _HorizonHeight ("Horizon Band Height", Range(0.01, 0.5)) = 0.12
+        _Saturation ("Saturation", Range(0, 1.5)) = 1
     }
 
     SubShader
@@ -29,9 +31,10 @@ Shader "HotPatata/SkyBlend"
             #pragma vertex vert
             #pragma fragment frag
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "HotPatataFog.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
-                half _ExposureA, _ExposureB, _Blend, _HorizonFog, _HorizonHeight;
+                half _ExposureA, _ExposureB, _Blend, _HorizonFog, _HorizonHeight, _Saturation;
                 float _RotationA, _RotationB;
                 half4 _Tint;
             CBUFFER_END
@@ -64,9 +67,11 @@ Shader "HotPatata/SkyBlend"
                 half3 a = SAMPLE_TEXTURECUBE_LOD(_SkyA, sampler_SkyA, RotateY(d, _RotationA), 0).rgb * _ExposureA;
                 half3 b = SAMPLE_TEXTURECUBE_LOD(_SkyB, sampler_SkyB, RotateY(d, _RotationB), 0).rgb * _ExposureB;
                 half3 sky = lerp(a, b, _Blend) * _Tint.rgb;
+                sky = lerp(dot(sky, half3(0.2126, 0.7152, 0.0722)).xxx, sky, _Saturation);
                 half band = 1.0 - saturate(abs(d.y) / _HorizonHeight);
                 half below = saturate(-d.y * 6.0);
-                sky = lerp(sky, unity_FogColor.rgb, saturate(band * band * _HorizonFog + below));
+                half3 under = _HP_MistParams.x > 0.0 ? lerp(unity_FogColor.rgb, _HP_MistColor.rgb, _HP_MistParams.z) : unity_FogColor.rgb;
+                sky = lerp(sky, lerp(unity_FogColor.rgb, under, below), saturate(band * band * _HorizonFog + below));
                 return half4(sky, 1.0);
             }
             ENDHLSL

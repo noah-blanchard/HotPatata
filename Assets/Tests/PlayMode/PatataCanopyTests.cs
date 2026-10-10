@@ -87,6 +87,145 @@ namespace HotPatata.Tests
             Assert.IsEmpty(errors.Distinct().Take(20).ToArray());
         }
 
+        List<Vector3> PassSamples()
+        {
+            var all = new List<Vector3>();
+            var points = new List<Vector3>();
+            foreach (var pass in All<PassCorridor>())
+                if (pass.TrySample(tuning, points)) all.AddRange(points);
+            return all;
+        }
+
+        static IEnumerable<(string batch, Vector3 position, float scale, Bounds box)> Instances()
+        {
+            foreach (var instancer in All<FoliageInstancer>())
+                foreach (var batch in instancer.Set.batches)
+                {
+                    if (batch.lods.Length == 0 || batch.lods[0] == null) continue;
+                    var local = batch.LocalBounds(0);
+                    foreach (var cell in batch.cells)
+                        for (int i = 0; i < cell.Count; i++)
+                        {
+                            var (position, yaw, scale) = FoliageSet.Unpack(batch, cell, i);
+                            var m = Matrix4x4.TRS(position, Quaternion.Euler(0f, yaw, 0f), Vector3.one * scale);
+                            var box = new Bounds(m.MultiplyPoint3x4(local.center), Vector3.zero);
+                            for (int c = 0; c < 8; c++)
+                                box.Encapsulate(m.MultiplyPoint3x4(local.center + Vector3.Scale(local.extents, new Vector3((c & 1) == 0 ? -1 : 1, (c & 2) == 0 ? -1 : 1, (c & 4) == 0 ? -1 : 1))));
+                            yield return (batch.name, position, scale, box);
+                        }
+                }
+        }
+
+        [Test]
+        public void Forest_GiantsAndPlants_StayClearOfEveryPass()
+        {
+            var samples = PassSamples();
+            var instances = Instances().ToList();
+            Assert.Greater(instances.Count(t => t.batch.StartsWith("OakCrown") || t.batch.StartsWith("RedwoodCrown")), 1500, "a forest of giants (ARCHITECTURE §4)");
+            var cells = new Dictionary<(int, int, int), List<Vector3>>();
+            foreach (var p in samples)
+            {
+                var key = (Mathf.FloorToInt(p.x / 4f), Mathf.FloorToInt(p.y / 4f), Mathf.FloorToInt(p.z / 4f));
+                if (!cells.TryGetValue(key, out var list)) cells[key] = list = new List<Vector3>();
+                list.Add(p);
+            }
+            var errors = new List<string>();
+            float clear = PassCorridor.DecorationClearance;
+            foreach (var (batch, _, _, box) in instances)
+            {
+                var min = box.min - Vector3.one * clear;
+                var max = box.max + Vector3.one * clear;
+                bool hit = false;
+                for (int x = Mathf.FloorToInt(min.x / 4f); x <= Mathf.FloorToInt(max.x / 4f) && !hit; x++)
+                    for (int y = Mathf.FloorToInt(min.y / 4f); y <= Mathf.FloorToInt(max.y / 4f) && !hit; y++)
+                        for (int z = Mathf.FloorToInt(min.z / 4f); z <= Mathf.FloorToInt(max.z / 4f) && !hit; z++)
+                            if (cells.TryGetValue((x, y, z), out var list) && list.Any(p => box.SqrDistance(p) < clear * clear)) hit = true;
+                if (hit) errors.Add(batch + " at " + box.center);
+            }
+            Assert.IsEmpty(errors.Take(20).ToArray());
+        }
+
+        [Test]
+        public void DeckTrunks_ReachTheForestFloor_UnderTheirDecks_AndTheFloorFollowsTheCourse()
+        {
+            var mist = All<MistField>().Single();
+            var trunks = Instances().Where(t => t.batch.StartsWith("DeckTrunk")).ToList();
+            Assert.Greater(trunks.Count, 60, "the posts under the decks are trunks");
+            foreach (var (_, position, scale, _) in trunks)
+            {
+                Assert.AreEqual(mist.FloorAt(position), position.y, 5f, "a deck trunk stands on the forest floor at " + position);
+                var top = position + Vector3.up * (50f * scale - 1f);
+                Assert.IsTrue(Physics.Raycast(top, Vector3.up, 3f, LayerMask.GetMask("Environment"), QueryTriggerInteraction.Ignore), "a deck trunk ends under its deck at " + top);
+            }
+            foreach (var cp in All<Checkpoint>())
+            {
+                float below = cp.transform.position.y - mist.FloorAt(cp.transform.position);
+                Assert.That(below, Is.InRange(30f, 60f), "the forest floor lies about 40 m under checkpoint " + cp.Id);
+            }
+            var net = All<KillZone>().Single(k => k.name == "Safety net").GetComponent<Collider>().bounds;
+            var floors = Instances().Where(t => t.batch.StartsWith("DeckTrunk")).Select(t => t.position.y);
+            Assert.Less(net.max.y, floors.Min(), "the safety net lies under the forest floor");
+        }
+
+        [Test]
+        public void LeafRoofs_NothingHangsUnderTheirUnderside_TheirMatReadsSolid()
+        {
+            var roofs = All<CourseCeiling>().Select(c => c.GetComponent<Collider>().bounds).ToList();
+            Assert.Greater(roofs.Count, 10);
+            foreach (var (batch, position, _, box) in Instances().Where(t => t.batch.StartsWith("CanopyMat") || t.batch.StartsWith("CanopyTuft")))
+            {
+                // its own roof: the one it stands in (from the underside up)
+                var own = roofs.Where(r => position.x >= r.min.x - 0.1f && position.x <= r.max.x + 0.1f && position.z >= r.min.z - 0.1f && position.z <= r.max.z + 0.1f
+                                           && position.y >= r.min.y - 0.01f && position.y <= r.max.y + 0.01f).ToList();
+                Assert.IsNotEmpty(own, batch + " stands in a leaf roof at " + position);
+                Assert.GreaterOrEqual(box.min.y, own[0].min.y - 0.01f, batch + " hangs under its roof at " + position);
+                // and never reaches under another roof's underside, where the passes are
+                foreach (var r in roofs)
+                    if (!own.Contains(r) && box.max.x > r.min.x && box.min.x < r.max.x && box.max.z > r.min.z && box.min.z < r.max.z)
+                        Assert.IsFalse(box.min.y < r.min.y - 0.01f && box.max.y > r.min.y - PassCorridor.CeilingMargin, batch + " reaches under another roof at " + position);
+            }
+        }
+
+        [Test]
+        public void Mist_LiesOnTheForestFloor_ThickAtDawn_ClearAtDeckHeight()
+        {
+            var mist = All<MistField>().Single();
+            Assert.IsNotNull(mist.Floor);
+            var day = All<TimeOfDayBlender>().Single().Presets;
+            Assert.AreEqual(5, day.Count);
+            StringAssert.Contains("/Canopy/", AssetDatabase.GetAssetPath(day[0]), "PatataCanopy has its own day (PatataCanopyLook)");
+            foreach (var p in day)
+            {
+                // the mist over a 14.5 m pass at deck height, 40 m over the floor: barely there
+                float atDeck = p.mistDensity * Mathf.Exp(-40f / p.mistFalloff) * 14.5f;
+                Assert.Less(1f - Mathf.Exp(-atDeck), 0.15f, p.name + ": the mist veils the longest pass by less than 15 %");
+            }
+        }
+
+        [Test]
+        public void LightShafts_StayClearOfEveryPass_WhateverTheTimeOfDay()
+        {
+            var samples = PassSamples();
+            var shafts = All<MeshRenderer>().Where(r => r.sharedMaterial != null && r.sharedMaterial.shader.name == "HotPatata/LightShaft").ToList();
+            Assert.Greater(shafts.Count, 80, "god rays hang from the crowns beside the course");
+            float vertical = shafts[0].sharedMaterial.GetFloat("_Vertical");
+            var axes = All<TimeOfDayBlender>().Single().Presets.Select(p => (p.SunRotation * Vector3.forward + Vector3.down * vertical).normalized).ToList();
+            var errors = new List<string>();
+            foreach (var r in shafts)
+            {
+                var mesh = r.GetComponent<MeshFilter>().sharedMesh;
+                float length = r.transform.lossyScale.y, radius = mesh.bounds.size.x > 0 ? mesh.vertices.Max(v => Mathf.Abs(v.x)) * length * 1.35f : 0f;
+                var top = r.transform.position;
+                foreach (var axis in axes)
+                    foreach (var p in samples)
+                    {
+                        float t = Mathf.Clamp(Vector3.Dot(p - top, axis), 0f, length);
+                        if ((top + axis * t - p).magnitude < radius + PassCorridor.DecorationClearance) { errors.Add(r.name + " at " + top); break; }
+                    }
+            }
+            Assert.IsEmpty(errors.Distinct().Take(20).ToArray());
+        }
+
         [Test]
         public void Signals_AreOneToOne_SwitchesHaveTargets_TransitsHaveReceivers()
         {

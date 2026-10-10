@@ -23,6 +23,11 @@ MonoBehaviour:
   fogColor: {r: 0.7, g: 0.78, b: 0.88, a: 1}
   fogStart: 70
   fogEnd: 460
+  mistColor: {r: 0.78, g: 0.84, b: 0.9, a: 1}
+  mistDensity: 0.002
+  mistFalloff: 3
+  mistGlow: 0.1
+  shaftStrength: 0
   sky: {fileID: 8900000, guid: 023a8817525fb8c428294424f545df0e, type: 3}
   skyExposure: 0.55
   skyRotation: 163.78906
