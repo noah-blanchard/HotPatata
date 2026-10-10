@@ -211,11 +211,16 @@ namespace HotPatata
         [Tooltip("How fast (1/s) a remote rider's offset on the platform follows the owner's updates. Higher = snappier, " +
                  "lower = smoother steps while they walk on it.")]
         [Min(1f)] public float riderOffsetSmoothing = 15f;
-        [Tooltip("Metres the owner's offset on the platform must change before it is sent again.")]
-        [Range(0f, 0.1f)] public float riderOffsetSendThreshold = 0.01f;
         [Tooltip("Metres between a leaving rider's rebuilt and replicated positions above which it is a teleport: snap, " +
                  "never sweep across the level.")]
         [Min(0.5f)] public float riderSnapDistance = 3f;
+
+        [Header("Network - simulation clock (docs/netcode-deterministic-plan.md §2.1)")]
+        [Tooltip("Client only. When NGO corrects its estimate of the server time, the level clock runs at most this much " +
+                 "faster or slower (0.1 = ±10%) until it has caught up, instead of jumping back.")]
+        [Range(0.01f, 0.5f)] public float clockMaxSlew = 0.1f;
+        [Tooltip("Client only. A clock error larger than this (seconds) is a real desync: snap instead of slewing.")]
+        [Range(0.1f, 2f)] public float clockSnapSeconds = 0.5f;
 
         [Header("Bomb - feedback")]
         [Tooltip("Seconds between beeps for the four fuse stages: calm, medium, urgent, critical.")]

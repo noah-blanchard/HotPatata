@@ -43,7 +43,7 @@ namespace HotPatata
         public double ChangeTime => changeTime;
         public float FromProgress => fromProgress;
         /// <summary>0 = closed, 1 = open.</summary>
-        public float CurrentProgress => Progress(changeTime, fromProgress, opening, travelSeconds, NetMode.ServerTime);
+        public float CurrentProgress => Progress(changeTime, fromProgress, opening, travelSeconds, SimulationClock.ServerNow);
         public Vector3 FrameDelta { get; private set; }
 
         public int CarrierId { get; private set; }
