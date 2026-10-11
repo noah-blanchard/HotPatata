@@ -17,10 +17,19 @@ namespace HotPatata
         /// <summary>Client: throws whose local prediction matched the host's outcome, and those that did not.</summary>
         public static int ThrowAgreed, ThrowDisagreed;
 
+        /// <summary>
+        /// Owner (also offline): changes of the carrier the local player stands on (a clean ride is 2: board, leave), and
+        /// ground/air flips while on or next to one (a clean ride is 0). The #97 signature was dozens per second on a lift.
+        /// </summary>
+        public static int CarrierChanges, CarrierGroundFlips;
+        /// <summary>Viewer: frames where a remote rider jumped more than 0.3 m relative to their carrier.</summary>
+        public static int RiderPops;
+
         public static void Clear()
         {
             HazardTriggerHits = HazardRewindHits = StaticKills = 0;
             ThrowAgreed = ThrowDisagreed = 0;
+            CarrierChanges = CarrierGroundFlips = RiderPops = 0;
         }
     }
 }

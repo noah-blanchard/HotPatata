@@ -45,6 +45,23 @@ namespace HotPatata
         /// replicated transform moves (smoothed over a few physics steps). Used to lead moving receivers.
         /// </summary>
         public Vector3 Velocity => IsLocal && Motor != null ? Motor.Velocity : observedVelocity;
+
+        /// <summary>A remote copy whose owner stands on a moving carrier (presentation reads its motion relative to it).</summary>
+        public bool RemoteRiding => !IsLocal && NetSpawned && Net.RemoteCarrier != null;
+
+        /// <summary>
+        /// Velocity of the carrier under this player's feet (zero off carriers): from the motor for the local player, from
+        /// the owner's stamp on this machine's copy of the carrier for a remote one. Unlike <see cref="Velocity"/> of a local
+        /// player, which is their own motion only.
+        /// </summary>
+        public Vector3 CarrierVelocity
+        {
+            get
+            {
+                if (IsLocal) return Motor != null ? Motor.CarrierVelocity : Vector3.zero;
+                return NetSpawned ? CarrierMotion.VelocityAt(Net.RemoteCarrier, transform.position) : Vector3.zero;
+            }
+        }
         public string DisplayName => displayName;
         public Color Color => color;
         /// <summary>The slot's shape, paired with <see cref="Color"/> so identity never rests on colour alone.</summary>

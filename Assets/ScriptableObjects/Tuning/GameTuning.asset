@@ -27,6 +27,8 @@ MonoBehaviour:
   overspeedDeceleration: 9
   airTurnRate: 220
   airDrag: 3
+  carrierLeaveGraceSeconds: 0.1
+  carrierMomentumMax: 12
   airOverspeedDrag: 2.5
   sprintSpeed: 11
   sprintAcceleration: 18
@@ -101,7 +103,8 @@ MonoBehaviour:
   catchLagCompensation: 0.35
   riderBlendSeconds: 0.15
   riderOffsetSmoothing: 15
-  riderSnapDistance: 3
+  riderSnapDistance: 8
+  riderLeaveGraceSeconds: 0.07
   hazardRewindCap: 0.35
   clockMaxSlew: 0.1
   clockSnapSeconds: 0.5

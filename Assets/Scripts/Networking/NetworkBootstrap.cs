@@ -26,7 +26,7 @@ namespace HotPatata
     ///   -patataAutoStart &lt;n&gt;                             host starts the level once n players are in the lobby
     ///   -patataCheckpoint &lt;id&gt;                          start the run at that checkpoint (host / local)
     ///   -patataName &lt;name&gt;                             player name for this process (instead of the saved one)
-    ///   -patataBot   -patataBotMove &lt;Stand|Strafe|Jump|RunAcross|Ride&gt;
+    ///   -patataBot   -patataBotMove &lt;Stand|Strafe|Jump|RunAcross|Ride|RideFast&gt;
     ///   -patataScene &lt;name&gt;   -patataQuit &lt;s&gt;   -patataLatency &lt;ms&gt;
     /// </summary>
     [DefaultExecutionOrder(-1000)]

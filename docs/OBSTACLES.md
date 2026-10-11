@@ -312,13 +312,15 @@ Subclass the system and override its pose:
 | `RotatingObstacle` | `RotationAt(rest, angle)` |
 
 Keep the override a **pure function** of the value it is given (derived from the shared clock), so every machine shows the
-same thing. Riders are carried by translation only.
+same thing. Riders are carried by translation, plus rotation for a turning carrier (`FrameRotation`, the pivot).
 
 The base classes already do the network part for a subclass, through the same virtual methods. A brand-new mover (not a
 subclass) must do it itself (netcode plan §2.2–2.4):
 
 - **Carrier** (anything a player rides): implement `IPlatformCarrier`:
-  - `FrameDelta`;
+  - `FrameDelta`; a carrier that moves calls `CarrierMotion.Moved(this, part, body)` in `Update`, right after writing its
+    part's pose. It carries the riders and puts the collider where the part is drawn (#97); without it, riders stand on
+    last fixed step's deck and lose their footing on anything that rises faster than 2 m/s;
   - `Moves`;
   - `AnchorPosition` (the carried part's position);
   - `CarrierId`, with `CarrierRegistry.Register(this)` in `OnEnable` and `Unregister` in `OnDisable`. The id comes from

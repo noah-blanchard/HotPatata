@@ -17,8 +17,10 @@ namespace HotPatata
         public Vector3 AimForward;
         /// <summary>Launch velocity with no assist at all.</summary>
         public Vector3 RawVelocity;
-        /// <summary>The launch velocity actually used.</summary>
+        /// <summary>The launch velocity actually used (the carrier's velocity included).</summary>
         public Vector3 Velocity;
+        /// <summary>Velocity of the release point on the carrier the thrower stands on (zero off carriers), kept by the throw (PROJECT_SPEC §8.2).</summary>
+        public Vector3 CarrierVelocity;
 
         public Player AssistTarget;
         /// <summary>Degrees between the raw aim and the target's body (0 = dead on).</summary>

@@ -108,12 +108,15 @@ namespace HotPatata
                 ? player.Motor.Velocity
                 : (transform.position - lastPosition) / dt;
             lastPosition = transform.position;
+            // A remote rider moves with their lift: animate their own motion on it, standing (#97).
+            bool riding = player.RemoteRiding;
+            if (riding) velocity -= player.CarrierVelocity;
 
             float horizontalSpeed = new Vector2(velocity.x, velocity.z).magnitude;
             var motor = player.Motor;
             bool grounded = player.IsLocal
                 ? player.Motor.Grounded
-                : Physics.CheckSphere(transform.position + Vector3.up * 0.12f, 0.22f,
+                : riding || Physics.CheckSphere(transform.position + Vector3.up * 0.12f, 0.22f,
                     groundMask, QueryTriggerInteraction.Ignore);
 
             // Sliding holds a still pose (the legs do not run); otherwise run = 1, sprint = 2.

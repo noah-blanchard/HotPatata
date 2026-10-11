@@ -34,6 +34,7 @@ namespace HotPatata
         float fromProgress;
         bool opening;
         bool initialised;
+        Rigidbody body;   // the moving part's kinematic body, if any (physics pose kept in step with the drawn one)
 
         /// <summary>Raised on the host when the direction changes (time, progress then, opening).</summary>
         public event Action<double, float, bool> StateChanged;
@@ -119,7 +120,11 @@ namespace HotPatata
             }
         }
 
-        void OnEnable() => CarrierId = CarrierRegistry.Register(this);
+        void OnEnable()
+        {
+            CarrierId = CarrierRegistry.Register(this);
+            body = platform != null ? platform.GetComponent<Rigidbody>() : null;
+        }
 
         void OnDisable() => CarrierRegistry.Unregister(CarrierId, this);
 
@@ -151,6 +156,7 @@ namespace HotPatata
                 if (initialised && Quaternion.Angle(Quaternion.identity, turn) < 45f) FrameRotation = turn;   // never swing riders with a snap
                 platform.rotation = rotation.Value;
             }
+            CarrierMotion.Moved(this, platform, body);   // carry the riders, then the collider is where the deck is drawn (#97)
             initialised = true;
 
             if (lethalWhileClosing != null) lethalWhileClosing.enabled = !opening && p > 0f && p < 1f;

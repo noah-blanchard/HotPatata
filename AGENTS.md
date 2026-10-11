@@ -73,7 +73,8 @@ same PR. Code comments cite doc sections (e.g. `PROJECT_SPEC §8.3`), so never r
   - Level motion derives from `SectionClock` (server time), never `Time.time`. Any other time-driven pose or readout uses
     `SimulationClock.ServerNow` (one monotonic sample per frame), never `NetMode.ServerTime` directly.
   - A new mover implements `ITimePosed` (its pose at any time); a new carrier implements `IPlatformCarrier` with a
-    registered `CarrierId` (docs/OBSTACLES.md §4.4).
+    registered `CarrierId`, and calls `CarrierMotion.Moved` right after it moves, so its riders are carried and its
+    collider is where it is drawn (docs/OBSTACLES.md §4.4, #97).
   - Moving hazards are judged for remote players on the host at the time they saw them (`HazardRewind`), never from the
     host's copy of them.
 - **Bomb state machine is explicit:** `Held → Thrown → CaughtGrace → Held`, plus `Thrown → InTransit → Thrown`

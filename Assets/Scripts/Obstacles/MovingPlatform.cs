@@ -33,6 +33,7 @@ namespace HotPatata
 
         bool initialised;
         float lastU;
+        Rigidbody body;   // the moving part's kinematic body, if any (physics pose kept in step with the drawn one)
 
         /// <summary>How far the platform moved this frame (used to carry riders).</summary>
         public Vector3 FrameDelta { get; private set; }
@@ -100,7 +101,11 @@ namespace HotPatata
 
         public bool LethalAt(double serverTime, Collider zone) => true;   // a crusher's strip is always armed
 
-        void OnEnable() => CarrierId = CarrierRegistry.Register(this);
+        void OnEnable()
+        {
+            CarrierId = CarrierRegistry.Register(this);
+            body = platform != null ? platform.GetComponent<Rigidbody>() : null;
+        }
 
         void OnDisable() => CarrierRegistry.Unregister(CarrierId, this);
 
@@ -118,6 +123,7 @@ namespace HotPatata
             // A reset (or first frame) snaps the platform; never drag riders along with a snap.
             FrameDelta = initialised && delta.sqrMagnitude < 4f ? delta : Vector3.zero;
             platform.position = target;
+            CarrierMotion.Moved(this, platform, body);   // carry the riders, then the collider is where the deck is drawn (#97)
             if (u > lastU + 1e-5f) Active = true;
             else if (u < lastU - 1e-5f) Active = false;
             else if (!initialised) Active = u >= 0.5f;

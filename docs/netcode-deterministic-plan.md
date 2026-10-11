@@ -10,8 +10,15 @@
 > | 1 Relative riders | built | `IPlatformCarrier.CarrierId/Moves/AnchorPosition`, `CarrierRegistry`, `RiderReconstruction` driven by `NetworkPlayer` |
 > | 2 Clock and stamps | built | `SimulationClock` (one sample per frame, slewed and monotonic on clients); the owner's per-tick `NetworkPlayer.PlayerStamp` |
 > | 3 Hazard rewind | built | `ITimePosed` on movers, `HazardRewind` on the host, `hazardRewindCap` |
-> | 4–5 | open | throw prediction at host time; plate readouts and reset ordering |
+> | 4–5 | open | throw prediction at host time; plate readouts and reset ordering. For throws from a moving carrier, #97 already releases on the host's own copy of the carrier |
 > | 6 | only if needed | custom snapshot, if board/leave transitions still show in playtests |
+>
+> **Follow-up #97 (vertical carriers).** Stages 0–3 assumed the owner reports a stable carrier. On anything rising faster
+> than the motor's 2 m/s ground stick (every lift of the courses), it did not: the owner lost its footing every other
+> frame, the stamp flapped and stage 1's rebuild bobbed the rider through the lift. Fixed at the source in #97: carriers
+> carry their riders and sync their collider when they move (`CarrierMotion.Moved`), a stable `RidingCarrier`, a stamp
+> `Epoch` for teleports, `riderLeaveGraceSeconds`, presentation relative to the carrier, and throws that keep the
+> carrier's velocity (released on the host's own copy of the carrier).
 >
 > Decisions taken while building:
 >
