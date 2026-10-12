@@ -129,7 +129,12 @@ namespace HotPatata
             if (NetMode.IsRemoteClient)
             {
                 requestPendingUntil = Time.time + RequestTimeout;
-                player.Net.RequestThrow(origin, shot.Velocity);
+                // On a moving carrier the host replays the release on its own copy of it, at its own time (#97).
+                var carrier = player.Motor.RidingCarrier;
+                bool relative = carrier != null && carrier.Moves && carrier.CarrierId != 0;
+                player.Net.RequestThrow(origin, relative ? shot.Velocity - shot.CarrierVelocity : shot.Velocity,
+                    relative ? carrier.CarrierId : 0,
+                    relative ? Quaternion.Inverse(carrier.AnchorRotation) * (origin - carrier.AnchorPosition) : Vector3.zero);
                 // Draw the throw now; the host's confirmation arrives a round trip later.
                 if (bomb.TryGetComponent(out NetworkBomb netBomb)) netBomb.PredictLocalThrow(player, origin, shot.Velocity);
                 return true;
@@ -196,18 +201,21 @@ namespace HotPatata
             Vector3 right = Vector3.Cross(Vector3.up, dir);
             if (right.sqrMagnitude > 1e-4f)
                 dir = Quaternion.AngleAxis(-t.throwUpAngle, right.normalized) * dir;
-            // 3. Keep a share of the run speed along the aim (never sideways or vertical).
+            // 3. Keep a share of the run speed along the aim (never sideways or vertical), and all of the carrier's velocity:
+            //    a throw from a lift leaves with the lift (PROJECT_SPEC §8.2, #97).
             Vector3 inherited = InheritedVelocity(t, player.Velocity, dir);
-            shot.RawVelocity = dir * speed + inherited;
+            Vector3 carried = CarrierMotion.VelocityAt(player.Motor.RidingCarrier, origin);
+            shot.CarrierVelocity = carried;
+            shot.RawVelocity = dir * speed + inherited + carried;
 
             // 4. Small release-time assist toward a receiver near the aim: direction only, never speed.
-            var assist = AimAssist.Apply(t, pivot, forward, origin, dir, speed, inherited, player, allPlayers, sightMask);
+            var assist = AimAssist.Apply(t, pivot, forward, origin, dir, speed, inherited + carried, player, allPlayers, sightMask);
             shot.AssistTarget = assist.Target;
             shot.AssistAngle = assist.Angle;
             shot.AssistStrength = assist.Strength;
             shot.AssistCorrection = assist.Correction;
             shot.AssistYawOnly = assist.Target != null && !assist.Reachable;
-            shot.Velocity = assist.Direction * speed + inherited;
+            shot.Velocity = assist.Direction * speed + inherited + carried;
             return shot;
         }
     }

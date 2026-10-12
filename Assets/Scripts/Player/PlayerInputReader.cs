@@ -79,6 +79,8 @@ namespace HotPatata
         public Vector2 Look => Blocked ? Vector2.zero : Scripted != null ? Scripted.Look : Source != InputSource.None ? look.ReadValue<Vector2>() : Vector2.zero;
         /// <summary>Mouse look is a per-frame delta; stick look is a rate. Callers scale them differently.</summary>
         public bool LookIsMouse => Scripted == null && Source == InputSource.KeyboardMouse;
+        /// <summary>Jump is held (keyboard/gamepad; never scripted). Only the dev noclip reads it: rise while held.</summary>
+        public bool JumpHeld => !Blocked && Scripted == null && Source != InputSource.None && jump.IsPressed();
         public bool JumpPressed => (Scripted != null ? Scripted.ConsumeJump() : Source != InputSource.None && jump.WasPressedThisFrame()) && !Blocked;
         public bool ThrowPressed => (Scripted != null ? Scripted.ConsumeThrowPress() : Source != InputSource.None && throwAction.WasPressedThisFrame()) && !Blocked;
         public bool ThrowReleased => (Scripted != null ? Scripted.ConsumeThrowRelease() : Source != InputSource.None && throwAction.WasReleasedThisFrame()) && !Blocked;

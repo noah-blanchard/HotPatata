@@ -16,6 +16,7 @@
 | `MovingPlatformTests` | EditMode | `MovingPlatform.Evaluate`, the pure clock-to-position maths |
 | `SimulationClockTests` | EditMode | #92 the client clock: in step it follows the frame, NGO corrections are slewed (never backwards, at most `clockMaxSlew`), a real desync snaps; offline it is the local clock |
 | `CarrierRegistryTests` | EditMode | #92 carrier ids: stable FNV-1a hash, follows the sibling path not the name, unique in every course scene and PassSandbox |
+| `CarrierMotionTests` | EditMode | #97 the velocity of a point on a sliding or turning carrier, what a player leaving one keeps (all of it, capped), the aim assist solving a pass between two riders of one lift as on still ground |
 | `RiderReconstructionTests` | EditMode | #92 a remote rider glued to the carrier as drawn locally whatever the lagging world position, board and leave blends without a pop, the offset smoothed, a teleport snaps |
 | `HazardRewindTests` | EditMode | #92 the host's rewound hazard verdict: capsule vs (rotated) box, a box carried with its mover to another time, the verdict at the claimed time and not now, the claim cap, a door's edge armed only while closing, a moving platform posed at any time by the formula it moves by |
 | `SessionServiceTests` | EditMode | M4: code cleanup and player-facing error wording |
@@ -50,6 +51,8 @@
 | `TimeOfDayTests` | EditMode | the nature courses' days: the blender's step (blend forward, snap back and over big jumps), segments and checkpoint times, each course's five presets in order (dawn low, noon high, dusk low and cool), the mist thick at dawn, thin at noon, back at dusk, PatataCanopy's own cooler day with its haze beyond the longest pass |
 | `PatataWildsTests` | PlayMode | `PatataWilds` (PROJECT_SPEC §15c): route spread, turns, climb and drop, 25 checkpoints and the summit finish, the summit fuse overrides, passes clear of solids, ceilings, decoration and scattered plants (normal passes at most 14 m), signals one-to-one, campfires instead of pads (catch when reached, out on restart), water always over a kill zone, the time of day following the checkpoint, no mesh collider and generated visuals inside their colliders, banded hazards, 3D ambience on the SFX group, first in the menu with 25 spawn choices, Hold the Rope with two players, every checkpoint resets then finish and rematch, every transit flight reaches its pad |
 | `PatataTempleTests` | PlayMode | `PatataTemple` (PROJECT_SPEC §15e): 15 checkpoints, one finish, a contract for three per section with its "With two" line, three arches, the fuse overrides, the heavy and hourglass plates, beams and pivots present and wired (hourglasses replicated), passes clear of ceilings and solids, the altar over the pyramid and above every floor, the canopy under every floor near it; on the course: the heavy slab ignores its carrier and two empty hands raise the bridge, a body in a wing's light raises another wing's herse, the rose's plate turns its pivot |
+| `VerticalCarrierRideTests` | PlayMode | #97 at a pinned frame rate (30 / 60 / 144, `Time.captureFramerate`), a rider stays grounded and on a lift on every frame, within 5 cm of the drawn deck, up at 4 / 7 / 9 m/s, down, and through reversals mid-travel, never falling through; a jump off a rising lift keeps its rise; a tap pass between two riders of a 9 m/s lift is caught |
+| `DevCheatsTests` | PlayMode | the map-testing cheats: noclip flies through the floor and walks again when off, invincible sends a falling player back to their spawn without a reset, no explosions hands the bomb back (world contact or fuse) |
 | `TrioObstacleTests` | PlayMode | the systems for three on PassSandbox's `KitDemo/TrioObstacles` (PROJECT_SPEC §13.21–13.24): the heavy plate needs two empty hands (a lob does not free its thrower), the hourglass plate runs on after release, a body in the sun beam turns the pivot, which carries its rider a quarter round and turns their view |
 | `TrioSystemTests` | EditMode | the pure rules for three: counted bodies, the player a hands-free plate ignores in each bomb state, the hourglass end, the pivot's carry and yaw, the rider rebuilt in the carrier's frame, the beam's cut point, the lightning's pulse (never a step) |
 | `PatataCanopyTests` | PlayMode | `PatataCanopy` (PROJECT_SPEC §15d): 25 checkpoints, one finish, a contract per section, the fuse overrides, passes clear of ceilings, solids and decoration (normal passes at most 14.5 m), signals one-to-one, three switches with targets, hands-free plates, body screens on their layer, campfires, second in the menu with 25 spawn choices, Les Lucioles, Pont-levis croisé, La Plaque and the spore bridge, every checkpoint resets then finish and rematch, every transit flight reaches its pad; the forest (M13.7): giants and plants clear of every pass, deck trunks from the forest floor to their decks, the floor about 40 m under every checkpoint and the safety net under it, nothing under a leaf roof's underside, the mist on the floor and light at deck height, light shafts clear of every pass at every moment of the day |
@@ -119,12 +122,30 @@ not exercise the asset serialization step that rejects `DontSave` font dependenc
 - **Offline only:** F4 turns the idle player into a catch/throw-back bot (`PassPartner`), and F5 cycles its movement.
   `PassSandbox` has a 4 / 8 / 12 / 16 m range lane on its east side.
 - The debug HUD (`DebugHud`) shows run state, resets, checkpoint, time and ping (`NetMode.RttMs`).
-- **F7** toggles `NetSyncProbe` (netcode plan stage 0, online only). It shows:
-  - each remote rider's gap to the moving carrier under them, tagged when rebuilt on the carrier;
-  - the host's moving-hazard verdicts (the ignored trigger vs the rewound one);
-  - the client's throw prediction against the host's verdict.
+- **F8** opens the map-testing tools (`DevPanel`, `HotPatata.DebugTools`; the flags live in `DevCheats`, which reads
+  false in release builds). While it is open, the number keys use it:
+  - **1** noclip (also **F9** at any time): fly where you look, through everything, Space up, Crouch down, Sprint ×3;
+  - **2** invincible: a fall into a static kill zone (void, water) sends only that player back to their spawn, moving
+    hazards never kill; no team reset;
+  - **3** no explosions: whatever would blow the bomb up (world contact, kill zone, fuse) hands it back to its carrier or
+    thrower with a fresh fuse;
+  - **4** show zones: kill zones (red), checkpoint triggers (green) and carriers (blue), through walls;
+  - **5 / 6** previous / next checkpoint: restarts the run there (the `-patataCheckpoint` path);
+  - **7** give me the bomb.
 
-  It logs `[Sync]` lines: `rider slot=N carrier=id gap mean/min/max` every 2 s, `hazard ...` and `throw predicted=... host=...`.
+  Noclip is the local player's own; the rest are rules, so they act offline or on the host (a client's panel says
+  "host only"). A yellow `DEV CHEATS` banner stays on screen while any cheat is on. `-patataCheats` starts a dev
+  build invincible with no explosions.
+- **F7** toggles `NetSyncProbe` (netcode plan stage 0, online). It shows:
+  - each remote rider's gap to the moving carrier under them, tagged when rebuilt on the carrier, also while they blend
+    out after the owner stopped naming it;
+  - the host's moving-hazard verdicts (the ignored trigger vs the rewound one);
+  - the client's throw prediction against the host's verdict;
+  - the local player's own ride (#97): carrier changes (a clean ride is 2) and ground/air flips on a carrier (0), and
+    remote riders' pops (> 0.3 m in a frame relative to their carrier, 0).
+
+  It logs `[Sync]` lines: `rider slot=N carrier=id gap mean/min/max` and `ride owner carrierChanges=... groundFlips=...
+  | viewer riderPops=...` every 2 s, `hazard ...` and `throw predicted=... host=...`.
 - Logs use the `[Bomb]` / `[Run]` / `[Throw]` / `[Sync]` prefixes (`PatataLog`). Mirror lines on clients are tagged `(mirror)`.
   Do not grep logs for "error": the name `ApplyMirror` contains it.
 
@@ -143,7 +164,8 @@ not exercise the asset serialization step that rejects `DontSave` font dependenc
 | `-patataCheckpoint <id>` | the run starts at that checkpoint (host / local; `RunOptions.StartCheckpoint`) |
 | `-patataName <name>` | player name for this process instead of the saved one (two instances on one PC share `PlayerPrefs`); bots keep "Player N" without it |
 | `-patataBot` | the local player is a bot (`PlayerBot`) |
-| `-patataBotMove <pattern>` | the bot's movement: `Stand`, `Strafe`, `Jump`, `RunAcross` or `Ride` (hops onto the nearest moving platform that is not a crusher, after each reset, and stays on it) |
+| `-patataBotMove <pattern>` | the bot's movement: `Stand`, `Strafe`, `Jump`, `RunAcross`, `Ride` (hops onto the nearest moving platform that is not a crusher, after each reset, and stays on it) or `RideFast` (the same onto the fastest-rising carrier of the scene, #97) |
+| `-patataCheats` | dev builds: start invincible with no explosions (map testing; the F8 panel, §2) |
 | `-patataLatency <ms>` | Network Simulator latency (Editor / dev builds only) |
 | `-patataQuit <s>` / `-patataLeaveAfter <s>` | quit / leave the session after s seconds |
 
@@ -203,8 +225,9 @@ HotPatata.exe -batchmode -nographics -patataJoin 127.0.0.1 -patataBot -patataBot
 ```
 
 - **Riders:** `[Sync] rider` lines on every peer. The gap should stay within ±5 cm (it was about speed × (RTT + 0.1 s)
-  before stage 1). `PassSandbox` has two moving carriers; for elevators and lifts use `-patataScene IndustrialPlant`
-  (or a course) with `-patataCheckpoint`.
+  before stage 1). `PassSandbox` has two moving carriers and its lifts are slow (1.9 m/s); for fast lifts use
+  `-patataBotMove RideFast` (the fastest-rising carrier of the scene) with `-patataScene IndustrialPlant` (or a course)
+  and `-patataCheckpoint`. The `ride` line must show no ground flips and no rider pops (#97).
 - **Hazards:** with `-patataBotMove RunAcross` near a rotating bar, the host logs each ignored trigger and each rewound
   hit (`[Sync] hazard ...`). The two should agree almost always; a disagreement is the lag that stage 3 removes.
 - **Throws:** `[Sync] throw ... agree|DISAGREE` on clients (stage 4 will act on these).

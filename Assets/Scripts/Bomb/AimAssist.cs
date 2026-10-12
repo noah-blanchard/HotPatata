@@ -51,7 +51,11 @@ namespace HotPatata
             var target = PickTarget(t, eye, aimForward, thrower, players, blockMask, out float angle, out float distance);
             if (target == null) return new AssistResult { Direction = rawDirection };
 
-            var result = Correct(t, origin, rawDirection, speed, inherited, target.CatchVolume.CatchCenter, target.Velocity, angle, distance);
+            // A receiver on a carrier moves with it: a local player's own velocity leaves the carrier out, a remote copy's
+            // observed one has it. The carrier's part is led exactly (it is deterministic), only their own run is guessed.
+            Vector3 carried = target.CarrierVelocity;
+            Vector3 targetVelocity = target.IsLocal ? target.Velocity + carried : target.Velocity;
+            var result = Correct(t, origin, rawDirection, speed, inherited, target.CatchVolume.CatchCenter, targetVelocity, angle, distance, carried);
             result.Target = target;
             return result;
         }
@@ -102,17 +106,20 @@ namespace HotPatata
 
         /// <summary>
         /// The capped correction of <paramref name="rawDirection"/> toward a target at <paramref name="center"/>
-        /// (moving at <paramref name="targetVelocity"/>). Pure: no scene queries, unit tested directly.
+        /// (moving at <paramref name="targetVelocity"/>, of which <paramref name="targetCarrier"/> is the carrier they ride:
+        /// led exactly, rise included). <paramref name="inherited"/> is every velocity the launch keeps on top of its own
+        /// speed (run speed, the thrower's carrier). Pure: no scene queries, unit tested directly.
         /// </summary>
         public static AssistResult Correct(GameTuning t, Vector3 origin, Vector3 rawDirection, float speed, Vector3 inherited,
-            Vector3 center, Vector3 targetVelocity, float angle, float distance)
+            Vector3 center, Vector3 targetVelocity, float angle, float distance, Vector3 targetCarrier = default)
         {
             var r = new AssistResult { Angle = angle, Direction = rawDirection };
             r.Strength = StrengthFor(t, angle, distance);
             if (r.Strength <= 0f) return r;
 
             float g = ThrowBallistics.Gravity(t);
-            Vector3 lead = new Vector3(targetVelocity.x, 0f, targetVelocity.z) * t.assistLeadFactor;
+            Vector3 own = targetVelocity - targetCarrier;
+            Vector3 lead = new Vector3(own.x, 0f, own.z) * t.assistLeadFactor + targetCarrier;
             Vector3 drift = lead - inherited;
 
             // Solve in the frame that moves with the launch's inherited velocity, aiming where the receiver will be.

@@ -1063,8 +1063,13 @@ monotonic on clients. Every time-driven mover also implements `ITimePosed` (`Try
 can say where its moving part was at any time, which the host uses to judge remote players against moving hazards
 (§13.1). Anything that carries riders implements `IPlatformCarrier`:
 
-- `FrameDelta`, which `PlayerMotor` adds to its move while grounded on it (moving platforms, elevators, pistons,
-  `Conveyor` belts);
+- `FrameDelta`: how far a rider is carried this frame (moving platforms, elevators, pistons, `Conveyor` belts). A
+  carrier that moves calls `CarrierMotion.Moved` right after writing its pose (#97): it carries its local riders
+  (`PlayerMotor.CarryRiders`) and pushes its pose to its kinematic body (`autoSyncTransforms` is off, so otherwise the
+  collider would lag the drawn deck until the next fixed step). A deck that rises carries its riders first, then moves
+  its collider; any other motion moves the collider first. The rider's own move comes after, so its ground stick
+  always lands back on the deck: one combined move pointed up on a lift faster than the 2 m/s stick, and riders lost
+  their footing every other frame. A belt does not move, so the rider's motor carries itself;
 - `CarrierId`: the same number on every machine, derived at load by `CarrierRegistry` from the scene and the
   sibling-index path (never names), and checked unique by `CarrierRegistryTests`;
 - `Moves` (false for a belt);
@@ -1346,12 +1351,23 @@ Remote players against time-driven level objects (the analysis and the staged pl
   - its feet;
   - the moving carrier it stands on, if any (`CarrierId`), and its offset from the carrier's `AnchorPosition`.
 
-  A teleport sends a fresh stamp with no carrier.
+  A teleport sends a fresh stamp with no carrier and a new `Epoch`.
+
+  The carrier comes from `PlayerMotor.RidingCarrier`, which is stable: a frame where the deck is not under the feet
+  does not count as leaving (`carrierLeaveGraceSeconds`), a jump, a launch or a teleport does (#97).
 - **Riders.** A remote player on a moving carrier is drawn at that offset from the carrier as THIS machine draws it,
   so they stay glued to it whatever the latency. `NetworkPlayer.LateUpdate` runs after NGO applies the transform in
   PreLateUpdate, and before the held bomb is placed. Boarding and leaving blend over `riderBlendSeconds`; only the
-  offset is smoothed; a jump larger than `riderSnapDistance` is a teleport and snaps. The host's copy is placed the
-  same way, so plates, checkpoints, catch centres and triggers see the rider on the platform.
+  offset is smoothed. A carrier the stamp stops naming is kept `riderLeaveGraceSeconds` before the blend out starts. A
+  teleport snaps on a new stamp `Epoch`, never on a distance (`riderSnapDistance`, 8 m, is only a fallback: a rider
+  leaving a 9 m/s lift is legitimately metres from their lagging world position). The host's copy is placed the
+  same way, so plates, checkpoints, catch centres and triggers see the rider on the platform. Presentation
+  (`PlayerAnimator`, `PlayerDustFx`) reads a remote rider's motion relative to their carrier, so a rider standing on a
+  lift stands.
+- **Throws from a carrier.** The throw keeps the carrier's velocity at the release point (`CarrierMotion.VelocityAt`,
+  PROJECT_SPEC §8.2). A client sends its release point in the carrier's frame (`carrierId` + offset) and the throw's
+  own velocity; the host releases from its own copy of the carrier, at its own time, and adds the carrier's velocity
+  there. The client's lift was drawn a latency earlier, so its world point would be inside or above the host's deck.
 - **Moving hazards** (§13.2 has the cap). A `KillZone` under an `ITimePosed` mover (rotating bar, crusher, a closing
   door's edge) does not fail the section on the host for a remote player's trigger; that trigger is only logged.
   `HazardRewind` judges each stamp instead: the player's capsule at the stamp's feet against every armed moving zone

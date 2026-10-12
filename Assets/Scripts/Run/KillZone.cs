@@ -48,6 +48,12 @@ namespace HotPatata
         {
             var player = other.GetComponentInParent<Player>();
             if (player == null || RunManager.Instance == null) return;
+            if (DevCheats.Invincible)
+            {
+                // Dev cheat: a fall (static zone) sends just this player back to their spawn; a moving hazard does nothing.
+                if (posed == null) RunManager.Instance.RespawnPlayer(player, $"zone={name} (invincible)");
+                return;
+            }
 
             if (NetMode.IsNetworked && NetMode.IsAuthority && !player.IsLocal)
             {

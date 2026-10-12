@@ -34,6 +34,8 @@ namespace HotPatata
             public Vector3 Position;
             public int CarrierId;
             public Vector3 Offset;
+            /// <summary>Bumped by every teleport: viewers snap on a new epoch, never on a distance (#97).</summary>
+            public byte Epoch;
 
             public bool Valid => Time > 0.0;
 
@@ -43,9 +45,11 @@ namespace HotPatata
                 serializer.SerializeValue(ref Position);
                 serializer.SerializeValue(ref CarrierId);
                 serializer.SerializeValue(ref Offset);
+                serializer.SerializeValue(ref Epoch);
             }
 
-            public bool Equals(PlayerStamp o) => Time == o.Time && Position == o.Position && CarrierId == o.CarrierId && Offset == o.Offset;
+            public bool Equals(PlayerStamp o) =>
+                Time == o.Time && Position == o.Position && CarrierId == o.CarrierId && Offset == o.Offset && Epoch == o.Epoch;
         }
 
         readonly NetworkVariable<int> slot = new NetworkVariable<int>(-1);   // server-written
@@ -62,6 +66,9 @@ namespace HotPatata
         readonly RiderReconstruction rider = new RiderReconstruction();
         Vector3 lastWritten, lastReplicated;
         bool wroteLast;
+        byte epoch;              // owner: teleports so far
+        byte seenEpoch;          // viewer: the epoch the reconstruction belongs to
+        float carrierLostAt = -1f;   // viewer: when the owner stopped reporting the carrier we rebuild on
 
         Player player;
         Unity.Netcode.Components.NetworkTransform netTransform;
@@ -77,6 +84,10 @@ namespace HotPatata
         public PlayerStamp Stamp => stamp.Value;
         /// <summary>This copy is drawn (partly) relative to a moving carrier.</summary>
         public bool RebuiltOnCarrier => rider.Active;
+        /// <summary>The carrier this copy is rebuilt on (0 = none), also while blending out (diagnostics).</summary>
+        public int RebuiltCarrierId => rider.CarrierId;
+        /// <summary>Remote copy: the moving carrier its owner stands on, as this machine has it (null when none).</summary>
+        public IPlatformCarrier RemoteCarrier => CarrierRegistry.Get(stamp.Value.CarrierId);
         /// <summary>Remote copy: the world position NGO replicated this frame, before any rebuilding on a carrier (diagnostics).</summary>
         public Vector3 ReplicatedPosition => lastReplicated;
 
@@ -172,7 +183,8 @@ namespace HotPatata
                 Position = transform.position,
                 CarrierId = carrierId,
                 // In the carrier's frame, so a rider on a turning pivot stays where it stands (identity for the others).
-                Offset = onCarrier ? Quaternion.Inverse(carrier.AnchorRotation) * (transform.position - carrier.AnchorPosition) : Vector3.zero
+                Offset = onCarrier ? Quaternion.Inverse(carrier.AnchorRotation) * (transform.position - carrier.AnchorPosition) : Vector3.zero,
+                Epoch = epoch
             };
         }
 
@@ -193,6 +205,12 @@ namespace HotPatata
             var state = stamp.Value;
             var t = player.Tuning;
             float dt = Time.deltaTime;
+            if (state.Epoch != seenEpoch)
+            {
+                seenEpoch = state.Epoch;   // a teleport: snap to the replicated position, never sweep across the level
+                rider.Clear();
+                carrierLostAt = -1f;
+            }
             rider.Retarget(state.CarrierId, state.Offset, dt, t.riderOffsetSmoothing);
             if (!rider.Active) return;
 
@@ -203,7 +221,11 @@ namespace HotPatata
                 return;
             }
 
-            bool riding = state.CarrierId != 0 && state.CarrierId == rider.CarrierId;
+            // A carrier the owner stops reporting is kept a moment (a single stray tick never drops the rider under a lift).
+            bool reported = state.CarrierId != 0 && state.CarrierId == rider.CarrierId;
+            if (reported || state.CarrierId != 0) carrierLostAt = -1f;
+            else if (carrierLostAt < 0f) carrierLostAt = Time.time;
+            bool riding = reported || (state.CarrierId == 0 && Time.time - carrierLostAt < t.riderLeaveGraceSeconds);
             Vector3 position = rider.Blend(world, carrier.AnchorPosition, carrier.AnchorRotation, riding, dt, t.riderBlendSeconds, t.riderSnapDistance);
             transform.position = position;
             lastWritten = position;
@@ -219,7 +241,8 @@ namespace HotPatata
         public void SyncTeleport(Vector3 position, Quaternion rotation)
         {
             if (!IsOwner) return;
-            stamp.Value = new PlayerStamp { Time = SimulationClock.ServerNow, Position = position };   // a teleport always leaves the carrier (plan rule 7)
+            epoch++;
+            stamp.Value = new PlayerStamp { Time = SimulationClock.ServerNow, Position = position, Epoch = epoch };   // a teleport always leaves the carrier (plan rule 7)
             lastStampTick = SimulationClock.ServerTick;
             if (netTransform != null) netTransform.Teleport(position, rotation, transform.localScale);
         }
@@ -244,7 +267,12 @@ namespace HotPatata
 
         // ------------------------------------------------------------------ players -> host
 
-        public void RequestThrow(Vector3 origin, Vector3 velocity) => RequestThrowRpc(origin, velocity);
+        /// <summary>
+        /// Owner: ask the host to throw. On a moving carrier, <paramref name="carrierId"/> and <paramref name="offset"/> (the
+        /// release point in the carrier's frame) let the host replay the release on its own copy of the carrier, at its own
+        /// time, and <paramref name="velocity"/> is the throw's own part: the host adds the carrier's velocity (#97).
+        /// </summary>
+        public void RequestThrow(Vector3 origin, Vector3 velocity, int carrierId, Vector3 offset) => RequestThrowRpc(origin, velocity, carrierId, offset);
 
         public void RequestThrowCharge() => RequestThrowChargeRpc();
 
@@ -283,15 +311,24 @@ namespace HotPatata
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
-        void RequestThrowRpc(Vector3 origin, Vector3 velocity)
+        void RequestThrowRpc(Vector3 origin, Vector3 velocity, int carrierId, Vector3 offset)
         {
             var bomb = BombController.Instance;
             if (bomb == null || bomb.State != BombState.Held || bomb.Carrier != player) return;
-            if (!IsFinite(origin) || !IsFinite(velocity)) return;   // NaN/Infinity would poison the host's physics
+            if (!IsFinite(origin) || !IsFinite(velocity) || !IsFinite(offset)) return;   // NaN/Infinity would poison the host's physics
 
             var t = player.Tuning;
             float max = (t.throwSpeedMax + t.throwInheritForward * t.throwInheritMaxSpeed) * ThrowSpeedTolerance;   // charge + kept run speed
             if (velocity.magnitude > max) velocity = velocity.normalized * max;
+
+            // Thrown from a moving carrier: released from that carrier as THIS machine has it now, with its velocity here
+            // (the client's lift was drawn a latency earlier; a rising deck would be under, or above, its world point).
+            var carrier = CarrierRegistry.Get(carrierId);
+            if (carrier != null && carrier.Moves)
+            {
+                origin = carrier.AnchorPosition + carrier.AnchorRotation * offset;
+                velocity += CarrierMotion.VelocityAt(carrier, origin);
+            }
 
             Vector3 eye = player.CameraTarget.position;
             if ((origin - eye).sqrMagnitude > MaxReleaseDistance * MaxReleaseDistance) return;   // the release point must be near the thrower

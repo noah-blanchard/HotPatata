@@ -35,6 +35,7 @@ namespace HotPatata
         {
             var run = RunManager.Instance;
             if (!NetMode.IsAuthority || run == null || run.State != RunState.Playing || player == null || player.ControlLocked) return;
+            if (DevCheats.Invincible) return;   // dev cheat: moving hazards never kill
             double start = SimulationClock.SectionStart;
             if (!current.Valid || current.Time < start) return;   // produced before the current section attempt
 

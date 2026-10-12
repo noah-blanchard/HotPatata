@@ -348,6 +348,10 @@ The throw is **chargeable and immediate**:
   pitched up slightly (`throwUpAngle` 6°). Nothing bends the flight after release;
 - the throw keeps a share of the thrower's run speed **along the aim direction only** (`throwInheritForward` 0.5):
   running forward throws harder, strafing or jumping never pushes the throw off your aim;
+- a throw from a moving carrier (a lift, a shuttle, a pivot, a belt) also keeps **all of the carrier's velocity** at the
+  release point (#97). The flight is still a plain ballistic arc from the release frame; it simply leaves with the deck,
+  so a pass between two riders of the same lift flies as it would on still ground, and a rising deck never catches its
+  own thrower's bomb from below;
 - the throw goes where the camera shows: the aim is the rendered view direction, view kicks included;
 - while charging, the carrier's fuse keeps burning: charging is a risk, not a pause;
 - charging is cancelled if control is locked, the bomb is lost or the section resets.
@@ -492,6 +496,9 @@ Required characteristics:
 - **crouch-walk** (4 m/s) when crouching slowly or when a ceiling is too low to stand; the capsule, eye, hand and catch sphere lower with the body (replicated to every machine);
 - **mantle**: moving forward into a ledge 0.1–1.4 m above the feet while airborne climbs it automatically (never onto hazards); a jump that will clear the ledge anyway is not interrupted;
 - moderate air control; a jump keeps its momentum, with extra drag above sprint speed so chained jumps cannot keep slide speed (no bunny-hop, no air-strafe gain);
+- **carriers** (lifts, moving platforms, pivots, belts) carry whoever stands on them, at any speed, without the rider
+  ever leaving the deck; a player who **jumps or walks off** a carrier keeps its velocity (capped at
+  `carrierMomentumMax`, 12 m/s), so a jump off a rising lift goes higher and a step off a shuttle carries on (#97);
 - single jump;
 - coyote time around **0.1 s**;
 - jump buffer around **0.1 s**;

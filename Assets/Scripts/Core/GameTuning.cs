@@ -38,6 +38,14 @@ namespace HotPatata
         [Min(0f)] public float airTurnRate = 220f;
         [Tooltip("Units/s² of drag in the air with no stick input (the jump keeps its momentum; pull back to brake).")]
         [Min(0f)] public float airDrag = 3f;
+
+        [Header("Movement - carriers (lifts, moving platforms, pivots; #97)")]
+        [Tooltip("Seconds a rider still counts as standing on a carrier after the carrier's surface was last found under their " +
+                 "feet. Bridges a frame where the deck moved away (a lift going up), so riding never flaps on and off. " +
+                 "A jump, a launch or a teleport leaves at once.")]
+        [Range(0f, 0.3f)] public float carrierLeaveGraceSeconds = 0.1f;
+        [Tooltip("Cap (m/s) on the carrier velocity a player keeps when they jump or walk off a carrier (PROJECT_SPEC §11).")]
+        [Min(0f)] public float carrierMomentumMax = 12f;
         [Tooltip("Units/s² of drag in the air above sprint speed, so chained jumps cannot keep slide speed forever (no bunny-hop).")]
         [Min(0f)] public float airOverspeedDrag = 2.5f;
 
@@ -211,9 +219,13 @@ namespace HotPatata
         [Tooltip("How fast (1/s) a remote rider's offset on the platform follows the owner's updates. Higher = snappier, " +
                  "lower = smoother steps while they walk on it.")]
         [Min(1f)] public float riderOffsetSmoothing = 15f;
-        [Tooltip("Metres between a leaving rider's rebuilt and replicated positions above which it is a teleport: snap, " +
-                 "never sweep across the level.")]
-        [Min(0.5f)] public float riderSnapDistance = 3f;
+        [Tooltip("Fallback only: metres between a leaving rider's rebuilt and replicated positions above which it is a " +
+                 "teleport. A real teleport is signalled by the stamp's epoch; this must stay above a fast lift's speed × lag " +
+                 "(9 m/s × 0.35 s ≈ 3 m), or a rider leaving a lift would snap under it (#97).")]
+        [Min(0.5f)] public float riderSnapDistance = 8f;
+        [Tooltip("Seconds a remote rider stays rebuilt on their carrier after the owner stopped reporting it, before blending " +
+                 "out. Covers a single stray tick; a teleport (new epoch) never waits.")]
+        [Range(0f, 0.3f)] public float riderLeaveGraceSeconds = 0.07f;
 
         [Header("Network - remote players vs moving hazards (docs/netcode-deterministic-plan.md §2.4)")]
         [Tooltip("Online, host only. How far back (seconds) the host rewinds a moving hazard (rotating bar, crusher, closing " +

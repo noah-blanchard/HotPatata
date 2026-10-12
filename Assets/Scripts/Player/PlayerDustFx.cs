@@ -41,10 +41,12 @@ namespace HotPatata
 
             var motor = player.Motor;
             Vector3 velocity = player.Velocity;
+            bool riding = player.RemoteRiding;   // a remote rider's own motion is relative to their lift (#97)
+            if (riding) velocity -= player.CarrierVelocity;
             Vector3 flat = new Vector3(velocity.x, 0f, velocity.z);
             bool grounded = player.IsLocal
                 ? motor.Grounded
-                : Physics.CheckSphere(transform.position + Vector3.up * 0.12f, 0.22f, groundMask, QueryTriggerInteraction.Ignore);
+                : riding || Physics.CheckSphere(transform.position + Vector3.up * 0.12f, 0.22f, groundMask, QueryTriggerInteraction.Ignore);
 
             if (grounded && !wasGrounded && fallSpeed < -6f)
                 LandingRing(Mathf.Clamp01((-fallSpeed - 6f) / 12f));
@@ -54,6 +56,7 @@ namespace HotPatata
             Vector3 moved = transform.position - lastPosition;
             lastPosition = transform.position;
             if (moved.sqrMagnitude > 25f) return;   // a teleport
+            moved -= player.CarrierVelocity * dt;   // what the carrier moved us is not our run
 
             if (grounded && motor.IsSliding && flat.sqrMagnitude > 4f)
             {

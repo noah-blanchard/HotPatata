@@ -9,7 +9,11 @@ namespace HotPatata
     ///    and the carrier's top (negative = sunk into it), next to the gap their replicated world position alone would
     ///    give (what was drawn before riders were rebuilt on their carrier), as one <c>[Sync] rider</c> line every
     ///    couple of seconds;
-    ///  - the counters of <see cref="SyncStats"/> (host hazard verdicts, client throw prediction vs the host's verdict).
+    ///  - the counters of <see cref="SyncStats"/> (host hazard verdicts, client throw prediction vs the host's verdict);
+    ///  - the local player's own ride (also offline): carrier changes and ground/air flips on a carrier (#97), and on
+    ///    viewers the frames where a remote rider pops relative to their carrier.
+    /// Riders are measured while their owner reports the carrier AND while this machine still rebuilds them on it after
+    /// it stopped (blending out), so a rider dropped under a lift shows in the numbers.
     /// Observes only. Created automatically in the Editor and development builds.
     /// </summary>
     [DefaultExecutionOrder(2000)]   // after remote players have been placed for this frame
@@ -18,6 +22,7 @@ namespace HotPatata
         const float ReportEvery = 2f;   // seconds between rider lines
         const float RayStart = 1.5f;    // metres above the feet: still finds the top of a slab the rider is sunk into
         const float RayLength = 3f;
+        const float PopDistance = 0.3f;   // metres per frame relative to the carrier: a visible pop
 
         struct Gap
         {
@@ -44,6 +49,10 @@ namespace HotPatata
         readonly Gap[] gaps = new Gap[Player.MaxSlots];
         readonly float[] lastGap = new float[Player.MaxSlots];
         readonly bool[] riding = new bool[Player.MaxSlots];
+        readonly Vector3[] lastDrawn = new Vector3[Player.MaxSlots];
+        readonly int[] lastDrawnCarrier = new int[Player.MaxSlots];
+        int ownCarrier;
+        bool ownGrounded;
         float nextReport;
         int environmentMask;
         GUIStyle style;
@@ -66,12 +75,14 @@ namespace HotPatata
 
         void LateUpdate()
         {
+            MeasureOwnRide();
             if (!NetMode.IsNetworked) return;
 
             for (int s = 0; s < riding.Length; s++) riding[s] = false;
             foreach (var p in Player.All)
             {
                 if (p == null || p.IsLocal || p.PlayerId < 0 || p.PlayerId >= Player.MaxSlots) continue;
+                CountPop(p);
                 if (!TryMeasure(p, out int carrier, out float gap, out float world)) continue;
                 riding[p.PlayerId] = true;
                 lastGap[p.PlayerId] = gap;
@@ -80,6 +91,8 @@ namespace HotPatata
 
             if (Time.unscaledTime < nextReport) return;
             nextReport = Time.unscaledTime + ReportEvery;
+            PatataLog.Sync($"ride owner carrierChanges={SyncStats.CarrierChanges} groundFlips={SyncStats.CarrierGroundFlips} " +
+                           $"| viewer riderPops={SyncStats.RiderPops}");
             for (int s = 0; s < gaps.Length; s++)
             {
                 var g = gaps[s];
@@ -100,18 +113,50 @@ namespace HotPatata
         {
             carrier = 0;
             gap = world = 0f;
-            if (p.Net == null || p.Net.Stamp.CarrierId == 0) return false;
+            if (p.Net == null) return false;
+            int id = p.Net.Stamp.CarrierId != 0 ? p.Net.Stamp.CarrierId : p.Net.RebuiltCarrierId;
+            if (id == 0) return false;
             Vector3 feet = p.transform.position;
             if (!Physics.Raycast(feet + Vector3.up * RayStart, Vector3.down, out var hit, RayLength, environmentMask,
                     QueryTriggerInteraction.Ignore))
                 return false;
             var c = hit.collider.GetComponentInParent<IPlatformCarrier>();
-            if (c == null || c.CarrierId != p.Net.Stamp.CarrierId) return false;
+            if (c == null || c.CarrierId != id) return false;
 
             carrier = c.CarrierId;
             gap = feet.y - hit.point.y;
             world = p.Net.ReplicatedPosition.y - hit.point.y;
             return true;
+        }
+
+        /// <summary>The local player's own ride: carrier changes and ground/air flips on or next to a carrier.</summary>
+        void MeasureOwnRide()
+        {
+            foreach (var p in Player.All)
+            {
+                if (p == null || !p.IsLocal || p.Motor == null) continue;
+                var c = p.Motor.RidingCarrier;
+                int id = c is MonoBehaviour mb ? mb.GetInstanceID() : 0;
+                bool grounded = p.Motor.Grounded;
+                if (id != ownCarrier) SyncStats.CarrierChanges++;
+                else if (id != 0 && grounded != ownGrounded) SyncStats.CarrierGroundFlips++;
+                ownCarrier = id;
+                ownGrounded = grounded;
+                return;   // the first local player (the one at the keyboard)
+            }
+        }
+
+        /// <summary>A remote rider who moved more than <see cref="PopDistance"/> in a frame relative to the carrier they ride.</summary>
+        void CountPop(Player p)
+        {
+            int s = p.PlayerId;
+            int id = p.Net != null ? p.Net.RebuiltCarrierId : 0;
+            Vector3 drawn = p.transform.position;
+            var c = CarrierRegistry.Get(id);
+            if (c != null && id == lastDrawnCarrier[s] && ((drawn - lastDrawn[s]) - c.FrameDelta).sqrMagnitude > PopDistance * PopDistance)
+                SyncStats.RiderPops++;
+            lastDrawn[s] = drawn;
+            lastDrawnCarrier[s] = id;
         }
 
         static string RebuiltTag(int slot)
@@ -130,9 +175,10 @@ namespace HotPatata
             for (int s = 0; s < riding.Length; s++)
                 if (riding[s]) text.Append($"slot {s} on carrier: gap {lastGap[s] * 100f:F1} cm{RebuiltTag(s)}\n");
             text.Append($"hazard hits (host): trigger {SyncStats.HazardTriggerHits}  rewound {SyncStats.HazardRewindHits}  static {SyncStats.StaticKills}\n");
-            text.Append($"throw prediction: agree {SyncStats.ThrowAgreed}  disagree {SyncStats.ThrowDisagreed}   rtt {NetMode.RttMs} ms");
+            text.Append($"throw prediction: agree {SyncStats.ThrowAgreed}  disagree {SyncStats.ThrowDisagreed}   rtt {NetMode.RttMs} ms\n");
+            text.Append($"own ride: carrier changes {SyncStats.CarrierChanges}  ground flips {SyncStats.CarrierGroundFlips}   rider pops {SyncStats.RiderPops}");
 
-            var rect = new Rect(Screen.width - 430, 10, 420, 96);
+            var rect = new Rect(Screen.width - 430, 10, 420, 114);
             GUI.Box(rect, GUIContent.none);
             GUI.Label(new Rect(rect.x + 8, rect.y + 4, rect.width - 16, rect.height - 8), text.ToString(), style);
         }

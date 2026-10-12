@@ -10,12 +10,13 @@ namespace HotPatata
     /// It plays through the same input path (and therefore the same network rules) as a human.
     /// Enabled with the -patataBot command-line flag, or on the idle player in PassSandbox with F4 (dev builds);
     /// -patataBotMove &lt;pattern&gt; picks the pattern. <see cref="Pattern.Ride"/> is a network diagnostic
-    /// (docs/netcode-deterministic-plan.md stage 0): the bot hops onto the nearest moving platform and stays on it.
+    /// (docs/netcode-deterministic-plan.md stage 0): the bot hops onto the nearest moving platform and stays on it;
+    /// <see cref="Pattern.RideFast"/> picks the fastest vertical carrier of the scene instead (a lift: #97).
     /// </summary>
     [RequireComponent(typeof(Player))]
     public class PlayerBot : MonoBehaviour
     {
-        public enum Pattern { Stand, Strafe, Jump, RunAcross, Ride }
+        public enum Pattern { Stand, Strafe, Jump, RunAcross, Ride, RideFast }
 
         const float BoardAfterReset = 1f;   // seconds: let the host's respawn teleport land before boarding again
 
@@ -88,7 +89,7 @@ namespace HotPatata
         {
             patternClock += Time.deltaTime;
             input.Move = Vector2.zero;
-            if (Movement == Pattern.Ride)
+            if (Movement == Pattern.Ride || Movement == Pattern.RideFast)
             {
                 Board();
                 return;   // stand still and let the platform carry us
@@ -111,7 +112,8 @@ namespace HotPatata
 
         /// <summary>
         /// <see cref="Pattern.Ride"/>: once per section attempt, teleport onto the top of the nearest moving carrier that is
-        /// not lethal (no crusher). Debug only; it goes through <see cref="Player.TeleportTo"/> like any teleport.
+        /// not lethal (no crusher); <see cref="Pattern.RideFast"/>: onto the one that rises fastest. Debug only; it goes
+        /// through <see cref="Player.TeleportTo"/> like any teleport.
         /// </summary>
         void Board()
         {
@@ -135,11 +137,28 @@ namespace HotPatata
             float best = float.MaxValue;
             foreach (var carrier in CarrierRegistry.All)
                 if (carrier.Moves && carrier is MonoBehaviour mb)
-                    Consider(mb is MovingPlatform mp ? mp.Platform : mb is SignalActuator sa ? sa.Platform : null, ref best, ref top);
+                {
+                    var part = mb is MovingPlatform mp ? mp.Platform : mb is SignalActuator sa ? sa.Platform : null;
+                    float score = Movement == Pattern.RideFast ? -RiseSpeed(mb) : float.NaN;   // NaN: by distance
+                    Consider(part, score, ref best, ref top);
+                }
             return best < float.MaxValue;
         }
 
-        void Consider(Transform part, ref float best, ref Vector3 top)
+        /// <summary>Average vertical speed of a carrier while it moves (m/s); 0 for a flat one.</summary>
+        static float RiseSpeed(MonoBehaviour carrier)
+        {
+            if (carrier is MovingPlatform mp && mp.WaypointA != null && mp.WaypointB != null)
+            {
+                Vector3 d = mp.WaypointB.position - mp.WaypointA.position;
+                return d.magnitude > 0.01f ? Mathf.Abs(d.y) / d.magnitude * mp.Speed : 0f;
+            }
+            if (carrier is SignalActuator sa && sa.WaypointClosed != null && sa.WaypointOpen != null)
+                return Mathf.Abs(sa.WaypointOpen.position.y - sa.WaypointClosed.position.y) / Mathf.Max(0.05f, sa.TravelSeconds);
+            return 0f;
+        }
+
+        void Consider(Transform part, float score, ref float best, ref Vector3 top)
         {
             if (part == null || part.GetComponentInChildren<KillZone>(true) != null) return;
             bool any = false;
@@ -152,7 +171,7 @@ namespace HotPatata
                 any = true;
             }
             if (!any) return;
-            float d = (bounds.center - transform.position).sqrMagnitude;
+            float d = float.IsNaN(score) ? (bounds.center - transform.position).sqrMagnitude : score;
             if (d >= best) return;
             best = d;
             top = new Vector3(bounds.center.x, bounds.max.y + 0.05f, bounds.center.z);
