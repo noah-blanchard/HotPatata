@@ -219,6 +219,17 @@ namespace HotPatata
             SetCheckpoint(start);
         }
 
+        /// <summary>
+        /// Dev cheat (<see cref="DevCheats.Invincible"/>): sends one player back to their spawn at the current checkpoint instead
+        /// of failing the section for the team. Authority only.
+        /// </summary>
+        public void RespawnPlayer(Player p, string detail)
+        {
+            if (!NetMode.IsAuthority || state != RunState.Playing || p == null) return;
+            PlaceOne(p);
+            PatataLog.Run($"Respawn (dev, no reset) player={p} {detail}");
+        }
+
         /// <summary>Called by FinishZone once every required player is inside. Fires once.</summary>
         public void Complete()
         {

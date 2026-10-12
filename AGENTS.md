@@ -25,7 +25,8 @@ throwing a live bomb between them.
   - The older courses (`PrototypeCourse`, `PlaytestCourse`, `PatataPark`, `PatataWorks`, `IndustrialLab`) were removed;
     their obstacle layouts are archived in `docs/OBSTACLES.md` §3.2.
 - **Code:** all gameplay code is in `Assets/Scripts/HotPatata.asmdef` (namespace `HotPatata`).
-  - Dev-only code is in `HotPatata.DebugTools`.
+  - Dev-only code is in `HotPatata.DebugTools`. Map-testing cheats (noclip, invincible, no explosions: the F8 panel) read
+    `DevCheats`, which is always false in release builds (docs/TESTING.md §2); gameplay code only ever reads it.
   - Editor tools are in `Assets/EditorTools`.
 
 **Status:** M0–M5 and M9 are done. Open human gates:

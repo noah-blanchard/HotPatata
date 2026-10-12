@@ -312,6 +312,7 @@ namespace HotPatata
         public void Explode(BombFailReason reason, string detail)
         {
             if (State == BombState.Exploding || State == BombState.Resetting) return;
+            if (DevCheats.NoExplosions && NetMode.IsAuthority && HandBack(reason, detail)) return;
 
             var from = State;
             pendingExplosionAt = -1f;
@@ -322,6 +323,23 @@ namespace HotPatata
             Transition(BombState.Exploding);
             PatataLog.Bomb($"{from} -> Exploding reason={reason} {detail}");
             BombExploded?.Invoke(reason, detail);
+        }
+
+        /// <summary>
+        /// Dev cheat (<see cref="DevCheats.NoExplosions"/>): instead of exploding, the bomb goes back to its carrier, else its
+        /// thrower, else anyone, with a fresh fuse. False when there is nobody to hand it to.
+        /// </summary>
+        bool HandBack(BombFailReason reason, string detail)
+        {
+            var to = Carrier != null ? Carrier : LastThrower;
+            if (to == null)
+                foreach (var p in Player.All)
+                    if (p != null) { to = p; break; }
+            if (to == null) return false;
+            PatataLog.Bomb($"{State} -> handed back to {to} (no explosions, dev) reason={reason} {detail}");
+            BeginReset();
+            EndReset(to);
+            return true;
         }
 
         // ------------------------------------------------------------------ reset

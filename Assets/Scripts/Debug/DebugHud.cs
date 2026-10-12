@@ -37,7 +37,7 @@ namespace HotPatata
             if (NetMode.IsNetworked)
                 GUI.Label(new Rect(18, 146, 350, 22), (NetMode.IsAuthority ? "Ping (worst client): " : "Ping: ") + NetMode.RttMs + " ms", style);
 
-            GUI.Label(new Rect(18, 92, 350, 64), "WASD move  Space jump\nHold LMB charge, release to throw\nRMB catch (time it!)   Tab switch player   F1 hide", style);
+            GUI.Label(new Rect(18, 92, 350, 64), "WASD move  Space jump\nHold LMB charge, release to throw\nRMB catch (time it!)   Tab switch player   F1 hide   F8 dev tools", style);
         }
     }
 }

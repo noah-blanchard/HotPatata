@@ -51,6 +51,8 @@ namespace HotPatata
         Vector3 rideVelocity;      // our feet's velocity on that carrier during the last carried move
         Vector3 pendingMomentum;   // carrier velocity kept on losing contact; given back if we land on it again within the grace
         int carriedFrame = -1;     // the frame we last moved with our carrier
+        bool noClipping;           // dev cheat: flying through everything (DevCheats.NoClip)
+        LayerMask savedExcludeLayers;
         int jumpedOffCarrierFrame = -1;
         Vector3 jumpKept;          // carrier velocity a jump kept this frame
 
@@ -129,6 +131,13 @@ namespace HotPatata
 
             bool locked = player.ControlLocked;
             var input = player.Input;
+
+            if (DevCheats.NoClip)
+            {
+                NoClipStep(locked, input, dt);
+                return;
+            }
+            if (noClipping) EndNoClip();
 
             // First person: the body always faces the way you are looking.
             transform.rotation = player.Look.YawRotation;
@@ -238,6 +247,40 @@ namespace HotPatata
         }
 
         static bool Alive(IPlatformCarrier c) => c is UnityEngine.Object o && o != null;
+
+        // ------------------------------------------------------------------ dev noclip (DevCheats, editor and dev builds)
+
+        /// <summary>
+        /// Dev cheat: fly where you look, through everything (no collision, no trigger), Jump up, Crouch down, Sprint faster.
+        /// Still a controller move, so online the owner's transform replicates as usual.
+        /// </summary>
+        void NoClipStep(bool locked, PlayerInputReader input, float dt)
+        {
+            if (!noClipping)
+            {
+                noClipping = true;
+                savedExcludeLayers = controller.excludeLayers;
+                controller.excludeLayers = ~0;
+                LeaveCarrier(player.Tuning, false);
+                ResetVelocity();
+                Grounded = wasGrounded = false;
+                State = MoveState.Air;
+            }
+            transform.rotation = player.Look.YawRotation;
+            Vector2 stick = locked ? Vector2.zero : Vector2.ClampMagnitude(input.Move, 1f);
+            float up = locked ? 0f : (input.JumpHeld ? 1f : 0f) - (input.CrouchHeld ? 1f : 0f);
+            Vector3 wish = player.Look.ViewRotation * new Vector3(stick.x, 0f, stick.y) + Vector3.up * up;
+            float speed = DevCheats.NoClipSpeed * (!locked && input.SprintHeld ? DevCheats.NoClipBoost : 1f);
+            controller.Move(Vector3.ClampMagnitude(wish, 1f) * speed * dt);
+            SmoothCrouch(player.Tuning, dt);
+        }
+
+        void EndNoClip()
+        {
+            noClipping = false;
+            controller.excludeLayers = savedExcludeLayers;
+            ResetVelocity();
+        }
 
         /// <summary>
         /// A carrier just moved (<see cref="CarrierMotion.Moved"/>): every local player standing on it moves with it now, before

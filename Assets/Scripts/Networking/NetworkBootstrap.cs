@@ -28,6 +28,7 @@ namespace HotPatata
     ///   -patataName &lt;name&gt;                             player name for this process (instead of the saved one)
     ///   -patataBot   -patataBotMove &lt;Stand|Strafe|Jump|RunAcross|Ride|RideFast&gt;
     ///   -patataScene &lt;name&gt;   -patataQuit &lt;s&gt;   -patataLatency &lt;ms&gt;
+    ///   -patataCheats                                  dev builds: start invincible with no explosions (map testing, F8 panel)
     /// </summary>
     [DefaultExecutionOrder(-1000)]
     public class NetworkBootstrap : MonoBehaviour
@@ -145,6 +146,7 @@ namespace HotPatata
                 switch (args[i])
                 {
                     case "-patataBot": PlayerBot.Enabled = true; break;
+                    case "-patataCheats": DevCheats.Invincible = DevCheats.NoExplosions = true; break;   // no-op in a release build
                     case "-patataBotMove" when i + 1 < args.Length && Enum.TryParse(args[i + 1], true, out PlayerBot.Pattern pattern):
                         PlayerBot.Movement = pattern;
                         break;
