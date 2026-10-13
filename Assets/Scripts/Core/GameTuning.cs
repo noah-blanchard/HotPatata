@@ -46,6 +46,10 @@ namespace HotPatata
         [Range(0f, 0.3f)] public float carrierLeaveGraceSeconds = 0.1f;
         [Tooltip("Cap (m/s) on the carrier velocity a player keeps when they jump or walk off a carrier (PROJECT_SPEC §11).")]
         [Min(0f)] public float carrierMomentumMax = 12f;
+        [Tooltip("Share (0..1) of a carrier's horizontal velocity a player keeps when they jump or walk off it (PROJECT_SPEC §11). " +
+                 "0: a jump off a shuttle, a pivot or a lift leaves from the world, never dragged along by the deck. A jump " +
+                 "always keeps a rising carrier's climb (so the deck never catches the jumper from below), never its descent.")]
+        [Range(0f, 1f)] public float carrierMomentumHorizontal = 0f;
         [Tooltip("Units/s² of drag in the air above sprint speed, so chained jumps cannot keep slide speed forever (no bunny-hop).")]
         [Min(0f)] public float airOverspeedDrag = 2.5f;
 

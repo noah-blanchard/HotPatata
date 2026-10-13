@@ -1066,10 +1066,14 @@ can say where its moving part was at any time, which the host uses to judge remo
 - `FrameDelta`: how far a rider is carried this frame (moving platforms, elevators, pistons, `Conveyor` belts). A
   carrier that moves calls `CarrierMotion.Moved` right after writing its pose (#97): it carries its local riders
   (`PlayerMotor.CarryRiders`) and pushes its pose to its kinematic body (`autoSyncTransforms` is off, so otherwise the
-  collider would lag the drawn deck until the next fixed step). A deck that rises carries its riders first, then moves
-  its collider; any other motion moves the collider first. The rider's own move comes after, so its ground stick
-  always lands back on the deck: one combined move pointed up on a lift faster than the 2 m/s stick, and riders lost
-  their footing every other frame. A belt does not move, so the rider's motor carries itself;
+  collider would lag the drawn deck until the next fixed step). A deck that rises carries its riders first, then puts
+  every local player it came up into on top of it (`PlayerMotor.LiftOntoDeck`, `CarrierMotion.DeckLift`: a player
+  landing on it, mantling onto it, at its edge, or a rider whose footing slipped), then moves its collider; any other
+  motion moves the collider first. A character controller never pushes itself out of a moving kinematic collider
+  (its overlap recovery is for static ones), so a deck synced up around a player's feet let their next move go through
+  it, down to the kill zone. The rider's own move comes after, so its ground stick always lands back on the deck: one
+  combined move pointed up on a lift faster than the 2 m/s stick, and riders lost their footing every other frame. A
+  belt does not move, so the rider's motor carries itself;
 - `CarrierId`: the same number on every machine, derived at load by `CarrierRegistry` from the scene and the
   sibling-index path (never names), and checked unique by `CarrierRegistryTests`;
 - `Moves` (false for a belt);

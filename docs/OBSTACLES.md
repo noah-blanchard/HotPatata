@@ -318,9 +318,12 @@ The base classes already do the network part for a subclass, through the same vi
 subclass) must do it itself (netcode plan §2.2–2.4):
 
 - **Carrier** (anything a player rides): implement `IPlatformCarrier`:
-  - `FrameDelta`; a carrier that moves calls `CarrierMotion.Moved(this, part, body)` in `Update`, right after writing its
-    part's pose. It carries the riders and puts the collider where the part is drawn (#97); without it, riders stand on
-    last fixed step's deck and lose their footing on anything that rises faster than 2 m/s;
+  - `FrameDelta`; a carrier that moves calls `CarrierMotion.Moved(this, part, body, moved, deck)` in `Update`, right after
+    writing its part's pose (`moved`: how far the part really moved this frame, a snap included; `deck`: its colliders,
+    cached in `OnEnable`; the short `Moved(this, part, body)` finds them every call). It carries the riders, puts on top of
+    a rising deck anyone it came up into, and puts the collider where the part is drawn (#97); without it, riders stand on
+    last fixed step's deck, lose their footing on anything that rises faster than 2 m/s, and a player landing on a rising
+    deck falls through it. Decks are box colliders (`DeckLift` only lifts onto boxes);
   - `Moves`;
   - `AnchorPosition` (the carried part's position);
   - `CarrierId`, with `CarrierRegistry.Register(this)` in `OnEnable` and `Unregister` in `OnDisable`. The id comes from

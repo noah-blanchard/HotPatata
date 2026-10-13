@@ -11,8 +11,9 @@ namespace HotPatata.Tests
     /// <summary>
     /// Riding a fast vertical carrier (#97). The courses' lifts peak at 2.5 to 9 m/s, faster than the motor's ground stick:
     /// a rider must stay grounded and on the lift on EVERY frame, at any frame rate, up, down and through a reversal, and
-    /// never fall through it. A pass between two riders of the same lift is caught (the throw keeps the lift's velocity,
-    /// PROJECT_SPEC §8.2), and a jump off a rising lift keeps its rise (PROJECT_SPEC §11).
+    /// never fall through it. A player landing on a lift on its way up is put on it and rides it (it came up into their feet).
+    /// A pass between two riders of the same lift is caught (the throw keeps the lift's velocity, PROJECT_SPEC §8.2); a jump
+    /// off a rising lift keeps its rise, a jump off a descending lift or a sliding deck leaves from the world (PROJECT_SPEC §11).
     /// The frame rate is pinned with Time.captureFramerate, so a run is the same on any machine.
     /// </summary>
     public class VerticalCarrierRideTests : SandboxTestBase
@@ -54,17 +55,24 @@ namespace HotPatata.Tests
         // ------------------------------------------------------------------ fixtures
 
         /// <summary>An Actuator_Lift with a 6 x 0.5 x 6 deck rising <paramref name="travel"/> m in <paramref name="seconds"/> s (peak 1.5 × travel / seconds).</summary>
-        SignalActuator Lift(float travel, float seconds, out TestSignal signal)
+        SignalActuator Lift(float travel, float seconds, out TestSignal signal) =>
+            Carrier("Actuator_Lift", new Vector3(0f, travel, 0f), seconds, out signal);
+
+        /// <summary>
+        /// An actuator prefab with a 6 x 0.5 x 6 deck resting on the test floor, travelling <paramref name="travel"/> in
+        /// <paramref name="seconds"/> s, driven by a <see cref="TestSignal"/>.
+        /// </summary>
+        SignalActuator Carrier(string prefabName, Vector3 travel, float seconds, out TestSignal signal)
         {
 #if UNITY_EDITOR
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Platforms/Actuator_Lift.prefab");
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Prefabs/Platforms/{prefabName}.prefab");
             Assert.IsNotNull(prefab);
             var go = Object.Instantiate(prefab, Area + new Vector3(0f, 0.25f, 0f), Quaternion.identity);
             var lift = go.GetComponent<SignalActuator>();
             var deckSize = new Vector3(6f, 0.5f, 6f);
             lift.Platform.Find("Visual").localScale = deckSize;
             lift.Platform.Find("Collision").GetComponent<BoxCollider>().size = deckSize;
-            lift.WaypointOpen.localPosition = new Vector3(0f, travel, 0f);
+            lift.WaypointOpen.localPosition = travel;
             signal = go.AddComponent<TestSignal>();
             var so = new SerializedObject(lift);
             so.FindProperty("source").objectReferenceValue = signal;
@@ -194,6 +202,64 @@ namespace HotPatata.Tests
             Assert.Greater(p1.Motor.Velocity.y, jumpSpeed + 0.8f * liftSpeed - tuning.gravity * 0.05f, "the jump kept the lift's rise");
             yield return WaitSeconds(0.2f);
             Assert.Greater(p1.transform.position.y - DeckTop(lift), 0.5f, "it really left the deck, it was not caught by it");
+        }
+
+        [UnityTest]
+        public IEnumerator JumpOffADescendingLift_IsAFullJump()
+        {
+            Time.captureFramerate = 60;
+            var lift = Lift(30f, 5f, out var signal);
+            signal.On = true;
+            yield return WaitUntil(() => lift.CurrentProgress >= 1f, 7f, "the lift never rose");
+            yield return Place(p1, new Vector3(Area.x, DeckTop(lift) + 0.05f, Area.z));
+            signal.On = false;
+            yield return WaitUntil(() => lift.CurrentProgress <= 0.5f, 5f, "the lift never got to full speed down");
+
+            float jumpSpeed = Mathf.Sqrt(2f * tuning.gravity * tuning.jumpHeight);
+            Drive.PressJump();
+            yield return WaitUntil(() => !p1.Motor.Grounded, 0.5f, "never jumped");
+            Assert.Greater(p1.Motor.Velocity.y, jumpSpeed - tuning.gravity * 0.05f, "the jump did not keep the lift's descent: no deck glue");
+            Assert.AreEqual(0, run.ResetCount);
+        }
+
+        /// <summary>
+        /// Players landing on a lift already on its way up (a jump onto it, a drop from a ledge) were not riding it yet, so
+        /// the deck rose into their feet; the controller never pushes itself out of a moving deck, and they fell through it to
+        /// the kill zone: the "reset as soon as we get on the lift" bug. They must land on it and ride it to the top.
+        /// </summary>
+        IEnumerator BoardRisingLift(int fps)
+        {
+            Time.captureFramerate = fps;
+            var lift = Lift(30f, 5f, out var signal);   // 9 m/s at mid travel
+            signal.On = true;
+            yield return WaitUntil(() => lift.CurrentProgress >= 0.35f, 5f, "the lift never got to full speed");
+            p1.TeleportTo(new Vector3(Area.x + 1f, DeckTop(lift) + 0.6f, Area.z - 1f), Quaternion.identity);   // drops onto it
+            yield return WaitUntil(() => lift.CurrentProgress >= 1f, 5f, "the lift never got there");
+            yield return WaitSeconds(0.3f);
+
+            Assert.AreEqual(0, run.ResetCount, $"{fps} fps: boarding a rising lift reset the team");
+            Assert.Greater(p1.transform.position.y, DeckTop(lift) - SinkTolerance, $"{fps} fps: fell through the deck");
+            Assert.Less(p1.transform.position.y, DeckTop(lift) + 0.5f, $"{fps} fps: launched off the deck");
+            Assert.IsTrue(p1.Motor.Grounded && ReferenceEquals(p1.Motor.RidingCarrier, lift), $"{fps} fps: not standing on the lift at the top");
+        }
+
+        [UnityTest] public IEnumerator LandingOnARisingLift_RidesIt_30fps() => BoardRisingLift(30);
+        [UnityTest] public IEnumerator LandingOnARisingLift_RidesIt_60fps() => BoardRisingLift(60);
+        [UnityTest] public IEnumerator LandingOnARisingLift_RidesIt_144fps() => BoardRisingLift(144);
+
+        [UnityTest]
+        public IEnumerator JumpOffASlidingDeck_LeavesFromTheWorld()
+        {
+            Time.captureFramerate = 60;
+            var bridge = Carrier("Actuator_Bridge", new Vector3(0f, 0f, 16f), 2f, out var signal);   // 12 m/s at mid travel
+            yield return null;
+            yield return Place(p1, new Vector3(Area.x, DeckTop(bridge) + 0.05f, Area.z));
+            signal.On = true;
+            yield return WaitUntil(() => bridge.CurrentProgress >= 0.45f, 5f, "the deck never got to full speed");
+            Drive.PressJump();
+            yield return WaitUntil(() => !p1.Motor.Grounded, 0.5f, "never jumped");
+            yield return WaitSeconds(0.1f);
+            Assert.Less(HorizontalSpeed(p1), 1f, "the deck dragged the jumper along (carrierMomentumHorizontal is 0)");
         }
 
         [UnityTest] public IEnumerator PassBetweenTwoRidersOfARisingLift_30fps() => PassOnTheLift(30);

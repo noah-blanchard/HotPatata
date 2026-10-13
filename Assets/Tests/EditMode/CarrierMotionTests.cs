@@ -4,8 +4,9 @@ using UnityEngine;
 namespace HotPatata.Tests
 {
     /// <summary>
-    /// Riding carriers (#97): the velocity of a point on a carrier, what a player leaving one keeps (PROJECT_SPEC §11), and the
-    /// aim assist solving a pass in the frame of the lift both players ride (PROJECT_SPEC §8.2).
+    /// Riding carriers (#97): the velocity of a point on a carrier, what a player leaving one keeps (PROJECT_SPEC §11), when a
+    /// rising deck puts a player it came up into on top of it, and the aim assist solving a pass in the frame of the lift both
+    /// players ride (PROJECT_SPEC §8.2).
     /// </summary>
     public class CarrierMotionTests
     {
@@ -36,13 +37,51 @@ namespace HotPatata.Tests
         }
 
         [Test]
-        public void LeavingACarrier_KeepsAllOfItsVelocity_UpToTheCap()
+        public void LeavingACarrier_AJumpKeepsItsClimb_NeverItsDescent()
         {
-            var lift = new Vector3(0f, 9f, 0f);
-            Assert.AreEqual(lift, PlayerMotor.KeptCarrierVelocity(lift, 12f), "a lift at 9 m/s: all of it");
-            var fast = new Vector3(20f, 0f, 0f);
-            Assert.AreEqual(12f, PlayerMotor.KeptCarrierVelocity(fast, 12f).magnitude, 1e-4f, "a 20 m/s shuttle: capped");
-            Assert.AreEqual(Vector3.zero, PlayerMotor.KeptCarrierVelocity(fast, 0f));
+            var rising = new Vector3(0f, 9f, 0f);
+            Assert.AreEqual(rising, PlayerMotor.KeptCarrierVelocity(rising, 12f, 0f, true), "a jump off a lift rising at 9 m/s keeps all of it");
+            Assert.AreEqual(Vector3.zero, PlayerMotor.KeptCarrierVelocity(-rising, 12f, 0f, true), "a jump off a descending lift is a full jump");
+            Assert.AreEqual(Vector3.zero, PlayerMotor.KeptCarrierVelocity(rising, 12f, 0f, false), "walking off keeps no climb");
+            Assert.AreEqual(12f, PlayerMotor.KeptCarrierVelocity(new Vector3(0f, 20f, 0f), 12f, 0f, true).magnitude, 1e-4f, "capped");
+        }
+
+        [Test]
+        public void LeavingACarrier_KeepsOnlyItsHorizontalShare()
+        {
+            var shuttle = new Vector3(6f, 0f, 8f);
+            Assert.AreEqual(Vector3.zero, PlayerMotor.KeptCarrierVelocity(shuttle, 12f, 0f, true), "by default the deck never drags a jumper along");
+            Assert.Less((PlayerMotor.KeptCarrierVelocity(shuttle, 12f, 0.5f, false) - new Vector3(3f, 0f, 4f)).magnitude, 1e-4f);
+            Assert.AreEqual(12f, PlayerMotor.KeptCarrierVelocity(shuttle * 2f, 12f, 1f, false).magnitude, 1e-4f, "a 20 m/s shuttle: capped");
+            Assert.AreEqual(Vector3.zero, PlayerMotor.KeptCarrierVelocity(shuttle, 0f, 1f, true));
+        }
+
+        // A 6 x 0.5 x 6 deck centred at the origin: its top is at y = 0.25.
+        static readonly Vector3 Half = new Vector3(3f, 0.25f, 3f);
+        const float Radius = 0.35f, Skin = 0.05f;
+
+        static float Lift(Vector3 feet, float rise, Quaternion? rotation = null) =>
+            CarrierMotion.DeckLift(feet, Radius, Vector3.zero, rotation ?? Quaternion.identity, Half, rise, Skin);
+
+        [Test]
+        public void DeckLift_ADeckRisingIntoTheFeet_PutsThePlayerOnTop()
+        {
+            Assert.AreEqual(0.25f + Skin - 0.1f, Lift(new Vector3(1f, 0.1f, -2f), 0.15f), 1e-4f, "rose 15 cm past feet 15 cm under its top");
+            Assert.AreEqual(0.25f + Skin - 0.05f, Lift(new Vector3(3.1f, 0.05f, 0f), 0.15f), 1e-4f, "feet overhanging the edge a little are caught");
+            Assert.Greater(Lift(new Vector3(0f, 0.1f, 0f), 0.15f, Quaternion.Euler(0f, 30f, 0f)), 0f, "a deck turned about up is still a deck");
+        }
+
+        [Test]
+        public void DeckLift_LeavesAloneWhoeverItDidNotRiseInto()
+        {
+            Assert.AreEqual(0f, Lift(new Vector3(0f, 0.25f + Skin, 0f), 0.15f), "standing on it already (carried with it)");
+            Assert.AreEqual(0f, Lift(new Vector3(0f, 0.245f, 0f), 0.15f), "within the touch tolerance");
+            Assert.AreEqual(0f, Lift(new Vector3(0f, 0.6f, 0f), 0.15f), "above it");
+            Assert.AreEqual(0f, Lift(new Vector3(0f, -2.2f, 0f), 0.15f), "under it: it rises away");
+            Assert.AreEqual(0f, Lift(new Vector3(0f, -0.3f, 0f), 0.15f), "deeper in it than it rose: not this frame's doing");
+            Assert.AreEqual(0f, Lift(new Vector3(3.5f, 0.1f, 0f), 0.15f), "beside it");
+            Assert.AreEqual(0f, Lift(new Vector3(0f, 0.1f, 0f), 0f), "it did not rise");
+            Assert.AreEqual(0f, Lift(new Vector3(0f, 0.1f, 0f), 0.15f, Quaternion.Euler(60f, 0f, 0f)), "a wall or a steep ramp is no deck");
         }
 
         [Test]

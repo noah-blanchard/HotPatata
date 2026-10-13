@@ -31,6 +31,7 @@ namespace HotPatata
         const float MantleRetryDelay = 0.3f;
         const float MantleWallRayHeight = 0.05f;   // just above the feet, below the lowest ledge a mantle is for
         const float CarrierProbeReach = 0.08f;     // metres below the skin a carrier's deck still counts as under our feet
+        const float MinLiftCorrection = 0.01f;     // metres a lift onto a rising deck may fall short before we step out directly
 
         Player player;
         CharacterController controller;
@@ -49,7 +50,7 @@ namespace HotPatata
         IPlatformCarrier stoodOn;
         float stoodOnTime = Never;
         Vector3 rideVelocity;      // our feet's velocity on that carrier during the last carried move
-        Vector3 pendingMomentum;   // carrier velocity kept on losing contact; given back if we land on it again within the grace
+        Vector3 keptMomentum;      // horizontal carrier velocity kept on leaving one; given back on landing on a carrier, never carried twice
         int carriedFrame = -1;     // the frame we last moved with our carrier
         bool noClipping;           // dev cheat: flying through everything (DevCheats.NoClip)
         LayerMask savedExcludeLayers;
@@ -205,7 +206,7 @@ namespace HotPatata
                 Grounded = false;
                 wasGrounded = false;
                 State = MoveState.Air;
-                LeaveCarrier(t, true);      // a jump off a lift keeps the lift's velocity (PROJECT_SPEC §11)
+                LeaveCarrier(t, true);      // a jump off a rising lift keeps its climb (PROJECT_SPEC §11)
             }
 
             // --- Vertical -----------------------------------------------------------------------
@@ -225,7 +226,8 @@ namespace HotPatata
             // carries its riders itself when it moves (CarrierMotion.Moved), at the moment its collider cannot be inside us.
             // A carrier that does not (a belt) is ridden here. Then our own move, whose ground stick lands back on the deck.
             // Carry and stick in one move would point UP on a lift rising faster than the stick and never touch the deck:
-            // grounded and riding would flap every other frame (#97).
+            // grounded and riding would flap every other frame (#97). A rising deck that came up into us without carrying us
+            // (we landed on it, or our footing slipped) has already put us on top of it (LiftOntoDeck).
             var carrier = Alive(ridingPlatform) ? ridingPlatform : null;
             if (carrier != null && carriedFrame != Time.frameCount) CarryWith(carrier);
             ridingPlatform = null;   // OnControllerColliderHit sets it again if we are still on one
@@ -283,8 +285,7 @@ namespace HotPatata
         }
 
         /// <summary>
-        /// A carrier just moved (<see cref="CarrierMotion.Moved"/>): every local player standing on it moves with it now, before
-        /// their own Update.
+        /// A carrier just moved (CarrierMotion.Moved): every local player standing on it moves with it now, before their own Update.
         /// </summary>
         public static void CarryRiders(IPlatformCarrier carrier)
         {
@@ -317,6 +318,58 @@ namespace HotPatata
             if (carry.sqrMagnitude > 1e-10f) controller.Move(carry);
         }
 
+        /// <summary>
+        /// A carrier's deck just rose by <paramref name="rise"/> and its collider is about to follow (CarrierMotion.Moved): every
+        /// local player it came up into is put on top of it and rides it from now. That is anyone who was not carried with it:
+        /// a player landing on a rising lift or raft, mantling onto it, standing on the floor at its edge as it leaves, or a rider
+        /// whose footing slipped for a frame. A character controller never pushes itself out of a moving kinematic collider
+        /// (its overlap recovery is for static ones): the deck synced up around their feet, their next move started inside it
+        /// and went through it, down to the section's kill zone, and the team reset.
+        /// </summary>
+        public static void LiftOntoDeck(IPlatformCarrier carrier, System.Collections.Generic.IReadOnlyList<Collider> deck, float rise)
+        {
+            if (deck == null || rise <= 0f) return;
+            for (int i = 0; i < Motors.Count; i++)
+            {
+                var m = Motors[i];
+                if (m == null || m.player == null || !m.player.IsLocal || m.noClipping || !m.controller.enabled) continue;
+                float lift = 0f;   // stays 0 for a rider carried up with the deck: their feet are on its new top already
+                for (int c = 0; c < deck.Count; c++)
+                {
+                    if (deck[c] is not BoxCollider box || !box.enabled || box.isTrigger || !box.gameObject.activeInHierarchy) continue;
+                    int layer = box.gameObject.layer;
+                    if (Physics.GetIgnoreLayerCollision(m.gameObject.layer, layer) || (m.controller.excludeLayers & (1 << layer)) != 0) continue;
+                    lift = Mathf.Max(lift, CarrierMotion.DeckLift(m.transform.position + Vector3.up * m.centerOffset, m.controller.radius, box,
+                                                                  rise, m.controller.skinWidth));
+                }
+                if (lift > 0f) m.StandOnRisingDeck(carrier, lift);
+            }
+        }
+
+        /// <summary>Put on top of a deck that rose into us (<see cref="LiftOntoDeck"/>), before its collider moves: we ride it from now.</summary>
+        void StandOnRisingDeck(IPlatformCarrier carrier, float lift)
+        {
+            if (State == MoveState.Mantle)
+            {
+                State = MoveState.Air;   // the ledge came to us
+                horizontalVelocity = mantleForward * mantleExitSpeed;
+            }
+            if (verticalVelocity > 0f) verticalVelocity = 0f;   // slower than the deck: it caught us
+            float target = transform.position.y + lift;
+            var flags = controller.Move(Vector3.up * lift);   // its collider is still where it was, under us: nothing in the way
+            float missing = target - transform.position.y;
+            if (missing > MinLiftCorrection && (flags & CollisionFlags.Above) == 0)
+            {
+                // Held back from inside the deck after all (its collider was already up): step out onto it directly.
+                controller.enabled = false;
+                transform.position += Vector3.up * missing;
+                controller.enabled = true;
+            }
+            ridingPlatform = carrier;             // carried with it from next frame; our own move this frame lands on it
+            carriedFrame = Time.frameCount;
+            rideVelocity = CarrierMotion.VelocityAt(carrier, transform.position);
+        }
+
         /// <summary>Is <paramref name="carrier"/>'s surface just under our feet (within the skin and a few centimetres)?</summary>
         bool ProbeCarrier(IPlatformCarrier carrier)
         {
@@ -329,58 +382,79 @@ namespace HotPatata
         }
 
         /// <summary>
-        /// After the move: who we stand on, as the rest of the game sees it. Losing a carrier's deck keeps its velocity at
-        /// once (walking off a lift, PROJECT_SPEC §11); landing back on that same carrier within the grace gives it back, so
-        /// a contact lost for a frame never launches anyone.
+        /// After the move: who we stand on, as the rest of the game sees it. Walking or falling off a carrier keeps its
+        /// horizontal share (<see cref="GameTuning.carrierMomentumHorizontal"/>, PROJECT_SPEC §11), never its climb or descent;
+        /// landing on a carrier gives back what was kept, since the carrier carries us again (a velocity kept off a shuttle and
+        /// then carried by it a second time sends the rider across the deck and off its far edge).
         /// </summary>
         void UpdateCarrierMembership(GameTuning t, IPlatformCarrier carriedBy)
         {
             if (Alive(ridingPlatform))
             {
-                if (ReferenceEquals(ridingPlatform, stoodOn) && pendingMomentum != Vector3.zero)
-                    horizontalVelocity -= new Vector3(pendingMomentum.x, 0f, pendingMomentum.z);   // it was only a frame
-                pendingMomentum = Vector3.zero;
+                GiveBackKeptMomentum();
                 if (!ReferenceEquals(ridingPlatform, carriedBy)) rideVelocity = Vector3.zero;   // boarded: no carried move yet
                 stoodOn = ridingPlatform;
                 stoodOnTime = Time.time;
                 return;
             }
-            if (carriedBy != null && pendingMomentum == Vector3.zero)
-                pendingMomentum = Inherit(t, rideVelocity);   // walked or fell off: keep the carrier's velocity
-            if (!Alive(stoodOn) || Time.time - stoodOnTime > t.carrierLeaveGraceSeconds)
-            {
-                stoodOn = null;
-                pendingMomentum = Vector3.zero;
-            }
+            if (carriedBy != null && keptMomentum == Vector3.zero)
+                keptMomentum = Inherit(KeptCarrierVelocity(rideVelocity, t.carrierMomentumMax, t.carrierMomentumHorizontal, false));
+            if (Grounded) keptMomentum = Vector3.zero;   // on plain ground what was kept is our own speed now, and bleeds off as any
+            if (!Alive(stoodOn) || Time.time - stoodOnTime > t.carrierLeaveGraceSeconds) stoodOn = null;
         }
 
-        /// <summary>Leaves the carrier now (a jump): keeps its velocity unless it was already kept on losing contact.</summary>
+        /// <summary>
+        /// Leaves the carrier now: a jump keeps its climb (a rising deck never catches the jumper from below) and its horizontal
+        /// share, unless walking off just kept that share; a launch or noclip keeps nothing.
+        /// </summary>
         void LeaveCarrier(GameTuning t, bool keepMomentum)
         {
-            if (keepMomentum && (Alive(ridingPlatform) || RidingCarrier != null) && pendingMomentum == Vector3.zero)
+            if (keepMomentum && (Alive(ridingPlatform) || RidingCarrier != null))
             {
-                jumpKept = Inherit(t, rideVelocity);
+                float share = keptMomentum == Vector3.zero ? t.carrierMomentumHorizontal : 0f;
+                jumpKept = KeptCarrierVelocity(rideVelocity, t.carrierMomentumMax, share, true);
+                keptMomentum += Inherit(jumpKept);
                 jumpedOffCarrierFrame = carriedFrame == Time.frameCount ? Time.frameCount : -1;
             }
-            else if (keepMomentum && pendingMomentum != Vector3.zero)
-                verticalVelocity += pendingMomentum.y;   // a coyote jump just after walking off: the jump replaced the kept rise
             ridingPlatform = null;
             stoodOn = null;
             stoodOnTime = Never;
-            pendingMomentum = Vector3.zero;
+            if (!keepMomentum) keptMomentum = Vector3.zero;
         }
 
-        /// <summary>Adds a carrier's velocity (capped) to our own; returns what was added.</summary>
-        Vector3 Inherit(GameTuning t, Vector3 carrierVelocity)
+        /// <summary>Adds a kept carrier velocity to our own; returns its horizontal part (what landing on a carrier gives back).</summary>
+        Vector3 Inherit(Vector3 kept)
         {
-            Vector3 kept = KeptCarrierVelocity(carrierVelocity, t.carrierMomentumMax);
-            horizontalVelocity += new Vector3(kept.x, 0f, kept.z);
+            var flat = new Vector3(kept.x, 0f, kept.z);
+            horizontalVelocity += flat;
             verticalVelocity += kept.y;
-            return kept;
+            return flat;
         }
 
-        /// <summary>The share of a carrier's velocity a player leaving it keeps: all of it, capped in magnitude. Pure (EditMode tested).</summary>
-        public static Vector3 KeptCarrierVelocity(Vector3 carrierVelocity, float max) => Vector3.ClampMagnitude(carrierVelocity, Mathf.Max(0f, max));
+        /// <summary>Takes back the horizontal velocity kept off a carrier (no more than we still have along it).</summary>
+        void GiveBackKeptMomentum()
+        {
+            float kept = keptMomentum.magnitude;
+            if (kept > 1e-4f)
+            {
+                Vector3 dir = keptMomentum / kept;
+                float along = Vector3.Dot(horizontalVelocity, dir);
+                horizontalVelocity -= dir * Mathf.Clamp(kept, 0f, Mathf.Max(0f, along));
+            }
+            keptMomentum = Vector3.zero;
+        }
+
+        /// <summary>
+        /// What a player leaving a carrier moving at <paramref name="carrierVelocity"/> keeps (PROJECT_SPEC §11):
+        /// <paramref name="horizontalShare"/> of its horizontal velocity, and with <paramref name="keepRise"/> (a jump) its climb,
+        /// never its descent; capped at <paramref name="max"/> in magnitude. Pure (EditMode tested).
+        /// </summary>
+        public static Vector3 KeptCarrierVelocity(Vector3 carrierVelocity, float max, float horizontalShare, bool keepRise)
+        {
+            Vector3 kept = new Vector3(carrierVelocity.x, 0f, carrierVelocity.z) * Mathf.Clamp01(horizontalShare);
+            if (keepRise) kept.y = Mathf.Max(0f, carrierVelocity.y);
+            return Vector3.ClampMagnitude(kept, Mathf.Max(0f, max));
+        }
 
         /// <summary>
         /// How far a rider at <paramref name="feet"/> is carried this frame by a carrier that slid by <paramref name="delta"/>
@@ -646,7 +720,7 @@ namespace HotPatata
             stoodOn = null;
             stoodOnTime = Never;
             rideVelocity = Vector3.zero;
-            pendingMomentum = Vector3.zero;
+            keptMomentum = Vector3.zero;
             Grounded = false;
             wasGrounded = false;
             State = MoveState.Air;

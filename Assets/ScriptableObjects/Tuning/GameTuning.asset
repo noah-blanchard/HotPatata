@@ -29,6 +29,7 @@ MonoBehaviour:
   airDrag: 3
   carrierLeaveGraceSeconds: 0.1
   carrierMomentumMax: 12
+  carrierMomentumHorizontal: 0
   airOverspeedDrag: 2.5
   sprintSpeed: 11
   sprintAcceleration: 18

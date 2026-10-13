@@ -34,6 +34,7 @@ namespace HotPatata
         bool initialised;
         float lastU;
         Rigidbody body;   // the moving part's kinematic body, if any (physics pose kept in step with the drawn one)
+        Collider[] deck;  // the moving part's colliders (a rising deck puts whoever it came up into on top of it)
 
         /// <summary>How far the platform moved this frame (used to carry riders).</summary>
         public Vector3 FrameDelta { get; private set; }
@@ -105,6 +106,7 @@ namespace HotPatata
         {
             CarrierId = CarrierRegistry.Register(this);
             body = platform != null ? platform.GetComponent<Rigidbody>() : null;
+            deck = platform != null ? platform.GetComponentsInChildren<Collider>(true) : null;
         }
 
         void OnDisable() => CarrierRegistry.Unregister(CarrierId, this);
@@ -123,7 +125,7 @@ namespace HotPatata
             // A reset (or first frame) snaps the platform; never drag riders along with a snap.
             FrameDelta = initialised && delta.sqrMagnitude < 4f ? delta : Vector3.zero;
             platform.position = target;
-            CarrierMotion.Moved(this, platform, body);   // carry the riders, then the collider is where the deck is drawn (#97)
+            CarrierMotion.Moved(this, platform, body, initialised ? delta : Vector3.zero, deck);   // carry the riders, then the collider is where the deck is drawn (#97)
             if (u > lastU + 1e-5f) Active = true;
             else if (u < lastU - 1e-5f) Active = false;
             else if (!initialised) Active = u >= 0.5f;

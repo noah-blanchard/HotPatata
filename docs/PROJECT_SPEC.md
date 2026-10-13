@@ -497,8 +497,11 @@ Required characteristics:
 - **mantle**: moving forward into a ledge 0.1–1.4 m above the feet while airborne climbs it automatically (never onto hazards); a jump that will clear the ledge anyway is not interrupted;
 - moderate air control; a jump keeps its momentum, with extra drag above sprint speed so chained jumps cannot keep slide speed (no bunny-hop, no air-strafe gain);
 - **carriers** (lifts, moving platforms, pivots, belts) carry whoever stands on them, at any speed, without the rider
-  ever leaving the deck; a player who **jumps or walks off** a carrier keeps its velocity (capped at
-  `carrierMomentumMax`, 12 m/s), so a jump off a rising lift goes higher and a step off a shuttle carries on (#97);
+  ever leaving the deck; a deck on its way up that comes up under a player (landing on it, mantling onto it, standing
+  at its edge) puts them on top of it, never through it; a player who **jumps** off a carrier keeps its **climb** (capped
+  at `carrierMomentumMax`, 12 m/s), so a rising lift never catches the jumper from below, but never its descent; and
+  of its horizontal velocity only the share `carrierMomentumHorizontal` (0: a jump or a step off a shuttle, a pivot or a
+  lift leaves from the world, the deck never drags anyone along; owner playtest after #97);
 - single jump;
 - coyote time around **0.1 s**;
 - jump buffer around **0.1 s**;
