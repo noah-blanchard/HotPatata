@@ -137,6 +137,72 @@ namespace HotPatata.Tests
             Assert.IsEmpty(errors.Distinct().Take(10).ToArray());
         }
 
+        [Test]
+        public void ScannedProps_KeepClearOfPasses_StayInTheirBoxes_StatuesAreSolid()
+        {
+            Physics.SyncTransforms();
+            var errors = new List<string>();
+            foreach (var d in All<CourseDecoration>())
+                Assert.IsEmpty(d.GetComponentsInChildren<Collider>().Select(c => c.name).ToArray(), d.name + " never collides");
+            // the scanned props (reliefs, offerings, roof combs, colossi): never within the decoration clearance of an intended pass
+            // (the stepped pyramid keeps its own rule: 12 m under every floor near it)
+            var decorations = All<CourseDecoration>().Where(d => d.transform.parent.name == "Temple props" || d.name == "Colossi")
+                .SelectMany(d => d.GetComponentsInChildren<MeshRenderer>()).ToArray();
+            Assert.Greater(decorations.Length, 400, "the temple's reliefs, offerings, roof combs and colossi");
+            var points = new List<Vector3>();
+            foreach (var pass in All<PassCorridor>())
+            {
+                if (!pass.TrySample(tuning, points)) continue;
+                var arc = new Bounds(points[0], Vector3.zero);
+                foreach (var p in points) arc.Encapsulate(p);
+                arc.Expand(2f * PassCorridor.DecorationClearance);
+                foreach (var r in decorations.Where(r => r.bounds.Intersects(arc)))
+                    foreach (var p in points)
+                        if (Vector3.Distance(ClosestOnBox(r, p), p) < PassCorridor.DecorationClearance) { errors.Add(pass.name + " near " + r.transform.parent?.name); break; }
+            }
+            // a mover drawn as carved slabs: every slab inside the platform's collider (its top flush, nothing drawn where nothing collides)
+            var carved = All<CustomVisual>().Where(v => v.name == "Carved stone").ToArray();
+            Assert.GreaterOrEqual(carved.Length, 10, "the shuttle, the ford stones, the lift, the bridges and the pivots are carved");
+            foreach (var v in carved)
+            {
+                var box = v.transform.parent.GetComponentsInChildren<BoxCollider>().Where(c => !c.isTrigger && !CustomVisual.Covers(c))
+                    .OrderByDescending(c => c.bounds.size.x * c.bounds.size.z).First();
+                foreach (var r in v.GetComponentsInChildren<MeshRenderer>())
+                    foreach (var corner in Corners(r))
+                    {
+                        var local = box.transform.InverseTransformPoint(corner) - box.center;
+                        var half = box.size / 2f + Vector3.one * 0.02f;
+                        if (Mathf.Abs(local.x) > half.x || Mathf.Abs(local.y) > half.y || Mathf.Abs(local.z) > half.z) { errors.Add(v.transform.parent.name + " drawn outside its collider"); break; }
+                    }
+            }
+            // a statue looks like it can be climbed: it is solid
+            var statues = All<Transform>().Where(t => t.name == "Statue box").ToArray();
+            Assert.GreaterOrEqual(statues.Length, 10, "statues round the courts");
+            foreach (var s in statues)
+            {
+                var c = s.GetComponent<BoxCollider>();
+                Assert.IsNotNull(c, s.parent.name);
+                Assert.AreEqual(LayerMask.NameToLayer("Environment"), s.gameObject.layer, s.parent.name);
+                Assert.IsFalse(c.isTrigger, s.parent.name);
+            }
+            Assert.IsEmpty(errors.Distinct().Take(15).ToArray());
+        }
+
+        /// <summary>The point of a renderer's own box nearest <paramref name="p"/> (exact for scaled and quarter-turned scans).</summary>
+        static Vector3 ClosestOnBox(Renderer r, Vector3 p)
+        {
+            var b = r.localBounds;
+            var local = r.transform.InverseTransformPoint(p);
+            return r.transform.TransformPoint(new Vector3(Mathf.Clamp(local.x, b.min.x, b.max.x), Mathf.Clamp(local.y, b.min.y, b.max.y), Mathf.Clamp(local.z, b.min.z, b.max.z)));
+        }
+
+        static IEnumerable<Vector3> Corners(Renderer r)
+        {
+            var b = r.localBounds;
+            for (int c = 0; c < 8; c++)
+                yield return r.transform.TransformPoint(b.center + Vector3.Scale(b.extents, new Vector3((c & 1) == 0 ? -1 : 1, (c & 2) == 0 ? -1 : 1, (c & 4) == 0 ? -1 : 1)));
+        }
+
         // ------------------------------------------------------------------ the systems on the course
 
         [UnityTest]

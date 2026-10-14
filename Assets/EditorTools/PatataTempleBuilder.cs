@@ -122,7 +122,9 @@ namespace HotPatata.Editor
             Outdoors.Clear();
             Footprints.Clear();
             Ruins.Clear();
+            Extents.Clear();
             int restyled = 0;
+            var rooms = new List<Transform>();
             RebuildGroup(section, GroupName, group =>
             {
                 using (UseLookSet(LookSet.Nature))
@@ -134,6 +136,7 @@ namespace HotPatata.Editor
                         var spec = sections[i];
                         var room = new GameObject(spec.name).transform;
                         room.SetParent(group, false);
+                        rooms.Add(room);
                         float lowest = Mathf.Min(0f, spec.dy);
                         killTop = lowest - KillDrop;
                         // The fall also stays under the section before when it is lower: past the court it lies beside us, and its lift
@@ -163,9 +166,10 @@ namespace HotPatata.Editor
                     }
                     CheckFootprints();
                     Physics.SyncTransforms();
+                    string props = Props(group, rooms);
                     string dressing = Dressing(group);
                     SafetyNet(group);
-                    Debug.Log("[PatataTempleBuilder] " + dressing);
+                    Debug.Log("[PatataTempleBuilder] " + props + "; " + dressing);
                 }
             });
             section.gameObject.AddComponent<CourseRoute>().Configure(Route.ToArray(), Outdoors.ToArray());

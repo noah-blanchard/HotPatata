@@ -51,9 +51,10 @@ namespace HotPatata.Editor
             new Surface { name = name, folder = folder, mapping = Mapping.UV, tile = tile, smoothMax = 0.4f, brightness = brightness, saturation = 1f,
                           variation = 0.1f, macro = 0.15f, tint = tint ?? Color.white, antiTile = antiTile };
 
-        static Surface Prop(string name, string model, float brightness = 1f) =>
-            new Surface { name = name, folder = model + "/textures", mapPrefix = model + "_", model = true, mapping = Mapping.UV, tile = 1f, smoothMax = 0.45f,
-                          brightness = brightness, saturation = 1f, variation = 0.06f, macro = 0f, tint = Color.white };
+        /// <summary>A scanned prop's own maps; <paramref name="set"/> picks one texture set of a model that has several (wooden_barrels_01_pieces).</summary>
+        static Surface Prop(string name, string model, float brightness = 1f, string set = null) =>
+            new Surface { name = name, folder = model + "/textures", mapPrefix = (set == null ? model : model + "_" + set).ToLowerInvariant() + "_", model = true,
+                          mapping = Mapping.UV, tile = 1f, smoothMax = 0.45f, brightness = brightness, saturation = 1f, variation = 0.06f, macro = 0f, tint = Color.white };
 
         static Surface Leaves(string name, string model, string prefix, float wind, Color? tint = null) =>
             new Surface { name = name, folder = model + "/textures", mapPrefix = prefix, model = true, mapping = Mapping.UV, tile = 1f, smoothMax = 0.35f,
@@ -121,6 +122,47 @@ namespace HotPatata.Editor
             Prop("Nature_Prop_Stump2", "tree_stump_02"),
             Prop("Nature_Prop_DeadTrunk1", "dead_tree_trunk"),
             Prop("Nature_Prop_Roots", "root_cluster_01"),
+            // PatataCanopy's treehouse life, living canopy and forest floor
+            Prop("Nature_Prop_Barrel1", "wooden_barrels_01", set: "barrel01"),
+            Prop("Nature_Prop_Barrel2", "wooden_barrels_01", set: "barrel02"),
+            Prop("Nature_Prop_BarrelPieces", "wooden_barrels_01", set: "pieces"),
+            Prop("Nature_Prop_Crate1", "wooden_crate_01"),
+            Prop("Nature_Prop_Crate2", "wooden_crate_02"),
+            Prop("Nature_Prop_Bucket", "wooden_bucket_01"),
+            Prop("Nature_Prop_Basket1", "wicker_basket_01"),
+            Prop("Nature_Prop_Basket2", "wicker_basket_02"),
+            Prop("Nature_Prop_HangingLantern", "Lantern_01", set: "brass"),
+            Prop("Nature_Prop_Ladder", "wooden_ladder_02"),
+            Prop("Nature_Prop_WineBarrel", "wine_barrel_01"),
+            Prop("Nature_Prop_Hatchet", "hatchet"),
+            Prop("Nature_Prop_Stool", "wooden_stool_01"),
+            Prop("Nature_Prop_PierPlanks", "modular_wooden_pier", set: "planks"),
+            Prop("Nature_Prop_PierPoles", "modular_wooden_pier", set: "poles"),
+            Prop("Nature_Prop_Jug", "jug_01"),
+            Prop("Nature_Prop_Bowl", "wooden_bowl_01"),
+            Prop("Nature_Prop_Roots2", "root_cluster_02"),
+            Prop("Nature_Prop_Root", "single_root"),
+            Prop("Nature_Prop_PachiraBark", "pachira_aquatica_01", set: "bark"),
+            Prop("Nature_Prop_Nest", "duck_nest_eggs"),
+            Prop("Nature_Prop_Frog", "tree_frog"),
+            // PatataTemple's statues, ruins and offerings (CC0 museum scans, tools/Fetch-Sketchfab.ps1)
+            Prop("Nature_Prop_MayaStela", "maya_stela_fragment"),
+            Prop("Nature_Prop_MayaRelief", "maya_relief_pillar"),
+            Prop("Nature_Prop_PalenqueWall", "palenque_relief_wall"),
+            Prop("Nature_Prop_MayaHead", "maya_head_helmet"),
+            Prop("Nature_Prop_OlmecFigure", "olmec_standing_figure"),
+            Prop("Nature_Prop_Chalchiuhtlicue", "aztec_chalchiuhtlicue"),
+            Prop("Nature_Prop_OlmecFace", "olmec_face_fragment"),
+            Prop("Nature_Prop_Palma", "ballgame_palma"),
+            Prop("Nature_Prop_OfferingBowl", "precolumbian_bowl"),
+            Prop("Nature_Prop_FaceUrn", "face_urn"),
+            Prop("Nature_Prop_AntiqueVase", "antique_ceramic_vase_01"),
+            Prop("Nature_Prop_Vase1", "ceramic_vase_01"),
+            Prop("Nature_Prop_Vase3", "ceramic_vase_03"),
+            Prop("Nature_Prop_ClayPot", "planter_pot_clay"),
+            Prop("Nature_Prop_DiyaLantern", "brass_diya_lantern"),
+            Prop("Nature_Prop_BrassPot", "brass_pot_01"),
+            Prop("Nature_Prop_CarvedPlate", "carved_wooden_plate"),
             // foliage (cut-out atlases, both faces, wind)
             Spray("Nature_Leaves_Fir", NatureTextureFactory.Spray.Fir, 1f),
             Spray("Nature_Leaves_Pine", NatureTextureFactory.Spray.Pine, 1f),
@@ -133,6 +175,7 @@ namespace HotPatata.Editor
             Leaves("Nature_Moss", "moss_01", "moss_01_", 0.15f),
             Leaves("Nature_Calathea", "calathea_orbifolia_01", "calathea_orbifolia_01_", 0.6f),     // PatataTemple's jungle floor
             Leaves("Nature_Anthurium", "anthurium_botany_01", "anthurium_botany_01_", 0.7f),
+            Leaves("Nature_PachiraLeaves", "pachira_aquatica_01", "pachira_aquatica_01_leaves_", 0.9f),
             Spray("Nature_GrassBlades", NatureTextureFactory.Spray.Grass, 1.4f),
         };
 

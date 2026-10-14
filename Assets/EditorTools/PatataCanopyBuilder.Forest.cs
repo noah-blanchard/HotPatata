@@ -36,6 +36,7 @@ namespace HotPatata.Editor
 
         static readonly List<SupportRequest> Supports = new List<SupportRequest>();
         static readonly List<Transform> Roofs = new List<Transform>();   // the leaf roofs, dressed with tufts once placed
+        static readonly List<Vector3> Boles = new List<Vector3>();       // each giant's bole: x, its radius, z (the old walkways cling to them)
 
         /// <summary>The forest floor: a heightfield of TerrainCell cells.</summary>
         sealed class Ground
@@ -308,7 +309,8 @@ namespace HotPatata.Editor
             }
 
             // ---- the giants
-            var boles = new List<Vector3>();
+            var boles = Boles;
+            boles.Clear();
             bool TryGiant(NatureTreeBuilder.Giant kind, int v, Vector3 at, float yaw, float scale)
             {
                 var parts = giants[kind][v];
