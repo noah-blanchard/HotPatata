@@ -274,7 +274,7 @@ namespace HotPatata.Editor
                 .Where(h => h.collider.GetComponent<CourseCeiling>() == null).OrderBy(h => h.distance).FirstOrDefault();
             if (hit.collider == null || Mathf.Abs(hit.point.y - at.y) > 0.3f) return false;
             at.y = hit.point.y;
-            if (NearGameplay(at, 1.2f)) return false;
+            if (ScannedProps.NearGameplay(at, 1.2f)) return false;
             if (samples.Any(s => s.y < at.y + 1.6f && (new Vector2(s.x - at.x, s.z - at.z)).magnitude < 1.1f)) return false;
             var (model, height) = Offerings[rng.Next(Offerings.Length)];
             NatureKit.Prop(deco, model, ScannedProps.MaterialOf(model), deco.InverseTransformPoint(at), (float)rng.NextDouble() * 360f, height, shadows: false).isStatic = true;
@@ -297,17 +297,6 @@ namespace HotPatata.Editor
                 }
             }
             return placed;
-        }
-
-        /// <summary>True near a gameplay volume or a moving piece (a plate, a zone, a checkpoint's spawn, a beam, a mover).</summary>
-        static bool NearGameplay(Vector3 point, float radius)
-        {
-            foreach (var c in Physics.OverlapSphere(point + Vector3.up * 0.5f, radius, ~0, QueryTriggerInteraction.Collide))
-                if (c.GetComponentInParent<Zone>() != null || c.GetComponentInParent<PressurePlate>() != null || c.GetComponentInParent<PlayerSpawn>() != null
-                    || c.GetComponentInParent<FinishZone>() != null || c.GetComponentInParent<SunBeam>() != null || c.GetComponentInParent<BombTransit>() != null
-                    || c.GetComponentInParent<SignalActuator>() != null || c.GetComponentInParent<MovingPlatform>() != null || c.GetComponentInParent<RotatingObstacle>() != null)
-                    return true;
-            return false;
         }
 
         // ------------------------------------------------------------------ the movers as carved slabs
