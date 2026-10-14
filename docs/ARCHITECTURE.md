@@ -1918,6 +1918,19 @@ ripple normal and foam noise, and the fir, pine and grass sprays (Poly Haven's s
 not cards). `NatureAudioFactory` synthesises the ambience loops (fire, river, waterfall, wind, birds, crickets) as WAVs in
 `Assets/Audio/Ambient`; a CC0 recording can replace one under the same name.
 
+**Scanned props for PatataCanopy and PatataTemple.** The same manifest lists the Poly Haven props of the two later
+courses (treehouse life: crates, barrels, baskets, a hanging lantern, a ladder, a modular pier; offerings: vases, pots,
+a brass lamp; roots and a pachira for the jungle). Their statues, reliefs and offerings come from CC0 museum scans on
+Sketchfab: `tools/Fetch-Sketchfab.ps1` reads `tools/sketchfab-assets.json`, refuses any model whose licence is not CC0
+(the API token lives in `SKETCHFAB_API_TOKEN`, never in the repository), downloads the glb to a temporary folder and runs
+`tools/blender/sketchfab_to_fbx.py` headless (Blender 4.2 or later): the scan's chunks are joined, calibration cards
+dropped, the mesh turned upright when the manifest says so, scaled to 1 m with its origin at the bottom centre,
+decimated (8k to 40k triangles), unwrapped once, and its relief, colour and roughness are baked from the full scan onto
+the reduced mesh (most museum scans are unlit, so colour is baked through an emission of its source). The result is laid
+out like a Poly Haven model (`<id>_<res>.fbx`, `textures/<id>_diff|nor_gl|rough_<res>.jpg`), so `NatureAssetImporter`
+and `NatureMaterialBuilder.Prop` treat both sources alike. The script rewrites the Sketchfab block of `CREDITS.md`.
+A Poly Haven model with several texture sets (the barrels, the pier, the pachira) gets one `Prop` surface per set.
+
 **Shaders:**
 
 - `HotPatata/Nature` (`HotPatataNature.shader`, `HotPatataNatureInput.hlsl`): a fork of the industrial light model with

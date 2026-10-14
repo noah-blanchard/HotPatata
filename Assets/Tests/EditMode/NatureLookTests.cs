@@ -68,6 +68,29 @@ namespace HotPatata.Tests
             Assert.AreEqual(expected, NatureAssetImporter.Classify(NatureAssetImporter.TextureFolder + "Any/" + file));
         }
 
+        [System.Serializable] class ManifestModel { public string id, uid; }
+        [System.Serializable] class Manifest { public ManifestModel[] models; }
+
+        [TestCase("tools/nature-assets.json")]
+        [TestCase("tools/sketchfab-assets.json")]
+        public void ManifestModels_AreFetched_Imported_AndCredited(string manifest)
+        {
+            string root = System.IO.Path.GetDirectoryName(Application.dataPath);
+            var models = JsonUtility.FromJson<Manifest>(System.IO.File.ReadAllText(System.IO.Path.Combine(root, manifest))).models;
+            string credits = System.IO.File.ReadAllText(System.IO.Path.Combine(root, "CREDITS.md"));
+            Assert.Greater(models.Length, 0);
+            foreach (var m in models)
+            {
+                string path = NatureAssetImporter.ModelPath(m.id);
+                Assert.IsNotNull(path, m.id + " not fetched (run the fetch script of " + manifest + ")");
+                var importer = (ModelImporter)AssetImporter.GetAtPath(path);
+                Assert.AreEqual(ModelImporterMaterialImportMode.None, importer.materialImportMode, m.id + ": materials come from NatureMaterialBuilder");
+                Assert.IsTrue(importer.generateMeshLods, m.id + " has mesh LODs");
+                Assert.IsEmpty(AssetDatabase.LoadAssetAtPath<GameObject>(path).GetComponentsInChildren<Collider>(true), m.id + " carries no collider");
+                StringAssert.Contains("[" + m.id + "]", credits, m.id + " is credited");
+            }
+        }
+
         [Test]
         public void Skies_AreReflectionCubemaps()
         {

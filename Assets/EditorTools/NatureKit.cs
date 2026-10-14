@@ -157,8 +157,8 @@ namespace HotPatata.Editor
         /// <summary>A Poly Haven model as decoration: its material swapped for the library's, no collider, scaled to <paramref name="height"/> metres.</summary>
         public static GameObject Prop(Transform parent, string model, string material, Vector3 position, float yaw, float height, bool shadows = true)
         {
-            var asset = AssetDatabase.LoadAssetAtPath<GameObject>($"{NatureAssetImporter.ModelFolder}{model}/{model}_1k.fbx")
-                        ?? throw new System.InvalidOperationException("missing model " + model + " (run tools/Fetch-PolyHaven.ps1)");
+            var asset = (NatureAssetImporter.ModelPath(model) is string path ? AssetDatabase.LoadAssetAtPath<GameObject>(path) : null)
+                        ?? throw new System.InvalidOperationException("missing model " + model + " (run tools/Fetch-PolyHaven.ps1 or tools/Fetch-Sketchfab.ps1)");
             var go = (GameObject)PrefabUtility.InstantiatePrefab(asset, parent);
             go.name = model;
             // a model whose mesh sits on its root node carries the file's axis and unit conversion there (90° X, x100):

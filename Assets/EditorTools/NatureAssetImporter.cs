@@ -18,6 +18,17 @@ namespace HotPatata.Editor
 
         public enum NatureMapKind { Unknown, Color, Normal, Linear, Alpha }
 
+        /// <summary>A fetched model's FBX (<c>Models/Nature/&lt;id&gt;/&lt;id&gt;_1k.fbx</c>, or its 2K file when only that was fetched), null when missing.</summary>
+        public static string ModelPath(string model)
+        {
+            foreach (var res in new[] { "1k", "2k" })
+            {
+                string path = $"{ModelFolder}{model}/{model}_{res}.fbx";
+                if (System.IO.File.Exists(path)) return path;
+            }
+            return null;
+        }
+
         /// <summary>The kind of a Nature texture from its Poly Haven name: <c>fern_02_alpha_1k.png</c> is an Alpha (cut-out) map.</summary>
         public static NatureMapKind Classify(string path)
         {

@@ -1,0 +1,17 @@
+{
+  "comment": "Sketchfab models released under CC0 (museum scans) used by PatataTemple and PatataCanopy (ARCHITECTURE §25.3). Fetch with tools/Fetch-Sketchfab.ps1 (needs SKETCHFAB_API_TOKEN; a model whose licence is not CC0 is refused). Each scan is reduced by tools/blender/sketchfab_to_fbx.py: one mesh, at most `tris` triangles, origin at the bottom centre, `height` metres tall, turned by `rotate` (degrees about X, Y, Z in Blender's Z-up frame, optional), its maps baked to one set at `res` and written like a Poly Haven model (<id>_<res>.fbx + textures/<id>_diff|nor_gl|rough_<res>.jpg).",
+  "models": [
+    { "uid": "028a09859f96429daf1fb9b9a3090a83", "id": "maya_stela_fragment",   "tris": 30000, "height": 1.0, "res": "1k", "used": "PatataTemple statues" },
+    { "uid": "4fef2ab0aa324f0397ccdfcc92563d0e", "id": "maya_relief_pillar",    "tris": 30000, "height": 1.0, "res": "1k", "used": "PatataTemple pillars" },
+    { "uid": "df7b67168f944756b1bf169b7effd89b", "id": "palenque_relief_wall",  "tris": 40000, "height": 1.0, "res": "2k", "rotate": [46, 0, 0], "used": "PatataTemple walls" },
+    { "uid": "12841a53ba114c4492f2dbb410b164b9", "id": "maya_head_helmet",      "tris": 25000, "height": 1.0, "res": "1k", "used": "PatataTemple statues" },
+    { "uid": "5df0e70cb0e1466399b459f5fd0f91ab", "id": "olmec_standing_figure", "tris": 25000, "height": 1.0, "res": "1k", "used": "PatataTemple statues" },
+    { "uid": "cc716337f8804046a55da0383820ba82", "id": "aztec_chalchiuhtlicue", "tris": 25000, "height": 1.0, "res": "1k", "used": "PatataTemple statues" },
+    { "uid": "dfdf78ec92d84112837590f1c1da7eb4", "id": "olmec_face_fragment",   "tris": 20000, "height": 1.0, "res": "1k", "used": "PatataTemple statues" },
+    { "uid": "5c5227e077e04654bcffa15002b9b51a", "id": "ballgame_palma",        "tris": 20000, "height": 1.0, "res": "1k", "used": "PatataTemple statues" },
+    { "uid": "5bf4021555b04d9a8ed6b22d25ec28f8", "id": "precolumbian_bowl",     "tris": 8000,  "height": 1.0, "res": "1k", "used": "PatataTemple offerings" },
+    { "uid": "dffe3b1e1dbc4d16a3663f76ff9aa4f2", "id": "face_urn",              "tris": 10000, "height": 1.0, "res": "1k", "used": "PatataTemple offerings" },
+    { "uid": "5c84b6ca2878423da99ea6ce806e6e00", "id": "duck_nest_eggs",        "tris": 20000, "height": 1.0, "res": "1k", "used": "PatataCanopy living canopy" },
+    { "uid": "218caec043db49d4b41855ab7e92765d", "id": "tree_frog",             "tris": 8000,  "height": 1.0, "res": "1k", "used": "PatataCanopy living canopy" }
+  ]
+}

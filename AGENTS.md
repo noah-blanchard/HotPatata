@@ -137,8 +137,9 @@ same PR. Code comments cite doc sections (e.g. `PROJECT_SPEC §8.3`), so never r
   `HotPatataToon.shader`): keep its property names, materials and builders rely on them.
 - **Look.** Kit visuals are KayKit pieces drawn by `KitSkin` (ARCHITECTURE §25.1): give a box a `KitRole`, never a
   greybox material. PatataWilds draws the same roles in the nature look (`LookSet.Nature`, ARCHITECTURE §25.3:
-  generated rock, log and plank shapes, `HotPatata/Nature`, Poly Haven assets fetched by `tools/Fetch-PolyHaven.ps1` and
-  credited in `CREDITS.md`). Rebuild with `HotPatata/Course/Build KayKit Kit`, then `HotPatata/Course/Rebuild All Courses`.
+  generated rock, log and plank shapes, `HotPatata/Nature`, Poly Haven assets fetched by `tools/Fetch-PolyHaven.ps1`,
+  CC0 Sketchfab scans fetched and reduced by `tools/Fetch-Sketchfab.ps1` (CC0 only, token in `SKETCHFAB_API_TOKEN`,
+  Blender headless), all credited in `CREDITS.md`). Rebuild with `HotPatata/Course/Build KayKit Kit`, then `HotPatata/Course/Rebuild All Courses`.
 - **Prefabs.**
   - Kit prefabs go in `Assets/Prefabs/{Platforms,Obstacles,Gameplay}`; variants (same logic, another visual or motion) in
     `Assets/Prefabs/Variants`, made as Prefab Variants (docs/OBSTACLES.md §4).

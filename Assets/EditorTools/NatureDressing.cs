@@ -257,7 +257,7 @@ namespace HotPatata.Editor
         static List<(Mesh mesh, Matrix4x4 bake, float height)> Variants(string model)
         {
             var result = new List<(Mesh, Matrix4x4, float)>();
-            var asset = AssetDatabase.LoadAssetAtPath<GameObject>($"{NatureAssetImporter.ModelFolder}{model}/{model}_1k.fbx");
+            var asset = NatureAssetImporter.ModelPath(model) is string path ? AssetDatabase.LoadAssetAtPath<GameObject>(path) : null;
             if (asset == null) return result;
             foreach (var filter in asset.GetComponentsInChildren<MeshFilter>())
             {
