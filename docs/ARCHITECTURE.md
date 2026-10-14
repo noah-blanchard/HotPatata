@@ -657,10 +657,11 @@ base, the HUD (#24) follows.
   each course scene, pushes it while the run is `Completed` and pops it when the run starts again. The old IMGUI
   screen is gone. While any menu is on top, the IMGUI `AimReticle` draws nothing.
 - **Menu backdrop** (`Assets/Prefabs/Menu/MenuBackdrop.prefab`, one instance in `Bootstrap`). A forest clearing at a misty
-  golden dawn in the nature look (§25.3; `MenuBackdropBuilder.Forest.cs`): a grass floor, flat round the show and rising far off;
+  blue-grey dawn in the nature look (§25.3; `MenuBackdropBuilder.Forest.cs`): a grass floor, flat round the show and rising far off;
   trees all round (broadleaf and firs from 15 m, giant oaks beyond 34 m, one instanced `FoliageSet`, `Menu_Foliage`) that
   dissolve into the mist, never standing on a camera spot's line to its board or the show; grass, ferns and bushes in the
-  clearing; light shafts behind the show; the mist on the floor (`MistField`). **No wall, no sky, no horizon**: the light is
+  clearing; a small campfire right of the show, always burning (the checkpoints' fire, `CampfirePresentation.alwaysLit`), its
+  light dim and a warm glow round it in the mist; light shafts behind the show; the mist on the floor (`MistField`). **No wall, no sky, no horizon**: the light is
   `MenuForestLook` (through `NatureDayLook`, one held moment: a low sun behind the show shining towards the title camera, a haze
   from 10 to 80 m, a low mist), and the menu camera clears to the haze's colour (`MenuForestLook.Haze`), so the far trees melt
   into it. From the Title station the four slots' characters, about 21 m away, stand as silhouettes against the bright mist

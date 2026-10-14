@@ -9,7 +9,7 @@ namespace HotPatata
     /// crackle, a column of smoke seen from afar); a checkpoint already reached when this first looks (a practice start, a late
     /// join) is simply burning; a new run puts it out. Lit and cold differ by shape and motion (fire, smoke), never by colour
     /// alone. The burst and the flicker honour flash reduction. With no checkpoint it is the summit beacon: lit when the run is
-    /// complete.
+    /// complete. The menu's fire is always lit.
     /// </summary>
     public class CampfirePresentation : MonoBehaviour
     {
@@ -21,6 +21,7 @@ namespace HotPatata
         [SerializeField] Light fireLight;
         [SerializeField] AudioSource crackle;
         [SerializeField, Tooltip("Scales the light (the beacon is bigger).")] float size = 1f;
+        [SerializeField, Tooltip("Burns from the start, whatever the run (the menu's fire: no checkpoint, no run).")] bool alwaysLit;
 
         float flamesRate, embersRate, smokeRate;
         bool known, lit;
@@ -41,6 +42,7 @@ namespace HotPatata
 
         bool ShouldBurn()
         {
+            if (alwaysLit) return true;
             if (checkpoint != null) return checkpoint.Activated;
             var run = RunManager.Instance;
             return run != null && run.State == RunState.Completed;
