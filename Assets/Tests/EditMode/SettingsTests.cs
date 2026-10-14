@@ -34,6 +34,9 @@ namespace HotPatata.Tests
             Assert.IsFalse(s.invertY);
             Assert.AreEqual(1f, s.masterVolume);
             Assert.AreEqual(1f, s.sfxVolume);
+            Assert.AreEqual(1f, s.musicVolume);
+            Assert.AreEqual(1f, s.ambienceVolume);
+            Assert.AreEqual(1f, s.uiVolume);
             Assert.AreEqual(SettingsData.Unset, s.fullScreenMode);
         }
 
@@ -106,6 +109,15 @@ namespace HotPatata.Tests
             Assert.AreEqual(80f, Settings.FieldOfView(tuning));
             Assert.IsFalse(Settings.InvertY);
             Assert.AreEqual(1f, Settings.SfxVolume);
+        }
+
+        [Test]
+        public void Parse_AudioGroupVolumes_AreClamped()
+        {
+            var s = Settings.Parse("{\"musicVolume\":2,\"ambienceVolume\":-1,\"uiVolume\":0.3}", tuning);
+            Assert.AreEqual(1f, s.musicVolume);
+            Assert.AreEqual(0f, s.ambienceVolume);
+            Assert.AreEqual(0.3f, s.uiVolume, 1e-5f);
         }
 
         [Test]

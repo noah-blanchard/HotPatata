@@ -66,6 +66,7 @@ namespace HotPatata
         protected T Navigable<T>(T element) where T : VisualElement
         {
             navigation.Add(element);
+            UiSounds.Attach(element);   // hover, click and change sounds (ARCHITECTURE §26)
             return element;
         }
 

@@ -113,6 +113,17 @@ namespace HotPatata.Editor
             S("25 Summit Arch", 5, 52, 0, 0, Meadow, SummitArch),
         };
 
+        /// <summary>The ambience environment of a section (Ambience/Environments/&lt;name&gt;, ARCHITECTURE §26).</summary>
+        static string AudioEnvironment(SectionSpec s)
+        {
+            if (s.ceiling > 0f) return "Cave";
+            if (s.act == 5) return "Summit";
+            if (s.water || s.theme.Floor == River.Floor || s.theme.Floor == Gravel.Floor) return "River";
+            if (s.theme.Floor == Granite.Floor) return "Cliffs";
+            if (s.theme.Floor == Meadow.Floor) return "Meadow";
+            return "Forest";
+        }
+
         /// <summary>One section's footprint in world XZ (for the terrain and the overlap check): centre, half extents, yaw.</summary>
         public struct Footprint
         {
@@ -191,6 +202,7 @@ namespace HotPatata.Editor
             });
             CheckFootprints();
             section.gameObject.AddComponent<CourseRoute>().Configure(Route.ToArray(), Outdoors.ToArray());
+            WriteCourseAudio(section, sections.Select(s => s.act).ToArray(), sections.Select(AudioEnvironment).ToArray(), "Forest");
             LookBuilder.ApplyToScene(scene);
             Physics.SyncTransforms();
             ValidatePasses();

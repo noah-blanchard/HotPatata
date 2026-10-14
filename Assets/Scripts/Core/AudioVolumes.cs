@@ -6,11 +6,14 @@ namespace HotPatata
     /// <summary>
     /// Drives the HotPatataMixer's exposed volumes from the player's <see cref="Settings"/> (M6.5). The master volume is
     /// <c>AudioListener.volume</c> (applied by <see cref="Settings"/>, so it reaches every sound); each mixer group
-    /// (SFX now, music and UI later) gets its own slider here. Lives on the persistent AppRoot.
+    /// (effects, music, ambience, menus: ARCHITECTURE §6.1) gets its own slider here. Lives on the persistent AppRoot.
     /// </summary>
     public class AudioVolumes : MonoBehaviour
     {
         const string SfxParameter = "SfxVolume";
+        const string MusicParameter = "MusicVolume";
+        const string AmbienceParameter = "AmbienceVolume";
+        const string UiParameter = "UiVolume";
         const float SilentDb = -80f;   // the mixer's floor
 
         [SerializeField] AudioMixer mixer;
@@ -26,7 +29,11 @@ namespace HotPatata
 
         void Apply()
         {
-            if (mixer != null) mixer.SetFloat(SfxParameter, ToDecibels(Settings.SfxVolume));
+            if (mixer == null) return;
+            mixer.SetFloat(SfxParameter, ToDecibels(Settings.SfxVolume));
+            mixer.SetFloat(MusicParameter, ToDecibels(Settings.MusicVolume));
+            mixer.SetFloat(AmbienceParameter, ToDecibels(Settings.AmbienceVolume));
+            mixer.SetFloat(UiParameter, ToDecibels(Settings.UiVolume));
         }
 
         /// <summary>Slider 0..1 to mixer decibels: 1 = 0 dB, 0 = silent, perceptually even in between.</summary>

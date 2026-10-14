@@ -8,6 +8,15 @@ need no attribution, they are listed so their source stays traceable.
 - **Industrial texture sets** (ambientCG and Poly Haven, CC0): listed in `Assets/Art/Textures/Industrial/CREDITS.md`.
 - **Mixamo characters and animations**: `Assets/Art/Models/Characters` (Adobe Mixamo licence).
 
+## Sounds and music (ARCHITECTURE §26)
+
+Every file dropped in `Assets/Audio` (Music, Ambience, SFX) is listed here with its source and licence. Music is made by the
+owner. The loops in `Assets/Audio/Ambient` are synthesised by `NatureAudioFactory` (no licence needed).
+
+| File or folder | Source | Licence |
+|---|---|---|
+| | | |
+
 ## Nature look: PatataWilds, PatataCanopy, PatataTemple (ARCHITECTURE §25.3)
 
 Textures, models and skies from [Poly Haven](https://polyhaven.com), released under

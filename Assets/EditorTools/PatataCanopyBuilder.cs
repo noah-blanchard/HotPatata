@@ -179,6 +179,7 @@ namespace HotPatata.Editor
                 }
             });
             section.gameObject.AddComponent<CourseRoute>().Configure(Route.ToArray(), Outdoors.ToArray());
+            WriteCourseAudio(section, sections.Select(s => s.act).ToArray(), sections.Select(s => s.act == 3 ? "HollowOak" : "Canopy").ToArray(), "Canopy");
             LookBuilder.ApplyToScene(scene);
             Physics.SyncTransforms();
             ValidatePasses();

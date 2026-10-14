@@ -111,7 +111,7 @@ namespace HotPatata
         [Min(0f)] public float rollDegrees = 2.2f;
         [Tooltip("Height of the walking bob in metres at full speed.")]
         [Min(0f)] public float bobAmplitude = 0.035f;
-        [Tooltip("Metres per footstep (drives the bob rhythm and footstep sounds).")]
+        [Tooltip("Metres per footstep (drives the bob rhythm and the footstep sounds, PlayerSounds).")]
         [Min(0.3f)] public float stepLength = 1.15f;
         [Tooltip("How far the view dips on a hard landing, in metres.")]
         [Min(0f)] public float landingDip = 0.10f;
@@ -289,6 +289,34 @@ namespace HotPatata
         [Header("Run")]
         [Tooltip("Seconds between an explosion and the section being playable again.")]
         [Min(0f)] public float resetDelay = 1.0f;
+
+        [Header("Audio (ARCHITECTURE §26: sounds are folders in Assets/Audio)")]
+        [Tooltip("AudioSources the sound director keeps for one-shots and loops (music has its own). A sound past this is skipped.")]
+        [Range(8, 128)] public int audioVoices = 40;
+        [Tooltip("Seconds two music tracks crossfade over (a new context, an act change, the next playlist track).")]
+        [Min(0f)] public float musicCrossfadeSeconds = 2.5f;
+        [Tooltip("Seconds the music takes to fade out when a level starts loading (the course track starts once it is ready).")]
+        [Min(0f)] public float musicLoadFadeSeconds = 1.0f;
+        [Tooltip("Music volume during a beep (1 = no dip), so the fuse stays readable at any music volume (#47).")]
+        [Range(0f, 1f)] public float musicBeepDuck = 0.75f;
+        [Tooltip("Seconds the music takes to come back after a beep's dip.")]
+        [Min(0.01f)] public float musicBeepDuckRecover = 0.35f;
+        [Tooltip("Seconds ambience layers take to fade in or out (a new section, an act, an ambience zone).")]
+        [Min(0f)] public float ambienceCrossfadeSeconds = 3f;
+        [Tooltip("Seconds the mix takes to muffle when the pause menu opens, and to clear when it closes.")]
+        [Min(0f)] public float pauseMuffleSeconds = 0.25f;
+        [Tooltip("Fall speed (m/s) from which a landing plays the hard landing sound instead of the soft one.")]
+        [Min(0f)] public float hardLandingSpeed = 9f;
+        [Tooltip("Shorter airtimes than this (seconds) land silently: a step off a curb is not a landing.")]
+        [Min(0f)] public float landingMinAirSeconds = 0.25f;
+        [Tooltip("Volume of your own movement sounds (teammates' play at full volume, in 3D).")]
+        [Range(0f, 1f)] public float ownMovementVolume = 0.6f;
+        [Tooltip("Horizontal speed (m/s) at which the slide loop is at full volume; it fades to silence as the slide slows.")]
+        [Min(0.1f)] public float slideLoopFullSpeed = 10f;
+        [Tooltip("An obstacle whose progress changes faster than this (per second) is moving: its loop plays.")]
+        [Min(0f)] public float obstacleLoopMinRate = 0.02f;
+        [Tooltip("Obstacle sounds further than this from the listener (metres) are not started.")]
+        [Min(1f)] public float obstacleAudibleDistance = 45f;
 
         [Header("Presentation - PatataWilds (visual only, ARCHITECTURE §25.3)")]
         [Tooltip("Seconds the sky, sun and grade take to move one act of the day (dawn to noon...) after a checkpoint.")]

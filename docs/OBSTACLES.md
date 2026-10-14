@@ -300,6 +300,12 @@ What `Progress` and `Active` mean per system:
 
 The driver only reads. Presentation never changes gameplay state.
 
+**Sounds need no driver.** `ObstacleSounds` (ARCHITECTURE §26) hears every system above but `Checkpoint` and `BombTransit`
+through folders named after its component: drop files in `Assets/Audio/SFX/Obstacles/<Type>/On` (`Active` turns on),
+`.../Off` (turns off) and `.../Loop` (plays while `Progress` moves). A new system implementing `IObstacleState` gets its
+folders from `HotPatata/Audio/Create Folder Skeleton`. Use the driver's events only for a sound one prefab needs and the
+others of its type do not.
+
 ### 4.4 Override the behaviour in code
 
 Subclass the system and override its pose:

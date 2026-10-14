@@ -4,8 +4,8 @@ namespace HotPatata
 {
     /// <summary>
     /// Placeholder sound effects synthesised at runtime, so the sandbox has distinct beep / catch /
-    /// throw / explosion audio without any audio assets. Each one is only a fallback: assigning a real clip
-    /// in <see cref="BombAudio"/> or <see cref="SpeedEffects"/> (files go in Assets/Audio/SFX) replaces it.
+    /// throw / explosion audio without any audio assets. Each one is only a fallback: a sound dropped in its folder
+    /// (Assets/Audio/SFX/Bomb/..., see <see cref="CueKeys"/>) replaces it (<see cref="BombAudio"/>, ARCHITECTURE §26).
     /// </summary>
     public static class ProceduralSfx
     {

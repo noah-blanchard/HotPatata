@@ -214,6 +214,17 @@ namespace HotPatata.Editor
         }
 
         /// <summary>
+        /// The course's audio map (ARCHITECTURE §26): for each checkpoint id, the act and the ambience environment of the section
+        /// run from it (section i starts at checkpoint i). Music and ambience change act by act and section by section.
+        /// </summary>
+        public static void WriteCourseAudio(Transform section, int[] acts, string[] environments, string defaultEnvironment)
+        {
+            var audio = section.GetComponent<CourseAudio>();
+            if (audio == null) audio = section.gameObject.AddComponent<CourseAudio>();
+            audio.Configure(acts, environments, defaultEnvironment);
+        }
+
+        /// <summary>
         /// Every declared pass of the open scene is reachable, its opening is wider than the catch radius plus the margin, and
         /// no sampled point has a structural ceiling within <see cref="PassCorridor.CeilingMargin"/> above it. Throws otherwise.
         /// </summary>

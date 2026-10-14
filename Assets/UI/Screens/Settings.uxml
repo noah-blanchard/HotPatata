@@ -24,6 +24,9 @@
                         <ui:Label text="AUDIO" class="hp-section" />
                         <hp:SliderRow name="master-volume" label="Master volume" />
                         <hp:SliderRow name="sfx-volume" label="Effects volume" />
+                        <hp:SliderRow name="music-volume" label="Music volume" />
+                        <hp:SliderRow name="ambience-volume" label="Ambience volume" />
+                        <hp:SliderRow name="ui-volume" label="Menu sounds volume" />
                     </ui:VisualElement>
                     <ui:VisualElement class="hp-card">
                         <ui:Label text="DISPLAY" class="hp-section" />

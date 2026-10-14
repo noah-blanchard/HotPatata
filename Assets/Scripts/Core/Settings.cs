@@ -37,6 +37,9 @@ namespace HotPatata
         // Audio: master is AudioListener.volume (every sound); the others are groups of the HotPatataMixer (AudioVolumes)
         public float masterVolume = 1f;
         public float sfxVolume = 1f;
+        public float musicVolume = 1f;
+        public float ambienceVolume = 1f;
+        public float uiVolume = 1f;
 
         // Display: Unset leaves the current value alone
         public int fullScreenMode = Unset;   // UnityEngine.FullScreenMode
@@ -71,6 +74,9 @@ namespace HotPatata
             fieldOfView = Clamp(fieldOfView, MinFieldOfView, MaxFieldOfView, defaults.fieldOfView);
             masterVolume = Clamp(masterVolume, 0f, 1f, defaults.masterVolume);
             sfxVolume = Clamp(sfxVolume, 0f, 1f, defaults.sfxVolume);
+            musicVolume = Clamp(musicVolume, 0f, 1f, defaults.musicVolume);
+            ambienceVolume = Clamp(ambienceVolume, 0f, 1f, defaults.ambienceVolume);
+            uiVolume = Clamp(uiVolume, 0f, 1f, defaults.uiVolume);
             bindingOverrides ??= "";
 
             if (fullScreenMode != Unset && !Enum.IsDefined(typeof(FullScreenMode), fullScreenMode)) fullScreenMode = Unset;
@@ -128,6 +134,9 @@ namespace HotPatata
         public static float FieldOfView(GameTuning t) => Current != null ? Current.fieldOfView : t.fieldOfView;
         public static bool InvertY => Current != null && Current.invertY;
         public static float SfxVolume => Current != null ? Current.sfxVolume : 1f;
+        public static float MusicVolume => Current != null ? Current.musicVolume : 1f;
+        public static float AmbienceVolume => Current != null ? Current.ambienceVolume : 1f;
+        public static float UiVolume => Current != null ? Current.uiVolume : 1f;
 
         // ------------------------------------------------------------------ load / save
 
