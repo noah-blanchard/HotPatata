@@ -279,7 +279,9 @@ scene by hand. Second in `NetworkBootstrap.gameplayScenes` (`MenuSlot.Keep`), 25
   `CheckFootprints` finds no overlap, footprints 28 m wide). Each section starts on the previous **junction deck** (20 × 20 m
   at its local z −10..10) and builds its own at its end; content near the ends stays within |x| ≤ 10 so a turning neighbour
   never meets it. Decks (`KitRole.Grating`, planks) stand on collider-free trunks down to the forest floor.
-- **The void.** A kill plane 10 m under each section's lowest floor (`killTop`); rising bridges (`RisingBridge`, a bridge
+- **The void.** A kill plane 10 m under each section's lowest floor (`killTop`); its fall zone also stays 10 m under the
+  section before when that one is lower (past the turn it lies beside it, and its lifts climb through: #97,
+  `CarrierFallZoneTests`); rising bridges (`RisingBridge`, a bridge
   actuator) rest 2 m under it, out of reach, and rise 1.5 s when their source is active; a safety net lies under the forest.
 - **Roofs.** A covered section gets a leaf roof (`LeafRoof`: a `CourseCeiling` block, no shadow) 7 m over its floor from
   junction to junction, 28 m wide. Its opaque mat (`Nature_LeafCanopy`) fills the top 40 cm of the block; the lower 60 cm hold

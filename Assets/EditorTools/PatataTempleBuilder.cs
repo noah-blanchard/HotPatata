@@ -136,6 +136,9 @@ namespace HotPatata.Editor
                         room.SetParent(group, false);
                         float lowest = Mathf.Min(0f, spec.dy);
                         killTop = lowest - KillDrop;
+                        // The fall also stays under the section before when it is lower: past the court it lies beside us, and its lift
+                        // climbs to our floor through what would be our kill zone (the well reset the team, #97).
+                        float fallTop = i > 0 ? Mathf.Min(lowest, Mathf.Min(0f, sections[i - 1].dy) - sections[i - 1].dy) - KillDrop : killTop;
                         using (UseTheme(Stone))
                         {
                             if (i == 0) Court(room, "Start court", Vector3.zero);
@@ -143,7 +146,7 @@ namespace HotPatata.Editor
                             if (i < sections.Length - 1) Court(room, "Court", new Vector3(0, spec.dy, spec.length));
                             // the roof covers the section between its courts; the courts stay open to the sky
                             if (spec.covered) StoneRoof(room, "Roof", -CoverHalf, CoverHalf, Hub, spec.length - Hub, Mathf.Max(0f, spec.dy) + Roof);
-                            Kill(room, new Vector3(0, killTop - 1f, spec.length / 2f), new Vector3(2 * CoverHalf + 60f, 2f, spec.length + 2 * Hub + 24f));
+                            Kill(room, new Vector3(0, fallTop - 1f, spec.length / 2f), new Vector3(2 * CoverHalf + 60f, 2f, spec.length + 2 * Hub + 24f));
                             Jungle(room, spec);
                         }
                         restyled += NatureRestyle.Apply(room, Stone);
