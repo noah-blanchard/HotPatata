@@ -173,6 +173,7 @@ namespace HotPatata.Editor
                     MeasureTops(rooms);
                     string dressing; using (UseTheme(Crown)) dressing = Forest(group);
                     dressing += ", " + Atmosphere(group);
+                    dressing += ", " + Props(group, rooms);
                     SafetyNet(group);
                     Debug.Log("[PatataCanopyBuilder] " + dressing);
                 }

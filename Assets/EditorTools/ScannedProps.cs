@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using HotPatata;
 
 namespace HotPatata.Editor
 {
@@ -184,6 +185,18 @@ namespace HotPatata.Editor
                 }
             }
             return b;
+        }
+
+        /// <summary>True near a gameplay volume or a moving piece (a plate, a zone, a spawn, the finish, a beam, a tube, a mover, a sweeper).</summary>
+        public static bool NearGameplay(Vector3 point, float radius)
+        {
+            foreach (var c in Physics.OverlapSphere(point + Vector3.up * 0.5f, radius, ~0, QueryTriggerInteraction.Collide))
+                if (c.GetComponentInParent<Zone>() != null || c.GetComponentInParent<PressurePlate>() != null || c.GetComponentInParent<PlayerSpawn>() != null
+                    || c.GetComponentInParent<FinishZone>() != null || c.GetComponentInParent<SunBeam>() != null || c.GetComponentInParent<BombTransit>() != null
+                    || c.GetComponentInParent<SignalActuator>() != null || c.GetComponentInParent<MovingPlatform>() != null || c.GetComponentInParent<RotatingObstacle>() != null
+                    || c.GetComponentInParent<LaunchPad>() != null)
+                    return true;
+            return false;
         }
 
         public static Bounds WorldBounds(GameObject go)

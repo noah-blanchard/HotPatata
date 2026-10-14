@@ -306,6 +306,13 @@ scene by hand. Second in `NetworkBootstrap.gameplayScenes` (`MenuSlot.Keep`), 25
   PatataWilds species, 1.4-2.8x) and ground cover (ferns, bushes, rocks, logs, stumps, moss). Everything is one `FoliageSet`
   (`PatataCanopy_Foliage`, about 26,000 instances) drawn by a `FoliageInstancer`; no instance comes within the decoration
   clearance of a pass arc, the course's solids and zones, or another giant's bole.
+- **Scanned props** (`PatataCanopyBuilder.Props.cs`, through `ScannedProps`, Poly Haven and CC0 scans, §25.3), placed once the
+  forest stands: each junction deck lived on, up to four clusters in its corners off the ways in and out (a crate, a stacked
+  crate or a barrel, solid: an `Environment` box since it looks like it can be stood on; baskets, buckets, jugs, stools and
+  sometimes a frog round it), the pier's poles bracing its corners underneath; lanterns (glowing glass) hanging on ropes from
+  the leaf roofs over the decks; nests on the roofs; old walkways (the pier's four sections in a row) clinging to the giants,
+  3.5 m or more over every floor within 12 m and 10 m or more under any above; roots at the foot of the deck trunks. Everything
+  but the crates and barrels is `CourseDecoration`, clear of every pass, spawn, fire, plate and zone.
 - **Atmosphere** (`PatataCanopyBuilder.Atmosphere.cs`): light shafts (`HotPatata/LightShaft`) hanging from the crowns beside the
   course, clear of every pass arc for each moment's sun; dust motes in them, leaves falling from the aisle's giants and
   fireflies in the last two acts (beside the decks and down in the mist, from sunset), three emitter prefabs
@@ -316,7 +323,7 @@ Tests: `PatataCanopyTests` (25 checkpoints, one finish, a contract per section, 
 solids and decoration, normal passes at most 14.5 m, signals one-to-one, three switches with targets, hands-free plates,
 body screens on their layer, campfires, the level list, the Lucioles, Pont-levis, La Plaque and spore puzzles, every
 checkpoint resets, every transit exit is catchable; the forest, the deck trunks, the leaf roofs, the mist and the light
-shafts) and `CourseContractTests`.
+shafts; the crates and barrels solid, the rest of the treehouse dressing collider-free) and `CourseContractTests`.
 
 ### `PatataTemple` (M15)
 
