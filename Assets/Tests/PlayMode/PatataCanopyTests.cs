@@ -168,6 +168,26 @@ namespace HotPatata.Tests
         }
 
         [Test]
+        public void TreehouseProps_CratesAndBarrelsAreSolid_TheRestNeverCollides()
+        {
+            // a crate or a barrel looks like it can be stood on: it is (the passes and contracts are checked with it in place)
+            var boxes = All<Transform>().Where(t => t.name == "Prop box").ToArray();
+            Assert.GreaterOrEqual(boxes.Length, 40, "crates and barrels on the junction decks");
+            foreach (var b in boxes)
+            {
+                var c = b.GetComponent<BoxCollider>();
+                Assert.IsNotNull(c, b.parent.name);
+                Assert.IsFalse(c.isTrigger, b.parent.name);
+                Assert.AreEqual(LayerMask.NameToLayer("Environment"), b.gameObject.layer, b.parent.name);
+            }
+            // the lanterns, baskets, nests, walkways and roots are decoration: nothing of them collides
+            var dressing = All<CourseDecoration>().Where(d => d.name == "Treehouse dressing").ToArray();
+            Assert.AreEqual(1, dressing.Length);
+            Assert.IsEmpty(dressing[0].GetComponentsInChildren<Collider>().Select(c => c.name).ToArray());
+            Assert.Greater(dressing[0].GetComponentsInChildren<MeshRenderer>().Length, 300, "lanterns, small props, nests, walkways and roots");
+        }
+
+        [Test]
         public void LeafRoofs_NothingHangsUnderTheirUnderside_TheirMatReadsSolid()
         {
             var roofs = All<CourseCeiling>().Select(c => c.GetComponent<Collider>().bounds).ToList();

@@ -306,6 +306,13 @@ scene by hand. Second in `NetworkBootstrap.gameplayScenes` (`MenuSlot.Keep`), 25
   PatataWilds species, 1.4-2.8x) and ground cover (ferns, bushes, rocks, logs, stumps, moss). Everything is one `FoliageSet`
   (`PatataCanopy_Foliage`, about 26,000 instances) drawn by a `FoliageInstancer`; no instance comes within the decoration
   clearance of a pass arc, the course's solids and zones, or another giant's bole.
+- **Scanned props** (`PatataCanopyBuilder.Props.cs`, through `ScannedProps`, Poly Haven and CC0 scans, §25.3), placed once the
+  forest stands: each junction deck lived on, up to four clusters in its corners off the ways in and out (a crate, a stacked
+  crate or a barrel, solid: an `Environment` box since it looks like it can be stood on; baskets, buckets, jugs, stools and
+  sometimes a frog round it), the pier's poles bracing its corners underneath; lanterns (glowing glass) hanging on ropes from
+  the leaf roofs over the decks; nests on the roofs; old walkways (the pier's four sections in a row) clinging to the giants,
+  3.5 m or more over every floor within 12 m and 10 m or more under any above; roots at the foot of the deck trunks. Everything
+  but the crates and barrels is `CourseDecoration`, clear of every pass, spawn, fire, plate and zone.
 - **Atmosphere** (`PatataCanopyBuilder.Atmosphere.cs`): light shafts (`HotPatata/LightShaft`) hanging from the crowns beside the
   course, clear of every pass arc for each moment's sun; dust motes in them, leaves falling from the aisle's giants and
   fireflies in the last two acts (beside the decks and down in the mist, from sunset), three emitter prefabs
@@ -316,7 +323,7 @@ Tests: `PatataCanopyTests` (25 checkpoints, one finish, a contract per section, 
 solids and decoration, normal passes at most 14.5 m, signals one-to-one, three switches with targets, hands-free plates,
 body screens on their layer, campfires, the level list, the Lucioles, Pont-levis, La Plaque and spore puzzles, every
 checkpoint resets, every transit exit is catchable; the forest, the deck trunks, the leaf roofs, the mist and the light
-shafts) and `CourseContractTests`.
+shafts; the crates and barrels solid, the rest of the treehouse dressing collider-free) and `CourseContractTests`.
 
 ### `PatataTemple` (M15)
 
@@ -345,11 +352,22 @@ valley in `.Ruins.cs`, its day in `PatataTempleLook`. Never edit the scene by ha
   carpet** of broadleaf crowns (1.2–2.3x, each crown 7 m or more under any floor within 20 m), emergent giant oaks only 80–240 m
   from the course, ferns and Poly Haven jungle plants (calathea, anthurium); one `FoliageSet` (`PatataTemple_Foliage`), the mist
   in the valley (`MistField`), and the storm (§25.4).
+- **Scanned props** (`.Props.cs`, through `ScannedProps`, CC0 museum scans and Poly Haven, §25.3), placed once the sections
+  stand: Maya reliefs inlaid in the masonry (stelae, Palenque friezes, glyph blocks, a helmeted head, a ballgame palma) on
+  every wall and pillar face a floor runs along, the wall's own drawing stepping back 5 cm so each relief is flush with its
+  collider; the movers (shuttle, ford stones, lift, rising bridges, pivots) drawn as carved slabs face up under a
+  `CustomVisual`, filling their collider, top flush; up to two statues on masonry pedestals round each court, 70° or more
+  from the way in and out, clear of spawns, fires and passes, solid (an `Environment` box: they look climbable); offerings
+  round the fires and at the foot of the stelae (no collider); roof combs of stelae and statues along every large roof, with
+  roots and pachiras taking the stone back; colossi (an Olmec face, the water goddess, the green-stone man, fallen heads and
+  stelae, 14 to 42 m) rising out of the jungle, 7 m under every floor within 12 m of them. All but the statues are
+  `CourseDecoration`.
 - **Fuse:** `FuseFor(id)`: 5.0 s from checkpoint 8, 4.5 s from checkpoint 13.
 
 Tests: `PatataTempleTests` (15 checkpoints, one finish, a contract for three per section with its "With two" line, three
 arches, fuse overrides, the systems for three present and wired, passes clear of ceilings and solids, the altar over the
-pyramid and above every floor, the canopy under every floor near it, the heavy slab, a beam and a pivot on the course),
+pyramid and above every floor, the canopy under every floor near it, the scanned props clear of every pass, the carved
+slabs inside their movers' colliders, the statues solid, the heavy slab, a beam and a pivot on the course),
 `TrioObstacleTests` and `TrioSystemTests` (the systems), `CourseContractTests`.
 
 ---
