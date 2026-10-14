@@ -279,7 +279,9 @@ scene by hand. Second in `NetworkBootstrap.gameplayScenes` (`MenuSlot.Keep`), 25
   `CheckFootprints` finds no overlap, footprints 28 m wide). Each section starts on the previous **junction deck** (20 × 20 m
   at its local z −10..10) and builds its own at its end; content near the ends stays within |x| ≤ 10 so a turning neighbour
   never meets it. Decks (`KitRole.Grating`, planks) stand on collider-free trunks down to the forest floor.
-- **The void.** A kill plane 10 m under each section's lowest floor (`killTop`); rising bridges (`RisingBridge`, a bridge
+- **The void.** A kill plane 10 m under each section's lowest floor (`killTop`); its fall zone also stays 10 m under the
+  section before when that one is lower (past the turn it lies beside it, and its lifts climb through: #97,
+  `CarrierFallZoneTests`); rising bridges (`RisingBridge`, a bridge
   actuator) rest 2 m under it, out of reach, and rise 1.5 s when their source is active; a safety net lies under the forest.
 - **Roofs.** A covered section gets a leaf roof (`LeafRoof`: a `CourseCeiling` block, no shadow) 7 m over its floor from
   junction to junction, 28 m wide. Its opaque mat (`Nature_LeafCanopy`) fills the top 40 cm of the block; the lower 60 cm hold
@@ -655,10 +657,11 @@ base, the HUD (#24) follows.
   each course scene, pushes it while the run is `Completed` and pops it when the run starts again. The old IMGUI
   screen is gone. While any menu is on top, the IMGUI `AimReticle` draws nothing.
 - **Menu backdrop** (`Assets/Prefabs/Menu/MenuBackdrop.prefab`, one instance in `Bootstrap`). A forest clearing at a misty
-  golden dawn in the nature look (§25.3; `MenuBackdropBuilder.Forest.cs`): a grass floor, flat round the show and rising far off;
+  blue-grey dawn in the nature look (§25.3; `MenuBackdropBuilder.Forest.cs`): a grass floor, flat round the show and rising far off;
   trees all round (broadleaf and firs from 15 m, giant oaks beyond 34 m, one instanced `FoliageSet`, `Menu_Foliage`) that
   dissolve into the mist, never standing on a camera spot's line to its board or the show; grass, ferns and bushes in the
-  clearing; light shafts behind the show; the mist on the floor (`MistField`). **No wall, no sky, no horizon**: the light is
+  clearing; a small campfire right of the show, always burning (the checkpoints' fire, `CampfirePresentation.alwaysLit`), its
+  light dim and a warm glow round it in the mist; light shafts behind the show; the mist on the floor (`MistField`). **No wall, no sky, no horizon**: the light is
   `MenuForestLook` (through `NatureDayLook`, one held moment: a low sun behind the show shining towards the title camera, a haze
   from 10 to 80 m, a low mist), and the menu camera clears to the haze's colour (`MenuForestLook.Haze`), so the far trees melt
   into it. From the Title station the four slots' characters, about 21 m away, stand as silhouettes against the bright mist

@@ -323,6 +323,24 @@ namespace HotPatata.Tests
         }
 
         [UnityTest]
+        public IEnumerator LaPoulie_TheCarrierRidesTheLiftToTheLedge_NoReset()
+        {
+            // the next section's fall zone used to lie across the pulleys past the turn: a rider "fell" half a metre up (#97)
+            var lift = Named<SignalActuator>("Pulley lift A");
+            var plate = Named<PressurePlate>("Pulley plate below");
+            var run = RunManager.Instance;
+            bomb.Fuse.SetDurationOverride(999f);
+            yield return Place(p1, lift.Platform.position + Vector3.up * 0.35f);
+            Give(p1);
+            int resets = run.ResetCount;
+            yield return Place(p2, plate.transform.position + Vector3.up * 0.1f);
+            yield return WaitUntil(() => lift.CurrentProgress >= 1f || run.ResetCount != resets, 6, "the plate raises the lift");
+            yield return WaitSeconds(0.3f);
+            Assert.AreEqual(resets, run.ResetCount, "riding the pulley reset the team");
+            Assert.IsTrue(p1.Motor.Grounded && ReferenceEquals(p1.Motor.RidingCarrier, lift), "the carrier is on the lift at the ledge");
+        }
+
+        [UnityTest]
         public IEnumerator LaPlaque_TheHolderRaisesTheCarriersBridge_TheThrowBackRaisesTheHolders()
         {
             var plate = Named<PressurePlate>("Hands-free plate");

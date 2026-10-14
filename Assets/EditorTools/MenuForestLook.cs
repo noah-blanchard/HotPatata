@@ -4,8 +4,8 @@ namespace HotPatata.Editor
 {
     /// <summary>
     /// The menu's light (ARCHITECTURE §6.2 and §25.3), applied by <see cref="LookBuilder"/> through <see cref="NatureDayLook"/>: a misty
-    /// golden dawn in a forest clearing, one moment held for as long as the menu shows. The sun is low behind the show and shines
-    /// towards the title camera, so the mist glows gold and the four players stand dark against it; a thick haze swallows the trees
+    /// blue-grey dawn in a forest clearing, one moment held for as long as the menu shows. The pale sun is low behind the show and shines
+    /// towards the title camera, so the mist glows softly and the four players stand dark against it; a thick haze swallows the trees
     /// beyond thirty metres and a low mist lies on the grass, so the menu has depth and no horizon. Never set by hand: change this
     /// table and re-apply.
     /// </summary>
@@ -21,10 +21,10 @@ namespace HotPatata.Editor
         static readonly NatureDayLook.Moment Dawn = new NatureDayLook.Moment
         {
             name = "Misty dawn", hdri = "qwantani_dawn_puresky", yaw = 196f, minElevation = 5f, maxElevation = 9f,
-            sun = C(1f, 0.74f, 0.48f), intensity = 1.5f, shadow = 0.6f,
-            sky = C(0.4f, 0.38f, 0.34f), equator = C(0.38f, 0.33f, 0.26f), ground = C(0.16f, 0.15f, 0.11f),
-            fog = C(0.78f, 0.67f, 0.5f), fogStart = 10f, fogEnd = 80f, skyExposure = 0.4f, wind = 0.25f, exposure = 0f, temperature = 6f,
-            mist = C(0.86f, 0.75f, 0.57f), mistDensity = 0.1f, mistFalloff = 3f, mistGlow = 0.8f, shafts = 0.8f
+            sun = C(1f, 0.88f, 0.76f), intensity = 1.5f, shadow = 0.6f,
+            sky = C(0.36f, 0.4f, 0.45f), equator = C(0.32f, 0.35f, 0.38f), ground = C(0.13f, 0.14f, 0.14f),
+            fog = C(0.6f, 0.66f, 0.72f), fogStart = 10f, fogEnd = 80f, skyExposure = 0.4f, wind = 0.25f, exposure = 0f, temperature = -4f,
+            mist = C(0.68f, 0.74f, 0.8f), mistDensity = 0.1f, mistFalloff = 3f, mistGlow = 0.5f, shafts = 0.8f
         };
 
         static readonly NatureDayLook.Moment Hold = WithName(Dawn, "Misty dawn (held)");

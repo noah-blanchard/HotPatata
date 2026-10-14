@@ -76,6 +76,11 @@ namespace HotPatata.Editor
             new Vector3(-3.4f, 0f, 0.4f), new Vector3(-1.2f, 0f, 2.7f), new Vector3(1.5f, 0f, 2.7f), new Vector3(3.6f, 0f, 0.3f)
         };
 
+        /// <summary>A small campfire beside the show, seen from Title (right) and from the lobby (beside its stage).</summary>
+        static readonly Vector3 FireSpot = new Vector3(5.2f, 0f, -2f);
+        const float FireScale = 0.7f;   // smaller than a checkpoint's
+        const float FireLight = 0.4f;   // its light against a checkpoint's: dim, the players stay silhouettes
+
         [MenuItem("HotPatata/Menu/Build Menu Backdrop")]
         public static void Build()
         {
@@ -113,6 +118,7 @@ namespace HotPatata.Editor
                 BuildClearing(Group(t, "Clearing"));
                 foreach (var c in t.GetComponentsInChildren<Collider>()) Object.DestroyImmediate(c);   // nothing walks here
                 BuildDust(t);
+                BuildFire(t);
 
                 var show = Group(t, "Show");
                 var players = BuildPlayers(show, tuning, controller);
@@ -174,6 +180,55 @@ namespace HotPatata.Editor
             var renderer = go.GetComponent<ParticleSystemRenderer>();
             renderer.sharedMaterial = MakeUnlitMaterial("Menu_Sparkle", Color.white, AssetDatabase.LoadAssetAtPath<Texture2D>(SparkleTexture), additive: true);
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+
+        /// <summary>
+        /// A small campfire, always burning: the checkpoints' (NatureKit), unpacked (a course build renumbers that prefab), its light
+        /// dim (<see cref="FireLight"/>), with a warm glow in the mist round it, since a light alone never lights the haze.
+        /// </summary>
+        static void BuildFire(Transform parent)
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(NatureKit.CampfirePrefabPath) ?? NatureKit.BuildCampfirePrefab();
+            var go = (GameObject)PrefabUtility.InstantiatePrefab(prefab, parent);
+            PrefabUtility.UnpackPrefabInstance(go, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
+            go.name = "Campfire";
+            go.transform.localPosition = FireSpot;
+            go.transform.localScale = Vector3.one * FireScale;
+            var decoration = go.GetComponent<CourseDecoration>();
+            if (decoration != null) Object.DestroyImmediate(decoration);   // not a course's
+            var fire = go.GetComponent<CampfirePresentation>();
+            SetField(fire, "alwaysLit", p => p.boolValue = true);
+            SetField(fire, "size", p => p.floatValue = FireLight);
+
+            var glow = new GameObject("Glow");
+            glow.transform.SetParent(go.transform, false);
+            glow.transform.localPosition = Vector3.up * 0.9f;
+            var ps = glow.AddComponent<ParticleSystem>();
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            var main = ps.main;
+            main.loop = true;
+            main.prewarm = true;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(2.5f, 3.5f);
+            main.startSpeed = 0f;
+            main.startSize = new ParticleSystem.MinMaxCurve(6f, 9f);
+            main.startColor = new Color(1f, 0.55f, 0.25f, 0.45f);
+            main.maxParticles = 8;
+            main.scalingMode = ParticleSystemScalingMode.Local;   // metres in the mist, whatever the fire's scale
+            var emission = ps.emission;
+            emission.rateOverTime = 1.2f;
+            var shape = ps.shape;
+            shape.shapeType = ParticleSystemShapeType.Sphere;
+            shape.radius = 0.15f;
+            var fade = ps.colorOverLifetime;
+            fade.enabled = true;
+            var g = new Gradient();
+            g.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                      new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.4f), new GradientAlphaKey(0f, 1f) });
+            fade.color = g;
+            var renderer = glow.GetComponent<ParticleSystemRenderer>();
+            renderer.sharedMaterial = MakeUnlitMaterial("Menu_FireGlow", Color.white, AssetDatabase.LoadAssetAtPath<Texture2D>(SparkleTexture), additive: true);
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
         }
 
         /// <summary>

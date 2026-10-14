@@ -1097,7 +1097,8 @@ Target:
 ### Canopy rules
 
 - **The void is the default.** Decks, bridges and branches over a forest floor 40 m down; a kill plane 10 m under every
-  section's lowest floor, a safety net under everything.
+  section's lowest floor (and under the section before when that one is lower: no kill zone ever crosses a lift's ride),
+  a safety net under everything.
 - **Puzzle sections stand under a leaf roof** 7 m above the floor, over the decks and the void beside them; every cross
   wall reaches it, so the bomb is never lobbed over a wall. The hollow oak (act 3) has its own roofs.
 - **Gaps that must be bridged are 14 m**, faces that must not be climbed 5 m or more (§13.20).
@@ -1152,7 +1153,7 @@ turns back). Every contract says why two fail (§13.20).
 ### Temple rules
 
 - **The void is the default** (as §15d): stone decks over the jungle's canopy, a kill plane 10 m under each section's lowest
-  floor; scenery never lies within a jump of a floor, it stays under the kill planes.
+  floor (and under the section before when that one is lower, so the well's ride never crosses one); scenery never lies within a jump of a floor, it stays under the kill planes.
 - **The route is the temple's own:** a causeway bending up the valley (act 1), a ring of three-wing sections round the great
   stepped pyramid, its corners at 60° (act 2), then the well up 30 m to a skyway that circles the temple and ends on the altar
   over the pyramid's summit (act 3). Sections meet on **octagonal courts** open to the sky, at any angle.

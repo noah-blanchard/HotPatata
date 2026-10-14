@@ -144,13 +144,16 @@ namespace HotPatata.Editor
                         rooms.Add(room);
                         float lowest = Mathf.Min(0f, spec.dy);
                         killTop = lowest - KillDrop;
+                        // The fall also stays under the section before when it is lower: past the turn it lies beside us, and its lifts
+                        // climb to our floor through what would be our kill zone (the pulleys reset the team, #97).
+                        float fallTop = i > 0 ? Mathf.Min(lowest, Mathf.Min(0f, sections[i - 1].dy) - sections[i - 1].dy) - KillDrop : killTop;
                         using (UseTheme(theme))
                         {
                             if (i == 0) Deck(room, "Start deck", -Hub, Hub, -Hub, Hub, 0);
                             spec.contents(room);
                             if (i < sections.Length - 1) Deck(room, "Junction deck", -Hub, Hub, spec.length - Hub, spec.length + Hub, spec.dy);
                             if (spec.covered) LeafRoof(room, "Leaf roof", -CoverHalf, CoverHalf, -Hub, spec.length + Hub, Mathf.Max(0f, spec.dy) + Roof);
-                            Kill(room, new Vector3(0, killTop - 1f, spec.length / 2f), new Vector3(2 * CoverHalf + 12f, 2f, spec.length + 2 * Hub + 8f));
+                            Kill(room, new Vector3(0, fallTop - 1f, spec.length / 2f), new Vector3(2 * CoverHalf + 12f, 2f, spec.length + 2 * Hub + 8f));
                             Birds(room, spec);
                         }
                         restyled += NatureRestyle.Apply(room, theme);
