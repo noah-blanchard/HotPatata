@@ -123,9 +123,10 @@ namespace HotPatata.Editor
             int columns = Columns(root);
             int pyramid = Pyramid(root, out var pyramidBox);
             int towers = Towers(root, pyramidBox);
+            int colossi = Colossi(root, pyramidBox, NatureDressing.PassSamples());
             string plants = Plant(root, pyramidBox);
             Storm(root);
-            return $"valley floor {chunks} chunks, river {reaches} reaches, {columns} ruined columns, pyramid {pyramid} cells, {towers} towers, {plants}, the storm";
+            return $"valley floor {chunks} chunks, river {reaches} reaches, {columns} ruined columns, pyramid {pyramid} cells, {towers} towers, {colossi} colossi, {plants}, the storm";
         }
 
         /// <summary>
