@@ -23,6 +23,8 @@ namespace HotPatata.Editor
         const string TuningPath = "Assets/ScriptableObjects/Tuning/GameTuning.asset";
         const string LegacyAmbient = "Assets/Audio/Ambient";   // the generated placeholders, referenced by the builders directly
         const string IntroSuffix = "_intro", LoopSuffix = "_loop";
+        /// <summary>A generated stand-in (NatureAudioFactory): dropped from its folder as soon as the folder holds a real sound.</summary>
+        public const string PlaceholderPrefix = "placeholder_";
 
         static readonly string[] SoundExtensions = { ".wav", ".ogg", ".mp3", ".aif", ".aiff", ".flac" };
 
@@ -138,6 +140,7 @@ namespace HotPatata.Editor
             var cues = new List<Cue>();
             foreach (var pair in byFolder)
             {
+                if (pair.Value.Any(c => !IsPlaceholder(c))) pair.Value.RemoveAll(IsPlaceholder);
                 var cue = new Cue
                 {
                     key = pair.Key,
@@ -150,6 +153,8 @@ namespace HotPatata.Editor
             }
             return cues;
         }
+
+        static bool IsPlaceholder(AudioClip clip) => clip.name.StartsWith(PlaceholderPrefix, StringComparison.OrdinalIgnoreCase);
 
         /// <summary>Pure: a sound file's cue key, its folder under Assets/Audio (null for a file at the root).</summary>
         public static string KeyOf(string assetPath)

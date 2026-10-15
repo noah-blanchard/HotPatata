@@ -5,8 +5,10 @@ need to drag anything in the Inspector. How it works is in `docs/ARCHITECTURE.md
 
 - **More files in a folder means more variety.** Each play picks one at random, never the same twice in a row, with a
   little volume and pitch variation. Ten footsteps sound better than one.
-- **An empty folder is silent.** The bomb is the exception: it falls back to its generated placeholder beeps. The builders'
-  river, waterfall, campfire, wind, birds and crickets fall back to their generated loops.
+- **An empty folder is silent.** A few have a generated stand-in until you add a real sound: the bomb (its placeholder
+  beeps), the river, waterfall and campfire emitters, the storm's thunder, and each act's birds, crickets and wind.
+- **Files named `placeholder_*`** are those generated stand-ins (the level builders put them in each act's `Beds`). They are
+  ignored as soon as the folder holds one of your files, so you never need to delete them.
 - **First time:** run `HotPatata > Audio > Create Folder Skeleton`. It creates every folder the game listens to, so you can see
   every slot. Running it again is safe.
 - The sound bank (`Resources/HotPatataSoundBank`) **rebuilds itself** a moment after you add, move or delete a file. If you
@@ -43,9 +45,10 @@ Ambience is built in **layers**. Each layer has two folders:
 | `Menu/` | the main menu and the lobby (the misty clearing) |
 | `Courses/<Level>/` | everywhere in that level |
 | `Environments/<Env>/` | where the team is. The level builders name each section's environment: **PatataWilds** `Forest`, `River`, `Cliffs`, `Cave`, `Summit`; **PatataCanopy** `Canopy`, `HollowOak` (act 3); **PatataTemple** `Jungle` (act 1), `Temple` (act 2), `Storm` (act 3); **IndustrialPlant** `Factory`. `Meadow` is free for a new section |
-| `Courses/<Level>/Act<N>/` | added on top during that act (crickets at dusk) |
+| `Courses/<Level>/Act<N>/` | added on top during that act. Its `Beds` start with generated birds, crickets and wind (`placeholder_*`), as the day goes |
 | `Courses/<Level>/Act<N>/Replace/` | replaces the environment's layer during that act |
-| `Emitters/<Kind>/` | loops fixed in the world by the builders: `River`, `Waterfall`, `Fire` (every campfire), `Wind`, `Birds`, `Crickets` |
+| `Emitters/<Kind>/` | loops fixed in the world by the builders: `River`, `Waterfall`, `Fire` (every campfire) |
+| `Thunder/` | one-shots a moment after each lightning flash in PatataTemple's storm, louder as the storm grows |
 
 Layers fade in and out as the team moves on.
 

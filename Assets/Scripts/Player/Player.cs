@@ -49,6 +49,25 @@ namespace HotPatata
         /// <summary>A remote copy whose owner stands on a moving carrier (presentation reads its motion relative to it).</summary>
         public bool RemoteRiding => !IsLocal && NetSpawned && Net.RemoteCarrier != null;
 
+        const float GroundProbeHeight = 0.12f, GroundProbeRadius = 0.22f;   // a small sphere at the feet
+        static int presentationGroundMask = -1;
+
+        /// <summary>
+        /// Presentation only (the animator, the footsteps): on the ground as far as this machine can tell. The owner asks its
+        /// motor; a remote copy is on the ground when it rides a carrier or a small sphere at its feet touches the world.
+        /// </summary>
+        public bool SeemsGrounded
+        {
+            get
+            {
+                if (IsLocal) return Motor != null && Motor.Grounded;
+                if (RemoteRiding) return true;
+                if (presentationGroundMask < 0) presentationGroundMask = LayerMask.GetMask("Environment", "Hazard");
+                return Physics.CheckSphere(transform.position + Vector3.up * GroundProbeHeight, GroundProbeRadius,
+                    presentationGroundMask, QueryTriggerInteraction.Ignore);
+            }
+        }
+
         /// <summary>
         /// Velocity of the carrier under this player's feet (zero off carriers): from the motor for the local player, from
         /// the owner's stamp on this machine's copy of the carrier for a remote one. Unlike <see cref="Velocity"/> of a local

@@ -31,6 +31,7 @@ namespace HotPatata
 
         readonly List<Voice> voices = new List<Voice>();
         readonly HashSet<Player> equipped = new HashSet<Player>();
+        readonly Dictionary<AudioClip, Cue> fallbackCues = new Dictionary<AudioClip, Cue>();
         SoundBank bank;
         AudioListener listener;
         int listenerSearchFrame = -1;
@@ -119,6 +120,22 @@ namespace HotPatata
             if (!bank.TryGet(key, out var cue)) return false;
             var pick = cue.Pick();
             return StartVoice(cue, pick.clip, key, position, follow, volume, false, 0f) != null;
+        }
+
+        /// <summary>
+        /// Plays a clip that has no folder (a procedural fallback while folder <paramref name="routeKey"/> is empty), flat, on
+        /// that folder's group.
+        /// </summary>
+        public bool PlayFallback(AudioClip clip, string routeKey, float volume = 1f)
+        {
+            if (clip == null) return false;
+            if (!fallbackCues.TryGetValue(clip, out var cue))
+            {
+                cue = new Cue { key = routeKey, settings = new CueSettings { spatialBlend = 0f, maxVoices = 2 } };
+                cue.clips.Add(new CueClip { clip = clip });
+                fallbackCues[clip] = cue;
+            }
+            return StartVoice(cue, clip, routeKey, null, null, volume, false, 0f) != null;
         }
 
         /// <summary>Starts cue <paramref name="key"/> looping (one variation), fading in over <paramref name="fadeIn"/> seconds.</summary>

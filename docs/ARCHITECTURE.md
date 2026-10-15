@@ -256,9 +256,10 @@ behind the falls, wheel gorge, meadow, switchbacks, knife edge).
   (`Assets/Prefabs/Nature/Campfire.prefab`), so the scene holds small instances rather than 78 particle systems. The scene
   is about 175k lines, most of it the ~800 rock buttress and boulder instances; the scatter and the terrain are assets.
 - **Fuse:** `FuseFor(id)`: 5.0 s from checkpoint 21, 4.5 s from checkpoint 24.
-- **Sound:** fixed 3D ambience per section (`NatureKit.Ambient`: river, waterfall, birds, crickets and summit wind),
-  priority 200 (under the beeps), on the mixer's Ambience group, loops starting at random points (`AmbientLoop`), each
-  playing its emitter folder (`Assets/Audio/Ambience/Emitters/<kind>`) when it holds a sound (§26).
+- **Sound:** fixed 3D ambience where the water is (`NatureKit.Ambient`: river, waterfall), priority 200 (under the beeps), on
+  the mixer's Ambience group, loops starting at random points (`AmbientLoop`), each playing its emitter folder
+  (`Assets/Audio/Ambience/Emitters/<kind>`) when it holds a sound; birds, crickets and the summit wind are the acts' ambience
+  beds (§26).
 - **Dressing** (`NatureDressing`, after the passes are validated): the terrain, the scattered vegetation and a few scanned
   props (§25.3).
 - `CourseRoute` gets two points per section (outdoors except the cave); `PassCorridor`s declare every intended pass, and
@@ -2126,7 +2127,12 @@ cue's group (`SoundBank.GroupFor`, §6.1); time is unscaled. Code plays a cue by
 | `UiSounds` | `SFX/UI/*` | `UIScreen.Navigable` attaches hover, click and change sounds; `ScreenStack` plays Open and Back; lobby join / leave from the lobby's player count. |
 | `PlayerSounds` (added to every player) | `SFX/Player/{Footsteps/<surface>,Jump,Land/{Soft,Hard},Slide/{Start,Loop}}` | A footstep every `stepLength` metres on the ground; the surface is an `AudioSurface` on the collider, else the material's (bank), else `Default`. Hard landing from `hardLandingSpeed`; none under `landingMinAirSeconds`. Your own are flat at `ownMovementVolume`; teammates' are 3D. Remote players are judged from their mirrored motion. |
 | `BombAudio`, `TransitPresentation` | `SFX/Bomb/*` | §8.5. |
-| `AmbientLoop`, `CampfirePresentation` | `Ambience/Emitters/<kind>` | Builder-placed loops play their emitter folder, else the synthesised fallback. |
+| `AmbientLoop`, `CampfirePresentation` | `Ambience/Emitters/{River,Waterfall,Fire}` | Builder-placed loops play their emitter folder, else the synthesised fallback. |
+| `TempleStorm` | `Ambience/Thunder` | A thunder `thunderDelay` seconds after each flash, at the storm's strength, flat; whatever the flash reduction (audio only). Else `ProceduralSfx.Thunder` (`AudioDirector.PlayFallback`). |
+
+**Placeholders.** The nature builders seed each act's `Beds` with the synthesised loops of `NatureAudioFactory`
+(`SeedActBeds`: birds by day, crickets and wind at dusk) as `placeholder_*` files; `SoundBankBuilder` drops a folder's
+placeholders as soon as it holds any other sound, so a dropped recording replaces them with nothing to delete.
 
 **Course map.** Each course builder writes a `CourseAudio` on the course root (`CourseKit.WriteCourseAudio`): per
 checkpoint id, the act and the environment of the section run from it (PatataWilds by theme: Forest, River, Cliffs, Cave,

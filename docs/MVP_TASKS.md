@@ -1608,6 +1608,9 @@ only. Replaces #46 (bomb SFX), #47 (music), #48 (UI sounds) and #49 (ambience pe
 - [x] `AmbienceDirector`: menu, course, environment (each course builder writes its `CourseAudio`; `AmbienceZone` overrides),
   act layers with Replace; beds and scattered calls;
 - [x] the builders' emitters and the campfires play their emitter folder, else the synthesised loop.
+- [x] birds, crickets and wind are the acts' beds (seeded `placeholder_*` loops that give way to a dropped sound), no longer
+  emitters in every section; the temple storm's thunder follows each flash (`Ambience/Thunder`, else a generated rumble);
+- [x] one ground test for presentation (`Player.SeemsGrounded`), shared by the animator and the footsteps.
 
 ## M16.4 — Movement
 

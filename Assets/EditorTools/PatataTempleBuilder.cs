@@ -113,6 +113,7 @@ namespace HotPatata.Editor
             if (EditorApplication.isPlayingOrWillChangePlaymode) return;
             NatureMaterialBuilder.Ensure(false);
             NatureAudioFactory.EnsureClips();
+            SeedActSounds();
             NatureKit.BuildCampfirePrefab();
             if (AssetDatabase.LoadAssetAtPath<GameObject>(PlateHeavy + ".prefab") == null) BuildTrioKitOnly();
             var scene = PrepareCourseScene(ScenePath, out var section);
@@ -150,7 +151,6 @@ namespace HotPatata.Editor
                             // the roof covers the section between its courts; the courts stay open to the sky
                             if (spec.covered) StoneRoof(room, "Roof", -CoverHalf, CoverHalf, Hub, spec.length - Hub, Mathf.Max(0f, spec.dy) + Roof);
                             Kill(room, new Vector3(0, fallTop - 1f, spec.length / 2f), new Vector3(2 * CoverHalf + 60f, 2f, spec.length + 2 * Hub + 24f));
-                            Jungle(room, spec);
                         }
                         restyled += NatureRestyle.Apply(room, Stone);
                         StoneMovers(room);

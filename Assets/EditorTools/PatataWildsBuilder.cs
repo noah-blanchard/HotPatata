@@ -143,6 +143,7 @@ namespace HotPatata.Editor
             NatureMaterialBuilder.Ensure(false);
             NatureKit.EnsureWater();
             NatureAudioFactory.EnsureClips();
+            SeedActSounds();
             NatureKit.BuildCampfirePrefab();
             if (AssetDatabase.LoadAssetAtPath<Mesh>(NatureTreeBuilder.MeshPath("Grass", 0, 0)) == null) NatureTreeBuilder.BuildAll();
             var scene = PrepareCourseScene(ScenePath, out var section);
@@ -504,12 +505,11 @@ namespace HotPatata.Editor
                 kind == NatureAudioFactory.Ambience.Waterfall ? 70f : kind == NatureAudioFactory.Ambience.River ? 32f : 45f);
         }
 
-        /// <summary>The act's forest sound for a section: birds from dawn to sunset, crickets at dusk, wind on the summit.</summary>
-        static void ActSound(Transform p, float length)
+        /// <summary>The acts' forest sound (ARCHITECTURE §26): birds from dawn to sunset, crickets and the summit wind at dusk.</summary>
+        static void SeedActSounds()
         {
-            var kind = currentAct >= 5 ? NatureAudioFactory.Ambience.Crickets : NatureAudioFactory.Ambience.Birds;
-            Sound(p, new Vector3(0, 6, length * 0.5f), kind);
-            if (currentAct >= 5) Sound(p, new Vector3(0, 10, length * 0.2f), NatureAudioFactory.Ambience.Wind);
+            for (int act = 1; act <= 4; act++) NatureAudioFactory.SeedActBeds(SceneName, act, NatureAudioFactory.Ambience.Birds);
+            NatureAudioFactory.SeedActBeds(SceneName, 5, NatureAudioFactory.Ambience.Crickets, NatureAudioFactory.Ambience.Wind);
         }
     }
 }

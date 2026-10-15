@@ -26,7 +26,6 @@ namespace HotPatata.Editor
             Pass(p, "Trailhead warmup", new Vector3(-3, 1.5f, 10), new Vector3(3, 1.5f, 18));
             Pass(p, "Trailhead ring", new Vector3(0, 1.5f, 28), new Vector3(0, 1.5f, 36), opening: 2.4f);
             CP(p, 1, new Vector3(0, 0, 50), -90);
-            ActSound(p, 56);
         }
 
         /// <summary>A relay up rock terraces of fern and moss (§13.3): solid steps a player climbs, passes up each rise.</summary>
@@ -48,7 +47,6 @@ namespace HotPatata.Editor
             Pass(p, "Terrace relay 1", new Vector3(-3, 3.9f, 21), new Vector3(3, 5f, 30));
             Pass(p, "Terrace relay 2", new Vector3(3, 6.2f, 37), new Vector3(-3, 8.5f, 48));
             CP(p, 2, new Vector3(0, 7, 58));
-            ActSound(p, 64);
         }
 
         /// <summary>The first water: stepping stones the receiver crosses first, then a log raft over the pool (§13.1, §13.2).</summary>
@@ -66,7 +64,6 @@ namespace HotPatata.Editor
             Pass(p, "Brook far bank", new Vector3(2, 1.5f, 49.5f), new Vector3(0, 1.5f, 58));
             Sound(p, new Vector3(0, 1, 34), NatureAudioFactory.Ambience.River);
             CP(p, 3, new Vector3(0, 0, 64), 90);
-            ActSound(p, 72);
         }
 
         /// <summary>
@@ -91,7 +88,6 @@ namespace HotPatata.Editor
             Pass(p, "Rotten relay", new Vector3(0, 5.5f, 39), new Vector3(0, 5.5f, 49), timed: true);
             Sound(p, new Vector3(0, 1, 40), NatureAudioFactory.Ambience.River);
             CP(p, 4, new Vector3(0, 4, 63), 90);
-            ActSound(p, 64);
         }
 
         /// <summary>The team splits around a rock spine; a hollow log carries the bomb to the other lane (§13.4, §13.16). From the plant's sorting line.</summary>
@@ -113,7 +109,6 @@ namespace HotPatata.Editor
             Pass(p, "Junction window", new Vector3(-6, 1.5f, 30), new Vector3(6, 1.5f, 30), opening: 8);
             Pass(p, "Junction ring", new Vector3(0, 1.5f, 77), new Vector3(0, 1.5f, 85), opening: 2.4f);
             CP(p, 5, new Vector3(0, 0, 97), -90);
-            ActSound(p, 96);
         }
 
         // ================================================================== Act 2 - River Run (noon)
@@ -139,7 +134,6 @@ namespace HotPatata.Editor
             Sound(p, new Vector3(0, 1, 30), NatureAudioFactory.Ambience.River);
             Sound(p, new Vector3(0, 1, 62), NatureAudioFactory.Ambience.River);
             CP(p, 6, new Vector3(0, 0, 97), -90);
-            ActSound(p, 96);
         }
 
         /// <summary>Log rafts out of step over the rapids: jump and catch on moving rafts (§13.2, §13.8).</summary>
@@ -161,7 +155,6 @@ namespace HotPatata.Editor
             Sound(p, new Vector3(0, 1, 24), NatureAudioFactory.Ambience.River);
             Sound(p, new Vector3(0, 1, 42), NatureAudioFactory.Ambience.River);
             CP(p, 7, new Vector3(0, 0, 62));
-            ActSound(p, 72);
         }
 
         /// <summary>
@@ -190,7 +183,6 @@ namespace HotPatata.Editor
             Pass(p, "Banks ring", new Vector3(0, 1.5f, 77), new Vector3(0, 1.5f, 85), opening: 2.4f);
             Sound(p, new Vector3(0, 1, 46), NatureAudioFactory.Ambience.River);
             CP(p, 8, new Vector3(0, 0, 97), 90);
-            ActSound(p, 96);
         }
 
         /// <summary>A mud chute down the gully, with no-carry riffles to pass over (§13.12).</summary>
@@ -209,7 +201,6 @@ namespace HotPatata.Editor
             Pass(p, "Chute riffle", new Vector3(0, Y(30) + 1.5f, 30), new Vector3(0, Y(40) + 1.5f, 40));
             Kill(p, new Vector3(0, -26, 40), new Vector3(24, 2, 72));
             CP(p, 9, new Vector3(0, -18, 71), -90);
-            ActSound(p, 72);
         }
 
         /// <summary>
@@ -226,7 +217,6 @@ namespace HotPatata.Editor
             Zone(p, ZoneCold, "Spring shade", new Vector3(-5, 0, 42), new Vector3(6, 3, 6));
             Sound(p, new Vector3(-5, 2, 31), NatureAudioFactory.Ambience.River);
             CP(p, 10, new Vector3(0, 0, 56), 90, -1f);
-            ActSound(p, 64);
         }
 
         // ================================================================== Act 3 - Granite Cliffs (late afternoon)
@@ -250,7 +240,6 @@ namespace HotPatata.Editor
             Pass(p, "Ledge relay 2", new Vector3(-6, 7.5f, 40), new Vector3(0, 8.7f, 47));
             Pass(p, "Cliff top relay", new Vector3(0, 10.1f, 52), new Vector3(0, 11.5f, 60));
             CP(p, 11, new Vector3(0, 10, 62));
-            ActSound(p, 64);
         }
 
         /// <summary>
@@ -275,7 +264,6 @@ namespace HotPatata.Editor
             Pass(p, "Rope top", new Vector3(7, 13.6f, 47), new Vector3(0, 15.5f, 58));
             Kill(p, new Vector3(0, -5, 34), new Vector3(24, 2, 44));
             CP(p, 12, new Vector3(0, 14, 62), -90);
-            ActSound(p, 64);
         }
 
         /// <summary>
@@ -311,7 +299,6 @@ namespace HotPatata.Editor
             Pass(p, "Ledge relay", new Vector3(-4, 1.5f, 32), new Vector3(4, 1.5f, 38));
             foreach (float x in new[] { -9f, 9f }) NatureKit.Rock(p, "Ledge boulder", new Vector3(x, 3, 40), new Vector3(5, 6, 7), "Nature_RockFace");
             CP(p, 14, new Vector3(0, 0, 46), -90);
-            ActSound(p, 48);
         }
 
         /// <summary>
@@ -359,7 +346,6 @@ namespace HotPatata.Editor
             NatureKit.Waterfall(p, "Gorge fall", new Vector3(-11.4f, 0, 38), 10f, 8f, -20f, 90f);
             Sound(p, new Vector3(-10, -4, 38), NatureAudioFactory.Ambience.Waterfall);
             CP(p, 16, new Vector3(0, 0, 70), 0);
-            ActSound(p, 72);
         }
 
         /// <summary>The ledge behind the waterfall: a low overhang makes low throws (§13.5), cold spray pockets slow the fuse (§13.14).</summary>
@@ -377,7 +363,6 @@ namespace HotPatata.Editor
             NatureKit.Waterfall(p, "The fall", new Vector3(5f, 0, 30), 24f, 8f, WaterSurface, -90f);
             Sound(p, new Vector3(8, 2, 30), NatureAudioFactory.Ambience.Waterfall);
             CP(p, 17, new Vector3(-4, 0, 54), 90, -1f);
-            ActSound(p, 56);
         }
 
         /// <summary>A cairn window with a laser curtain for the runners, then a willow hoop turning in a wall (§13.13 and the hoop variant).</summary>
@@ -393,7 +378,6 @@ namespace HotPatata.Editor
             Pass(p, "Cairn window", new Vector3(-4, 1.5f, 13), new Vector3(-4, 1.5f, 19), PassCorridor.ArcKind.Low, opening: 2);
             Pass(p, "Willow hoop", new Vector3(4, 2.4f, 28), new Vector3(4, 2.4f, 36), timed: true, opening: 3.2f);
             CP(p, 18, new Vector3(0, 6, 62), 90);
-            ActSound(p, 64);
         }
 
         /// <summary>
@@ -463,7 +447,6 @@ namespace HotPatata.Editor
             Pass(p, "Apex catch", new Vector3(0, 1.5f, 18), new Vector3(-4, 4.5f, 26));
             Pass(p, "Meadow relay", new Vector3(0, 5.5f, 38), new Vector3(0, 8.1f, 50));
             CP(p, 21, new Vector3(0, 8, 70), 90);
-            ActSound(p, 64);
         }
 
         /// <summary>Switchback paths up the mountainside with scree no-carry strips (§13.13); passes across the gully between the paths.</summary>
@@ -483,7 +466,6 @@ namespace HotPatata.Editor
             Pass(p, "Second path relay", new Vector3(7, Y2(46) + 1.5f, 46), new Vector3(7, Y2(56) + 1.5f, 56));
             Kill(p, new Vector3(0, -8, 36), new Vector3(24, 2, 48));
             CP(p, 22, new Vector3(0, 16, 68), 90);
-            ActSound(p, 72);
         }
 
         /// <summary>A log ram over sun-baked stones that heat the fuse (§13.14, §13.11), rising stone pillars (§13.10). From the plant's furnace intake.</summary>
@@ -499,7 +481,6 @@ namespace HotPatata.Editor
             for (float z = 18; z < 44; z += 16)
                 NatureKit.Rock(p, "Boulder", new Vector3(-9, 3, z), new Vector3(4, 6, 6), "Nature_RockFace");
             CP(p, 23, new Vector3(0, 0, 56), 0);
-            ActSound(p, 60);
         }
 
         /// <summary>A narrow path up the ridge with a drop on both sides, then a timed vine ring and the last palisade (§13.15).</summary>
@@ -515,7 +496,6 @@ namespace HotPatata.Editor
             Pass(p, "Ridge ring", new Vector3(0, 13.5f, 39), new Vector3(0, 13.5f, 47), opening: 2.4f);
             Kill(p, new Vector3(0, -22, 26), new Vector3(24, 2, 40));
             CP(p, 24, new Vector3(0, 12, 41), 0);
-            ActSound(p, 64);
         }
 
         /// <summary>The summit: the checkpoint arch (one clean pass through it, §13.17), a last relay and the beacon at the finish. From the plant's control room.</summary>
@@ -530,7 +510,6 @@ namespace HotPatata.Editor
             Place(p, GameplayDir + "FinishZone", "FinishZone", new Vector3(0, 0, 36), Quaternion.identity);
             NatureKit.Campfire(p, new Vector3(0, 0, 46), null, 2.2f);
             foreach (float x in new[] { -8f, 8f }) NatureKit.Rock(p, "Summit cairn", new Vector3(x, 1.5f, 44), new Vector3(2, 3, 2), "Nature_StoneWall");
-            ActSound(p, 52);
         }
     }
 }

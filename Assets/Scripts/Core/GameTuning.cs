@@ -315,6 +315,8 @@ namespace HotPatata
         [Min(0.1f)] public float slideLoopFullSpeed = 10f;
         [Tooltip("An obstacle whose progress changes faster than this (per second) is moving: its loop plays.")]
         [Min(0f)] public float obstacleLoopMinRate = 0.02f;
+        [Tooltip("Seconds between a lightning flash and its thunder: random in this range (the storm is a few kilometres away).")]
+        public Vector2 thunderDelay = new Vector2(0.6f, 2.5f);
         [Tooltip("Obstacle sounds further than this from the listener (metres) are not started.")]
         [Min(1f)] public float obstacleAudibleDistance = 45f;
 

@@ -34,6 +34,9 @@ namespace HotPatata
         /// <summary>A fixed loop placed in the world by a builder (river, waterfall, campfire...).</summary>
         public static string AmbienceEmitter(string emitter) => "Ambience/Emitters/" + emitter;
 
+        /// <summary>Thunder after each lightning flash (PatataTemple's storm), flat, at the storm's strength.</summary>
+        public const string StormThunder = "Ambience/Thunder";
+
         /// <summary>An ambience layer's loops (all layered, flat).</summary>
         public static string Beds(string layer) => layer + "/Beds";
         /// <summary>An ambience layer's one-shots (birds, cracks...), played at random spots around the listener.</summary>
@@ -112,8 +115,11 @@ namespace HotPatata
         /// <summary>The campfires' crackle.</summary>
         public const string EmitterFire = "Fire";
 
-        /// <summary>Fixed emitters the builders place (Ambience/Emitters/&lt;name&gt;), named as NatureAudioFactory's kinds.</summary>
-        public static readonly string[] Emitters = { EmitterFire, "River", "Waterfall", "Wind", "Birds", "Crickets" };
+        /// <summary>
+        /// Fixed emitters the builders place (Ambience/Emitters/&lt;name&gt;), named as NatureAudioFactory's kinds. Birds, crickets and
+        /// wind are not emitters: they are the acts' ambience (Ambience/Courses/&lt;scene&gt;/Act&lt;n&gt;/Beds).
+        /// </summary>
+        public static readonly string[] Emitters = { EmitterFire, "River", "Waterfall" };
 
         /// <summary>Every key that does not depend on a course or an obstacle type.</summary>
         public static IEnumerable<string> Fixed()
@@ -129,6 +135,7 @@ namespace HotPatata
                 yield return Scatter(AmbienceEnvironment(e));
             }
             foreach (var e in Emitters) yield return AmbienceEmitter(e);
+            yield return StormThunder;
             foreach (var b in BombBeeps) yield return b;
             yield return BombThrow;
             yield return BombCatch;

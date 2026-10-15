@@ -44,7 +44,6 @@ namespace HotPatata
         Vector3 lastPosition;
         Vector3 cameraHandPosition;
         Quaternion cameraHandRotation;
-        int groundMask;
         float throwGuardUntil;
         ThrowPhase throwPhase;
         Vector3 poseBasePosition, poseBaseScale;
@@ -62,7 +61,6 @@ namespace HotPatata
             cameraHandPosition = player.HandAnchor.localPosition;
             cameraHandRotation = player.HandAnchor.localRotation;
             lastPosition = transform.position;
-            groundMask = LayerMask.GetMask("Environment", "Hazard");
         }
 
         /// <summary>Drives <paramref name="character"/> (the slot's character, swapped in by <see cref="PlayerPresentation"/>).</summary>
@@ -114,10 +112,7 @@ namespace HotPatata
 
             float horizontalSpeed = new Vector2(velocity.x, velocity.z).magnitude;
             var motor = player.Motor;
-            bool grounded = player.IsLocal
-                ? player.Motor.Grounded
-                : riding || Physics.CheckSphere(transform.position + Vector3.up * 0.12f, 0.22f,
-                    groundMask, QueryTriggerInteraction.Ignore);
+            bool grounded = player.SeemsGrounded;
 
             // Sliding holds a still pose (the legs do not run); otherwise run = 1, sprint = 2.
             float speedParam = motor.IsSliding ? 0f : Mathf.Min(PlayerMotor.MotionFraction(player.Tuning, horizontalSpeed), 2f);

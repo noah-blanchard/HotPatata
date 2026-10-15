@@ -7,14 +7,14 @@ namespace HotPatata
     /// A player's movement sounds (ARCHITECTURE §26, PROJECT_SPEC §11): footsteps every <see cref="GameTuning.stepLength"/>
     /// metres on the ground, by surface; a jump; a soft or hard landing; a slide's start and its loop, fading as it slows.
     /// Your own play flat and quieter (<see cref="GameTuning.ownMovementVolume"/>); teammates' play in 3D, so you hear where
-    /// they are. Remote players are judged from their mirrored motion, as <see cref="PlayerAnimator"/> does. Added to every
+    /// they are. Remote players are judged from their mirrored motion (<see cref="Player.SeemsGrounded"/>, shared with the
+    /// <see cref="PlayerAnimator"/>). Added to every
     /// player by the <see cref="AudioDirector"/>. Presentation only: it reads the motor and never changes it.
     /// </summary>
     [RequireComponent(typeof(Player))]
     public sealed class PlayerSounds : MonoBehaviour
     {
         const float ProbeUp = 0.3f, ProbeDown = 0.9f;     // ray from just above the feet down past the ground (metres)
-        const float GroundCheckHeight = 0.12f, GroundCheckRadius = 0.22f;   // the remote ground test, as PlayerAnimator's
         const float TeleportDistance = 4f;                // further in one frame is a respawn, not a step
         const float JumpSpeed = 0.5f;                     // leaving the ground faster than this upward is a jump, not a step off
         const float SlideFadeOut = 0.15f;                 // seconds the slide loop takes to stop, never a click
@@ -61,10 +61,7 @@ namespace HotPatata
             var velocity = player.Velocity;
             if (player.RemoteRiding) velocity -= player.CarrierVelocity;   // their own motion on a lift, not the lift's
             float horizontal = new Vector2(velocity.x, velocity.z).magnitude;
-            bool grounded = player.IsLocal
-                ? motor.Grounded
-                : player.RemoteRiding || Physics.CheckSphere(position + Vector3.up * GroundCheckHeight, GroundCheckRadius,
-                    groundMask, QueryTriggerInteraction.Ignore);
+            bool grounded = player.SeemsGrounded;   // the same test as the animator's
             bool sliding = motor.IsSliding;
             float volume = player.IsLocal ? t.ownMovementVolume : 1f;
 
