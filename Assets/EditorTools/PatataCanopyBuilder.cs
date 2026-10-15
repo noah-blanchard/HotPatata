@@ -113,6 +113,7 @@ namespace HotPatata.Editor
             if (EditorApplication.isPlayingOrWillChangePlaymode) return;
             NatureMaterialBuilder.Ensure(false);
             NatureAudioFactory.EnsureClips();
+            SeedActSounds();
             NatureKit.BuildCampfirePrefab();
             if (AssetDatabase.LoadAssetAtPath<GameObject>(NatureTreeBuilder.PrefabPath(NatureTreeBuilder.Species.Broadleaf, 0)) == null) NatureTreeBuilder.BuildAll();
             if (AssetDatabase.LoadAssetAtPath<GameObject>(BombObstacleKitBuilder.Screen + ".prefab") == null) BombObstacleKitBuilder.BuildAll();
@@ -154,7 +155,6 @@ namespace HotPatata.Editor
                             if (i < sections.Length - 1) Deck(room, "Junction deck", -Hub, Hub, spec.length - Hub, spec.length + Hub, spec.dy);
                             if (spec.covered) LeafRoof(room, "Leaf roof", -CoverHalf, CoverHalf, -Hub, spec.length + Hub, Mathf.Max(0f, spec.dy) + Roof);
                             Kill(room, new Vector3(0, fallTop - 1f, spec.length / 2f), new Vector3(2 * CoverHalf + 12f, 2f, spec.length + 2 * Hub + 8f));
-                            Birds(room, spec);
                         }
                         restyled += NatureRestyle.Apply(room, theme);
                         var rotation = Quaternion.Euler(0, yaw, 0);
@@ -179,6 +179,7 @@ namespace HotPatata.Editor
                 }
             });
             section.gameObject.AddComponent<CourseRoute>().Configure(Route.ToArray(), Outdoors.ToArray());
+            WriteCourseAudio(section, sections.Select(s => s.act).ToArray(), sections.Select(s => s.act == 3 ? "HollowOak" : "Canopy").ToArray(), "Canopy");
             LookBuilder.ApplyToScene(scene);
             Physics.SyncTransforms();
             ValidatePasses();
@@ -373,20 +374,12 @@ namespace HotPatata.Editor
             for (float z = z0; z <= z1 + 0.01f; z += step) NatureKit.Torch(p, new Vector3(x, y, z), 7f, 13f);
         }
 
-        /// <summary>The act's forest sound: birds from dawn to sunset, crickets and wind at dusk.</summary>
-        static void Birds(Transform p, SectionSpec spec)
+        /// <summary>The acts' forest sound (ARCHITECTURE §26): birds from dawn to sunset, the wind from act 4, crickets at dusk.</summary>
+        static void SeedActSounds()
         {
-            var kind = currentAct >= 5 ? NatureAudioFactory.Ambience.Crickets : NatureAudioFactory.Ambience.Birds;
-            Sound(p, new Vector3(0, Mathf.Max(0, spec.dy) + 6, spec.length * 0.5f), kind);
-            if (currentAct >= 4) Sound(p, new Vector3(0, Mathf.Max(0, spec.dy) + 10, spec.length * 0.2f), NatureAudioFactory.Ambience.Wind);
-        }
-
-        static void Sound(Transform p, Vector3 local, NatureAudioFactory.Ambience kind)
-        {
-            var marker = new GameObject("Ambience " + kind);
-            marker.transform.SetParent(p, false);
-            marker.transform.localPosition = local;
-            NatureKit.Ambient(marker.transform, kind.ToString(), Vector3.zero, kind, 0.7f, 45f);
+            for (int act = 1; act <= 3; act++) NatureAudioFactory.SeedActBeds(SceneName, act, NatureAudioFactory.Ambience.Birds);
+            NatureAudioFactory.SeedActBeds(SceneName, 4, NatureAudioFactory.Ambience.Birds, NatureAudioFactory.Ambience.Wind);
+            NatureAudioFactory.SeedActBeds(SceneName, 5, NatureAudioFactory.Ambience.Crickets, NatureAudioFactory.Ambience.Wind);
         }
     }
 }

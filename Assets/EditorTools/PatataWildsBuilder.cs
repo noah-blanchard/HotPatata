@@ -113,6 +113,17 @@ namespace HotPatata.Editor
             S("25 Summit Arch", 5, 52, 0, 0, Meadow, SummitArch),
         };
 
+        /// <summary>The ambience environment of a section (Ambience/Environments/&lt;name&gt;, ARCHITECTURE §26).</summary>
+        static string AudioEnvironment(SectionSpec s)
+        {
+            if (s.ceiling > 0f) return "Cave";
+            if (s.act == 5) return "Summit";
+            if (s.water || s.theme.Floor == River.Floor || s.theme.Floor == Gravel.Floor) return "River";
+            if (s.theme.Floor == Granite.Floor) return "Cliffs";
+            if (s.theme.Floor == Meadow.Floor) return "Meadow";
+            return "Forest";
+        }
+
         /// <summary>One section's footprint in world XZ (for the terrain and the overlap check): centre, half extents, yaw.</summary>
         public struct Footprint
         {
@@ -132,6 +143,7 @@ namespace HotPatata.Editor
             NatureMaterialBuilder.Ensure(false);
             NatureKit.EnsureWater();
             NatureAudioFactory.EnsureClips();
+            SeedActSounds();
             NatureKit.BuildCampfirePrefab();
             if (AssetDatabase.LoadAssetAtPath<Mesh>(NatureTreeBuilder.MeshPath("Grass", 0, 0)) == null) NatureTreeBuilder.BuildAll();
             var scene = PrepareCourseScene(ScenePath, out var section);
@@ -191,6 +203,7 @@ namespace HotPatata.Editor
             });
             CheckFootprints();
             section.gameObject.AddComponent<CourseRoute>().Configure(Route.ToArray(), Outdoors.ToArray());
+            WriteCourseAudio(section, sections.Select(s => s.act).ToArray(), sections.Select(AudioEnvironment).ToArray(), "Forest");
             LookBuilder.ApplyToScene(scene);
             Physics.SyncTransforms();
             ValidatePasses();
@@ -492,12 +505,11 @@ namespace HotPatata.Editor
                 kind == NatureAudioFactory.Ambience.Waterfall ? 70f : kind == NatureAudioFactory.Ambience.River ? 32f : 45f);
         }
 
-        /// <summary>The act's forest sound for a section: birds from dawn to sunset, crickets at dusk, wind on the summit.</summary>
-        static void ActSound(Transform p, float length)
+        /// <summary>The acts' forest sound (ARCHITECTURE §26): birds from dawn to sunset, crickets and the summit wind at dusk.</summary>
+        static void SeedActSounds()
         {
-            var kind = currentAct >= 5 ? NatureAudioFactory.Ambience.Crickets : NatureAudioFactory.Ambience.Birds;
-            Sound(p, new Vector3(0, 6, length * 0.5f), kind);
-            if (currentAct >= 5) Sound(p, new Vector3(0, 10, length * 0.2f), NatureAudioFactory.Ambience.Wind);
+            for (int act = 1; act <= 4; act++) NatureAudioFactory.SeedActBeds(SceneName, act, NatureAudioFactory.Ambience.Birds);
+            NatureAudioFactory.SeedActBeds(SceneName, 5, NatureAudioFactory.Ambience.Crickets, NatureAudioFactory.Ambience.Wind);
         }
     }
 }

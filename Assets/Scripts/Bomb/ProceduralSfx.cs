@@ -4,8 +4,8 @@ namespace HotPatata
 {
     /// <summary>
     /// Placeholder sound effects synthesised at runtime, so the sandbox has distinct beep / catch /
-    /// throw / explosion audio without any audio assets. Each one is only a fallback: assigning a real clip
-    /// in <see cref="BombAudio"/> or <see cref="SpeedEffects"/> (files go in Assets/Audio/SFX) replaces it.
+    /// throw / explosion audio without any audio assets. Each one is only a fallback: a sound dropped in its folder
+    /// (Assets/Audio/SFX/Bomb/..., see <see cref="CueKeys"/>) replaces it (<see cref="BombAudio"/>, ARCHITECTURE §26).
     /// </summary>
     public static class ProceduralSfx
     {
@@ -86,6 +86,28 @@ namespace HotPatata
                 d[i] = lp * Mathf.Sin(Mathf.PI * i / n) * 0.7f;
             }
             return Make("throw", d);
+        }
+
+        /// <summary>A distant thunder: a short crack, then a long low rumble that rolls and fades.</summary>
+        public static AudioClip Thunder()
+        {
+            int n = (int)(SampleRate * 4f);
+            var d = new float[n];
+            var rng = new System.Random(29);
+            float lp = 0f, lp2 = 0f, brown = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)SampleRate;
+                float noise = (float)(rng.NextDouble() * 2.0 - 1.0);
+                brown = Mathf.Clamp(brown + noise * 0.03f, -1f, 1f) * 0.999f;
+                lp += (noise - lp) * 0.08f;
+                lp2 += (lp - lp2) * 0.05f;
+                float crack = lp * Mathf.Exp(-t * 9f) * 1.2f;
+                float roll = 0.65f + 0.35f * Mathf.Sin(t * 5.3f) * Mathf.Sin(t * 1.7f + 0.4f);
+                float rumble = (brown * 2.2f + lp2 * 2f) * roll * Mathf.Clamp01(t * 6f) * Mathf.Exp(-t * 0.9f);
+                d[i] = Mathf.Clamp(crack + rumble, -1f, 1f) * 0.85f;
+            }
+            return Make("thunder", d);
         }
 
         /// <summary>Noise burst with a low thump.</summary>

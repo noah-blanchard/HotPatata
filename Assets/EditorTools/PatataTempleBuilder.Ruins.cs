@@ -50,20 +50,11 @@ namespace HotPatata.Editor
 
         static Ground ground;
 
-        /// <summary>The act's jungle sound: birds at dawn and noon, crickets and wind in the storm (a fixed ambience, never a movement sound).</summary>
-        static void Jungle(Transform p, SectionSpec spec)
+        /// <summary>The acts' jungle sound (ARCHITECTURE §26): birds at dawn and noon, crickets and wind in the storm.</summary>
+        static void SeedActSounds()
         {
-            var kind = spec.act >= 3 ? NatureAudioFactory.Ambience.Crickets : NatureAudioFactory.Ambience.Birds;
-            Sound(p, new Vector3(0, Mathf.Max(0, spec.dy) + 6, spec.length * 0.5f), kind);
-            if (spec.act >= 3) Sound(p, new Vector3(0, Mathf.Max(0, spec.dy) + 10, spec.length * 0.2f), NatureAudioFactory.Ambience.Wind);
-        }
-
-        static void Sound(Transform p, Vector3 local, NatureAudioFactory.Ambience kind)
-        {
-            var marker = new GameObject("Ambience " + kind);
-            marker.transform.SetParent(p, false);
-            marker.transform.localPosition = local;
-            NatureKit.Ambient(marker.transform, kind.ToString(), Vector3.zero, kind, 0.7f, 45f);
+            for (int act = 1; act <= 2; act++) NatureAudioFactory.SeedActBeds(SceneName, act, NatureAudioFactory.Ambience.Birds);
+            NatureAudioFactory.SeedActBeds(SceneName, 3, NatureAudioFactory.Ambience.Crickets, NatureAudioFactory.Ambience.Wind);
         }
 
         static Rect FootRect(Footprint f, float grow = 0f)

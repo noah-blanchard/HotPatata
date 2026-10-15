@@ -4,8 +4,8 @@ namespace HotPatata
 {
     /// <summary>
     /// Presentation only (ARCHITECTURE §25.4, PatataTemple's last act): the tropical storm. Its rain follows the camera (the drops
-    /// die on roofs and floors, so it never rains indoors), and its lightning lights the scene for a moment now and then. Both grow
-    /// with the time of day shown (<see cref="TimeOfDayBlender.Current"/>: from the heavy afternoon to the storm). Every flash is
+    /// die on roofs and floors, so it never rains indoors), and its lightning lights the scene for a moment now and then, its
+    /// thunder following (Assets/Audio/Ambience/Thunder, else a generated rumble). Both grow with the time of day shown (<see cref="TimeOfDayBlender.Current"/>: from the heavy afternoon to the storm). Every flash is
     /// scaled by <c>flashReduction</c> and <c>viewEffectsStrength</c> (spec §19; at full reduction there is none) and rises and
     /// falls over a quarter of a second, never a strobe. No wind: nothing bends a flight (§17.2). It reads the day and touches no rule.
     /// </summary>
@@ -22,6 +22,8 @@ namespace HotPatata
 
         TimeOfDayBlender day;
         float rate, nextFlash, flashStart = -100f;
+        float thunderAt = -1f, thunderStrength;
+        static AudioClip thunderFallback;
         readonly System.Random random = new System.Random(4242);
 
         void OnEnable()
@@ -47,9 +49,27 @@ namespace HotPatata
             {
                 flashStart = Time.time;
                 nextFlash = Time.time + flashInterval * (0.5f + (float)random.NextDouble()) / storm;
+                // Its thunder, a moment later (UnityEngine.Random: the flashes' own sequence stays as it was).
+                thunderAt = Time.time + Random.Range(tuning.thunderDelay.x, tuning.thunderDelay.y);
+                thunderStrength = storm;
+            }
+            if (thunderAt >= 0f && Time.time >= thunderAt)
+            {
+                thunderAt = -1f;
+                Thunder(thunderStrength);
             }
             float strength = flashIntensity * storm * Settings.ViewEffectsStrength(tuning) * (1f - Settings.FlashReduction(tuning));
             lightning.intensity = strength * Pulse(Time.time - flashStart, flashSeconds);
+        }
+
+        // Audio only, so it plays whatever the flash reduction: the folder's thunder (ARCHITECTURE §26), else a generated rumble.
+        static void Thunder(float strength)
+        {
+            if (Sfx.Play(CueKeys.StormThunder, null, strength)) return;
+            var director = AudioDirector.Instance;
+            if (director == null || director.Bank.Has(CueKeys.StormThunder)) return;   // a real thunder cooling down: no fallback
+            if (thunderFallback == null) thunderFallback = ProceduralSfx.Thunder();
+            director.PlayFallback(thunderFallback, CueKeys.StormThunder, strength);
         }
 
         /// <summary>

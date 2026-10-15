@@ -27,11 +27,14 @@ namespace HotPatata.Editor
 
         static GameTuning Tuning => AssetDatabase.LoadAssetAtPath<GameTuning>(TuningPath);
 
-        static UnityEngine.Audio.AudioMixerGroup SfxGroup
+        // World ambience plays on the Ambience group (its own slider, muffled by the pause menu: ARCHITECTURE §6.1).
+        static UnityEngine.Audio.AudioMixerGroup AmbienceGroup
         {
             get
             {
-                var groups = AssetDatabase.LoadAssetAtPath<UnityEngine.Audio.AudioMixer>(MixerPath)?.FindMatchingGroups("Master/SFX");
+                var mixer = AssetDatabase.LoadAssetAtPath<UnityEngine.Audio.AudioMixer>(MixerPath);
+                var groups = mixer != null ? mixer.FindMatchingGroups("Master/Ambience") : null;
+                if (groups == null || groups.Length == 0) groups = mixer != null ? mixer.FindMatchingGroups("Master/SFX") : null;
                 return groups != null && groups.Length > 0 ? groups[0] : null;
             }
         }
@@ -312,7 +315,7 @@ namespace HotPatata.Editor
             audio.maxDistance = 22f;
             audio.dopplerLevel = 0f;
             audio.priority = 200;
-            audio.outputAudioMixerGroup = SfxGroup;
+            audio.outputAudioMixerGroup = AmbienceGroup;
             var presentation = root.gameObject.AddComponent<CampfirePresentation>();
             presentation.Configure(Tuning, checkpoint, flames, embers, smoke, light, audio, scale);
         }
@@ -367,7 +370,10 @@ namespace HotPatata.Editor
 
         // ------------------------------------------------------------------ ambient sound
 
-        /// <summary>A fixed 3D ambient loop (river, falls, birds, wind): low priority, on the effects group, never a movement sound.</summary>
+        /// <summary>
+        /// A fixed 3D ambient loop (river, falls, birds, wind): low priority, on the Ambience group, never a movement sound. It plays
+        /// a sound from Assets/Audio/Ambience/Emitters/&lt;kind&gt; when that folder holds one, else the generated placeholder.
+        /// </summary>
         public static AudioSource Ambient(Transform parent, string name, Vector3 position, NatureAudioFactory.Ambience kind, float volume, float maxDistance)
         {
             var go = new GameObject(name);
@@ -384,8 +390,8 @@ namespace HotPatata.Editor
             audio.maxDistance = maxDistance;
             audio.dopplerLevel = 0f;
             audio.priority = 200;   // under the bomb's beeps
-            audio.outputAudioMixerGroup = SfxGroup;
-            go.AddComponent<AmbientLoop>();
+            audio.outputAudioMixerGroup = AmbienceGroup;
+            go.AddComponent<AmbientLoop>().Configure(kind.ToString());
             return audio;
         }
     }

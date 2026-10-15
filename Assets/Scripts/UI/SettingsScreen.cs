@@ -9,7 +9,7 @@ namespace HotPatata
     /// The settings screen (#17, spec §19, ARCHITECTURE §6.2; layout Assets/UI/Screens/Settings.uxml, the rows' labels
     /// and order included), reachable from the main menu and the pause menu. Four
     /// sections: accessibility (camera effects, flash reduction, warning beep), look (mouse and stick sensitivity,
-    /// invert Y, field of view), audio (master, effects) and display (window mode, resolution, vsync, frame cap).
+    /// invert Y, field of view), audio (master, effects, music, ambience, menus) and display (window mode, resolution, vsync, frame cap).
     /// It edits a copy of the player's <see cref="Settings"/>: every change applies at once (<see cref="Settings.Preview"/>)
     /// and the file is written when the screen closes (<see cref="Settings.Save"/>). The shared <see cref="GameTuning"/>
     /// is only read, for the defaults. Key bindings are kept as they are (their page is #18).
@@ -20,7 +20,7 @@ namespace HotPatata
         SettingsData data;
         bool dirty;
 
-        SliderRow effects, flashes, beep, mouse, stick, fov, master, sfx;
+        SliderRow effects, flashes, beep, mouse, stick, fov, master, sfx, music, ambience, ui;
         ToggleRow invertY, vSync;
         ChoiceRow windowMode, resolution, frameCap;
         List<Vector2Int> resolutions;
@@ -52,6 +52,9 @@ namespace HotPatata
 
             master = SliderSetting("master-volume", 0f, 1f, data.masterVolume, 0.05f, SliderRow.Percent, v => data.masterVolume = v);
             sfx = SliderSetting("sfx-volume", 0f, 1f, data.sfxVolume, 0.05f, SliderRow.Percent, v => data.sfxVolume = v);
+            music = SliderSetting("music-volume", 0f, 1f, data.musicVolume, 0.05f, SliderRow.Percent, v => data.musicVolume = v);
+            ambience = SliderSetting("ambience-volume", 0f, 1f, data.ambienceVolume, 0.05f, SliderRow.Percent, v => data.ambienceVolume = v);
+            ui = SliderSetting("ui-volume", 0f, 1f, data.uiVolume, 0.05f, SliderRow.Percent, v => data.uiVolume = v);
 
             windowMode = ChoiceSetting("window-mode", DisplayOptions.WindowModeNames, DisplayOptions.WindowModeIndex(CurrentMode()),
                                 i => data.fullScreenMode = (int)DisplayOptions.WindowModes[i]);
@@ -139,6 +142,9 @@ namespace HotPatata
             fov.SetValueWithoutNotify(data.fieldOfView);
             master.SetValueWithoutNotify(data.masterVolume);
             sfx.SetValueWithoutNotify(data.sfxVolume);
+            music.SetValueWithoutNotify(data.musicVolume);
+            ambience.SetValueWithoutNotify(data.ambienceVolume);
+            ui.SetValueWithoutNotify(data.uiVolume);
             windowMode.SetIndexWithoutNotify(DisplayOptions.WindowModeIndex(CurrentMode()));
             resolution.SetIndexWithoutNotify(resolutions.IndexOf(CurrentResolution()));
             vSync.SetValueWithoutNotify(CurrentVSync());

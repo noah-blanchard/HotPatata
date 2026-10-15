@@ -41,7 +41,8 @@ M12 (`PatataWilds`) is built; the same human gates and a readability review rema
 M13 (`PatataCanopy`, body screens, hands-free plates, switches, section contracts) is built, with its atmosphere pass (M13.7:
 its own misty day, giant trees, a forest floor that follows the course); its playtest is open. M15 (`PatataTemple`, the
 course for three: heavy and hourglass plates, sun beams, pivots that carry their riders, a level's minimum players) is built;
-its playtest with three is open. M14 (contracts for PatataWilds) is next.
+its playtest with three is open. M16 (audio: a drop-in sound library, `Assets/Audio/README.md`) is built; its listening pass is
+open. M14 (contracts for PatataWilds) is next.
 The live table is at the top of `docs/MVP_TASKS.md`.
 
 ## Docs (read before implementing)
@@ -100,9 +101,13 @@ same PR. Code comments cite doc sections (e.g. `PROJECT_SPEC §8.3`), so never r
   - Presentation and audio (`BombPresentation`, `BombAudio`, `PlayerPresentation`, VFX) consume state and never
     control it.
   - Use `PlayerMotor.MotionFraction` for speed-driven presentation.
-- **Removed on purpose, do not add back:** movement sounds (footsteps, landings, wind, slide scrape), chromatic
-  aberration, lens distortion. PatataWilds' fixed world ambience (river, falls, birds, crickets, summit wind:
-  `NatureKit.Ambient`) is not a movement sound: it never follows the player's speed.
+- **Removed on purpose, do not add back:** chromatic aberration, lens distortion, wind that follows the player's speed.
+  Movement sounds came back in M16 (spec §11): surface footsteps, jump, landings and the slide (`PlayerSounds`).
+- **Audio (ARCHITECTURE §26).** A sound is a folder of `Assets/Audio` (a cue): code plays it by its key in `CueKeys`
+  through `Sfx` / `AudioDirector`, never through a serialized clip. Drop files and the `SoundBank` rebuilds itself; never
+  edit its cue list by hand. Every `AudioSource` plays on a mixer group. The pause menu muffles the mix but never the
+  Bomb or UI groups (online the game goes on). Music, ambience and every sound component are presentation: they read
+  state and never change it.
 - **Accessibility.** Every view effect honours `viewEffectsStrength`, and every flash honours `flashReduction`.
   - Read player-facing values (those two, `beepVolume`, look sensitivity, FOV, invert Y) through `Settings`, never
     the `GameTuning` field: the tuning value is only the default. Never write `GameTuning` at runtime.

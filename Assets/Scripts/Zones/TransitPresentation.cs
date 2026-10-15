@@ -50,8 +50,12 @@ namespace HotPatata
             {
                 warnedFor = transit.ReleaseAt;
                 var muzzle = transit.GetExit(active).muzzle;
-                riseClip ??= ProceduralSfx.Rise(warnSeconds);
-                if (muzzle != null) PlayAt(riseClip, muzzle.position);
+                // The warning from its folder (ARCHITECTURE §26), else the procedural rising tone.
+                if (muzzle != null && !Sfx.Play(CueKeys.BombTransitWarn, muzzle.position, toneVolume))
+                {
+                    riseClip ??= ProceduralSfx.Rise(warnSeconds);
+                    PlayAt(riseClip, muzzle.position);
+                }
             }
         }
 

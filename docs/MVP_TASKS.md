@@ -32,6 +32,7 @@ playtest and cannot be closed by code.
 | M13 Fourth course: PatataCanopy | built: 25 sections in 5 acts in the tree tops, every section with a contract; three new generic systems (body screen, hands-free plate, switch) and the section-contract check; automated verification in M13.6; atmosphere pass built (M13.7: its own cooler day, a height mist, giant trees, a forest floor that follows the course, leaf roofs, god rays, fireflies) | 2-player clear, every puzzle forced and fun at 2 and at 4, host + 3 clients, 1080p/60 fps, readability review (in the mist) |
 | M14 PatataWilds contracts | not started | give every PatataWilds section a contract and close its shortcuts (M14) |
 | M15 Fifth course: PatataTemple | built: 15 sections in 3 acts for **three players**, every section with a contract that says why two fail; four systems for three (heavy plate, hourglass plate, sun beam, pivot carrying its riders), a level's minimum players in the menu; its own valley, pyramid, day and storm; automated verification in M15.6 | a clear by three, every puzzle failing with two and fun with four, host + 2 clients, 1080p/60 fps, readability review (the storm) |
+| M16 Audio (#46–#49) | built (code, mixer, settings, docs): a drop-in sound library, sounds are folders of `Assets/Audio`; music by place and act, ambience in layers, movement sounds back (spec §11), bomb, run, obstacle and menu sounds; automated checks pass (M16.6) | the owner's sounds and music; the listening pass with two players (M16.6) |
 | Cleanup and generic obstacles | done: only `PatataWilds`, `IndustrialPlant` and `PassSandbox` (plus `Bootstrap`) remain; every obstacle system is generic (references, `IObstacleState`, `ObstacleVisualDriver`, `CustomVisual`, overridable poses, `ObstaclePrefabValidator`), with two example variants; the obstacle catalogue is `docs/OBSTACLES.md` | |
 
 **Next up:** the group playtest of PatataCanopy (M13.6) and of PatataTemple with three (M15.6), then M14 (PatataWilds contracts), the group playtest of PatataWilds
@@ -1171,8 +1172,8 @@ Acceptance criteria:
 
 ## M9.3 — Cartoon look, speed feel, potato VFX, audio
 
-Done: toon shader, sky, post-processing, speed lines, trail, fuse sparks, cartoon explosion. Movement sounds were
-removed on purpose afterwards; only the bomb sounds remain. Details in [`ARCHITECTURE.md`](ARCHITECTURE.md) §8.6 and §25.
+Done: toon shader, sky, post-processing, speed lines, trail, fuse sparks, cartoon explosion. The generated movement sounds
+were removed afterwards (they sounded bad); real ones came back in M16. Details in [`ARCHITECTURE.md`](ARCHITECTURE.md) §8.6 and §25.
 
 > **Status:** M9.1–M9.3 are done (PRs #7–#10).
 
@@ -1388,7 +1389,8 @@ Acceptance criteria:
 - [x] every water surface has a kill zone 0.3 m under it; every pit has one; a safety net lies under the course;
 - [x] checkpoints show campfires (no pad) that catch when reached and go out at a new run, honouring flash reduction;
   the summit beacon lights at the finish;
-- [x] fixed 3D ambience (river, falls, birds, crickets, wind) on the SFX group, under the beeps; no movement sound.
+- [x] fixed 3D ambience (river, falls, birds, crickets, wind) on the SFX group, under the beeps; no movement sound (since M16:
+  on the Ambience group, each loop replaceable from its emitter folder).
 
 ## M12.8 — Tests and playtests
 
@@ -1572,6 +1574,72 @@ Automated validation (2026-10-10, Unity 6000.3.25f1): `PatataTempleTests` (9), `
 - [ ] 60 fps at 1080p on a mid-range PC, four players (the canopy is instanced);
 - [ ] readability review: the heavy slab's footprints, the sand rings, the beams and eyes, the shrines, in every act's light and
   in the storm; the owner's look review.
+
+---
+
+# Milestone 16 — Audio: a drop-in sound library
+
+Asked for by the owner: add every sound and music track just by dropping files in folders; music for the main menu, the lobby
+(it fades over when joining a lobby, as the menu music does in Dead by Daylight) and each course by act; ambience per map and
+environment with as many birds and calls as wanted; footsteps, jumps, bomb, everything. Grilled with the owner first: movement
+sounds come back (the generated ones sounded bad; spec §11 amended), footsteps by surface, teammates' in 3D; one lobby track;
+music per act; shuffled playlists with intro/loop pairs; results music, a muffled pause, silence while a level loads; ambience
+in layers (environment, act add or replace); the synthesised loops stay as fallbacks; five volume sliders. Built-in Unity audio
+only. Replaces #46 (bomb SFX), #47 (music), #48 (UI sounds) and #49 (ambience per act). ARCHITECTURE §6.1 and §26.
+
+## M16.1 — Spec amendment
+
+- [x] PROJECT_SPEC §11: movement sounds (surface footsteps, jump, landings, slide), own flat and quieter, teammates' in 3D,
+  never masking the beep. AGENTS.md's audio rules. Nothing renumbered.
+
+## M16.2 — The library
+
+- [x] a sound is a folder of `Assets/Audio` (a cue), its files are variations (random, no repeat, jitter); `CueKeys` names every
+  folder the code plays;
+- [x] `SoundBankBuilder` rebuilds the bank on its own when a file is added, moved or removed; settings kept from the Inspector;
+- [x] import settings by folder (`AudioImportRules`); the folder skeleton menu;
+- [x] the mixer: Music, Ambience, SFX (Bomb, Movement, World), UI; exposed volumes; the `Paused` snapshot (never the bomb or
+  the menus); settings sliders for music, ambience and menu sounds.
+
+## M16.3 — Music and ambience
+
+- [x] `MusicDirector`: menu, lobby (crossfade on join and leave), silence while a level loads, a course by act, results;
+  playlists and intro/loop; a dip under each beep;
+- [x] `AmbienceDirector`: menu, course, environment (each course builder writes its `CourseAudio`; `AmbienceZone` overrides),
+  act layers with Replace; beds and scattered calls;
+- [x] the builders' emitters and the campfires play their emitter folder, else the synthesised loop.
+- [x] birds, crickets and wind are the acts' beds (seeded `placeholder_*` loops that give way to a dropped sound), no longer
+  emitters in every section; the temple storm's thunder follows each flash (`Ambience/Thunder`, else a generated rumble);
+- [x] one ground test for presentation (`Player.SeemsGrounded`), shared by the animator and the footsteps.
+
+## M16.4 — Movement
+
+- [x] `PlayerSounds` on every player: footsteps by surface (`AudioSurface`, else the material's, else Default), jump, soft and
+  hard landing, slide start and loop; own flat, teammates' 3D.
+
+## M16.5 — Events
+
+- [x] bomb (`BombAudio`: beeps by stage, throw, catch, explosion, fuse loop, tube in, the exit's warning), procedural fallback;
+- [x] the run (`CourseSounds`: start, checkpoint, act change, reset, finish), on every machine;
+- [x] obstacles (`ObstacleSounds`: On / Off / Loop per `IObstacleState` type, no wiring);
+- [x] menus (`UiSounds`: hover, click, change, open, back, lobby join and leave).
+
+## M16.6 — Tests and listening
+
+Automated validation (2026-10-14, Unity 6000.3.25f1): the mixer's eight groups, five exposed volumes and `Paused` snapshot
+(cutoff 22 kHz / 900 Hz) load; `AudioTests` (12), `SettingsTests` (10), `ObstaclePrefabTests` (11), `ConfigurationTests` (12),
+`PatataWildsTests` (16), `PatataCanopyTests` (20), `PatataTempleTests` (10), `IndustrialPlantTests` (14) and
+`PauseAndSettingsTests` (5) pass after a rebuild of the four courses; Play Mode in Bootstrap plays a dropped menu track (intro
+then loop, Music group) and in PatataWilds both players carry `PlayerSounds`, the course map is read, pause opens and closes,
+no Console error.
+
+- [x] Console clean after a compile; `AudioTests` and `SettingsTests` pass; the course suites pass after a rebuild of every
+  course (each now carries its `CourseAudio`);
+- [x] the skeleton created and the bank built; a sound dropped in a folder plays without touching anything else;
+- [ ] menu → host → lobby crossfade and back; a level loads in silence; an act change crossfades the music and the ambience;
+- [ ] footsteps change with the surface; a teammate's steps are heard in 3D (two players);
+- [ ] the beep stays readable at full music volume; the pause menu muffles everything but the bomb;
+- [ ] licences of every sound recorded in `CREDITS.md`.
 
 ---
 

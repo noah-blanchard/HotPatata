@@ -37,7 +37,11 @@ namespace HotPatata
             if (embers != null) embersRate = embers.emission.rateOverTimeMultiplier;
             if (smoke != null) smokeRate = smoke.emission.rateOverTimeMultiplier;
             Show(0f);
-            if (crackle != null) crackle.Stop();
+            if (crackle != null)
+            {
+                crackle.Stop();
+                AmbientLoop.Adopt(crackle, CueKeys.EmitterFire);   // Ambience/Emitters/Fire, if it holds a crackle (ARCHITECTURE §26)
+            }
         }
 
         bool ShouldBurn()

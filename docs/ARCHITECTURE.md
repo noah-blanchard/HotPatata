@@ -256,8 +256,10 @@ behind the falls, wheel gorge, meadow, switchbacks, knife edge).
   (`Assets/Prefabs/Nature/Campfire.prefab`), so the scene holds small instances rather than 78 particle systems. The scene
   is about 175k lines, most of it the ~800 rock buttress and boulder instances; the scatter and the terrain are assets.
 - **Fuse:** `FuseFor(id)`: 5.0 s from checkpoint 21, 4.5 s from checkpoint 24.
-- **Sound:** fixed 3D ambience per section (`NatureKit.Ambient`: river, waterfall, birds, crickets and summit wind),
-  priority 200 (under the beeps), on the mixer's SFX group, loops starting at random points (`AmbientLoop`).
+- **Sound:** fixed 3D ambience where the water is (`NatureKit.Ambient`: river, waterfall), priority 200 (under the beeps), on
+  the mixer's Ambience group, loops starting at random points (`AmbientLoop`), each playing its emitter folder
+  (`Assets/Audio/Ambience/Emitters/<kind>`) when it holds a sound; birds, crickets and the summit wind are the acts' ambience
+  beds (§26).
 - **Dressing** (`NatureDressing`, after the passes are validated): the terrain, the scattered vegetation and a few scanned
   props (§25.3).
 - `CourseRoute` gets two points per section (outdoors except the cave); `PassCorridor`s declare every intended pass, and
@@ -390,8 +392,8 @@ Assets/
 │   ├── Textures/Icons/   zone and tube icons drawn in code by BombObstacleKitBuilder
 │   ├── Textures/Nature/  PatataWilds' Poly Haven texture sets, one folder per surface; Generated/ (water, sprays)
 │   └── VFX/              textures for particles and trails
-├── Audio/                HotPatataMixer (Master > SFX); SFX/ optional real clips (see its README; procedural fallback otherwise);
-│                         Ambient/ PatataWilds' world ambience (synthesised by NatureAudioFactory)
+├── Audio/                the sound library (§26, see its README): Music/, Ambience/, SFX/ (a folder = a cue), HotPatataMixer,
+│                         Resources/HotPatataSoundBank (generated); Ambient/ synthesised fallbacks (NatureAudioFactory)
 ├── EditorTools/          CourseKit, KitPrefabBuilder, BombObstacleKitBuilder, KitVariantBuilder, ObstaclePrefabValidator,
 │                         KayKitKitBuilder, PlayerCharacterBuilder, MenuBackdropBuilder, LookBuilder, the Industrial* builders,
 │                         PatataWildsBuilder (+ .Acts), PatataWildsLook, NatureKit, NatureRestyle, NatureMaterialBuilder,
@@ -411,6 +413,9 @@ Assets/
 │   │                     PlayerCharacter, PlayerShapeMesh, PlayerPause, ...
 │   ├── Bomb/             BombController, BombFuse, BombPhysics, CatchResolver, FlightHistory, AimAssist,
 │   │                     ThrowBallistics, BombAudio, BombPresentation, ExplosionFx, ProceduralSfx
+│   ├── Audio/            SoundBank, CueSettings, CueKeys, AudioDirector (+ Sfx, LoopHandle), MusicDirector, MusicContext,
+│   │                     AmbienceDirector, AmbienceZone, CourseAudio, CourseSounds, ObstacleSounds, UiSounds, PlayerSounds,
+│   │                     AudioSurface (§26)
 │   ├── Run/              RunManager, Checkpoint, KillZone, HazardRewind, FinishZone, PlayerZone, PlayerSpawner, PlayerSpawn
 │   ├── Obstacles/        MovingPlatform, RotatingObstacle, FallingPlatform, Conveyor, LaunchPad, IPlatformCarrier,
 │   │                     CarrierRegistry, ITimePosed, IObstacleState, ObstacleVisualDriver (§10.7)
@@ -485,12 +490,24 @@ screen (§6.2) edits `Settings.Editable(tuning)` and commits with `Settings.Save
 `Settings.Changed`. `Settings.Preview(data, tuning)` does the same without writing the file, so a settings screen can
 apply every slider step live and `Save` once; display changes are only re-applied when they differ from the screen.
 
-**Audio volumes.** `Assets/Audio/HotPatataMixer.mixer` has `Master > SFX` (music and UI groups come with #47/#48),
-with `MasterVolume` and `SfxVolume` exposed. The master slider (`masterVolume`) is `AudioListener.volume`, so it
-reaches every sound, routed or not. Each group has its own setting (`sfxVolume` now), applied as decibels by
-`AudioVolumes` (on the persistent `NetworkManager` prefab, from `Start` and on `Settings.Changed`). Every gameplay
-sound plays through the SFX group: the bomb's `AudioSource` (`BombAudio`) and the tube/cannon tone
-(`TransitPresentation.output`, set by `BombObstacleKitBuilder`). A new sound source must be routed to a group too.
+**Audio volumes.** `Assets/Audio/HotPatataMixer.mixer` (M16, §26):
+
+| Group | Plays | Slider | Paused snapshot |
+|---|---|---|---|
+| `Master` | everything | `masterVolume` (`AudioListener.volume`) | |
+| `Master/Music` | `MusicDirector` | `musicVolume` (`MusicVolume`) | low-pass |
+| `Master/Ambience` | `AmbienceDirector`, builder emitters, campfires | `ambienceVolume` (`AmbienceVolume`) | low-pass |
+| `Master/SFX` | parent of the three below | `sfxVolume` (`SfxVolume`) | |
+| `Master/SFX/Bomb` | `BombAudio`, the tube/cannon warning | (SFX) and `beepVolume` | clear |
+| `Master/SFX/Movement` | `PlayerSounds` | (SFX) | low-pass |
+| `Master/SFX/World` | the run's moments, obstacles | (SFX) | low-pass |
+| `Master/UI` | menu sounds | `uiVolume` (`UiVolume`) | clear |
+
+The master slider is `AudioListener.volume`, so it reaches every sound, routed or not. Each group's setting is applied as
+decibels by `AudioVolumes` (on the persistent `NetworkManager` prefab, from `Start` and on `Settings.Changed`). The
+mixer runs on unscaled time, so the pause snapshot (`Paused`, entered while `PauseMenu.IsOpen`) moves while an offline
+pause freezes the game; the bomb and the menus stay clear because online nothing pauses. `SoundBank.GroupFor` routes a
+cue by its folder. A new sound source must be routed to a group too.
 
 **Key rebinding (#18).** `InputRebinding` lists the bindings a player may change per device (every button, plus the
 WASD parts; sticks and mouse delta stay as authored). It runs the interactive rebind (`PerformInteractiveRebinding`,
@@ -818,8 +835,8 @@ applies the FOV. Above run speed, `SpeedEffects` (on the camera) drives the anim
 feature `SpeedLines` on `PC_Renderer` reading the global `_HotPatataSpeedLines`) and emits wind streaks from
 `VFX_WindStreaks`; it adds a vignette only while sliding. Read `Volume.sharedProfile`, never `.profile` (it clones).
 
-Removed on purpose, do not add back: movement sounds (footsteps, landings, wind, slide scrape), chromatic aberration,
-lens distortion. Every effect scales with `GameTuning.viewEffectsStrength` and `flashReduction` dims every flash
+Removed on purpose, do not add back: chromatic aberration, lens distortion, wind that follows the speed. Movement
+sounds came back in M16 as real recordings (footsteps by surface, jump, landings, slide: `PlayerSounds`, §26). Every effect scales with `GameTuning.viewEffectsStrength` and `flashReduction` dims every flash
 (spec §19).
 
 ---
@@ -909,9 +926,12 @@ Responsibilities:
 - warning sounds;
 - throw sound;
 - catch sound;
-- explosion sound.
+- explosion sound;
+- a fuse loop while the fuse burns, and the tube or cannon "thunk".
 
-Should consume bomb state; should not control bomb state. Its `AudioSource` outputs to the mixer's SFX group (§6.1).
+Should consume bomb state; should not control bomb state. Its `AudioSource` outputs to the mixer's Bomb group (§6.1).
+Each sound is a folder of `Assets/Audio/SFX/Bomb` (§26); an empty folder plays the `ProceduralSfx` placeholder.
+`BombAudio.AnyBeeped` lets the music dip under each beep.
 
 ### 8.6 `BombPresentation`
 
@@ -939,7 +959,7 @@ VFX, all presentation-only and driven by state events (so they also play on remo
   light, a billboarded "BOOM!").
 
 `BombAudio` plays beeps (cadence from `beepIntervals`; "beep" is a gameplay term), catch, throw and explosion, using
-clips from `Assets/Audio/SFX` when assigned and `ProceduralSfx` otherwise.
+the sounds of `Assets/Audio/SFX/Bomb/*` (§26) when their folder holds any and `ProceduralSfx` otherwise.
 
 ---
 
@@ -1934,7 +1954,8 @@ mips, skies as glossy-convolved cubemaps, models without materials, cameras, lig
 (`generateMeshLods`), ambient loops compressed mono. `NatureTextureFactory` draws what no download provides: the water's
 ripple normal and foam noise, and the fir, pine and grass sprays (Poly Haven's sapling textures are unwrapped geometry,
 not cards). `NatureAudioFactory` synthesises the ambience loops (fire, river, waterfall, wind, birds, crickets) as WAVs in
-`Assets/Audio/Ambient`; a CC0 recording can replace one under the same name.
+`Assets/Audio/Ambient`; they are only fallbacks: a recording dropped in `Assets/Audio/Ambience/Emitters/<kind>` plays instead
+(§26).
 
 **Scanned props for PatataCanopy and PatataTemple.** The same manifest lists the Poly Haven props of the two later
 courses (treehouse life: crates, barrels, baskets, a hanging lantern, a ladder, a modular pier; offerings: vases, pots,
@@ -2070,3 +2091,53 @@ step), scaled by `viewEffectsStrength` and `1 - flashReduction` (none at full re
 
 Known limits: the canopy is the generated broadleaf at 1.2–2.3x, not tropical species; the pyramid is one stepped mesh without
 stairs or carvings; the rain is particles, not a screen effect. Tests: `PatataTempleTests`, `TrioSystemTests` (the flash).
+
+## 26. Audio (M16)
+
+Every sound is a file dropped in a folder of `Assets/Audio`; no Inspector wiring. A folder holding sound files is a
+**cue**: its key is its path under `Assets/Audio` (`SFX/Player/Footsteps/Grass`), every file in it is a variation picked
+at random, never the same twice in a row, with the cue's volume and pitch jitter. An empty or missing folder is silent
+(the bomb then plays its `ProceduralSfx` placeholder; the builders' emitters their synthesised loop). The drop guide for
+people adding sounds is `Assets/Audio/README.md`.
+
+**Pipeline (editor).**
+
+- `AudioImportRules` sets a new file's import settings by folder, once (a change by hand is kept): music streamed,
+  ambience loops compressed in memory, short effects decompressed on load; sounds placed in the world forced to mono.
+- `SoundBankBuilder` rebuilds `Assets/Audio/Resources/HotPatataSoundBank.asset` a moment after any sound file under
+  `Assets/Audio` is added, moved or removed (menu `HotPatata/Audio/Rebuild Sound Bank` forces it). A cue's settings
+  (`CueSettings`: volume, jitter, cooldown, voices, distances, scatter timing) start from `CueDefaults` and are kept from
+  the bank's Inspector afterwards. Music files `X_intro` + `X_loop` make one track. It also maps every material to a
+  footstep surface from its name (kept once set, so a fix by hand stays).
+- `AudioFolderSkeleton` (menu `HotPatata/Audio/Create Folder Skeleton`) creates every folder the code listens to, from
+  `CueKeys`, the level list (one folder per act) and every `IObstacleState` type.
+
+**Runtime.** `AudioDirector` starts itself before the first scene when the bank exists (never in batch mode), survives
+scene loads and holds the components below, all presentation (they read state, never change it, and work the same on
+clients since they read mirrored state). One-shots and loops share a pool of `GameTuning.audioVoices` sources, each on its
+cue's group (`SoundBank.GroupFor`, §6.1); time is unscaled. Code plays a cue by its `CueKeys` key through `Sfx.Play` /
+`Sfx.Loop`, or `Sfx.Pick` for a component that keeps its own source (the bomb).
+
+| Component | Folders | Rule |
+|---|---|---|
+| `MusicDirector` | `Music/Menu`, `Music/Lobby`, `Music/Courses/<scene>[/Act<n>]`, `Music/Results` | `MusicContext` picks the place: menu; lobby (else menu); silence while a level loads (Netcode's load event fades the lobby out); the act's folder, else the course's; results once the run is complete. Two decks crossfade (`musicCrossfadeSeconds`); several tracks are a shuffled playlist; an intro hands over to its loop sample-exact (`PlayScheduled`). Each beep dips the music (`musicBeepDuck`). |
+| `AmbienceDirector` | `Ambience/Menu`, `Ambience/Courses/<scene>[/Act<n>[/Replace]]`, `Ambience/Environments/<env>` | Layers of `Beds` (loops, all layered, flat) and `Scatter` (one-shots at random spots around the listener, `CueSettings.scatter*`). A course plays its own layer, its environment (the section's from `CourseAudio`, or the `AmbienceZone` the listener is in) and its act's layer; an act's `Replace` takes the environment's place. Layers fade over `ambienceCrossfadeSeconds`. |
+| `CourseSounds` | `SFX/Course/{Start,Checkpoint,ActChange,Reset,Finish}` | Watches the run's state and checkpoint (host-decided, mirrored); what it sees first is never played. |
+| `ObstacleSounds` | `SFX/Obstacles/<type>/{On,Off,Loop}` | Every `IObstacleState` of the scene (but checkpoints and tubes), by component type: On / Off when `Active` flips, Loop while `Progress` moves, within `obstacleAudibleDistance`. |
+| `UiSounds` | `SFX/UI/*` | `UIScreen.Navigable` attaches hover, click and change sounds; `ScreenStack` plays Open and Back; lobby join / leave from the lobby's player count. |
+| `PlayerSounds` (added to every player) | `SFX/Player/{Footsteps/<surface>,Jump,Land/{Soft,Hard},Slide/{Start,Loop}}` | A footstep every `stepLength` metres on the ground; the surface is an `AudioSurface` on the collider, else the material's (bank), else `Default`. Hard landing from `hardLandingSpeed`; none under `landingMinAirSeconds`. Your own are flat at `ownMovementVolume`; teammates' are 3D. Remote players are judged from their mirrored motion. |
+| `BombAudio`, `TransitPresentation` | `SFX/Bomb/*` | §8.5. |
+| `AmbientLoop`, `CampfirePresentation` | `Ambience/Emitters/{River,Waterfall,Fire}` | Builder-placed loops play their emitter folder, else the synthesised fallback. |
+| `TempleStorm` | `Ambience/Thunder` | A thunder `thunderDelay` seconds after each flash, at the storm's strength, flat; whatever the flash reduction (audio only). Else `ProceduralSfx.Thunder` (`AudioDirector.PlayFallback`). |
+
+**Placeholders.** The nature builders seed each act's `Beds` with the synthesised loops of `NatureAudioFactory`
+(`SeedActBeds`: birds by day, crickets and wind at dusk) as `placeholder_*` files; `SoundBankBuilder` drops a folder's
+placeholders as soon as it holds any other sound, so a dropped recording replaces them with nothing to delete.
+
+**Course map.** Each course builder writes a `CourseAudio` on the course root (`CourseKit.WriteCourseAudio`): per
+checkpoint id, the act and the environment of the section run from it (PatataWilds by theme: Forest, River, Cliffs, Cave,
+Summit; PatataCanopy: Canopy, HollowOak in act 3; PatataTemple by act: Jungle, Temple, Storm; the plant: Factory). A scene
+without one is a single act with no environment.
+
+**Mix.** Beeps have the highest priority and their own group; the pause menu's `Paused` snapshot low-passes music,
+ambience, movement and world but never the bomb or the menus. Tests: `AudioTests`, `SettingsTests`.

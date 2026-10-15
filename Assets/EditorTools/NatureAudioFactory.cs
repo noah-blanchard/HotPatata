@@ -25,6 +25,22 @@ namespace HotPatata.Editor
             return AssetDatabase.LoadAssetAtPath<AudioClip>(PathOf(kind));
         }
 
+        /// <summary>
+        /// A course act's ambience loops (Assets/Audio/Ambience/Courses/&lt;scene&gt;/Act&lt;n&gt;/Beds, ARCHITECTURE §26): copies the
+        /// generated loops there as placeholder_* files, which the sound bank drops as soon as a real sound is in the folder.
+        /// </summary>
+        public static void SeedActBeds(string scene, int act, params Ambience[] kinds)
+        {
+            EnsureClips();
+            string folder = SoundBankBuilder.AudioRoot + "/" + CueKeys.Beds(CueKeys.AmbienceAct(scene, act));
+            SoundBankBuilder.EnsureFolder(folder);
+            foreach (var kind in kinds)
+            {
+                string target = folder + "/" + SoundBankBuilder.PlaceholderPrefix + kind.ToString().ToLowerInvariant() + ".wav";
+                if (AssetDatabase.LoadAssetAtPath<AudioClip>(target) == null) AssetDatabase.CopyAsset(PathOf(kind), target);
+            }
+        }
+
         public static void EnsureClips()
         {
             bool wrote = false;

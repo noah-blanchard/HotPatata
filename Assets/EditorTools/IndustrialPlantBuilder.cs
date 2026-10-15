@@ -79,6 +79,7 @@ namespace HotPatata.Editor
             IndustrialMaterialBuilder.Ensure(false);
             var scene = PrepareCourseScene(ScenePath, out var section);
             var rooms = Rooms();
+            WriteCourseAudio(section, null, null, "Factory");   // one act, one environment (ARCHITECTURE §26)
             int restyled = 0;
             RebuildGroup(section, GroupName, root =>
             {

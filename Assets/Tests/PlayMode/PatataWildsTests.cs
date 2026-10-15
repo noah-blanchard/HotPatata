@@ -254,7 +254,7 @@ namespace HotPatata.Tests
         }
 
         [Test]
-        public void Ambience_Is3D_OnTheEffectsGroup_UnderTheBeeps_NoMovementSounds()
+        public void Ambience_Is3D_OnTheAmbienceGroup_UnderTheBeeps_EachEmitterNamed()
         {
             var sources = All<AudioSource>().Where(a => a.GetComponent<AmbientLoop>() != null || a.GetComponentInParent<CampfirePresentation>() != null).ToArray();
             Assert.Greater(sources.Length, 25);
@@ -263,10 +263,26 @@ namespace HotPatata.Tests
                 Assert.AreEqual(1f, a.spatialBlend, a.name);
                 Assert.GreaterOrEqual(a.priority, 128, a.name);
                 Assert.IsNotNull(a.outputAudioMixerGroup, a.name);
-                Assert.IsNotNull(a.clip, a.name);
-                string clip = a.clip.name.ToLowerInvariant();
-                Assert.IsFalse(clip.Contains("step") || clip.Contains("land") || clip.Contains("slide") || clip.Contains("foot"), clip);
+                Assert.AreEqual("Ambience", a.outputAudioMixerGroup.name, a.name);
+                Assert.IsNotNull(a.clip, a.name);   // the synthesised fallback, until a sound is dropped in its emitter folder
+                var loop = a.GetComponent<AmbientLoop>();
+                if (loop != null)
+                    CollectionAssert.Contains(CueKeys.Emitters, new SerializedObject(loop).FindProperty("emitter").stringValue, a.name);
             }
+        }
+
+        [Test]
+        public void CourseAudio_MapsFiveActsAndTheSectionsEnvironments()
+        {
+            var map = All<CourseAudio>().Single();
+            Assert.AreEqual(1, map.ActAt(0));
+            Assert.AreEqual(2, map.ActAt(5), "checkpoint 5 opens act 2");
+            Assert.AreEqual(5, map.ActAt(25));
+            Assert.AreEqual("Forest", map.EnvironmentAt(0));
+            Assert.AreEqual("Cave", map.EnvironmentAt(12), "section 13 is the Ember Cave");
+            Assert.AreEqual("Summit", map.EnvironmentAt(24));
+            foreach (var env in Enumerable.Range(0, 26).Select(map.EnvironmentAt))
+                CollectionAssert.Contains(CueKeys.Environments, env);
         }
 
         [Test]

@@ -1,0 +1,476 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a0e784559d5b6f84daf70dd36c8409a5, type: 3}
+  m_Name: HotPatataSoundBank
+  m_EditorClassIdentifier: HotPatata::HotPatata.SoundBank
+  tuning: {fileID: 11400000, guid: 35604efc4188ead42afe90813d44683f, type: 2}
+  mixer: {fileID: 24100000, guid: 76df18f77795c6840806660333edcf41, type: 2}
+  music: {fileID: 7100000000000000100, guid: 76df18f77795c6840806660333edcf41, type: 2}
+  ambience: {fileID: 7100000000000000133, guid: 76df18f77795c6840806660333edcf41, type: 2}
+  sfx: {fileID: 8474959280630313522, guid: 76df18f77795c6840806660333edcf41, type: 2}
+  bomb: {fileID: 7100000000000000012, guid: 76df18f77795c6840806660333edcf41, type: 2}
+  movement: {fileID: 7100000000000000034, guid: 76df18f77795c6840806660333edcf41, type: 2}
+  world: {fileID: 7100000000000000067, guid: 76df18f77795c6840806660333edcf41, type: 2}
+  ui: {fileID: 7100000000000000166, guid: 76df18f77795c6840806660333edcf41, type: 2}
+  normal: {fileID: 24500006, guid: 76df18f77795c6840806660333edcf41, type: 2}
+  paused: {fileID: 24500008, guid: 76df18f77795c6840806660333edcf41, type: 2}
+  cues:
+  - key: Ambience/Courses/PatataCanopy/Act1/Beds
+    clips:
+    - clip: {fileID: 8300000, guid: 1ddd70b65438ef24f80ac2c41a6887d7, type: 3}
+      intro: {fileID: 0}
+    settings:
+      volume: 0.5
+      volumeJitter: 0
+      pitchJitter: 0
+      cooldown: 0
+      maxVoices: 8
+      spatialBlend: 0
+      minDistance: 2
+      maxDistance: 40
+      priority: 200
+      scatterInterval: {x: 4, y: 12}
+      scatterDistance: {x: 10, y: 35}
+      scatterHeight: {x: 2, y: 12}
+  - key: Ambience/Courses/PatataCanopy/Act2/Beds
+    clips:
+    - clip: {fileID: 8300000, guid: c5a4a07978fd8954892acc4763953c81, type: 3}
+      intro: {fileID: 0}
+    settings:
+      volume: 0.5
+      volumeJitter: 0
+      pitchJitter: 0
+      cooldown: 0
+      maxVoices: 8
+      spatialBlend: 0
+      minDistance: 2
+      maxDistance: 40
+      priority: 200
+      scatterInterval: {x: 4, y: 12}
+      scatterDistance: {x: 10, y: 35}
+      scatterHeight: {x: 2, y: 12}
+  - key: Ambience/Courses/PatataCanopy/Act3/Beds
+    clips:
+    - clip: {fileID: 8300000, guid: 0bb17bcfcff62b4449e10d93eaba03f8, type: 3}
+      intro: {fileID: 0}
+    settings:
+      volume: 0.5
+      volumeJitter: 0
+      pitchJitter: 0
+      cooldown: 0
+      maxVoices: 8
+      spatialBlend: 0
+      minDistance: 2
+      maxDistance: 40
+      priority: 200
+      scatterInterval: {x: 4, y: 12}
+      scatterDistance: {x: 10, y: 35}
+      scatterHeight: {x: 2, y: 12}
+  - key: Ambience/Courses/PatataCanopy/Act4/Beds
+    clips:
+    - clip: {fileID: 8300000, guid: 7e95b63144f847e47b2d1c7d2ab1c700, type: 3}
+      intro: {fileID: 0}
+    - clip: {fileID: 8300000, guid: 8a61b42e9ec142f42beb197063f58fe0, type: 3}
+      intro: {fileID: 0}
+    settings:
+      volume: 0.5
+      volumeJitter: 0
+      pitchJitter: 0
+      cooldown: 0
+      maxVoices: 8
+      spatialBlend: 0
+      minDistance: 2
+      maxDistance: 40
+      priority: 200
+      scatterInterval: {x: 4, y: 12}
+      scatterDistance: {x: 10, y: 35}
+      scatterHeight: {x: 2, y: 12}
+  - key: Ambience/Courses/PatataCanopy/Act5/Beds
+    clips:
+    - clip: {fileID: 8300000, guid: 0cfcf4226e27b34449f975c670afd929, type: 3}
+      intro: {fileID: 0}
+    - clip: {fileID: 8300000, guid: c419855d97197284f88c9bdb5a597a00, type: 3}
+      intro: {fileID: 0}
+    settings:
+      volume: 0.5
+      volumeJitter: 0
+      pitchJitter: 0
+      cooldown: 0
+      maxVoices: 8
+      spatialBlend: 0
+      minDistance: 2
+      maxDistance: 40
+      priority: 200
+      scatterInterval: {x: 4, y: 12}
+      scatterDistance: {x: 10, y: 35}
+      scatterHeight: {x: 2, y: 12}
+  - key: Ambience/Courses/PatataTemple/Act1/Beds
+    clips:
+    - clip: {fileID: 8300000, guid: 1104bb0556845d64cb9050cf7e027db2, type: 3}
+      intro: {fileID: 0}
+    settings:
+      volume: 0.5
+      volumeJitter: 0
+      pitchJitter: 0
+      cooldown: 0
+      maxVoices: 8
+      spatialBlend: 0
+      minDistance: 2
+      maxDistance: 40
+      priority: 200
+      scatterInterval: {x: 4, y: 12}
+      scatterDistance: {x: 10, y: 35}
+      scatterHeight: {x: 2, y: 12}
+  - key: Ambience/Courses/PatataTemple/Act2/Beds
+    clips:
+    - clip: {fileID: 8300000, guid: f0c4ccb123a7b904da975a9ec0b5fc65, type: 3}
+      intro: {fileID: 0}
+    settings:
+      volume: 0.5
+      volumeJitter: 0
+      pitchJitter: 0
+      cooldown: 0
+      maxVoices: 8
+      spatialBlend: 0
+      minDistance: 2
+      maxDistance: 40
+      priority: 200
+      scatterInterval: {x: 4, y: 12}
+      scatterDistance: {x: 10, y: 35}
+      scatterHeight: {x: 2, y: 12}
+  - key: Ambience/Courses/PatataTemple/Act3/Beds
+    clips:
+    - clip: {fileID: 8300000, guid: afc8810dd4ef72b46a712b248cf00fb0, type: 3}
+      intro: {fileID: 0}
+    - clip: {fileID: 8300000, guid: 210438d290c92034db44cc4d839c5231, type: 3}
+      intro: {fileID: 0}
+    settings:
+      volume: 0.5
+      volumeJitter: 0
+      pitchJitter: 0
+      cooldown: 0
+      maxVoices: 8
+      spatialBlend: 0
+      minDistance: 2
+      maxDistance: 40
+      priority: 200
+      scatterInterval: {x: 4, y: 12}
+      scatterDistance: {x: 10, y: 35}
+      scatterHeight: {x: 2, y: 12}
+  - key: Ambience/Courses/PatataWilds/Act1/Beds
+    clips:
+    - clip: {fileID: 8300000, guid: 29da3c58ff36d0a49b25f434d1cb2a87, type: 3}
+      intro: {fileID: 0}
+    settings:
+      volume: 0.5
+      volumeJitter: 0
+      pitchJitter: 0
+      cooldown: 0
+      maxVoices: 8
+      spatialBlend: 0
+      minDistance: 2
+      maxDistance: 40
+      priority: 200
+      scatterInterval: {x: 4, y: 12}
+      scatterDistance: {x: 10, y: 35}
+      scatterHeight: {x: 2, y: 12}
+  - key: Ambience/Courses/PatataWilds/Act2/Beds
+    clips:
+    - clip: {fileID: 8300000, guid: 76ed7170b10c00640805fcfe1f22f998, type: 3}
+      intro: {fileID: 0}
+    settings:
+      volume: 0.5
+      volumeJitter: 0
+      pitchJitter: 0
+      cooldown: 0
+      maxVoices: 8
+      spatialBlend: 0
+      minDistance: 2
+      maxDistance: 40
+      priority: 200
+      scatterInterval: {x: 4, y: 12}
+      scatterDistance: {x: 10, y: 35}
+      scatterHeight: {x: 2, y: 12}
+  - key: Ambience/Courses/PatataWilds/Act3/Beds
+    clips:
+    - clip: {fileID: 8300000, guid: 779f64856ca752c489ab63e09c90ab14, type: 3}
+      intro: {fileID: 0}
+    settings:
+      volume: 0.5
+      volumeJitter: 0
+      pitchJitter: 0
+      cooldown: 0
+      maxVoices: 8
+      spatialBlend: 0
+      minDistance: 2
+      maxDistance: 40
+      priority: 200
+      scatterInterval: {x: 4, y: 12}
+      scatterDistance: {x: 10, y: 35}
+      scatterHeight: {x: 2, y: 12}
+  - key: Ambience/Courses/PatataWilds/Act4/Beds
+    clips:
+    - clip: {fileID: 8300000, guid: 75af8192b8a98b4468ab20ee329a42fa, type: 3}
+      intro: {fileID: 0}
+    settings:
+      volume: 0.5
+      volumeJitter: 0
+      pitchJitter: 0
+      cooldown: 0
+      maxVoices: 8
+      spatialBlend: 0
+      minDistance: 2
+      maxDistance: 40
+      priority: 200
+      scatterInterval: {x: 4, y: 12}
+      scatterDistance: {x: 10, y: 35}
+      scatterHeight: {x: 2, y: 12}
+  - key: Ambience/Courses/PatataWilds/Act5/Beds
+    clips:
+    - clip: {fileID: 8300000, guid: a3ca72ead4436354dae99b25bbf19c4c, type: 3}
+      intro: {fileID: 0}
+    - clip: {fileID: 8300000, guid: 2d6f4eaa31c529142a6b09a51d239e6b, type: 3}
+      intro: {fileID: 0}
+    settings:
+      volume: 0.5
+      volumeJitter: 0
+      pitchJitter: 0
+      cooldown: 0
+      maxVoices: 8
+      spatialBlend: 0
+      minDistance: 2
+      maxDistance: 40
+      priority: 200
+      scatterInterval: {x: 4, y: 12}
+      scatterDistance: {x: 10, y: 35}
+      scatterHeight: {x: 2, y: 12}
+  surfaces:
+  - material: {fileID: 2100000, guid: 3858a891c8806284391a6ac1a99a33ab, type: 2}
+    surface: Concrete
+  - material: {fileID: 2100000, guid: 95aae0c6879ed01449098e56201f632d, type: 2}
+    surface: Concrete
+  - material: {fileID: 2100000, guid: 56b2b2058aace9c4bb73fe11686c474a, type: 2}
+    surface: Concrete
+  - material: {fileID: 2100000, guid: 7ca3ca728b910a744a6dcdcb5471a057, type: 2}
+    surface: Concrete
+  - material: {fileID: 2100000, guid: 6ac42c71fd3ab56498e61321572a6a1b, type: 2}
+    surface: Concrete
+  - material: {fileID: 2100000, guid: bf5135740ffbd4a43b2a25be3a8bda70, type: 2}
+    surface: Metal
+  - material: {fileID: 2100000, guid: 3e697c402e1b3a94eaea5ab5a360bae8, type: 2}
+    surface: Stone
+  - material: {fileID: 2100000, guid: 836c7da26bf2f4b4e928a43654e30c7d, type: 2}
+    surface: Concrete
+  - material: {fileID: 2100000, guid: c12c16c106e760549a635e50e80a3415, type: 2}
+    surface: Concrete
+  - material: {fileID: 2100000, guid: d82a87f42ca7bf14e9b2917b310e35cc, type: 2}
+    surface: Concrete
+  - material: {fileID: 2100000, guid: aeb95e8fa3bf4ef40971d1aec8d1c3ce, type: 2}
+    surface: Metal
+  - material: {fileID: 2100000, guid: 325ea8ac0a5bdcb4ea8d725149411814, type: 2}
+    surface: Metal
+  - material: {fileID: 2100000, guid: 93aafd4c41af88b4792517db38c2c4a7, type: 2}
+    surface: Metal
+  - material: {fileID: 2100000, guid: 26b77f57ee54d5f4590e54108bece407, type: 2}
+    surface: Metal
+  - material: {fileID: 2100000, guid: 10df204df67f05d4c8373cf8ae352869, type: 2}
+    surface: Metal
+  - material: {fileID: 2100000, guid: 9fa4bb4f63e0ced438a3a608c59e4383, type: 2}
+    surface: Metal
+  - material: {fileID: 2100000, guid: 4c439c0ff5dba6d48afa7d4b851d50e6, type: 2}
+    surface: Metal
+  - material: {fileID: 2100000, guid: 463697ed14d7af74cb30adb24a29272e, type: 2}
+    surface: Metal
+  - material: {fileID: 2100000, guid: c9a093e7be7e0204f8dab905b3d8262f, type: 2}
+    surface: Metal
+  - material: {fileID: 2100000, guid: 2f96137fe7345a14ba9a7b5d0f9e9c2d, type: 2}
+    surface: Concrete
+  - material: {fileID: 2100000, guid: 58cca2a3fbeb7e040a68342cff89849a, type: 2}
+    surface: Concrete
+  - material: {fileID: 2100000, guid: 463c90b487572c546ae9453fd6339961, type: 2}
+    surface: Stone
+  - material: {fileID: 2100000, guid: fcbad9554c7183f4ba1a1b434a3a7e45, type: 2}
+    surface: Concrete
+  - material: {fileID: 2100000, guid: fa00162d4faff15459ca5565d3a4ec4b, type: 2}
+    surface: Concrete
+  - material: {fileID: 2100000, guid: 97358311c7bb29f4fba080a37a5446cf, type: 2}
+    surface: Stone
+  - material: {fileID: 2100000, guid: efe11b82434e9164783ac460cc5a1520, type: 2}
+    surface: Wood
+  - material: {fileID: 2100000, guid: d873b66f8c2761343a6948cd7e763acc, type: 2}
+    surface: Wood
+  - material: {fileID: 2100000, guid: 3e9b67517d799784cb18132040d071a8, type: 2}
+    surface: Wood
+  - material: {fileID: 2100000, guid: 9b20d8dce9bb8124ca1410d850f063e4, type: 2}
+    surface: Rock
+  - material: {fileID: 2100000, guid: b23c3c88a0bbe98489f0410aea6ecd26, type: 2}
+    surface: Leaves
+  - material: {fileID: 2100000, guid: 05af6de8f9c777649b8d1177de97c4b6, type: 2}
+    surface: Leaves
+  - material: {fileID: 2100000, guid: 77e17df54770ec747af6cc0e06f88bc0, type: 2}
+    surface: Dirt
+  - material: {fileID: 2100000, guid: 87c641752b8be0d42877705572fce26c, type: 2}
+    surface: Leaves
+  - material: {fileID: 2100000, guid: 4e20e73bb57fe3b4daaf9b3f561a3cce, type: 2}
+    surface: Grass
+  - material: {fileID: 2100000, guid: 5aa5bd5ac5d5ea44a9aaef920b127a31, type: 2}
+    surface: Grass
+  - material: {fileID: 2100000, guid: 4333b72416780724784934b20dcf57cb, type: 2}
+    surface: Grass
+  - material: {fileID: 2100000, guid: 6c928c9e52ad904438203fa18e3c9075, type: 2}
+    surface: Gravel
+  - material: {fileID: 2100000, guid: c285f49493f0b6a4c8f745232b4c970e, type: 2}
+    surface: Leaves
+  - material: {fileID: 2100000, guid: ca865c76a07c0414a9d3abf140e9e57c, type: 2}
+    surface: Leaves
+  - material: {fileID: 2100000, guid: f4374f41b8c8fe6469789f684b259d35, type: 2}
+    surface: Leaves
+  - material: {fileID: 2100000, guid: e9490b27bd7efe24ca4f88979cf1f250, type: 2}
+    surface: Leaves
+  - material: {fileID: 2100000, guid: 0891c48b68f3501419af0c14a4ec5d24, type: 2}
+    surface: Leaves
+  - material: {fileID: 2100000, guid: 0b9cf4f9747ec87499f49a5bb173968c, type: 2}
+    surface: Wood
+  - material: {fileID: 2100000, guid: afbf6e39c205a8b448cf62d97272b000, type: 2}
+    surface: Wood
+  - material: {fileID: 2100000, guid: 926a08c807c3f124a86f8c031993462b, type: 2}
+    surface: Grass
+  - material: {fileID: 2100000, guid: 58d7b56099e073c4c9269fab701e6cbc, type: 2}
+    surface: Wood
+  - material: {fileID: 2100000, guid: 2454ed5897b1f9444a5e4b3719adf243, type: 2}
+    surface: Rock
+  - material: {fileID: 2100000, guid: 963f26e325bf89a4f8f398de74bdf88f, type: 2}
+    surface: Mud
+  - material: {fileID: 2100000, guid: 72626248bbbf73648997b693c7c0c9ef, type: 2}
+    surface: Leaves
+  - material: {fileID: 2100000, guid: 86d962b3ff804994ebd7dfa272c7bb6b, type: 2}
+    surface: Wood
+  - material: {fileID: 2100000, guid: cec0ff29a4980c44f9ab3bd31e74a091, type: 2}
+    surface: Metal
+  - material: {fileID: 2100000, guid: 7c5dddfdd4496fc4399110ea7c02ca40, type: 2}
+    surface: Metal
+  - material: {fileID: 2100000, guid: 79e59e78946bf2344a95e662a2d96b88, type: 2}
+    surface: Metal
+  - material: {fileID: 2100000, guid: 868af77effd2e614b8983530163c844c, type: 2}
+    surface: Wood
+  - material: {fileID: 2100000, guid: 3e41dcab8ed0ffd45b860bdcd435081d, type: 2}
+    surface: Wood
+  - material: {fileID: 2100000, guid: 7291d4d2f28ae044eb8e96d5ea23abf5, type: 2}
+    surface: Wood
+  - material: {fileID: 2100000, guid: ca592abfe73cbc344b25d8502bb070b1, type: 2}
+    surface: Wood
+  - material: {fileID: 2100000, guid: a222f0d94adcd7c4f95925ae169bfe87, type: 2}
+    surface: Wood
+  - material: {fileID: 2100000, guid: f2916c5f51da2874ba3223448590ffe8, type: 2}
+    surface: Rock
+  - material: {fileID: 2100000, guid: b0871a4e7e0328342876bcac0ac95c42, type: 2}
+    surface: Rock
+  - material: {fileID: 2100000, guid: f568e9d06fdb22e469b585244a2306bf, type: 2}
+    surface: Rock
+  - material: {fileID: 2100000, guid: 991ef8cf91b14f647860b510a5975286, type: 2}
+    surface: Stone
+  - material: {fileID: 2100000, guid: cb0261b036a7bce4d91bc2f0a73fbe28, type: 2}
+    surface: Wood
+  - material: {fileID: 2100000, guid: 8d7b3ac4731478747ae4b92fa718eda9, type: 2}
+    surface: Wood
+  - material: {fileID: 2100000, guid: d74a239d2ec3fae469c7ec81f153e9fc, type: 2}
+    surface: Wood
+  - material: {fileID: 2100000, guid: df84b37987f14684ab20869632445553, type: 2}
+    surface: Wood
+  - material: {fileID: 2100000, guid: be1b35154fe6888488083df6e0b45686, type: 2}
+    surface: Wood
+  - material: {fileID: 2100000, guid: 586160a8c8334ef41a9538bc3168eab8, type: 2}
+    surface: Rock
+  - material: {fileID: 2100000, guid: 87fd3ae1e6f5fa043833df1e69c027fe, type: 2}
+    surface: Wood
+  - material: {fileID: 2100000, guid: 61b1ec5b2625ee246a34df46affe5705, type: 2}
+    surface: Stone
+  - material: {fileID: 2100000, guid: 48c533e5356b7a2409134bd324ea5d5f, type: 2}
+    surface: Wood
+  - material: {fileID: 2100000, guid: fc55412a07636484791e9554a918a9fb, type: 2}
+    surface: Rock
+  - material: {fileID: 2100000, guid: 3656a8bb0d379dc4182677377f4d473a, type: 2}
+    surface: Rock
+  - material: {fileID: 2100000, guid: 3d8597c5a35818141a3cbecbde222be8, type: 2}
+    surface: Rock
+  - material: {fileID: 2100000, guid: 48eed15a1ee306347a6d2500488e14e3, type: 2}
+    surface: Rock
+  - material: {fileID: 2100000, guid: 8030356df5b375641a87dd528df38382, type: 2}
+    surface: Rock
+  - material: {fileID: 2100000, guid: 776ec33d6471e35419feb9ae30c1a696, type: 2}
+    surface: Rock
+  - material: {fileID: 2100000, guid: 9884c574242b46949bcd9a670c3c0d96, type: 2}
+    surface: Wood
+  - material: {fileID: 2100000, guid: de05ac924ef8d3540a1f87a0ed10f0b2, type: 2}
+    surface: Wood
+  - material: {fileID: 2100000, guid: f4e985100a78f594f82e7ec6a0c3acc3, type: 2}
+    surface: Wood
+  - material: {fileID: 2100000, guid: 469942bab7bc5884f91411b062d28c84, type: 2}
+    surface: Stone
+  - material: {fileID: 2100000, guid: b74c4ca0f8d30b540bc57b5bbaf8f648, type: 2}
+    surface: Wood
+  - material: {fileID: 2100000, guid: 84738a1d1d03ed147bb9d13c346b7eee, type: 2}
+    surface: Wood
+  - material: {fileID: 2100000, guid: fd509e4a320c82743b93efbae0409b47, type: 2}
+    surface: Wood
+  - material: {fileID: 2100000, guid: ac1141965fe10ed408e1b06c8e960890, type: 2}
+    surface: Gravel
+  - material: {fileID: 2100000, guid: d4e980b0d7c4d024eb105a52bee70806, type: 2}
+    surface: Rock
+  - material: {fileID: 2100000, guid: 96e50fbec08bf494198130f115b5cd7c, type: 2}
+    surface: Rock
+  - material: {fileID: 2100000, guid: 15840fbc5b048d94ab2d5e10e2f4ce4d, type: 2}
+    surface: Rock
+  - material: {fileID: 2100000, guid: 7574e3245362bea48bde3639d77c9a11, type: 2}
+    surface: Rock
+  - material: {fileID: 2100000, guid: 875f248cb9452594c9bda74c090adf27, type: 2}
+    surface: Rock
+  - material: {fileID: 2100000, guid: 58cc11fc7392a74489547376d10a399d, type: 2}
+    surface: Wood
+  - material: {fileID: 2100000, guid: c88e6732a5dfbfa4cb545c2fdedff9f4, type: 2}
+    surface: Stone
+  - material: {fileID: 2100000, guid: 90ea78f1442bb4e4d9bab5bcb6351166, type: 2}
+    surface: Stone
+  - material: {fileID: 2100000, guid: 3ed4e4782213c194b8e92ad7118625a0, type: 2}
+    surface: Stone
+  - material: {fileID: 2100000, guid: 5d27925e9b9a0e64e9adb8a8fd174e01, type: 2}
+    surface: Stone
+  - material: {fileID: 2100000, guid: 5a0328ff6fdaa9746955ac58888c2ec8, type: 2}
+    surface: Stone
+  - material: {fileID: 2100000, guid: 807d46fa3fb2f9e4eb04ea460c088796, type: 2}
+    surface: Dirt
+  - material: {fileID: 2100000, guid: d2b59901dad6dac4ebfe6770fb4e8980, type: 2}
+    surface: Water
+  - material: {fileID: 2100000, guid: 79bef63522232e345a914c6d6659ffce, type: 2}
+    surface: Water
+  - material: {fileID: 2100000, guid: 25c4883dd5dc1eb4db20dd3108811daa, type: 2}
+    surface: Metal
+  - material: {fileID: 2100000, guid: 8bdd15a6ee983364b89ea76fe3dbc439, type: 2}
+    surface: Dirt
+  - material: {fileID: 2100000, guid: 820aad2586568a34b91c1fa022ddf6da, type: 2}
+    surface: Concrete
+  - material: {fileID: 2100000, guid: 6f7ec0d89c0e558478f02cc3c02309a1, type: 2}
+    surface: Dirt
+  - material: {fileID: 2100000, guid: 0230541fb273f1642a4fd9b4756dcba8, type: 2}
+    surface: Stone
+  - material: {fileID: 2100000, guid: 96bcaabddec2c7940b6fd6571be7bbd4, type: 2}
+    surface: Stone
+  - material: {fileID: 2100000, guid: 73661d14fa00ca94d8281664e139c965, type: 2}
+    surface: Stone
+  - material: {fileID: 2100000, guid: b563961f644cfd441926a40ebe92f2af, type: 2}
+    surface: Metal
+  - material: {fileID: 2100000, guid: 9c9f2f10c09becc4cb0b49f3946dcd40, type: 2}
+    surface: Metal
+  - material: {fileID: 2100000, guid: 2b9ddc7ab1c84774bb8a19d28dbea211, type: 2}
+    surface: Metal
+  - material: {fileID: 2100000, guid: e82a7fad4f4070844b5f3bb531a05498, type: 2}
+    surface: Dirt

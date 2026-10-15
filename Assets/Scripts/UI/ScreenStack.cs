@@ -152,6 +152,7 @@ namespace HotPatata
             LastChangeFrame = Time.frameCount;
             Refresh();
             FocusLater(screen.FirstFocus());
+            if (screen.BlocksGameplay) UiSounds.Opened();
             Changed?.Invoke();
         }
 
@@ -184,7 +185,12 @@ namespace HotPatata
         }
 
         /// <summary>Back, as if Cancel was pressed: the top screen decides (<see cref="UIScreen.OnBack"/>).</summary>
-        public void Back() => Top?.OnBack();
+        public void Back()
+        {
+            if (Top == null) return;
+            if (Top.CanGoBack) UiSounds.Back();
+            Top.OnBack();
+        }
 
         void OnCancel(NavigationCancelEvent e)
         {

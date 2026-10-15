@@ -492,11 +492,15 @@ namespace HotPatata.Editor
         static GameTuning Tuning => AssetDatabase.LoadAssetAtPath<GameTuning>(TuningPath);
 
         /// <summary>The mixer's SFX group, so the transit tone follows the effects volume.</summary>
+        // The bomb's group (under SFX): the transit warning is a bomb sound, never muffled by the pause menu (ARCHITECTURE §6.1).
         static UnityEngine.Audio.AudioMixerGroup SfxGroup
         {
             get
             {
-                var groups = AssetDatabase.LoadAssetAtPath<UnityEngine.Audio.AudioMixer>(MixerPath)?.FindMatchingGroups("Master/SFX");
+                var mixer = AssetDatabase.LoadAssetAtPath<UnityEngine.Audio.AudioMixer>(MixerPath);
+                if (mixer == null) return null;
+                var bomb = mixer.FindMatchingGroups("Master/SFX/Bomb");
+                var groups = bomb != null && bomb.Length > 0 ? bomb : mixer.FindMatchingGroups("Master/SFX");
                 return groups != null && groups.Length > 0 ? groups[0] : null;
             }
         }
