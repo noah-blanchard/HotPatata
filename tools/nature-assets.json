@@ -31,7 +31,8 @@
     { "id": "castle_wall_varriation", "folder": "TempleWall",   "res": "2k" },
     { "id": "grassy_cobblestone",     "folder": "TempleFloor",  "res": "2k" },
     { "id": "brick_moss_001",         "folder": "TempleRoof",   "res": "1k" },
-    { "id": "defense_wall",           "folder": "TempleSlab",   "res": "1k" }
+    { "id": "defense_wall",           "folder": "TempleSlab",   "res": "1k" },
+    { "id": "rusty_metal_02",         "folder": "Iron",         "res": "1k" }
   ],
   "models": [
     { "id": "boulder_01",          "res": "1k" },
