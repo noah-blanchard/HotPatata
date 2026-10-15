@@ -42,15 +42,14 @@ namespace HotPatata.Editor
 
         protected abstract string Help { get; }
 
-        void OnSceneGUI()
+        // protected, not private: Unity finds OnSceneGUI by reflection on the derived editor, which never sees a private base method
+        protected void OnSceneGUI()
         {
             PiecePencil.OnSceneGUI(Piece);
             if (!PiecePencil.IsDrawing(Piece)) DrawScene();
         }
 
         protected abstract void DrawScene();
-
-        void OnDisable() => PiecePencil.End();
 
         /// <summary>The pencil button: draws <paramref name="points"/> again click by click.</summary>
         protected void PencilButton(List<Vector3> points, bool flat)

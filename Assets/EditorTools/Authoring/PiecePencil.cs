@@ -17,6 +17,13 @@ namespace HotPatata.Editor
 
         public static bool IsDrawing(LevelPiece piece) => piece != null && target == piece;
 
+        [InitializeOnLoadMethod]
+        static void Hook() => Selection.selectionChanged += () =>
+        {
+            // drawing ends when the piece is no longer selected (not when its inspector is rebuilt after a point is added)
+            if (target != null && Selection.activeGameObject != target.gameObject) End();
+        };
+
         /// <summary>Starts drawing <paramref name="piece"/>'s <paramref name="list"/> anew (it is cleared).</summary>
         public static void Begin(LevelPiece piece, List<Vector3> list, bool flatPoints)
         {
@@ -29,7 +36,11 @@ namespace HotPatata.Editor
             SceneView.lastActiveSceneView?.Focus();
         }
 
-        public static void End() => target = null;
+        public static void End()
+        {
+            target = null;
+            SceneView.RepaintAll();
+        }
 
         /// <summary>Call from the piece's OnSceneGUI: takes the clicks while drawing.</summary>
         public static void OnSceneGUI(LevelPiece piece)
@@ -76,7 +87,17 @@ namespace HotPatata.Editor
             var ray = HandleUtility.GUIPointToWorldRay(mouse);
             var plane = new Plane(Vector3.up, piece.transform.position);
             if (flat) return plane.Raycast(ray, out float d) ? ray.GetPoint(d) : (Vector3?)null;
-            if (Physics.Raycast(ray, out var hit, 2000f, ~0, QueryTriggerInteraction.Ignore)) return hit.point;
+            // the nearest collider under the mouse that is not the piece's own geometry (points never pile up on what they drew)
+            var hits = Physics.RaycastAll(ray, 2000f, ~0, QueryTriggerInteraction.Ignore);
+            float best = float.MaxValue;
+            Vector3? found = null;
+            foreach (var hit in hits)
+            {
+                if (hit.distance >= best || hit.collider.transform.IsChildOf(piece.transform)) continue;
+                best = hit.distance;
+                found = hit.point;
+            }
+            if (found.HasValue) return found;
             return plane.Raycast(ray, out float e) ? ray.GetPoint(e) : (Vector3?)null;
         }
     }
