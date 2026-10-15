@@ -144,7 +144,8 @@ namespace HotPatata.Editor
         {
             var view = SceneView.lastActiveSceneView;
             var pivot = view != null ? view.pivot : Vector3.zero;
-            float ground = SceneSite.GroundAt(new Vector2(pivot.x, pivot.z), pivot.y + 200f);
+            // the level's ground (its terrain first): what was just placed there is not the ground
+            float ground = LevelNature.GroundAt(EditorSceneManager.GetActiveScene(), new Vector2(pivot.x, pivot.z));
             return new Vector3(pivot.x, float.IsNaN(ground) ? pivot.y : ground, pivot.z);
         }
     }

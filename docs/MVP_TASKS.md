@@ -1686,7 +1686,8 @@ before the next starts.
 
 Split in two PRs (3a the game and the checks, 3b the look and the example), each tried by the owner before the next.
 
-- [x] 3a: size handles; Link tool, wiring lines and ghost travels; contracts edited with handles; checkpoints (campfires)
+- [x] 3a: every kit element from GameObject > HotPatata Level > Kit, on the ground, in the Kit group (a sliding door among them);
+  size handles; Link tool, wiring lines and ghost travels; contracts edited with handles; checkpoints (campfires)
   numbered along the course, the finish; Verify Level (clickable list); the route runner shared and on any level; Play from
   here; `LevelGameTests` pass, `PatataRangerTests` pass on the shared runner; a trial level numbered, verified (three
   sections without a contract found, then none), walked by the route runner and played from its second checkpoint;

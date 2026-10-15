@@ -2238,6 +2238,9 @@ piece's inspector, or dragged from the Project window into the Scene view to mak
   `GroundStep` metres, any two points within `Stride` on the flat and `Climb` in height joined; a checkpoint no walk reaches
   comes after, by distance. A contract (`SectionContract`) belongs to the section of the checkpoint it sits under (`SectionOf`),
   the start's sits under the level.
+- **Kit from the menu.** `KitMenu` (GameObject > HotPatata Level > Kit): every kit prefab placed on the level's ground where the
+  Scene view looks (its solid colliders' bottom, else its renderers', on the ground; what hangs raised), in the Kit group; a
+  sliding door is the kit's door with its open position moved aside by its width.
 - **Kit in the Scene view.** `KitSceneTools` (authored levels only): size handles on the selected kit object through the
   kit's resize functions (`BombObstacleKitBuilder.ResizeActuator`, `ResizeZone`, `ResizeCurtain`, `ResizeScreen`,
   `ResizeSunBeam`, `ResizePlate`), the size read back from its collider; an actuator's open position as a ghost moved with a

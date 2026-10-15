@@ -146,11 +146,15 @@ beside it (the nature courses' checkpoints are campfires); `Finish` places the e
 **Number checkpoints along the course** (on the `Level` object): they are numbered 1, 2, 3... in the order a team reaches
 them walking from the start (along the walkways and bridges, across the decks and the ground).
 
-**The kit.** Drag the kit's prefabs from `Assets/Prefabs/Gameplay`, `Obstacles`, `Platforms` and `Variants`
-(docs/OBSTACLES.md) under `Level/Kit`. Select one in the Scene view:
+**The kit.** `GameObject > HotPatata Level > Kit` (or right click in the Hierarchy) places any kit element where the Scene view
+looks, standing on the ground (raised where it hangs: a bridge, a hoop), in `Level/Kit`, selected: doors (one that rises, one
+that slides aside), bridges, drawbridge, pivot, lift, moving, falling and plain platforms, conveyor; plates (plain,
+hands-free, heavy, hourglass), hoop, arch, sun beam, switch; hot, cold and forbidden zones, laser curtain, body screen, tube,
+cannon, rotating bar, sweeper, piston, crusher, windmill, launch pad, kill zone (what each does: docs/OBSTACLES.md). They keep
+the kit's own look for now (the forest looks come with step 3b). Select one in the Scene view:
 
 - a **door, bridge or lift**: drag its yellow box to size it; its open position is the blue ghost box: drag the blue ball to
-  move where it opens to (and how far);
+  move where it opens to (and how far): up for a door that rises, aside for one that slides;
 - a **zone** (hot, cold, forbidden), a **laser curtain**, a **body screen**: drag its box to size it;
 - a **sun beam**: drag the square at its end to lengthen it; a **plate**: drag the square at its edge to size it.
 
