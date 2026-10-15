@@ -44,6 +44,8 @@ namespace HotPatata
         int[] sceneCheckpoints = { 9, 9, 7, 1 };
         [SerializeField, Tooltip("Players a gameplay scene needs online (same order; PatataTemple needs three, PROJECT_SPEC §15e).")]
         int[] sceneMinPlayers = { 2, 2, 2, 2 };
+        [SerializeField, Tooltip("The name the menu shows for each gameplay scene (same order; the scene's name when empty): an authored level's own name.")]
+        string[] sceneDisplayNames = System.Array.Empty<string>();
         [SerializeField] ushort port = 7777;
         [SerializeField, Tooltip("Player colours and shapes for the lobby list, and the defaults of the settings screen.")] GameTuning tuning;
 
@@ -65,6 +67,13 @@ namespace HotPatata
 
         /// <summary>Players gameplay scene <paramref name="index"/> needs online (2 when not listed).</summary>
         public int MinPlayersOf(int index) => index >= 0 && index < sceneMinPlayers.Length ? Mathf.Max(1, sceneMinPlayers[index]) : 2;
+        /// <summary>The name the menu shows for gameplay scene <paramref name="index"/>: its display name, else the scene's.</summary>
+        public string DisplayNameOf(int index)
+        {
+            if (index < 0 || index >= gameplayScenes.Length) return "";
+            return index < sceneDisplayNames.Length && !string.IsNullOrWhiteSpace(sceneDisplayNames[index]) ? sceneDisplayNames[index] : gameplayScenes[index];
+        }
+
         /// <summary>Players the selected level needs online.</summary>
         public int SceneMinPlayers => MinPlayersOf(sceneIndex);
         /// <summary>The lobby holds enough players for the selected level (the host's Start is offered only then).</summary>

@@ -77,7 +77,7 @@ namespace HotPatata.Editor
             BuildProfile();
             ConfigurePipeline();
             ConfigurePotato();
-            foreach (var (path, _) in Scenes)
+            foreach (var path in Scenes.Select(s => s.scene).Concat(LevelScenes.All()))
             {
                 if (AssetDatabase.LoadAssetAtPath<SceneAsset>(path) == null) continue;   // a course not built yet
                 var scene = EditorSceneManager.OpenScene(path, OpenSceneMode.Single);
@@ -97,7 +97,14 @@ namespace HotPatata.Editor
                 if (PrefabUtility.IsPartOfPrefabInstance(light)) continue;   // a prefab's sun is its builder's (MenuBackdropBuilder)
                 ConfigureSun(light, yaw);
             }
-            ApplyRenderSettings(scene.name, yaw);
+            var level = LevelScenes.SettingsOf(scene);
+            if (level == null) ApplyRenderSettings(scene.name, yaw);
+            else
+            {
+                // an authored level's sky, ambient and haze are its day's (below): no golden-hour sky of its own
+                RenderSettings.fog = true;
+                RenderSettings.fogMode = FogMode.Linear;
+            }
             if (IsInterior(scene.name))
             {
                 // No sun at all: a directional light's shadows are camera-relative (cascades, a shadow distance), so under a roof
@@ -128,6 +135,8 @@ namespace HotPatata.Editor
             if (scene.name == PatataTempleBuilder.SceneName) PatataTempleLook.Apply(scene);
             if (scene.name == PatataRangerBuilder.SceneName) PatataRangerLook.Apply(scene);
             if (scene.name == MenuForestLook.SceneName) MenuForestLook.Apply(scene);
+            // an authored level borrows a nature course's day (ARCHITECTURE §27): the same presets and sky, its own rig
+            if (level != null) ApplyDay(scene, level.Day);
 
             var volume = scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<Volume>(true)).FirstOrDefault(v => v.isGlobal && v.priority <= 0f);
             if (volume == null)
@@ -140,6 +149,18 @@ namespace HotPatata.Editor
             volume.sharedProfile = AssetDatabase.LoadAssetAtPath<VolumeProfile>(ProfilePath);
             EditorUtility.SetDirty(volume);
             EditorSceneManager.MarkSceneDirty(scene);
+        }
+
+        /// <summary>Lights <paramref name="scene"/> with one of the nature courses' days.</summary>
+        public static void ApplyDay(UnityEngine.SceneManagement.Scene scene, LevelDay day)
+        {
+            switch (day)
+            {
+                case LevelDay.Wilds: PatataWildsLook.Apply(scene); break;
+                case LevelDay.Canopy: PatataCanopyLook.Apply(scene); break;
+                case LevelDay.Temple: PatataTempleLook.Apply(scene); break;
+                default: PatataRangerLook.Apply(scene); break;
+            }
         }
 
         /// <summary>The closed industrial scenes, lit by lamps only: the plant (the menu is a forest clearing since the misty menu).</summary>

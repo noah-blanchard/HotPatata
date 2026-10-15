@@ -614,11 +614,13 @@ namespace HotPatata.Editor
     /// <summary>
     /// The generated mesh assets of one build (a course's decks, stairs, bridges and their proxies): <see cref="Begin"/> a folder,
     /// <see cref="Save"/> meshes into it (an existing asset of the same name is refilled, so its GUID and the scene's reference stay),
-    /// <see cref="End"/> deletes the ones this build no longer made.
+    /// <see cref="End"/> deletes the ones this build no longer made. <see cref="BeginInMemory"/> builds without writing: the meshes stay
+    /// in memory (an authored level's pieces while they are edited, ARCHITECTURE §27) until they are saved into a folder.
     /// </summary>
     public static class OrganicAssets
     {
         static string directory;
+        static bool memory;
         static readonly HashSet<string> used = new HashSet<string>();
 
         public static string Directory => directory;
@@ -626,19 +628,29 @@ namespace HotPatata.Editor
         public static void Begin(string folder)
         {
             directory = folder.EndsWith("/") ? folder : folder + "/";
+            memory = false;
             System.IO.Directory.CreateDirectory(directory.TrimEnd('/'));
+            used.Clear();
+        }
+
+        /// <summary>A build whose meshes are named as usual but not written (<see cref="Save"/> returns them as they are).</summary>
+        public static void BeginInMemory()
+        {
+            directory = null;
+            memory = true;
             used.Clear();
         }
 
         /// <summary>Saves (or refills) <paramref name="mesh"/> as <c>&lt;folder&gt;&lt;name&gt;.asset</c>; a name already used in this build gets a suffix.</summary>
         public static Mesh Save(Mesh mesh)
         {
-            if (directory == null) throw new InvalidOperationException("OrganicAssets.Begin first");
+            if (directory == null && !memory) throw new InvalidOperationException("OrganicAssets.Begin first");
             string name = Sanitize(mesh.name);
             string unique = name;
             for (int i = 2; used.Contains(unique); i++) unique = name + "_" + i;
             used.Add(unique);
             mesh.name = unique;
+            if (memory) return mesh;
             string path = directory + unique + ".asset";
             var existing = AssetDatabase.LoadAssetAtPath<Mesh>(path);
             if (existing != null)
@@ -656,6 +668,7 @@ namespace HotPatata.Editor
         /// <summary>Deletes the meshes of the folder this build did not save.</summary>
         public static int End()
         {
+            memory = false;
             if (directory == null) return 0;
             int deleted = 0;
             foreach (var file in System.IO.Directory.GetFiles(directory, "*.asset"))

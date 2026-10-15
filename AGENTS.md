@@ -22,6 +22,8 @@ throwing a live bomb between them.
     the lobby waits for three);
   - `IndustrialPlant` (closed lamp-lit factory, eleven rooms, 9 checkpoints, fourth in the menu);
   - `PassSandbox` (one bomb, the kit demo, the pass range; last in the menu).
+  - Authored levels (M18): scenes in `Assets/Scenes/Levels/` the owner builds by hand with the `HotPatata/Level` tools
+    (`docs/LEVEL_AUTHORING.md`); in the menu only once registered.
   - The older courses (`PrototypeCourse`, `PlaytestCourse`, `PatataPark`, `PatataWorks`, `IndustrialLab`) were removed;
     their obstacle layouts are archived in `docs/OBSTACLES.md` §3.2.
 - **Code:** all gameplay code is in `Assets/Scripts/HotPatata.asmdef` (namespace `HotPatata`).
@@ -42,7 +44,8 @@ M13 (`PatataCanopy`, body screens, hands-free plates, switches, section contract
 its own misty day, giant trees, a forest floor that follows the course); its playtest is open. M15 (`PatataTemple`, the
 course for three: heavy and hourglass plates, sun beams, pivots that carry their riders, a level's minimum players) is built;
 its playtest with three is open. M16 (audio: a drop-in sound library, `Assets/Audio/README.md`) is built; its listening pass is
-open. M14 (contracts for PatataWilds) is next.
+open. M18 (authored levels: the owner builds levels by hand in the Editor) has its step 1 built and tried by the owner (the level and its
+timber); step 2 (the nature) is next, then step 3. M14 (contracts for PatataWilds) is next.
 The live table is at the top of `docs/MVP_TASKS.md`.
 
 ## Docs (read before implementing)
@@ -54,6 +57,7 @@ The live table is at the top of `docs/MVP_TASKS.md`.
 | `docs/MVP_TASKS.md` | Ordered milestones with acceptance criteria and status. Work in order; do not skip criteria. |
 | `docs/TESTING.md` | Test suites, running tests, dev tools, bots, latency simulation, CI. |
 | `docs/OBSTACLES.md` | Every obstacle system, its looks, where the courses use it (removed courses archived), and how to make your own obstacle prefab. |
+| `docs/LEVEL_AUTHORING.md` | Making a level by hand in the Editor (authored levels, M18): new level, timber pieces, handles, presets, the menu. |
 
 Keep the docs true: when a change alters behaviour, a rule or a milestone status, update the matching doc in the
 same PR. Code comments cite doc sections (e.g. `PROJECT_SPEC §8.3`), so never renumber sections.
@@ -117,10 +121,14 @@ same PR. Code comments cite doc sections (e.g. `PROJECT_SPEC §8.3`), so never r
   `HotPatata/Course/Build PatataWilds`; its terrain and scatter by `NatureDressing`, its trees by `NatureTreeBuilder`) and
   `PatataCanopy` by `PatataCanopyBuilder.cs` + `.Acts.cs` (its forest in `.Forest.cs`, its air in `.Atmosphere.cs`; menu `HotPatata/Course/Build PatataCanopy`)
   and `PatataTemple` by `PatataTempleBuilder.cs` + `.Acts.cs` (its valley, pyramid and storm in `.Ruins.cs`; menu `HotPatata/Course/Build PatataTemple`):
-  change the builder and rebuild, never edit them by hand. A new section declares a `SectionContract` (spec §13.20, how-to
+  change the builder and rebuild, never edit them by hand. **Authored levels** (`Assets/Scenes/Levels/`, ARCHITECTURE §27) have
+  no builder: they are edited by hand, but their generated timber only through its piece components (`LevelPiece`: never edit
+  a `LevelPieceOutput`), they are made with `HotPatata/Level/New Level` and listed with `Register In Menu`, and they follow
+  every other rule here. A new section declares a `SectionContract` (spec §13.20, how-to
   in docs/OBSTACLES.md §5): what it forces, and each shortcut with the geometry that locks it (14 m gaps, faces of 3.4 m or
   more, walls up to a roof; a window a player fits through is not bomb-only). `CourseContractCheck` must report nothing. The level list's order lives in one place,
-  `CourseKit.RegisterInMenu` (with each level's minimum players). A section of a course for three also says why two fail
+  `CourseKit` (`RegisterInMenu` for the builders, `WriteMenu` for the Register In Menu window; each level's minimum players
+  and display name). A section of a course for three also says why two fail
   (its "With two" line) and never lets a holder stand where the carrier can throw to them (spec §15e). The living menu
   backdrop in `Bootstrap` (`Assets/Prefabs/Menu/MenuBackdrop.prefab`) is generated the same way by
   `MenuBackdropBuilder.cs` (menu `HotPatata/Menu/Build Menu Backdrop`); it holds visual copies only, never gameplay

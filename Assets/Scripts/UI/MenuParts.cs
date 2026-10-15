@@ -33,7 +33,7 @@ namespace HotPatata
         /// <summary>Shows the bootstrap's current level and spawn point (they may have changed since the rows were built).</summary>
         public static void SyncLevelChoices(ChoiceRow level, ChoiceRow spawn, NetworkBootstrap bootstrap)
         {
-            level.SetOptions(bootstrap.GameplayScenes.Select((name, i) => LevelLabel(name, bootstrap.MinPlayersOf(i))).ToList(), bootstrap.SceneIndex);
+            level.SetOptions(bootstrap.GameplayScenes.Select((_, i) => LevelLabel(bootstrap.DisplayNameOf(i), bootstrap.MinPlayersOf(i))).ToList(), bootstrap.SceneIndex);
             spawn.SetOptions(NetworkBootstrap.SpawnLabels(bootstrap.SceneCheckpointCount), RunOptions.StartCheckpoint);
             spawn.style.display = bootstrap.SceneCheckpointCount > 0 ? DisplayStyle.Flex : DisplayStyle.None;
         }
@@ -44,7 +44,7 @@ namespace HotPatata
         /// <summary>"PatataWilds, from CP3": the level and spawn point the host has picked.</summary>
         public static string LevelSummary(NetworkBootstrap bootstrap)
         {
-            string level = LevelLabel(bootstrap.GameplayScenes[bootstrap.SceneIndex], bootstrap.SceneMinPlayers);
+            string level = LevelLabel(bootstrap.DisplayNameOf(bootstrap.SceneIndex), bootstrap.SceneMinPlayers);
             return RunOptions.StartCheckpoint > 0 ? $"{level}, from CP{RunOptions.StartCheckpoint}" : level;
         }
     }

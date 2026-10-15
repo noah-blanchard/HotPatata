@@ -1,0 +1,142 @@
+using System;
+using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
+using HotPatata;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.SceneManagement;
+using Object = UnityEngine.Object;
+
+namespace HotPatata.Editor
+{
+    /// <summary>
+    /// Makes an authored level (ARCHITECTURE §27, docs/LEVEL_AUTHORING.md): a scene in <see cref="LevelsFolder"/> copied from the
+    /// courses' template (its run, spawns, bomb, camera and networking), cleared, given its <see cref="LevelSettings"/>, its groups, a
+    /// flat terrain under the start, a safety net and the day it borrows. Ready to play from the first second.
+    /// </summary>
+    public static class LevelScenes
+    {
+        public const string LevelsFolder = "Assets/Scenes/Levels/";
+        /// <summary>The terrain of a new level: its size (m), how deep it can be dug under the start and how high it can rise.</summary>
+        public const float TerrainSize = 256f, TerrainDepth = 20f, TerrainHeight = 120f;
+        public const int TerrainResolution = 257;
+        /// <summary>The safety net under everything: this far under the terrain's lowest point.</summary>
+        public const float NetDrop = 25f;
+
+        public static string ScenePath(string name) => LevelsFolder + name + ".unity";
+
+        /// <summary>A level's name: a scene name the menu loads it by (letters, digits, no spaces), not taken by another scene.</summary>
+        public static string NameProblem(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return "Give the level a name.";
+            if (!Regex.IsMatch(name, "^[A-Za-z][A-Za-z0-9_]*$")) return "Letters, digits and _ only, starting with a letter (the scene's name).";
+            if (AssetDatabase.FindAssets("t:Scene " + name).Select(AssetDatabase.GUIDToAssetPath).Any(p => Path.GetFileNameWithoutExtension(p) == name))
+                return "A scene of that name exists already.";
+            return null;
+        }
+
+        public static Scene Create(string name, string displayName, int minPlayers, LevelDay day)
+        {
+            string problem = NameProblem(name);
+            if (problem != null) throw new ArgumentException(problem);
+            if (!AssetDatabase.IsValidFolder(LevelsFolder.TrimEnd('/'))) AssetDatabase.CreateFolder("Assets/Scenes", "Levels");
+            var scene = CourseKit.PrepareCourseScene(ScenePath(name), out var section);
+            // the template's plant exposure is the plant's own (a closed, lamp-lit factory)
+            foreach (var volume in scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<Volume>(true)).ToArray())
+                if (volume.sharedProfile != null && AssetDatabase.GetAssetPath(volume.sharedProfile) == LookBuilder.PlantProfilePath)
+                    Object.DestroyImmediate(volume.gameObject);
+
+            var level = new GameObject("Level").transform;
+            level.SetParent(section, false);
+            var settings = level.gameObject.AddComponent<LevelSettings>();
+            settings.DisplayName = string.IsNullOrWhiteSpace(displayName) ? name : displayName.Trim();
+            settings.MinPlayers = minPlayers;
+            settings.Day = day;
+            Transform Group(string groupName)
+            {
+                var g = new GameObject(groupName).transform;
+                g.SetParent(level, false);
+                return g;
+            }
+            settings.SetGroups(Group("Timber"), Group("Trees"), Group("Kit"), Group("Props"));
+
+            var starts = scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<PlayerSpawn>(true))
+                .Where(s => s.GetComponentInParent<Checkpoint>() == null).Select(s => s.transform.position).ToList();
+            var start = starts.Count > 0 ? starts.Aggregate(Vector3.zero, (a, b) => a + b) / starts.Count : Vector3.zero;
+            float groundY = starts.Count > 0 ? starts.Min(s => s.y) : 0f;
+            var terrain = MakeTerrain(name, level, new Vector3(start.x, groundY, start.z));
+            SafetyNet(level, terrain);
+
+            if (section.GetComponent<RouteWalks>() == null) section.gameObject.AddComponent<RouteWalks>();
+            LookBuilder.ApplyToScene(scene);
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            AssetDatabase.SaveAssets();
+            Debug.Log($"[Level] {name} made at {ScenePath(name)}: register it in the menu with HotPatata/Level/Register In Menu when it is ready.");
+            return scene;
+        }
+
+        /// <summary>A flat Unity terrain centred on the start, its surface at <paramref name="surface"/>'s height (it can be dug and raised).</summary>
+        static Terrain MakeTerrain(string levelName, Transform parent, Vector3 surface)
+        {
+            string folder = LevelMeshStore.GeneratedRoot + levelName + "/Terrain";
+            Directory.CreateDirectory(folder);
+            AssetDatabase.Refresh();
+            var data = new TerrainData { heightmapResolution = TerrainResolution };
+            data.size = new Vector3(TerrainSize, TerrainDepth + TerrainHeight, TerrainSize);
+            float flat = TerrainDepth / (TerrainDepth + TerrainHeight);
+            var heights = new float[TerrainResolution, TerrainResolution];
+            for (int z = 0; z < TerrainResolution; z++)
+                for (int x = 0; x < TerrainResolution; x++) heights[z, x] = flat;
+            data.SetHeights(0, 0, heights);
+            data.terrainLayers = new[] { GroundLayer(folder) };
+            AssetDatabase.CreateAsset(data, folder + "/" + levelName + "_Terrain.asset");
+
+            var go = Terrain.CreateTerrainGameObject(data);
+            go.name = "Terrain";
+            go.layer = CourseKit.Layer("Environment");
+            go.transform.SetParent(parent, false);
+            go.transform.position = new Vector3(surface.x - TerrainSize / 2f, surface.y - TerrainDepth, surface.z - TerrainSize / 2f);
+            GameObjectUtility.SetStaticEditorFlags(go, StaticEditorFlags.BatchingStatic | StaticEditorFlags.ContributeGI);
+            var terrain = go.GetComponent<Terrain>();
+            terrain.drawInstanced = false;
+            return terrain;
+        }
+
+        /// <summary>The forest floor the terrain is painted with (leaf litter, the nature courses' ground).</summary>
+        static TerrainLayer GroundLayer(string folder)
+        {
+            string path = folder + "/Ground.terrainlayer";
+            var layer = AssetDatabase.LoadAssetAtPath<TerrainLayer>(path);
+            if (layer != null) return layer;
+            layer = new TerrainLayer
+            {
+                diffuseTexture = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Art/Textures/Nature/LeafLitter/leaves_forest_ground_diff_1k.jpg"),
+                normalMapTexture = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Art/Textures/Nature/LeafLitter/leaves_forest_ground_nor_gl_1k.jpg"),
+                tileSize = new Vector2(4f, 4f),
+            };
+            AssetDatabase.CreateAsset(layer, path);
+            return layer;
+        }
+
+        /// <summary>A kill zone under the whole terrain: nothing falls out of the world.</summary>
+        static void SafetyNet(Transform parent, Terrain terrain)
+        {
+            var at = terrain.transform.position + new Vector3(TerrainSize / 2f, -NetDrop, TerrainSize / 2f);
+            var net = CourseKit.Place(parent, CourseKit.GameplayDir + "KillZone", "Safety net", at, Quaternion.identity);
+            net.transform.localScale = new Vector3(TerrainSize * 3f, 4f, TerrainSize * 3f);
+        }
+
+        /// <summary>The authored levels' scenes.</summary>
+        public static string[] All() =>
+            AssetDatabase.IsValidFolder(LevelsFolder.TrimEnd('/'))
+                ? AssetDatabase.FindAssets("t:Scene", new[] { LevelsFolder.TrimEnd('/') }).Select(AssetDatabase.GUIDToAssetPath).OrderBy(p => p).ToArray()
+                : Array.Empty<string>();
+
+        public static LevelSettings SettingsOf(Scene scene) =>
+            scene.IsValid() ? scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<LevelSettings>(true)).FirstOrDefault() : null;
+    }
+}

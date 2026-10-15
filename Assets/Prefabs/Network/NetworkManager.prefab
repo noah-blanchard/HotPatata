@@ -131,6 +131,13 @@ MonoBehaviour:
   - PassSandbox
   sceneCheckpoints: 0600000019000000190000000f0000000900000001000000
   sceneMinPlayers: 020000000200000002000000030000000200000002000000
+  sceneDisplayNames:
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
   port: 7777
   tuning: {fileID: 11400000, guid: 35604efc4188ead42afe90813d44683f, type: 2}
 --- !u!114 &8943435544806325941
