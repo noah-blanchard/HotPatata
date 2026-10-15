@@ -32,6 +32,7 @@ namespace HotPatata.Editor
             foreach (var piece in pieces)
             {
                 if (piece.Output == null) continue;
+                written += PersistFoliage(piece, levelFolder);
                 var fresh = LevelPieceBuilder.Meshes(piece.Output).Where(m => !EditorUtility.IsPersistent(m)).ToList();
                 if (fresh.Count == 0) continue;
                 piece.EnsureId();
@@ -47,6 +48,37 @@ namespace HotPatata.Editor
                     written += saved.Count;
                 }
                 finally { OrganicAssets.End(); }
+            }
+            return written;
+        }
+
+        /// <summary>A forest's planting (an in-memory <see cref="FoliageSet"/>), written as Foliage.asset in its piece's folder.</summary>
+        static int PersistFoliage(LevelPiece piece, string levelFolder)
+        {
+            int written = 0;
+            foreach (var instancer in piece.Output.GetComponentsInChildren<FoliageInstancer>(true))
+            {
+                var set = instancer.Set;
+                if (set == null || EditorUtility.IsPersistent(set)) continue;
+                piece.EnsureId();
+                string folder = PiecesFolder(levelFolder) + piece.PieceId;
+                Directory.CreateDirectory(folder);
+                string path = folder + "/Foliage.asset";
+                var existing = AssetDatabase.LoadAssetAtPath<FoliageSet>(path);
+                if (existing != null)
+                {
+                    EditorUtility.CopySerialized(set, existing);
+                    Object.DestroyImmediate(set);
+                    EditorUtility.SetDirty(existing);
+                    instancer.Configure(existing);
+                }
+                else
+                {
+                    AssetDatabase.CreateAsset(set, path);
+                    instancer.Configure(set);
+                }
+                EditorUtility.SetDirty(instancer);
+                written++;
             }
             return written;
         }

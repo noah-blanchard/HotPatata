@@ -18,6 +18,7 @@ namespace HotPatata
         [SerializeField, Tooltip("The mist floor's height (R, metres, world) over the course.")] Texture2D floor;
         [SerializeField, Tooltip("World XZ of the texture's corner (x, y) and its size (z, w).")] Vector4 rect;
         [SerializeField, Range(0f, 1f), Tooltip("The most the mist ever hides.")] float maxOpacity = 0.9f;
+        [SerializeField, Min(0f), Tooltip("Scales the day's density (an authored level's own: thinner or thicker than the day it borrows).")] float densityScale = 1f;
         [Header("Mist without a running day (the editor)")]
         [SerializeField] Color color = new Color(0.7f, 0.78f, 0.76f);
         [SerializeField, Min(0f)] float density;
@@ -58,7 +59,7 @@ namespace HotPatata
         {
             if (floor != null) Shader.SetGlobalTexture(FloorTex, floor);
             Shader.SetGlobalVector(FloorRect, new Vector4(rect.x, rect.y, 1f / Mathf.Max(1f, rect.z), 1f / Mathf.Max(1f, rect.w)));
-            Shader.SetGlobalVector(Params, new Vector4(floor != null ? mistDensity : 0f, mistFalloff, maxOpacity, mistGlow));
+            Shader.SetGlobalVector(Params, new Vector4(floor != null ? mistDensity * densityScale : 0f, mistFalloff, maxOpacity, mistGlow));
             Shader.SetGlobalVector(ColorId, (Vector4)mistColor.linear);
             Shader.SetGlobalVector(Shafts, new Vector4(shaftStrength, 0f, 0f, 0f));
         }
@@ -69,6 +70,13 @@ namespace HotPatata
             floor = floorHeights;
             rect = worldRect;
             maxOpacity = opacity;
+            if (isActiveAndEnabled) OnEnable();
+        }
+
+        /// <summary>Editor (authored levels): the level's own scale on the day's density.</summary>
+        public void ConfigureScale(float scale)
+        {
+            densityScale = Mathf.Max(0f, scale);
             if (isActiveAndEnabled) OnEnable();
         }
 

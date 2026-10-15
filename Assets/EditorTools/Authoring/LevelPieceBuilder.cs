@@ -31,6 +31,12 @@ namespace HotPatata.Editor
         /// </summary>
         public const float MaxSpan = 300f;
         public const int MaxPoints = 400;
+        /// <summary>A forest area may be wider (its planting is a few loops over its cells, nothing laid board by board).</summary>
+        public const float MaxForestSpan = 600f;
+        /// <summary>A tree trunk or a deck's trunk within this (m) of a piece is part of what it is built from.</summary>
+        public const float TrunkReach = 20f;
+        /// <summary>A forest is replanted when a piece within this (m) of its area changes.</summary>
+        public const float ForestReach = 40f;
 
         /// <summary>The last rebuild's time (ms), for the log and the tests.</summary>
         public static double LastMilliseconds { get; private set; }
@@ -38,9 +44,18 @@ namespace HotPatata.Editor
         /// <summary>Rebuilds the pieces whose inputs changed (or all with <paramref name="force"/>); returns how many were rebuilt.</summary>
         public static int Refresh(IEnumerable<LevelPiece> pieces, bool force = false)
         {
-            var stale = pieces.Where(p => p != null && (force || NeedsRebuild(p))).Distinct().ToList();
-            if (stale.Count > 0) Rebuild(stale);
-            return stale.Count;
+            var all = pieces.Where(p => p != null).Distinct().ToList();
+            // trees first: decks lean on their measured trunks, and a tree's sawn bands follow the decks round it; then the timber;
+            // forests last (they keep off everything else)
+            int count = 0;
+            foreach (var stage in new Func<LevelPiece, bool>[] { p => p is HeroTreeShape, p => !(p is HeroTreeShape) && !(p is ForestArea), p => p is ForestArea })
+            {
+                var stale = all.Where(stage).Where(p => force || NeedsRebuild(p)).ToList();
+                if (stale.Count == 0) continue;
+                Rebuild(stale);
+                count += stale.Count;
+            }
+            return count;
         }
 
         public static bool NeedsRebuild(LevelPiece piece)
@@ -111,6 +126,9 @@ namespace HotPatata.Editor
                 case RailingShape railing: TimberKit.Railing(root.transform, name, railing.WorldPoints(), railing.Seed); break;
                 case HouseShape house: BuildHouse(house, root.transform, name); break;
                 case TrestleShape trestle: BuildTrestle(trestle, root.transform, name); break;
+                case HeroTreeShape tree: LevelNature.BuildTree(tree, root.transform, name); break;
+                case WaterShape water: LevelNature.BuildWater(water, root.transform, name); break;
+                case ForestArea forest: LevelForest.Plant(forest, root.transform); break;
             }
             output.Configure(Signature(piece), line, TimberKit.Unheld.Count);
             TimberKit.ClearReport();
@@ -133,6 +151,9 @@ namespace HotPatata.Editor
                 RailingShape r => r.WorldPoints(),
                 HouseShape h => new[] { Vector3.zero, new Vector3(h.Size.x, h.WallHeight, h.Size.y) },
                 TrestleShape t => new[] { Vector3.zero, new Vector3(t.Half.x * 2f, 0f, t.Half.y * 2f) },
+                HeroTreeShape tree => new[] { Vector3.zero, new Vector3(tree.Lean.x, tree.Height, tree.Lean.y) },
+                WaterShape water => new[] { Vector3.zero, new Vector3(water.Size.x, water.Depth, water.Size.y) },
+                ForestArea forest => forest.WorldOutline().Select(p => new Vector3(p.x, 0f, p.y)).ToList(),
                 _ => Array.Empty<Vector3>(),
             };
             if (points.Count > MaxPoints) return $"{points.Count} points (at most {MaxPoints})";
@@ -142,7 +163,8 @@ namespace HotPatata.Editor
             foreach (var p in points) bounds.Encapsulate(p);
             float span = Mathf.Max(bounds.size.x, bounds.size.y, bounds.size.z);
             if (piece is TimberWalkShape || piece is RailingShape) span = Mathf.Max(span, Curves.Length(points));
-            return span > MaxSpan ? $"it spans {span:F0} m (at most {MaxSpan:F0} m)" : null;
+            float max = piece is ForestArea ? MaxForestSpan : MaxSpan;
+            return span > max ? $"it spans {span:F0} m (at most {max:F0} m)" : null;
         }
 
         /// <summary>Removes a piece's generated geometry (every output under it, and the meshes only it held).</summary>
@@ -151,6 +173,8 @@ namespace HotPatata.Editor
             foreach (var old in piece.GetComponentsInChildren<LevelPieceOutput>(true).Where(o => o.transform.parent == piece.transform).ToArray())
             {
                 foreach (var mesh in Meshes(old.gameObject).Where(m => !EditorUtility.IsPersistent(m)).ToArray()) Object.DestroyImmediate(mesh);
+                foreach (var foliage in old.GetComponentsInChildren<FoliageInstancer>(true).Select(f => f.Set).Where(s => s != null && !EditorUtility.IsPersistent(s)).ToArray())
+                    Object.DestroyImmediate(foliage);
                 Object.DestroyImmediate(old.gameObject);
             }
             piece.SetOutput(null);
@@ -316,6 +340,7 @@ namespace HotPatata.Editor
             switch (piece)
             {
                 case TimberDeckShape d:
+                    Trunks(s, d, d.transform.position.y);
                     foreach (var p in d.Outline) V(s, p);
                     s.Append(d.Slope.x.ToString("F3", CultureInfo.InvariantCulture)).Append(',').Append(d.Slope.y.ToString("F3", CultureInfo.InvariantCulture))
                      .Append('|').Append(d.Grain.ToString("F2", CultureInfo.InvariantCulture)).Append(d.Rails).Append(d.Support).Append(d.Wear)
@@ -324,7 +349,9 @@ namespace HotPatata.Editor
                     if (d.TrunkComponent != null) V(s, d.TrunkComponent.transform.position);
                     break;
                 case TimberWalkShape w:
-                    foreach (var p in w.WorldControl()) V(s, p);
+                    var control = w.WorldControl();
+                    if (control.Count > 0) Trunks(s, w, control.Average(c => c.y));
+                    foreach (var p in control) V(s, p);
                     s.Append(w.Width.ToString("F2", CultureInfo.InvariantCulture)).Append(w.RailLeft).Append(w.RailRight).Append(w.OnGround).Append(w.Support).Append(w.Wear)
                      .Append(w.MaxPost.ToString("F2", CultureInfo.InvariantCulture));
                     break;
@@ -346,8 +373,45 @@ namespace HotPatata.Editor
                 case TrestleShape tr:
                     V(s, tr.Half);
                     break;
+                case HeroTreeShape tree:
+                    s.Append(tree.TreeKind).Append('|');
+                    V(s, new Vector3(tree.Height, tree.BaseRadius, tree.TopRadius));
+                    V(s, new Vector3(tree.Lean.x, tree.CrownStart, tree.Lean.y));
+                    s.Append(tree.CrownLimbs).Append('|');
+                    foreach (var limb in tree.Limbs) s.Append(JsonUtility.ToJson(limb)).Append(';');
+                    foreach (var band in LevelNature.SawnBands(tree)) V(s, band);
+                    break;
+                case WaterShape water:
+                    V(s, new Vector3(water.Size.x, water.Depth, water.Size.y));
+                    break;
+                case ForestArea forest:
+                    foreach (var p in forest.Outline) V(s, p);
+                    V(s, new Vector3(forest.Giants, forest.Understory, forest.GroundCover));
+                    V(s, new Vector2(forest.Clearings, forest.PathClearance));
+                    // what it keeps off: every other piece near its area (a deck moved into it replants it)
+                    var area = forest.WorldOutline();
+                    if (area.Count > 0)
+                    {
+                        var rect = Rect.MinMaxRect(area.Min(p => p.x) - ForestReach, area.Min(p => p.y) - ForestReach, area.Max(p => p.x) + ForestReach, area.Max(p => p.y) + ForestReach);
+                        foreach (var other in TimberLinks.Pieces(forest.gameObject.scene).Where(o => !(o is ForestArea) && rect.Contains(new Vector2(o.transform.position.x, o.transform.position.z))).OrderBy(o => o.PieceId))
+                            s.Append(TimberKit.Seed(Signature(other), 0)).Append(',');
+                    }
+                    break;
             }
             return s.ToString();
+        }
+
+        /// <summary>The trunks within <see cref="TrunkReach"/> of a piece at height <paramref name="y"/> (where they stand and how thick).</summary>
+        static void Trunks(StringBuilder s, LevelPiece piece, float y)
+        {
+            var at = piece.transform.position;
+            foreach (var source in SceneSite.TrunkSources(piece.gameObject.scene))
+            {
+                if (!source.TryTrunkAt(y, out var center, out float radius)) continue;
+                if (new Vector2(center.x - at.x, center.z - at.z).magnitude > TrunkReach + 30f) continue;
+                V(s, new Vector3(center.x, radius, center.z));
+            }
+            s.Append('|');
         }
 
         static void V(StringBuilder s, Vector3 v) =>
