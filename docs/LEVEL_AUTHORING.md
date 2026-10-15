@@ -8,13 +8,11 @@ The tools come in three steps (M18). This guide covers what is built:
 |---|---|---|
 | 1. The level and its timber | a new level scene, decks, walkways and stairs, rope bridges, railings, houses, trestle towers; the menu; the day | built |
 | 2. The nature | the terrain in the nature look, valley walls, water, giant trees, forests (planted or painted), mist, sound | built |
-| 3. The game | forest looks for the kit, size handles, wiring, contracts, numbered checkpoints, Verify Level, the route runner, Play from here, props | next |
-
-Until step 3, place the kit (`Assets/Prefabs/Gameplay`, `Obstacles`, `Platforms`) and the checkpoints by hand, as in
-`docs/OBSTACLES.md`, and check your level with `HotPatata/Course/Check Section Contracts`.
+| 3a. The game | checkpoints numbered along the course, size handles, wiring, contracts, Verify Level, the route runner, Play from here | built |
+| 3b. The look | forest looks for the kit, props, the example level | next |
 
 A good order: make the level (§1), shape the land (§2), plant the giant trees (§3), hang the timber on them (§4 to §7),
-plant the forest round it (§8), then the mist and the sound (§9).
+plant the forest round it (§8), the mist and the sound (§9), then the game (§10), checked and played (§11).
 
 ---
 
@@ -141,14 +139,59 @@ Two ways, together:
   are the folders of `Assets/Audio/Ambience/Emitters`; drop files there (`Assets/Audio/README.md`).
 - **Ambience Zone**: a box where the ambience is another one (a cave in the forest).
 
-## 10. Save
+## 10. The game: checkpoints, kit, wiring, contracts
+
+**Checkpoints and the finish.** `GameObject > HotPatata Level > Checkpoint (campfire)` places a checkpoint with its campfire
+beside it (the nature courses' checkpoints are campfires); `Finish` places the end. Place them in any order, then
+**Number checkpoints along the course** (on the `Level` object): they are numbered 1, 2, 3... in the order a team reaches
+them walking from the start (along the walkways and bridges, across the decks and the ground).
+
+**The kit.** Drag the kit's prefabs from `Assets/Prefabs/Gameplay`, `Obstacles`, `Platforms` and `Variants`
+(docs/OBSTACLES.md) under `Level/Kit`. Select one in the Scene view:
+
+- a **door, bridge or lift**: drag its yellow box to size it; its open position is the blue ghost box: drag the blue ball to
+  move where it opens to (and how far);
+- a **zone** (hot, cold, forbidden), a **laser curtain**, a **body screen**: drag its box to size it;
+- a **sun beam**: drag the square at its end to lengthen it; a **plate**: drag the square at its edge to size it.
+
+Every part follows (visual, collision, lethal edge). Ctrl+Z undoes it. A drawbridge or a pivot turns on a hinge: size it
+in its inspector.
+
+**Wiring.** One source drives one actuator (no AND, no OR). Select the door (bridge, lift, switch) and press **Link: pick
+its source** in its inspector, then click the plate, the hoop or the sun beam that drives it. A switch's **Link: add a
+target** adds what it turns on and off (a curtain, a screen). Dotted yellow lines show every link in the Scene view,
+with what drives it and how long it holds ("hourglass plate, holds 6 s"); `HotPatata/Level/Show Wiring` hides them.
+
+**Contracts.** Every section says what it forces and locks its shortcuts (PROJECT_SPEC §13.20, docs/OBSTACLES.md §5): on
+a checkpoint, **Add this section's contract**; on the `Level` object, **Add the start's contract**. Write what the section
+forces; for a level for three, why two fail. Then **lock each shortcut**: **Gap** (a jump that must not be made: from
+its take-off to its landing), **Climb** (a face that must not be climbed: its foot and top), **Lob** (a wall the bomb must
+not be lobbed over: the thrower and the wall's top), **Spread** (two plates one body cannot hold in turn). Each lock is a
+coloured line in the Scene view: drag its balls onto the places (they land on what is under the mouse). **Check this
+contract** says whether each lock holds.
+
+## 11. Check and play
+
+- **Verify Level** (on the `Level` object, or `HotPatata/Level/Verify Level`): everything a level must hold, in a list.
+  Click a line to select what it is about. Errors keep a level out of the menu: a section without a contract, a lock that
+  does not hold, checkpoint ids that skip, no finish, water without a kill zone, a pass out of reach or under a ceiling,
+  kit outside the level's section, a piece not built, the menu out of date. Warnings are worth a look: something in a
+  walkway's way, a step past its end, plants on a path, checkpoints out of order. It also gives the level's budget
+  (triangles, plants, meshes).
+- **Run Route Runner** (on the `Level` object, or the `HotPatata/Level` menu): Play starts and player 1 walks every
+  walkway, stair and bridge on its own (the bomb kept from exploding); the Console says which ones it fell off or got
+  stuck on, and how long each took.
+- **Play from here**: on a checkpoint (or `HotPatata/Level/Play From Selected Checkpoint`), Play starts with the run at that
+  checkpoint; **Play from the start** on the `Level` object.
+
+## 12. Save
 
 Saving the scene (Ctrl+S) writes the pieces' meshes and the forests' plantings to `Assets/Art/Generated/<level>/Pieces/`
 (one folder per piece; removed pieces' folders are deleted), gathers the level's walk lines, refits the safety net, bakes
 the mist and writes the sections' ambience. The Console then says what was written, and lists anything a piece cannot be
 built as drawn (a hanger with nothing above, a scaled piece...).
 
-## 11. Put it in the menu
+## 13. Put it in the menu
 
 `HotPatata/Level/Register In Menu...` with your level open:
 
@@ -157,7 +200,7 @@ built as drawn (a hanger with nothing above, a scaled piece...).
 - **Save to the menu**. The level is added to the build and shows in Bootstrap's level list, with a spawn choice per
   checkpoint. **Remove from the menu** takes it out.
 
-A level is official (shipped in the menu) only once it passes Verify Level (step 3) with nothing reported.
+A level is official (shipped in the menu) only once Verify Level reports no error.
 
 ## Rules
 

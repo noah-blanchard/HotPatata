@@ -32,7 +32,7 @@ playtest and cannot be closed by code.
 | M13 Fourth course: PatataCanopy | built: 25 sections in 5 acts in the tree tops, every section with a contract; three new generic systems (body screen, hands-free plate, switch) and the section-contract check; automated verification in M13.6; atmosphere pass built (M13.7: its own cooler day, a height mist, giant trees, a forest floor that follows the course, leaf roofs, god rays, fireflies) | 2-player clear, every puzzle forced and fun at 2 and at 4, host + 3 clients, 1080p/60 fps, readability review (in the mist) |
 | M14 PatataWilds contracts | not started | give every PatataWilds section a contract and close its shortcuts (M14) |
 | M15 Fifth course: PatataTemple | built: 15 sections in 3 acts for **three players**, every section with a contract that says why two fail; four systems for three (heavy plate, hourglass plate, sun beam, pivot carrying its riders), a level's minimum players in the menu; its own valley, pyramid, day and storm; automated verification in M15.6 | a clear by three, every puzzle failing with two and fun with four, host + 2 clients, 1080p/60 fps, readability review (the storm) |
-| M18 Authored levels | step 2 built (M18.2): the terrain in the nature look, valley walls, water, giant trees sawn round their decks, forests planted or painted off the paths, mist baked on save, sound by section; step 1 built (M18.1): `HotPatata/Level/New Level`, timber pieces drawn in the Scene view (decks, walkways and stairs, rope bridges, railings, houses, trestles), ends that attach and open rails, presets, meshes written on save, the menu's display names and Register In Menu, a level's borrowed day; automated checks pass | the owner's try of step 2; step 3 (M18.3, the kit, the checks, the guide's example level) |
+| M18 Authored levels | step 3a built (M18.3a): checkpoints numbered along the course, kit size handles, wiring and the Link tool, contracts by handles, Verify Level, the route runner on any level, Play from here; step 2 built (M18.2): the terrain in the nature look, valley walls, water, giant trees sawn round their decks, forests planted or painted off the paths, mist baked on save, sound by section; step 1 built (M18.1): `HotPatata/Level/New Level`, timber pieces drawn in the Scene view (decks, walkways and stairs, rope bridges, railings, houses, trestles), ends that attach and open rails, presets, meshes written on save, the menu's display names and Register In Menu, a level's borrowed day; automated checks pass | the owner's try of step 3a (the game: kit handles, wiring, contracts, checkpoints, Verify Level, route runner); step 3b (forest looks of the kit, props, the example level) |
 | M16 Audio (#46–#49) | built (code, mixer, settings, docs): a drop-in sound library, sounds are folders of `Assets/Audio`; music by place and act, ambience in layers, movement sounds back (spec §11), bomb, run, obstacle and menu sounds; automated checks pass (M16.6) | the owner's sounds and music; the listening pass with two players (M16.6) |
 | Cleanup and generic obstacles | done: only `PatataWilds`, `IndustrialPlant` and `PassSandbox` (plus `Bootstrap`) remain; every obstacle system is generic (references, `IObstacleState`, `ObstacleVisualDriver`, `CustomVisual`, overridable poses, `ObstaclePrefabValidator`), with two example variants; the obstacle catalogue is `docs/OBSTACLES.md` | |
 
@@ -1684,10 +1684,16 @@ before the next starts.
 
 ## M18.3 — The game, the checks, the props, the guide
 
-- [ ] forest variants of the kit; size handles; Link tool, wiring lines and ghost travels; contracts edited with handles;
-- [ ] checkpoints numbered along the course; Verify Level (clickable list); the route runner on any level; Play from here;
-- [ ] the CC0 props as prefabs, sets and a small-props brush;
-- [ ] the guide completed with pictures, and a short example level (3 checkpoints) made with the tools that passes Verify
+Split in two PRs (3a the game and the checks, 3b the look and the example), each tried by the owner before the next.
+
+- [x] 3a: size handles; Link tool, wiring lines and ghost travels; contracts edited with handles; checkpoints (campfires)
+  numbered along the course, the finish; Verify Level (clickable list); the route runner shared and on any level; Play from
+  here; `LevelGameTests` pass, `PatataRangerTests` pass on the shared runner; a trial level numbered, verified (three
+  sections without a contract found, then none), walked by the route runner and played from its second checkpoint;
+- [ ] 3a: the owner wires and checks a level with the step-3a tools and finds them usable;
+- [ ] 3b: forest variants of the kit;
+- [ ] 3b: the CC0 props as prefabs, sets and a small-props brush;
+- [ ] 3b: the guide completed with pictures, and a short example level (3 checkpoints) made with the tools that passes Verify
   Level, is in the menu and is played online (host + client).
 
 ---

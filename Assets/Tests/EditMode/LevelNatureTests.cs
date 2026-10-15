@@ -92,9 +92,22 @@ namespace HotPatata.Tests
             Assert.AreEqual(30f, kill.transform.eulerAngles.y, 0.01f, "the kill zone does not turn with the water");
         }
 
+        /// <summary>A flat Unity terrain under the test area (the ground a level's forest stands on), the test's cube taken away.</summary>
+        Terrain FlatTerrain()
+        {
+            foreach (var go in scene.GetRootGameObjects().Except(before).Where(g => g.GetComponent<BoxCollider>() != null)) Object.DestroyImmediate(go);
+            var data = new TerrainData { heightmapResolution = 65, size = new Vector3(200f, 50f, 200f) };
+            var terrainGo = Terrain.CreateTerrainGameObject(data);
+            terrainGo.layer = LayerMask.NameToLayer("Environment");
+            terrainGo.transform.position = Origin + new Vector3(-100f, 0f, -100f);
+            Physics.SyncTransforms();
+            return terrainGo.GetComponent<Terrain>();
+        }
+
         [Test]
         public void Forest_KeepsOffWalksDecksAndWater_AndIsWrittenOnSave()
         {
+            FlatTerrain();
             var forest = Piece<ForestArea>("Forest", Vector3.zero);
             var walk = Piece<TimberWalkShape>("Path", new Vector3(-30f, 0f, 0f));
             walk.Points.Clear();
@@ -113,6 +126,8 @@ namespace HotPatata.Tests
                     for (int i = 0; i < cell.Count; i++)
                     {
                         var (p, _, _) = FoliageSet.Unpack(batch, cell, i);
+                        Assert.IsFalse(float.IsNaN(p.y), $"{batch.name} at no height");
+                        Assert.Less(Mathf.Abs(p.y - Origin.y), 1.5f, $"{batch.name} not on the ground at {p}");
                         var q = new Vector2(p.x, p.z);
                         Assert.Greater(LevelForest.Distance(paths, q), 1.5f, $"{batch.name} on the path at {p}");
                         Assert.IsFalse(LevelForest.OnWater(waters, q), $"{batch.name} in the pond at {p}");

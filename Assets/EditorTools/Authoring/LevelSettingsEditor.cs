@@ -27,6 +27,28 @@ namespace HotPatata.Editor
             serializedObject.ApplyModifiedProperties();
 
             var scene = Settings.gameObject.scene;
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Course", EditorStyles.boldLabel);
+            var placed = LevelCourse.Checkpoints(scene);
+            bool startContract = Settings.GetComponentsInChildren<SectionContract>(true).Any(c => c.GetComponentInParent<Checkpoint>() == null);
+            bool finish = scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<FinishZone>(true)).Any();
+            EditorGUILayout.LabelField($"{placed.Count} checkpoint(s), {(finish ? "a finish" : "no finish")}, " +
+                                       $"{(startContract ? "the start's contract" : "no contract for the start")}", EditorStyles.miniLabel);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Number checkpoints along the course")) LevelPlayMenu.Number();
+                using (new EditorGUI.DisabledScope(startContract))
+                    if (GUILayout.Button("Add the start's contract")) LevelCourse.AddContract(Settings.transform, Settings.MinPlayers);
+            }
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Verify Level")) LevelCheckWindow.Open();
+                using (new EditorGUI.DisabledScope(EditorApplication.isPlaying))
+                {
+                    if (GUILayout.Button("Run Route Runner")) EditorApplication.ExecuteMenuItem("HotPatata/Level/Run Route Runner");
+                    if (GUILayout.Button("Play from the start")) LevelPlayMenu.PlayFrom(0);
+                }
+            }
             var terrain = LevelTerrain.Terrains(scene).FirstOrDefault();
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Terrain", EditorStyles.boldLabel);
