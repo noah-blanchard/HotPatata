@@ -106,7 +106,7 @@ namespace HotPatata.Editor
         {
             foreach (var terrain in LevelTerrain.Terrains(scene))
                 if (LevelTerrain.Covers(terrain, p)) return terrain.SampleHeight(new Vector3(p.x, 0f, p.y)) + terrain.transform.position.y;
-            return SceneSite.GroundAt(p, 2000f);
+            return SceneSite.GroundAt(p, 2000f, 4000f);
         }
     }
 }

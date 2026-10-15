@@ -118,7 +118,7 @@ namespace HotPatata.Editor
         }
 
         /// <summary>Sizes a plate's trigger and pad to a square of <paramref name="size"/> metres.</summary>
-        static void ResizePlate(GameObject root, float size)
+        public static void ResizePlate(GameObject root, float size)
         {
             var box = root.GetComponent<BoxCollider>();
             box.size = new Vector3(size, box.size.y, size);

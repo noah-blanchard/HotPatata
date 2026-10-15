@@ -38,11 +38,11 @@ namespace HotPatata.Editor
                 ? scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<MonoBehaviour>(true)).OfType<ITrunkSource>()
                 : Enumerable.Empty<ITrunkSource>();
 
-        /// <summary>The ground's height under (x, z) below <paramref name="from"/>, or NaN where there is none (the void).</summary>
-        public static float GroundAt(Vector2 p, float from)
+        /// <summary>The ground's height under (x, z) below <paramref name="from"/> (within <paramref name="reach"/>, <see cref="Reach"/> by default), or NaN where there is none (the void).</summary>
+        public static float GroundAt(Vector2 p, float from, float reach = Reach)
         {
             float best = float.NaN;
-            var hits = Physics.RaycastAll(new Vector3(p.x, from, p.y), Vector3.down, Reach, LayerMask.GetMask("Environment"), QueryTriggerInteraction.Ignore);
+            var hits = Physics.RaycastAll(new Vector3(p.x, from, p.y), Vector3.down, reach, LayerMask.GetMask("Environment"), QueryTriggerInteraction.Ignore);
             foreach (var hit in hits)
             {
                 if (hit.collider.GetComponentInParent<LevelPieceOutput>() != null) continue;   // timber never stands on timber

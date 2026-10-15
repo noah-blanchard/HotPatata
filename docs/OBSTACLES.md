@@ -243,6 +243,9 @@ wall (1, 4 and 12 m panels per material, KayKit on one side, industrial on the o
 
 ---
 
+In an authored level (ARCHITECTURE §27, docs/LEVEL_AUTHORING.md §10) a placed kit object is sized with handles in the Scene
+view (the resize functions below), its source picked with the Link tool, and its wiring drawn.
+
 ## 4. Making your own obstacle prefab
 
 Every system above is generic: its component reads **references** set in the Inspector, never child names, renderers or

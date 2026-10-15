@@ -44,8 +44,9 @@ M13 (`PatataCanopy`, body screens, hands-free plates, switches, section contract
 its own misty day, giant trees, a forest floor that follows the course); its playtest is open. M15 (`PatataTemple`, the
 course for three: heavy and hourglass plates, sun beams, pivots that carry their riders, a level's minimum players) is built;
 its playtest with three is open. M16 (audio: a drop-in sound library, `Assets/Audio/README.md`) is built; its listening pass is
-open. M18 (authored levels: the owner builds levels by hand in the Editor) has its step 1 (the level and its timber) built and tried
-by the owner, and its step 2 (the nature) built; step 3 (the kit, the checks, the props) follows the owner's try. M14 (contracts for PatataWilds) is next.
+open. M18 (authored levels: the owner builds levels by hand in the Editor) has its steps 1 (the level and its timber) and 2 (the nature)
+built and tried by the owner, and its step 3a (the game: kit handles, wiring, contracts, Verify Level, route runner) built;
+step 3b (the kit's forest looks, props, the example level) follows the owner's try. M14 (contracts for PatataWilds) is next.
 The live table is at the top of `docs/MVP_TASKS.md`.
 
 ## Docs (read before implementing)
