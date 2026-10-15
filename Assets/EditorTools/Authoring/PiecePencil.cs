@@ -11,6 +11,9 @@ namespace HotPatata.Editor
     /// </summary>
     public static class PiecePencil
     {
+        /// <summary>How far from the camera a drawn point may be (m).</summary>
+        const float Reach = 300f;
+
         static LevelPiece target;
         static List<Vector3> points;
         static bool flat;
@@ -86,9 +89,10 @@ namespace HotPatata.Editor
         {
             var ray = HandleUtility.GUIPointToWorldRay(mouse);
             var plane = new Plane(Vector3.up, piece.transform.position);
-            if (flat) return plane.Raycast(ray, out float d) ? ray.GetPoint(d) : (Vector3?)null;
+            // a click near the horizon would put a point kilometres away: the plane counts only within Reach
+            if (flat) return plane.Raycast(ray, out float d) && d < Reach ? ray.GetPoint(d) : (Vector3?)null;
             // the nearest collider under the mouse that is not the piece's own geometry (points never pile up on what they drew)
-            var hits = Physics.RaycastAll(ray, 2000f, ~0, QueryTriggerInteraction.Ignore);
+            var hits = Physics.RaycastAll(ray, Reach, ~0, QueryTriggerInteraction.Ignore);
             float best = float.MaxValue;
             Vector3? found = null;
             foreach (var hit in hits)
@@ -98,7 +102,7 @@ namespace HotPatata.Editor
                 found = hit.point;
             }
             if (found.HasValue) return found;
-            return plane.Raycast(ray, out float e) ? ray.GetPoint(e) : (Vector3?)null;
+            return plane.Raycast(ray, out float e) && e < Reach ? ray.GetPoint(e) : (Vector3?)null;
         }
     }
 }

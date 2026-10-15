@@ -57,13 +57,49 @@ namespace HotPatata
         IEnumerable<Vector3> Anchors { get; }
     }
 
-    /// <summary>Where an end of a walkway or a bridge meets a deck's edge: the deck, and how far round its outline (0..1).</summary>
+    /// <summary>
+    /// Where an end of a walkway or a bridge goes: onto a deck's edge (the deck, and how far round its outline, 0..1), or onto an end of
+    /// another walkway or bridge (joined end to end). Free otherwise.
+    /// </summary>
     [Serializable]
     public struct TimberAttach
     {
         public TimberDeckShape deck;
         [Range(0f, 1f)] public float along;
+        [Tooltip("The walkway or bridge whose end this end is joined to (when not on a deck).")] public LevelPiece joined;
+        [Tooltip("Joined to its start (else its end).")] public bool joinedStart;
 
-        public bool Attached => deck != null;
+        public bool Attached => OnDeck || Joined;
+        public bool OnDeck => deck != null;
+        // a removed piece is null to Unity even while C# still holds it
+        public bool Joined => deck == null && joined != null && (joined is TimberWalkShape || joined is RopeBridgeShape);
+
+        /// <summary>
+        /// Where this end goes (and, on a deck, the edge's outward direction); false when free. A joined end goes where the other piece
+        /// puts its own end (on its deck or at its point), never through that piece's joins: two ends joined to each other never loop.
+        /// </summary>
+        public bool TryPoint(out Vector3 point, out Vector3 outward)
+        {
+            outward = Vector3.zero;
+            if (deck != null)
+            {
+                point = deck.EdgePoint(along, out outward);
+                return true;
+            }
+            switch (Joined ? joined : null)
+            {
+                case TimberWalkShape walk:
+                    point = walk.OwnEnd(joinedStart);
+                    return true;
+                case RopeBridgeShape bridge:
+                    point = bridge.OwnEnd(joinedStart);
+                    return true;
+            }
+            point = default;
+            return false;
+        }
+
+        /// <summary>"on Deck", "joined to Bridge" or "free".</summary>
+        public string Describe => deck != null ? "on " + deck.name : Joined ? "joined to " + joined.name : "free";
     }
 }

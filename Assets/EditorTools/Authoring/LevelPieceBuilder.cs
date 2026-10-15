@@ -25,6 +25,12 @@ namespace HotPatata.Editor
         public const float AgedDeck = 0.6f, AgedWalk = 0.55f, AgedBridge = 0.65f;
         /// <summary>Two outline edges closer than this (not neighbours) are a seam: no rail along it (a ring round a trunk).</summary>
         public const float SeamGap = 0.35f;
+        /// <summary>
+        /// A piece wider or longer than this (m), or with this many points, is not built: a point thrown far away (a click near the
+        /// horizon) would make the kit lay boards for minutes and freeze the Editor.
+        /// </summary>
+        public const float MaxSpan = 300f;
+        public const int MaxPoints = 400;
 
         /// <summary>The last rebuild's time (ms), for the log and the tests.</summary>
         public static double LastMilliseconds { get; private set; }
@@ -88,6 +94,15 @@ namespace HotPatata.Editor
             string name = piece.name;
             TimberKit.ClearReport();
             Vector3[] line = null;
+            string tooBig = TooBig(piece);
+            if (tooBig != null)
+            {
+                Debug.LogWarning($"[Level] {piece.name} is not built: {tooBig}. Move its far points back (or Ctrl+Z).", piece);
+                output.Configure(Signature(piece), null, 0);
+                root.hideFlags = HideFlags.NotEditable;
+                piece.SetOutput(root);
+                return;
+            }
             switch (piece)
             {
                 case TimberDeckShape deck: BuildDeck(deck, root.transform, name); break;
@@ -106,6 +121,29 @@ namespace HotPatata.Editor
         }
 
         static float NonZero(float v) => Mathf.Abs(v) < 1e-4f ? 1f : v;
+
+        /// <summary>Why a piece is too big to build (<see cref="MaxSpan"/>, <see cref="MaxPoints"/>), or null.</summary>
+        public static string TooBig(LevelPiece piece)
+        {
+            IList<Vector3> points = piece switch
+            {
+                TimberDeckShape d => d.WorldOutline().Select(p => new Vector3(p.x, 0f, p.y)).ToList(),
+                TimberWalkShape w => w.WorldControl(),
+                RopeBridgeShape b => new[] { b.WorldEnds().a, b.WorldEnds().b },
+                RailingShape r => r.WorldPoints(),
+                HouseShape h => new[] { Vector3.zero, new Vector3(h.Size.x, h.WallHeight, h.Size.y) },
+                TrestleShape t => new[] { Vector3.zero, new Vector3(t.Half.x * 2f, 0f, t.Half.y * 2f) },
+                _ => Array.Empty<Vector3>(),
+            };
+            if (points.Count > MaxPoints) return $"{points.Count} points (at most {MaxPoints})";
+            if (points.Any(p => float.IsNaN(p.x) || float.IsNaN(p.y) || float.IsNaN(p.z) || p.magnitude > 1e5f)) return "a point is out of the world";
+            if (points.Count == 0) return null;
+            var bounds = new Bounds(points[0], Vector3.zero);
+            foreach (var p in points) bounds.Encapsulate(p);
+            float span = Mathf.Max(bounds.size.x, bounds.size.y, bounds.size.z);
+            if (piece is TimberWalkShape || piece is RailingShape) span = Mathf.Max(span, Curves.Length(points));
+            return span > MaxSpan ? $"it spans {span:F0} m (at most {MaxSpan:F0} m)" : null;
+        }
 
         /// <summary>Removes a piece's generated geometry (every output under it, and the meshes only it held).</summary>
         public static void Clear(LevelPiece piece)

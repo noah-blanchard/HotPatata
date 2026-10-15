@@ -35,25 +35,35 @@ namespace HotPatata
         public TimberAttach Start { get => start; set => start = value; }
         public TimberAttach End { get => end; set => end = value; }
 
-        /// <summary>The control points in the world, attached ends moved onto their decks' edges (a short lead on the deck first).</summary>
+        /// <summary>
+        /// The control points in the world: an end on a deck moved onto its edge (a short lead on the deck first), an end joined to another
+        /// piece's end moved onto it.
+        /// </summary>
         public List<Vector3> WorldControl()
         {
             var list = new List<Vector3>(points.Count + 2);
             foreach (var p in points) list.Add(transform.TransformPoint(p));
             if (list.Count < 2) return list;
-            if (start.Attached)
+            if (start.TryPoint(out var first, out var outward))
             {
-                var edge = start.deck.EdgePoint(start.along, out var outward);
-                list[0] = edge;
-                list.Insert(0, edge - outward * AttachLead);
+                list[0] = first;
+                if (start.OnDeck) list.Insert(0, first - outward * AttachLead);
             }
-            if (end.Attached)
+            if (end.TryPoint(out var last, out var outwardEnd))
             {
-                var edge = end.deck.EdgePoint(end.along, out var outward);
-                list[list.Count - 1] = edge;
-                list.Add(edge - outward * AttachLead);
+                list[list.Count - 1] = last;
+                if (end.OnDeck) list.Add(last - outwardEnd * AttachLead);
             }
             return list;
+        }
+
+        /// <summary>Where this walkway puts its start or end by itself: on its deck's edge, else at its point (never through a join).</summary>
+        public Vector3 OwnEnd(bool atStart)
+        {
+            var attach = atStart ? start : end;
+            if (attach.OnDeck) return attach.deck.EdgePoint(attach.along);
+            if (points.Count == 0) return transform.position;
+            return transform.TransformPoint(atStart ? points[0] : points[points.Count - 1]);
         }
     }
 }

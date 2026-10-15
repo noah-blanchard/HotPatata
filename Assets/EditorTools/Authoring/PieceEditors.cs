@@ -230,11 +230,14 @@ namespace HotPatata.Editor
 
         protected override string Help =>
             "Scene view: click a dot to move it, Ctrl+click to delete it, click a + to add a point. Steps appear where it climbs. " +
-            "Drop an end on a deck's edge to attach it (green; it opens the deck's rail); hold Shift to place it freely.";
+            "To join it: select an end dot (the first or last) and drag it onto a deck's edge or onto another walkway's or bridge's end until a " +
+            "green ring shows, then let go (on a deck it opens the rail). Hold Shift to place it freely. Or press Attach ends.";
 
         protected override void DrawTools()
         {
             PencilButton(Walk.Points, false);
+            if (GUILayout.Button("Attach ends (nearest deck edge or end, 4 m)")) AttachNearest();
+            EditorGUILayout.LabelField("Start: " + Walk.Start.Describe + "   End: " + Walk.End.Describe, EditorStyles.miniLabel);
             using (new EditorGUILayout.HorizontalScope())
             {
                 using (new EditorGUI.DisabledScope(!Walk.Start.Attached))
@@ -242,6 +245,27 @@ namespace HotPatata.Editor
                 using (new EditorGUI.DisabledScope(!Walk.End.Attached))
                     if (GUILayout.Button("Detach end")) SetAttach(false, default);
             }
+        }
+
+        /// <summary>Each free end goes onto the deck edge or the other piece's end nearest it on the flat (within 4 m).</summary>
+        void AttachNearest()
+        {
+            var walk = Walk;
+            if (walk.Points.Count < 2) return;
+            Undo.RecordObject(walk, "Attach walkway");
+            int found = 0;
+            foreach (bool start in new[] { true, false })
+            {
+                if ((start ? walk.Start : walk.End).Attached) continue;
+                int i = start ? 0 : walk.Points.Count - 1;
+                if (!TimberLinks.TryNearest(walk.gameObject.scene, walk.World(walk.Points[i]), walk, 4f, out var attach, out var edge)) continue;
+                walk.Points[i] = walk.Local(edge);
+                if (start) walk.Start = attach;
+                else walk.End = attach;
+                found++;
+            }
+            EditorUtility.SetDirty(walk);
+            if (found == 0) Debug.LogWarning($"[Level] {walk.name}: no deck edge or other end within 4 m of its free ends");
         }
 
         void SetAttach(bool start, TimberAttach attach)
@@ -258,8 +282,8 @@ namespace HotPatata.Editor
             int last = walk.Points.Count - 1;
             Vector3? Drawn(int i)
             {
-                if (i == 0 && walk.Start.Attached) return walk.Start.deck.EdgePoint(walk.Start.along);
-                if (i == last && walk.End.Attached) return walk.End.deck.EdgePoint(walk.End.along);
+                if (i == 0 && walk.Start.TryPoint(out var first, out _)) return first;
+                if (i == last && walk.End.TryPoint(out var end, out _)) return end;
                 return null;
             }
             // the smooth line the boards follow
@@ -270,15 +294,20 @@ namespace HotPatata.Editor
                 Handles.DrawAAPolyLine(2f, Curves.Spline(control, 0.4f).ToArray());
             }
             int moved = PieceHandles.EditPoints(walk, walk.Points, false, false, 2, Drawn);
-            if (moved == 0 || moved == last) SnapEnd(moved == 0);
-            foreach (var (attach, i) in new[] { (walk.Start, 0), (walk.End, last) })
-                if (attach.Attached && i >= 0) PieceHandles.Label(walk.World(walk.Points[i]) + Vector3.up * 0.4f, "on " + attach.deck.name);
+            if (walk.Points.Count >= 2 && moved >= 0 && (moved == 0 || moved == walk.Points.Count - 1)) SnapEnd(moved == 0);
+            foreach (var attach in new[] { walk.Start, walk.End })
+                if (attach.TryPoint(out var at, out _))
+                {
+                    PieceHandles.DrawAttached(at);
+                    PieceHandles.Label(at + Vector3.up * 0.4f, attach.Describe);
+                }
         }
 
         void SnapEnd(bool start)
         {
             var walk = Walk;
             int i = start ? 0 : walk.Points.Count - 1;
+            if (i < 0 || i >= walk.Points.Count) return;
             var world = walk.World(walk.Points[i]);
             var attach = PieceHandles.SnapEnd(walk, world, out var at);
             if (attach.Attached) walk.Points[i] = walk.Local(at);
@@ -296,8 +325,52 @@ namespace HotPatata.Editor
         RopeBridgeShape Bridge => (RopeBridgeShape)target;
 
         protected override string Help =>
-            "Scene view: move either end; drop it on a deck's edge to attach it (green; it opens the deck's rail), hold Shift to place it freely. " +
-            "Keep the ends gentle: 18° or less where it leaves the deck.";
+            "Scene view: drag either end onto a deck's edge or onto a walkway's or bridge's end until a green ring shows, then let go (on a deck " +
+            "it opens the rail); hold Shift to place it freely. Or press Attach ends. Keep the ends gentle: 18° or less.";
+
+        protected override void DrawTools()
+        {
+            if (GUILayout.Button("Attach ends (nearest deck edge or end, 4 m)")) AttachNearest();
+            EditorGUILayout.LabelField("Start: " + Bridge.StartAttach.Describe + "   End: " + Bridge.EndAttach.Describe, EditorStyles.miniLabel);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                using (new EditorGUI.DisabledScope(!Bridge.StartAttach.Attached))
+                    if (GUILayout.Button("Detach start")) Detach(true);
+                using (new EditorGUI.DisabledScope(!Bridge.EndAttach.Attached))
+                    if (GUILayout.Button("Detach end")) Detach(false);
+            }
+        }
+
+        void Detach(bool start)
+        {
+            Undo.RecordObject(Bridge, "Detach bridge");
+            if (start) Bridge.StartAttach = default;
+            else Bridge.EndAttach = default;
+            EditorUtility.SetDirty(Bridge);
+        }
+
+        /// <summary>Each free end goes onto the deck edge nearest it on the flat (within 4 m), at the deck's height.</summary>
+        void AttachNearest()
+        {
+            var bridge = Bridge;
+            Undo.RecordObject(bridge, "Attach bridge");
+            var (a, b) = bridge.WorldEnds();
+            int found = 0;
+            if (!bridge.StartAttach.Attached && TimberLinks.TryNearest(bridge.gameObject.scene, a, bridge, 4f, out var sa, out var ea))
+            {
+                bridge.A = bridge.Local(ea);
+                bridge.StartAttach = sa;
+                found++;
+            }
+            if (!bridge.EndAttach.Attached && TimberLinks.TryNearest(bridge.gameObject.scene, b, bridge, 4f, out var sb, out var eb))
+            {
+                bridge.B = bridge.Local(eb);
+                bridge.EndAttach = sb;
+                found++;
+            }
+            EditorUtility.SetDirty(bridge);
+            if (found == 0) Debug.LogWarning($"[Level] {bridge.name}: no deck edge or other end within 4 m of its free ends");
+        }
 
         protected override void DrawScene()
         {
@@ -312,6 +385,16 @@ namespace HotPatata.Editor
             if (toA.HasValue) MoveEnd(true, toA.Value);
             var toB = PieceHandles.EndHandle(b, bridge.EndAttach.Attached);
             if (toB.HasValue) MoveEnd(false, toB.Value);
+            if (bridge.StartAttach.Attached)
+            {
+                PieceHandles.DrawAttached(a);
+                PieceHandles.Label(a + Vector3.up * 0.4f, bridge.StartAttach.Describe);
+            }
+            if (bridge.EndAttach.Attached)
+            {
+                PieceHandles.DrawAttached(b);
+                PieceHandles.Label(b + Vector3.up * 0.4f, bridge.EndAttach.Describe);
+            }
         }
 
         void MoveEnd(bool start, Vector3 world)

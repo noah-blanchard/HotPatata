@@ -101,6 +101,35 @@ namespace HotPatata.Tests
         }
 
         [Test]
+        public void WalkwayJoinedToABridgeEnd_FollowsItAndNeverLoops()
+        {
+            var bridge = Piece<RopeBridgeShape>("Bridge", new Vector3(0f, 3f, 0f));
+            var walk = Piece<TimberWalkShape>("Walk", new Vector3(-10f, 0f, -0.5f));
+            walk.Points.Clear();
+            walk.Points.AddRange(new[] { Vector3.zero, new Vector3(4f, 0f, 0f), new Vector3(9f, 2.8f, 0f), new Vector3(9.6f, 3f, 0.4f) });
+            Assert.IsTrue(TimberLinks.TrySnap(scene, walk.World(walk.Points[3]), walk, out var attach, out var at), "the bridge's start is 0.7 m away");
+            Assert.AreEqual(bridge, attach.joined);
+            Assert.IsTrue(attach.joinedStart);
+            walk.End = attach;
+            Assert.AreEqual(bridge.WorldEnds().a, walk.WorldControl().Last());
+
+            // the bridge's start joined back to the walkway's end: each reads the other's own end, no loop
+            bridge.StartAttach = new TimberAttach { joined = walk, joinedStart = false };
+            Assert.DoesNotThrow(() => bridge.WorldEnds());
+            var all = new LevelPiece[] { bridge, walk };
+            LevelPieceBuilder.Refresh(all);
+            bridge.StartAttach = default;
+
+            bridge.transform.position += new Vector3(0f, 1f, 2f);
+            Assert.AreEqual(2, LevelPieceBuilder.Refresh(all), "the walkway joined to the bridge is not rebuilt with it");
+            Assert.Less(Vector3.Distance(walk.WorldControl().Last(), bridge.WorldEnds().a), 1e-4f, "the joined end did not follow");
+
+            Object.DestroyImmediate(bridge.gameObject);
+            Assert.IsFalse(walk.End.Attached, "joined to a removed bridge");
+            Assert.DoesNotThrow(() => walk.WorldControl());
+        }
+
+        [Test]
         public void MovingADeck_RebuildsItAndTheEndsOnIt_Only()
         {
             var deck = Piece<TimberDeckShape>("Deck", new Vector3(0f, 3f, 0f));

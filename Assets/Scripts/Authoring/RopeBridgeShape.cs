@@ -29,14 +29,22 @@ namespace HotPatata
         public TimberAttach StartAttach { get => startAttach; set => startAttach = value; }
         public TimberAttach EndAttach { get => endAttach; set => endAttach = value; }
 
-        /// <summary>The two ends in the world, attached ones on their decks' edges.</summary>
-        public (Vector3 a, Vector3 b) WorldEnds()
+        /// <summary>The two ends in the world: on their decks' edges, on the ends they are joined to, else at their points.</summary>
+        public (Vector3 a, Vector3 b) WorldEnds() => (End(true), End(false));
+
+        Vector3 End(bool atStart)
         {
-            var wa = transform.TransformPoint(a);
-            var wb = transform.TransformPoint(b);
-            if (startAttach.Attached) wa = startAttach.deck.EdgePoint(startAttach.along, out var oa) - oa * AttachLead;
-            if (endAttach.Attached) wb = endAttach.deck.EdgePoint(endAttach.along, out var ob) - ob * AttachLead;
-            return (wa, wb);
+            var attach = atStart ? startAttach : endAttach;
+            if (attach.TryPoint(out var point, out var outward)) return attach.OnDeck ? point - outward * AttachLead : point;
+            return transform.TransformPoint(atStart ? a : b);
+        }
+
+        /// <summary>Where this bridge puts its start or end by itself: on its deck's edge, else at its point (never through a join).</summary>
+        public Vector3 OwnEnd(bool atStart)
+        {
+            var attach = atStart ? startAttach : endAttach;
+            if (attach.OnDeck) return attach.deck.EdgePoint(attach.along, out var outward) - outward * AttachLead;
+            return transform.TransformPoint(atStart ? a : b);
         }
 
         /// <summary>The dip used: the set one, else 6 % of the span (1.2 m at most).</summary>

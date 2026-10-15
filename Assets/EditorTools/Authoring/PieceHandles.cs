@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using HotPatata;
 using UnityEditor;
 using UnityEngine;
@@ -16,6 +17,8 @@ namespace HotPatata.Editor
         public static readonly Color Line = new Color(1f, 0.82f, 0.25f);
         public static readonly Color Attached = new Color(0.35f, 1f, 0.45f);
         public static readonly Color OpeningColor = new Color(0.3f, 0.85f, 1f);
+        /// <summary>A dragged end attaches to a deck edge drawn this close to it on screen (pixels).</summary>
+        public const float SnapPixels = 28f;
 
         static LevelPiece owner;
         static int selected = -1;
@@ -32,7 +35,8 @@ namespace HotPatata.Editor
 
         /// <summary>
         /// Edits <paramref name="points"/> (the piece's local space). <paramref name="flat"/>: the points stay at local height 0 (a deck's
-        /// outline). <paramref name="world"/> overrides where a point is drawn (an end attached to a deck). Returns the index moved, -1 if none.
+        /// outline). <paramref name="world"/> overrides where a point is drawn (an end attached to a deck). Returns the index of the point the
+        /// move handle moved, -1 if none moved (an insert or a delete is not a move).
         /// </summary>
         public static int EditPoints(LevelPiece piece, List<Vector3> points, bool closed, bool flat, int minPoints, Func<int, Vector3?> world = null)
         {
@@ -61,7 +65,7 @@ namespace HotPatata.Editor
                     Select(piece, i + 1);
                     EditorUtility.SetDirty(piece);
                     GUI.changed = true;
-                    return i + 1;
+                    return -1;
                 }
             }
 
@@ -79,7 +83,7 @@ namespace HotPatata.Editor
                         Select(piece, -1);
                         EditorUtility.SetDirty(piece);
                         GUI.changed = true;
-                        return i;
+                        return -1;
                     }
                     Select(piece, i);
                 }
@@ -124,7 +128,68 @@ namespace HotPatata.Editor
         {
             at = world;
             if (Event.current != null && Event.current.shift) return default;
+            if (TrySnapOnScreen(piece, world, out var onScreen, out at)) return onScreen;
             return TimberLinks.TrySnap(piece.gameObject.scene, world, piece, out var attach, out at) ? attach : default;
+        }
+
+        /// <summary>
+        /// The deck edge drawn nearest the dragged end on screen, within <see cref="SnapPixels"/>: what the author sees touching is what
+        /// attaches, at whatever height the drag left the end.
+        /// </summary>
+        static bool TrySnapOnScreen(LevelPiece piece, Vector3 world, out TimberAttach attach, out Vector3 edge)
+        {
+            attach = default;
+            edge = world;
+            var camera = Camera.current;
+            if (camera == null) return false;
+            var target = HandleUtility.WorldToGUIPoint(world);
+            float best = SnapPixels;
+            bool InFront(Vector3 p) => Vector3.Dot(camera.transform.forward, p - camera.transform.position) > 0f;
+            // another walkway's or bridge's end first: joined end to end
+            foreach (var (other, start, at) in TimberLinks.Ends(piece.gameObject.scene, piece))
+            {
+                if (!InFront(at)) continue;
+                float d = Vector2.Distance(HandleUtility.WorldToGUIPoint(at), target);
+                if (d >= best) continue;
+                best = d;
+                attach = new TimberAttach { joined = other, joinedStart = start };
+                edge = at;
+            }
+            if (attach.Attached) return true;
+            foreach (var deck in TimberLinks.Pieces(piece.gameObject.scene).OfType<TimberDeckShape>())
+            {
+                if (deck == piece || deck.Outline.Count < 3) continue;
+                var ring = deck.WorldOutline();
+                float total = TimberDeckShape.Perimeter(ring), run = 0f;
+                if (total < 0.01f) continue;
+                for (int i = 0; i < ring.Count; i++)
+                {
+                    var a = ring[i];
+                    var b = ring[(i + 1) % ring.Count];
+                    float l = Vector2.Distance(a, b);
+                    int n = Mathf.Max(1, Mathf.CeilToInt(l / 0.2f));
+                    for (int k = 0; k <= n; k++)
+                    {
+                        var q = Vector2.Lerp(a, b, k / (float)n);
+                        var p = new Vector3(q.x, deck.TopAt(q), q.y);
+                        if (Vector3.Dot(camera.transform.forward, p - camera.transform.position) <= 0f) continue;
+                        float d = Vector2.Distance(HandleUtility.WorldToGUIPoint(p), target);
+                        if (d >= best) continue;
+                        best = d;
+                        attach = new TimberAttach { deck = deck, along = (run + l * k / n) / total };
+                        edge = p;
+                    }
+                    run += l;
+                }
+            }
+            return attach.Attached;
+        }
+
+        /// <summary>Shows where an end is attached: a green ring on the deck's edge.</summary>
+        public static void DrawAttached(Vector3 at)
+        {
+            Handles.color = Attached;
+            Handles.DrawWireDisc(at, Vector3.up, HandleUtility.GetHandleSize(at) * 0.18f, 3f);
         }
 
         /// <summary>A label in the Scene view over a point.</summary>
