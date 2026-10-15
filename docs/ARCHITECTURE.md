@@ -2163,9 +2163,11 @@ its shape.
 under the piece that is not timber (a post stands on the terrain or a rock, never on another deck), the trunks and anchors
 come from the scene's `ITrunkSource`s (the giant trees, M18 step 2).
 
-**Ends that meet.** A walkway's or a bridge's end dropped within `TimberLinks.SnapDistance` of a deck's edge (and
-`SnapHeight` of its surface) attaches to it (`TimberAttach`: the deck and how far round its outline): the end follows the
-deck when it moves and the deck's railing opens there (its width plus `OpeningMargin`). Shift places an end freely. A
+**Ends that meet.** A walkway's or a bridge's end dragged onto a deck's edge or onto another walkway's or bridge's end (drawn
+within `PieceHandles.SnapPixels` of it on screen; `TimberLinks.SnapDistance` in the world for code) attaches to it
+(`TimberAttach`: the deck and how far round its outline, or the joined piece and which end): the end follows what it is
+attached to, and a deck's railing opens there (its width plus `OpeningMargin`). A joined end reads the other piece's own end,
+never its joins, so two ends joined both ways never loop. Shift places an end freely. A
 deck's own openings slide along its edge. A ring round a trunk keeps a seam (its outline doubles back on itself); no rail
 runs along a seam (`LevelPieceBuilder.SeamSkip`).
 

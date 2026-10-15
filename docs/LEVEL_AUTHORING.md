@@ -66,9 +66,12 @@ to start from and then pull into shape.
 
 ## 4. Join pieces
 
-- **Drop a walkway's or a bridge's end on a deck's edge**: it attaches (the end turns green, the label says which deck).
-  The deck's railing opens there, and the end follows the deck when it moves. **Hold Shift** while dragging to place an
-  end freely. **Detach start / end** in a walkway's Inspector frees it.
+- **Select an end dot** (the first or last point of a walkway, either end of a bridge) and **drag it onto a deck's edge or
+  onto another walkway's or bridge's end**: when it is close enough on screen a green ring shows; let go and it is
+  attached (the label and the Inspector say to what). On a deck the railing opens there. The end follows what it is
+  attached to when that moves. **Hold Shift** while dragging to place an end freely.
+- **Attach ends** in a walkway's or bridge's Inspector attaches each free end to the nearest deck edge or end within 4 m.
+  **Detach start / end** frees it.
 - **A deck's own openings** (Add opening in its Inspector) are cyan dots on its edge: slide them where a gap should be.
 - A bridge shows its length and the slope at its ends; keep it at 18° or less.
 
