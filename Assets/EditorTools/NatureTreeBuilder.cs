@@ -15,7 +15,7 @@ namespace HotPatata.Editor
     /// green branch, blue leaf) and two submeshes (bark, leaves). Meshes are saved as assets, so a rebuild gives the same forest;
     /// hero trees also get prefabs with an LOD group. Menu <c>HotPatata/Nature/Build Vegetation</c>.
     /// </summary>
-    public static class NatureTreeBuilder
+    public static partial class NatureTreeBuilder
     {
         public const string MeshDir = "Assets/Art/Models/Nature/Generated/";
         public const string PrefabDir = "Assets/Prefabs/Nature/";

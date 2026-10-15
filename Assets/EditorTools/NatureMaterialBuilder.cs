@@ -86,6 +86,8 @@ namespace HotPatata.Editor
             Rock("Nature_RockWall", "RockWall", 3f, null, 0f),
             Rock("Nature_RocksGround", "RocksGround", 2.5f, null, 0f),
             Rock("Nature_StoneWall", "StoneWall", 2.5f, null, 0f),
+            // PatataRanger's valley (ARCHITECTURE §25.5): rock wherever the ground is too steep to walk, leaf litter on all the rest
+            Rock("Nature_ValleyGround", "RockFace", 4f, "LeafLitter", 0.42f),
             // PatataTemple's masonry (ARCHITECTURE §25.4): moss and grass on the faces that look up
             Ground("Nature_TempleFloor", "TempleFloor", 3f),
             Rock("Nature_TempleWall", "TempleWall", 3f, "Grass", 0.22f),
@@ -102,6 +104,13 @@ namespace HotPatata.Editor
             Wood("Nature_Gate", "Gate", 2f),
             Wood("Nature_LogWall", "LogWall", 2.5f),
             Wood("Nature_MossWood", "MossWood", 1.6f),
+            // the organic timber kit (ARCHITECTURE §25.5): single boards and beams with their grain along them (rough_wood's grain
+            // runs along V), hung on rope and banded with iron
+            Wood("Nature_DeckPlank", "RoughWood", 1.25f, 1.08f, new Color(1.08f, 0.96f, 0.82f)),
+            Wood("Nature_DeckPlankAged", "RoughWood", 1.25f, 0.9f, new Color(1f, 0.93f, 0.84f)),
+            Wood("Nature_Timber", "RoughWood", 1.6f, 0.78f, new Color(1.05f, 0.88f, 0.72f)),
+            Wood("Nature_Rope", "RoughWood", 0.3f, 1.25f, new Color(1.3f, 1.12f, 0.8f)),
+            Wood("Nature_Iron", "Iron", 0.9f, 0.55f, new Color(0.62f, 0.56f, 0.52f)),
             // Poly Haven props (their own UVs)
             Prop("Nature_Prop_Boulder", "boulder_01"),
             Prop("Nature_Prop_RockMoss", "rock_moss_set_01"),
@@ -183,6 +192,7 @@ namespace HotPatata.Editor
         public const string HazardName = "Nature_Hazard", FallingName = "Nature_Falling", BeltName = "Nature_LogDrive",
             LanternName = "Nature_LanternGlass", EmberName = "Nature_Ember", BlazeName = "Nature_Blaze", LeafCanopyName = "Nature_LeafCanopy";
         public static string PipeName(int slot) => "Nature_Pipe_" + slot;
+        public const string PaintAmber = "Nature_Paint_Amber", PaintGreen = "Nature_Paint_Green", PaintBlue = "Nature_Paint_Blue";
         // the tube and cannon slot colours, as in the KayKit and industrial kits (each mouth-exit pair: a colour and a pip count)
         static readonly Color[] PipeColors = { new Color(0.25f, 0.85f, 0.45f), new Color(0.62f, 0.45f, 1f), new Color(1f, 0.6f, 0.8f) };
 
@@ -242,6 +252,14 @@ namespace HotPatata.Editor
                 m.SetColor("_BaseColor", new Color(1.6f, 1.6f, 1.55f));
                 m.SetFloat("_BaseSaturation", 0f);
             });
+            // the ranger's painted glyphs (PatataRanger, ARCHITECTURE §25.5): amber, green and blue-grey paint on wood; the glyphs also
+            // differ by shape, never by colour alone (spec §19)
+            foreach (var (paint, color) in new[] { (PaintAmber, new Color(2.1f, 1.35f, 0.35f)), (PaintGreen, new Color(0.7f, 1.6f, 0.55f)), (PaintBlue, new Color(0.75f, 1.05f, 1.7f)) })
+                Variant(paint, roughWood, refill, m =>
+                {
+                    m.SetColor("_BaseColor", color);
+                    m.SetFloat("_BaseSaturation", 0.35f);
+                });
             for (int i = 0; i < PipeColors.Length; i++)
             {
                 var c = PipeColors[i];
