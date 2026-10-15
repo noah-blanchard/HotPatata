@@ -253,6 +253,23 @@ MonoBehaviour:
       scatterInterval: {x: 4, y: 12}
       scatterDistance: {x: 10, y: 35}
       scatterHeight: {x: 2, y: 12}
+  - key: Music/Menu
+    clips:
+    - clip: {fileID: 8300000, guid: 66ff9d8b264a10f44ba097a889466470, type: 3}
+      intro: {fileID: 0}
+    settings:
+      volume: 0.7
+      volumeJitter: 0
+      pitchJitter: 0
+      cooldown: 0
+      maxVoices: 1
+      spatialBlend: 0
+      minDistance: 2
+      maxDistance: 40
+      priority: 0
+      scatterInterval: {x: 4, y: 12}
+      scatterDistance: {x: 10, y: 35}
+      scatterHeight: {x: 2, y: 12}
   surfaces:
   - material: {fileID: 2100000, guid: 3858a891c8806284391a6ac1a99a33ab, type: 2}
     surface: Concrete
@@ -312,6 +329,10 @@ MonoBehaviour:
     surface: Wood
   - material: {fileID: 2100000, guid: 9b20d8dce9bb8124ca1410d850f063e4, type: 2}
     surface: Rock
+  - material: {fileID: 2100000, guid: 0b9463728f463a443859d1cb9c6f7c59, type: 2}
+    surface: Wood
+  - material: {fileID: 2100000, guid: 4cf9e3efde77f764eb083b9bb8fe8aad, type: 2}
+    surface: Wood
   - material: {fileID: 2100000, guid: b23c3c88a0bbe98489f0410aea6ecd26, type: 2}
     surface: Leaves
   - material: {fileID: 2100000, guid: 05af6de8f9c777649b8d1177de97c4b6, type: 2}
@@ -328,6 +349,8 @@ MonoBehaviour:
     surface: Grass
   - material: {fileID: 2100000, guid: 6c928c9e52ad904438203fa18e3c9075, type: 2}
     surface: Gravel
+  - material: {fileID: 2100000, guid: 5df125f4e28369a4e8435844f679f157, type: 2}
+    surface: Metal
   - material: {fileID: 2100000, guid: c285f49493f0b6a4c8f745232b4c970e, type: 2}
     surface: Leaves
   - material: {fileID: 2100000, guid: ca865c76a07c0414a9d3abf140e9e57c, type: 2}
@@ -446,7 +469,11 @@ MonoBehaviour:
     surface: Stone
   - material: {fileID: 2100000, guid: 5a0328ff6fdaa9746955ac58888c2ec8, type: 2}
     surface: Stone
+  - material: {fileID: 2100000, guid: 19eee3cab26b9ea46b74e5f08222214c, type: 2}
+    surface: Wood
   - material: {fileID: 2100000, guid: 807d46fa3fb2f9e4eb04ea460c088796, type: 2}
+    surface: Dirt
+  - material: {fileID: 2100000, guid: befe54fd5dce7c14d9aaac9a0005fd3d, type: 2}
     surface: Dirt
   - material: {fileID: 2100000, guid: d2b59901dad6dac4ebfe6770fb4e8980, type: 2}
     surface: Water
