@@ -37,26 +37,100 @@ namespace HotPatata.Editor
         /// Lists a course in the build settings and in the menu's level list (NetworkBootstrap) with its checkpoint count and the
         /// players it needs online (<paramref name="minPlayers"/>, PROJECT_SPEC §15e: PatataTemple needs three). One shared place,
         /// so builders never fight over the order: PatataWilds is first, PatataCanopy and the plant keep their places (a new one
-        /// goes second), PatataTemple is third, PassSandbox is last.
+        /// goes second), PatataTemple is third, PassSandbox is last. <paramref name="displayName"/>: the name the menu shows (null
+        /// keeps the one it has; empty shows the scene's name).
         /// </summary>
-        public static void RegisterInMenu(string sceneName, string scenePath, int checkpoints, MenuSlot slot, int minPlayers = 2)
+        public static void RegisterInMenu(string sceneName, string scenePath, int checkpoints, MenuSlot slot, int minPlayers = 2, string displayName = null)
         {
-            var scenes = UnityEditor.EditorBuildSettings.scenes.ToList();
-            if (!scenes.Any(s => s.path == scenePath)) scenes.Add(new UnityEditor.EditorBuildSettingsScene(scenePath, true));
-            UnityEditor.EditorBuildSettings.scenes = scenes.ToArray();
+            AddToBuild(scenePath);
+            EditMenu(so => RegisterInMenu(so, sceneName, checkpoints, slot, minPlayers, displayName));
+        }
+
+        /// <summary>Edits the NetworkBootstrap of the network prefab (the menu's level list) and saves the prefab.</summary>
+        public static void EditMenu(Action<SerializedObject> edit)
+        {
             var root = PrefabUtility.LoadPrefabContents(NetworkPrefab);
             try
             {
                 var so = new SerializedObject(root.GetComponent<NetworkBootstrap>());
+                edit(so);
+                so.ApplyModifiedPropertiesWithoutUndo();
+                PrefabUtility.SaveAsPrefabAsset(root, NetworkPrefab);
+            }
+            finally { PrefabUtility.UnloadPrefabContents(root); }
+        }
+
+        /// <summary>Adds <paramref name="scenePath"/> to the build settings when missing.</summary>
+        public static void AddToBuild(string scenePath)
+        {
+            var scenes = UnityEditor.EditorBuildSettings.scenes.ToList();
+            if (!scenes.Any(s => s.path == scenePath)) scenes.Add(new UnityEditor.EditorBuildSettingsScene(scenePath, true));
+            UnityEditor.EditorBuildSettings.scenes = scenes.ToArray();
+        }
+
+        /// <summary>One menu entry: the scene it loads, its name in the menu, its highest checkpoint and the players it needs.</summary>
+        public struct MenuEntry
+        {
+            public string scene, displayName;
+            public int checkpoints, minPlayers;
+        }
+
+        /// <summary>The menu's level list as a NetworkBootstrap holds it (its four arrays read together).</summary>
+        public static List<MenuEntry> ReadMenu(SerializedObject bootstrap)
+        {
+            var names = bootstrap.FindProperty("gameplayScenes");
+            var counts = bootstrap.FindProperty("sceneCheckpoints");
+            var mins = bootstrap.FindProperty("sceneMinPlayers");
+            var shown = bootstrap.FindProperty("sceneDisplayNames");
+            var list = new List<MenuEntry>();
+            for (int i = 0; i < names.arraySize; i++)
+                list.Add(new MenuEntry
+                {
+                    scene = names.GetArrayElementAtIndex(i).stringValue,
+                    checkpoints = i < counts.arraySize ? counts.GetArrayElementAtIndex(i).intValue : 0,
+                    minPlayers = i < mins.arraySize ? mins.GetArrayElementAtIndex(i).intValue : 2,
+                    displayName = i < shown.arraySize ? shown.GetArrayElementAtIndex(i).stringValue : "",
+                });
+            return list;
+        }
+
+        /// <summary>Writes the whole level list in this order (the four arrays together, the same length).</summary>
+        public static void WriteMenu(SerializedObject bootstrap, IList<MenuEntry> entries)
+        {
+            var names = bootstrap.FindProperty("gameplayScenes");
+            var counts = bootstrap.FindProperty("sceneCheckpoints");
+            var mins = bootstrap.FindProperty("sceneMinPlayers");
+            var shown = bootstrap.FindProperty("sceneDisplayNames");
+            foreach (var array in new[] { names, counts, mins, shown }) array.arraySize = entries.Count;
+            for (int i = 0; i < entries.Count; i++)
+            {
+                names.GetArrayElementAtIndex(i).stringValue = entries[i].scene;
+                counts.GetArrayElementAtIndex(i).intValue = Mathf.Max(0, entries[i].checkpoints);
+                mins.GetArrayElementAtIndex(i).intValue = Mathf.Max(1, entries[i].minPlayers);
+                shown.GetArrayElementAtIndex(i).stringValue = entries[i].displayName ?? "";
+            }
+        }
+
+        /// <summary>Puts one course in the level list of a NetworkBootstrap's serialized fields (see the overload on the prefab).</summary>
+        public static void RegisterInMenu(SerializedObject so, string sceneName, int checkpoints, MenuSlot slot, int minPlayers = 2, string displayName = null)
+        {
+            {
                 var names = so.FindProperty("gameplayScenes");
                 var counts = so.FindProperty("sceneCheckpoints");
                 var mins = so.FindProperty("sceneMinPlayers");
+                var shown = so.FindProperty("sceneDisplayNames");
                 counts.arraySize = Mathf.Max(counts.arraySize, names.arraySize);
                 for (int i = mins.arraySize; i < names.arraySize; i++)
                 {
                     mins.InsertArrayElementAtIndex(i);
                     mins.GetArrayElementAtIndex(i).intValue = 2;
                 }
+                for (int i = shown.arraySize; i < names.arraySize; i++)
+                {
+                    shown.InsertArrayElementAtIndex(i);
+                    shown.GetArrayElementAtIndex(i).stringValue = "";
+                }
+                shown.arraySize = names.arraySize;
                 int index = -1;
                 for (int i = 0; i < names.arraySize; i++)
                     if (names.GetArrayElementAtIndex(i).stringValue == sceneName) index = i;
@@ -73,6 +147,8 @@ namespace HotPatata.Editor
                     names.InsertArrayElementAtIndex(at);
                     counts.InsertArrayElementAtIndex(Mathf.Min(target, counts.arraySize));
                     mins.InsertArrayElementAtIndex(Mathf.Min(target, mins.arraySize));
+                    shown.InsertArrayElementAtIndex(Mathf.Min(target, shown.arraySize));
+                    shown.GetArrayElementAtIndex(at).stringValue = "";
                     index = at;
                 }
                 else if (index != target)
@@ -80,15 +156,14 @@ namespace HotPatata.Editor
                     names.MoveArrayElement(index, target);
                     counts.MoveArrayElement(index, target);
                     mins.MoveArrayElement(index, target);
+                    shown.MoveArrayElement(index, target);
                     index = target;
                 }
                 names.GetArrayElementAtIndex(index).stringValue = sceneName;
                 counts.GetArrayElementAtIndex(index).intValue = checkpoints;
                 mins.GetArrayElementAtIndex(index).intValue = Mathf.Max(1, minPlayers);
-                so.ApplyModifiedPropertiesWithoutUndo();
-                PrefabUtility.SaveAsPrefabAsset(root, NetworkPrefab);
+                if (displayName != null) shown.GetArrayElementAtIndex(index).stringValue = displayName;
             }
-            finally { PrefabUtility.UnloadPrefabContents(root); }
         }
 
         // ------------------------------------------------------------------ section pieces shared by the nature courses (PatataCanopy, PatataTemple)

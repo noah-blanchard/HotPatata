@@ -32,6 +32,7 @@ playtest and cannot be closed by code.
 | M13 Fourth course: PatataCanopy | built: 25 sections in 5 acts in the tree tops, every section with a contract; three new generic systems (body screen, hands-free plate, switch) and the section-contract check; automated verification in M13.6; atmosphere pass built (M13.7: its own cooler day, a height mist, giant trees, a forest floor that follows the course, leaf roofs, god rays, fireflies) | 2-player clear, every puzzle forced and fun at 2 and at 4, host + 3 clients, 1080p/60 fps, readability review (in the mist) |
 | M14 PatataWilds contracts | not started | give every PatataWilds section a contract and close its shortcuts (M14) |
 | M15 Fifth course: PatataTemple | built: 15 sections in 3 acts for **three players**, every section with a contract that says why two fail; four systems for three (heavy plate, hourglass plate, sun beam, pivot carrying its riders), a level's minimum players in the menu; its own valley, pyramid, day and storm; automated verification in M15.6 | a clear by three, every puzzle failing with two and fun with four, host + 2 clients, 1080p/60 fps, readability review (the storm) |
+| M18 Authored levels | step 1 built (M18.1): `HotPatata/Level/New Level`, timber pieces drawn in the Scene view (decks, walkways and stairs, rope bridges, railings, houses, trestles), ends that attach and open rails, presets, meshes written on save, the menu's display names and Register In Menu, a level's borrowed day; automated checks pass | the owner's try of step 1; step 2 (M18.2, the nature) and step 3 (M18.3, the kit, the checks, the guide's example level) |
 | M16 Audio (#46–#49) | built (code, mixer, settings, docs): a drop-in sound library, sounds are folders of `Assets/Audio`; music by place and act, ambience in layers, movement sounds back (spec §11), bomb, run, obstacle and menu sounds; automated checks pass (M16.6) | the owner's sounds and music; the listening pass with two players (M16.6) |
 | Cleanup and generic obstacles | done: only `PatataWilds`, `IndustrialPlant` and `PassSandbox` (plus `Bootstrap`) remain; every obstacle system is generic (references, `IObstacleState`, `ObstacleVisualDriver`, `CustomVisual`, overridable poses, `ObstaclePrefabValidator`), with two example variants; the obstacle catalogue is `docs/OBSTACLES.md` | |
 
@@ -1640,6 +1641,49 @@ no Console error.
 - [ ] footsteps change with the surface; a teammate's steps are heard in 3D (two players);
 - [ ] the beep stays readable at full music volume; the pause menu muffles everything but the bomb;
 - [ ] licences of every sound recorded in `CREDITS.md`.
+
+---
+
+# Milestone 18 — Authored levels
+
+Goal: the owner builds a whole level by hand in the Unity Editor, with no code and no agent: from an empty level to a level
+in the menu that passes the checks, in PatataRanger's look. Editor tools only, never an editor in the game. Design in
+ARCHITECTURE §27, how-to in `docs/LEVEL_AUTHORING.md`. Three steps, each usable alone (one PR each); the owner tries each
+before the next starts.
+
+## M18.1 — The level and its timber
+
+- [x] `HotPatata/Level/New Level`: a scene in `Assets/Scenes/Levels` from the courses' template, its `LevelSettings` (menu
+  name, players, day), its groups, a flat terrain under the start, a safety net, the borrowed day; playable at once;
+- [x] pieces from `GameObject > HotPatata Level`: deck, walkway or stair, rope bridge, railing, house (walls that collide,
+  doors and windows, a ceiling under the roof), trestle tower; supports chosen by the kit or forced; new or aged wear;
+- [x] Scene view editing: points moved, added (+), deleted (Ctrl+click), drawn with the pencil; deck shapes (rectangle,
+  rounded, oval, ring or arc round a trunk); rebuilt on release, undo and redo, duplicates get their own id;
+- [x] ends attach to a deck's edge (Shift: free) and open its rail; a deck's own openings slide along its edge; a ring's
+  seam has no rail;
+- [x] presets: a piece's settings saved, applied, dragged into the Scene view;
+- [x] meshes in memory while editing, written per piece on save, orphans deleted; walk lines gathered; quick checks logged;
+- [x] the menu shows display names; Register In Menu places the level in the list (drag) with its players;
+- [x] PatataRanger built from the same shared code: its meshes unchanged but its roofs (their slopes were upside down);
+- [x] `LevelAuthoringTests`, `ConfigurationTests`, `MenuFlowTests`, `NatureLookTests`, `CourseContractTests` and the Ranger
+  route runner pass;
+- [ ] the owner makes a small level with the step-1 tools and finds them usable.
+
+## M18.2 — The nature
+
+- [ ] a HotPatata terrain shader (litter on the flat, rock on slopes, `HP_MixFog`); valley walls; water with its kill zone;
+  a safety net under the whole level;
+- [ ] giant trees (shape, lean, crown, carrying limbs by handles), sawn where a deck wraps them, always colliding;
+- [ ] forest painted with the terrain's brushes and forest areas planted automatically, never in a path;
+- [ ] mist baked from the terrain on save, mist zones; ambience per section and placed sound sources.
+
+## M18.3 — The game, the checks, the props, the guide
+
+- [ ] forest variants of the kit; size handles; Link tool, wiring lines and ghost travels; contracts edited with handles;
+- [ ] checkpoints numbered along the course; Verify Level (clickable list); the route runner on any level; Play from here;
+- [ ] the CC0 props as prefabs, sets and a small-props brush;
+- [ ] the guide completed with pictures, and a short example level (3 checkpoints) made with the tools that passes Verify
+  Level, is in the menu and is played online (host + client).
 
 ---
 

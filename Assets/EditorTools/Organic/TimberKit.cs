@@ -92,6 +92,8 @@ namespace HotPatata.Editor
             public Func<Vector2, bool> railSkip;   // edge points that get no rail (a ring deck's seam)
             public bool held;                      // something else holds it (a house's walls): no posts, braces or hangers
             public int seed;
+            public TimberSupport support;          // Auto: the kit chooses (HoldDeck); else that support, where it can stand
+            public float agedShare;                // the share of aged boards (0: the kit's own, 28 %)
         }
 
         /// <summary>
@@ -131,7 +133,7 @@ namespace HotPatata.Editor
                         var p1 = lineOrigin + along * (t + len - 0.008f);
                         var a = new Vector3(p0.x, top(p0) - BoardThickness * 0.5f + R(rng, -0.003f, 0.003f), p0.y);
                         var b = new Vector3(p1.x, top(p1) - BoardThickness * 0.5f + R(rng, -0.003f, 0.003f), p1.y);
-                        vis.Beam(a, b, w - 0.01f, BoardThickness, rng.NextDouble() < 0.28 ? PlankAged : Plank, new Vector2(R(rng, 0f, 3f), R(rng, 0f, 3f)));
+                        vis.Beam(a, b, w - 0.01f, BoardThickness, rng.NextDouble() < Share(spec.agedShare, 0.28) ? PlankAged : Plank, new Vector2(R(rng, 0f, 3f), R(rng, 0f, 3f)));
                         t += len;
                     }
                 }
@@ -174,7 +176,7 @@ namespace HotPatata.Editor
                     }
                 }
             }
-            if (!spec.held) HoldDeck(vis, poly, top, posts, site, rng);
+            if (!spec.held) HoldDeck(vis, poly, top, posts, site, rng, spec.support);
 
             var root = Finish(parent, name, vis, ProxySlab(poly, top), WalkableProxy.Kind.Deck, 0.08f);
             if (spec.rails) RailOutline(root.transform, name, poly, top, spec.openings, site.trunks, spec.railSkip);
@@ -211,18 +213,32 @@ namespace HotPatata.Editor
 
         static float MaxPost(Site site) => site.maxPost > 0f ? site.maxPost : 4f;
 
+        /// <summary>A share of aged boards: the one asked for, else the kit's own.</summary>
+        static double Share(float asked, double own) => asked > 0f ? asked : own;
+
+        /// <summary>
+        /// The points a hanger was asked for and found no anchor above (no limb, no beam within reach): nothing holds the piece there.
+        /// Cleared by <see cref="ClearReport"/>; the level tools report them.
+        /// </summary>
+        public static readonly List<Vector3> Unheld = new List<Vector3>();
+
+        public static void ClearReport() => Unheld.Clear();
+
         /// <summary>
         /// Holds a deck up the way a builder would: short posts under a low deck; knee braces to the trunk it hugs (an iron band and a
         /// timber collar where they bear), hangers to the limbs above for the rim beyond the braces' reach; else one splayed, braced tower
         /// under its middle; else hangers. Never a post under every bearer of a high deck.
         /// </summary>
-        static void HoldDeck(MeshBuilder vis, IList<Vector2> poly, Func<Vector2, float> top, IList<Vector3> posts, Site site, Random rng)
+        static void HoldDeck(MeshBuilder vis, IList<Vector2> poly, Func<Vector2, float> top, IList<Vector3> posts, Site site, Random rng,
+                             TimberSupport support = TimberSupport.Auto)
         {
+            if (support == TimberSupport.None) return;
             var centroid = poly.Aggregate(Vector2.zero, (sum, q) => sum + q) / poly.Count;
             float y = top(centroid);
             float ground = site.GroundAt(centroid);
             float drop = float.IsNaN(ground) ? float.MaxValue : y - ground;
-            if (drop <= 3.8f)
+            bool auto = support == TimberSupport.Auto;
+            if ((auto && drop <= 3.8f) || support == TimberSupport.Posts)
             {
                 foreach (var post in posts)
                 {
@@ -242,7 +258,7 @@ namespace HotPatata.Editor
                     if (gap < hugGap) { hugGap = gap; hug = i; }
                 }
             float underside = y - BoardThickness - 0.5f;
-            if (hug >= 0 && hugGap < 4f)
+            if (hug >= 0 && hugGap < 4f && (auto || support == TimberSupport.Braces))
             {
                 var t = site.trunks[hug];
                 Band(vis, t, underside + 0.25f);
@@ -268,7 +284,7 @@ namespace HotPatata.Editor
                 if (low.Count > 0) Band(vis, t, low.Average(), 0.12f, false);
                 return;
             }
-            if (drop <= MaxPost(site))
+            if ((auto && drop <= MaxPost(site)) || (support == TimberSupport.Tower && drop < float.MaxValue))
             {
                 // one tower under the middle: four splayed legs, girts, cross braces
                 var b = new Bounds(new Vector3(centroid.x, 0f, centroid.y), Vector3.zero);
@@ -325,7 +341,7 @@ namespace HotPatata.Editor
         }
 
         /// <summary>A four-legged tower under a deck: splayed legs from the ground to its bearers, girts every 3 m, cross braces each face.</summary>
-        static void Tower(MeshBuilder vis, Vector3 topCenter, float hx, float hz, Site site)
+        public static void Tower(MeshBuilder vis, Vector3 topCenter, float hx, float hz, Site site)
         {
             var heads = new Vector3[4];
             var feet = new Vector3[4];
@@ -371,12 +387,12 @@ namespace HotPatata.Editor
         /// <summary>A hanger rope from <paramref name="point"/> up to the nearest anchor above it (a limb, a beam), its iron stirrup.</summary>
         static void Hang(MeshBuilder vis, Vector3 point, Site site)
         {
-            if (site.anchors == null || site.anchors.Count == 0) return;
+            if (site.anchors == null || site.anchors.Count == 0) { Unheld.Add(point); return; }
             var q = new Vector2(point.x, point.z);
             var above = site.anchors.Where(a => a.y > point.y + 2f).ToList();
-            if (above.Count == 0) return;
+            if (above.Count == 0) { Unheld.Add(point); return; }
             var best = above.OrderBy(a => Vector2.Distance(new Vector2(a.x, a.z), q)).First();
-            if (Vector2.Distance(new Vector2(best.x, best.z), q) > 22f) return;
+            if (Vector2.Distance(new Vector2(best.x, best.z), q) > 22f) { Unheld.Add(point); return; }
             vis.Tube(new[] { point, best }, new[] { 0.028f, 0.028f }, 6, Rope);
             vis.Beam(point + Vector3.down * 0.05f, point + Vector3.up * 0.25f, 0.06f, 0.06f, Iron);
         }
@@ -407,6 +423,10 @@ namespace HotPatata.Editor
             public bool onGround;
             /// <summary>Something else holds it (a stairwell's walls): no supports of its own.</summary>
             public bool held;
+            /// <summary>Auto: the kit chooses; else that support (Tower means trestle bents), where it can stand.</summary>
+            public TimberSupport support;
+            /// <summary>The share of aged boards (0: the kit's own, 25 %).</summary>
+            public float agedShare;
         }
 
         /// <summary>
@@ -468,7 +488,7 @@ namespace HotPatata.Editor
                     {
                         var center = new Vector3(c.x, y - BoardThickness * 0.5f, c.z) + fwd * ((b - 0.5f) * stepRun * 0.48f);
                         vis.Box(center, Quaternion.LookRotation(side, Vector3.up), new Vector3(stepRun * 0.46f, BoardThickness, width - 0.04f),
-                                rng.NextDouble() < 0.25 ? PlankAged : Plank, new Vector2(R(rng, 0f, 3f), R(rng, 0f, 3f)));
+                                rng.NextDouble() < Share(spec.agedShare, 0.25) ? PlankAged : Plank, new Vector2(R(rng, 0f, 3f), R(rng, 0f, 3f)));
                     }
                     // the riser board under the tread's front
                     var riserTop = new Vector3(c.x, y - BoardThickness, c.z) - fwd * stepRun * 0.5f;
@@ -491,7 +511,7 @@ namespace HotPatata.Editor
                 if (up.y < 0f) up = -up;
                 float len = width - 0.02f + R(rng, -0.03f, 0.03f);
                 vis.Box(c - up * BoardThickness * 0.5f + side * R(rng, -0.02f, 0.02f), Quaternion.LookRotation(side, up),
-                        new Vector3(boardStep - 0.015f, BoardThickness, len), rng.NextDouble() < 0.25 ? PlankAged : Plank, new Vector2(R(rng, 0f, 3f), R(rng, 0f, 3f)));
+                        new Vector3(boardStep - 0.015f, BoardThickness, len), rng.NextDouble() < Share(spec.agedShare, 0.25) ? PlankAged : Plank, new Vector2(R(rng, 0f, 3f), R(rng, 0f, 3f)));
             }
             // stringers under both edges, following the smooth surface
             float inset = width * 0.5f - 0.08f;
@@ -504,21 +524,32 @@ namespace HotPatata.Editor
 
             // supports: sleepers where the walk lies on the ground, else a braced trestle bent about every 5.5 m, a brace to a trunk,
             // or hangers from the limbs above
-            for (float sc = 0.6f; !spec.held && sc < s[n - 1] - 0.3f; sc += 5.5f)
+            bool walkAuto = spec.support == TimberSupport.Auto;
+            for (float sc = 0.6f; !spec.held && spec.support != TimberSupport.None && sc < s[n - 1] - 0.3f; sc += 5.5f)
             {
                 var (c, side) = AtS(surface, s, sides, sc);
                 var footL = c - side * inset + Vector3.down * (BoardThickness + 0.26f);
                 var footR = c + side * inset + Vector3.down * (BoardThickness + 0.26f);
                 float drop = Mathf.Min(footL.y - site.GroundAt(new Vector2(footL.x, footL.z)), footR.y - site.GroundAt(new Vector2(footR.x, footR.z)));
-                if (spec.onGround || (!float.IsNaN(drop) && drop < 0.9f))
+                if (spec.onGround || (walkAuto && !float.IsNaN(drop) && drop < 0.9f))
                 {
                     vis.Beam(c - side * (width * 0.5f + 0.1f) + Vector3.down * 0.42f, c + side * (width * 0.5f + 0.1f) + Vector3.down * 0.42f, 0.18f, 0.16f, Timber);
                     continue;
                 }
-                if (!float.IsNaN(drop) && drop <= MaxPost(site)) { Bent(vis, footL, footR, site); continue; }
-                bool braced = BraceToTrunk(vis, footL, site, 7f);
-                braced |= BraceToTrunk(vis, footR, site, 7f);
-                if (!braced)
+                bool standing = !float.IsNaN(drop);
+                if ((walkAuto && standing && drop <= MaxPost(site)) ||
+                    (standing && (spec.support == TimberSupport.Posts || spec.support == TimberSupport.Tower)))
+                {
+                    Bent(vis, footL, footR, site);
+                    continue;
+                }
+                bool braced = false;
+                if (walkAuto || spec.support == TimberSupport.Braces)
+                {
+                    braced = BraceToTrunk(vis, footL, site, 7f);
+                    braced |= BraceToTrunk(vis, footR, site, 7f);
+                }
+                if (!braced && spec.support != TimberSupport.Braces)
                 {
                     Hang(vis, footL, site);
                     Hang(vis, footR, site);
@@ -557,6 +588,7 @@ namespace HotPatata.Editor
         {
             public bool sideWalls;       // colliders up to the hand ropes (no stepping off the side)
             public int seed;
+            public float agedShare;      // the share of aged slats (0: the kit's own, 35 %)
         }
 
         /// <summary>
@@ -583,7 +615,7 @@ namespace HotPatata.Editor
                 if (up.y < 0f) up = -up;
                 var c = deck[i] - up * BoardThickness * 0.5f + side * R(rng, -0.03f, 0.03f);
                 var rot = Quaternion.LookRotation(side, up) * Quaternion.Euler(0f, R(rng, -1.5f, 1.5f), 0f);
-                vis.Box(c, rot, new Vector3(0.22f, BoardThickness, width + R(rng, 0.02f, 0.12f)), rng.NextDouble() < 0.35 ? PlankAged : Plank,
+                vis.Box(c, rot, new Vector3(0.22f, BoardThickness, width + R(rng, 0.02f, 0.12f)), rng.NextDouble() < Share(spec.agedShare, 0.35) ? PlankAged : Plank,
                         new Vector2(R(rng, 0f, 3f), R(rng, 0f, 3f)));
             }
             // foot ropes under the slats' ends, hand ropes above

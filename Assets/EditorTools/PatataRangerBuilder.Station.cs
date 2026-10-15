@@ -16,28 +16,10 @@ namespace HotPatata.Editor
     {
         const int Plank = TimberKit.Plank, Aged = TimberKit.PlankAged, Wood = TimberKit.Timber, Iron = TimberKit.Iron, Rope = TimberKit.Rope;
 
-        /// <summary>A square post from its foot (sunk a little) up <paramref name="height"/>.</summary>
-        static void Post(MeshBuilder mb, Vector3 foot, float height, float size = 0.22f) =>
-            mb.Beam(foot + Vector3.down * 0.3f, foot + Vector3.up * height, size, size, Wood);
+        static void Post(MeshBuilder mb, Vector3 foot, float height, float size = 0.22f) => TimberBuildings.Post(mb, foot, height, size);
 
-        /// <summary>A pitched roof of boards over a rectangle (centre, half sizes, turned by yaw): two slopes meeting at the ridge.</summary>
-        static void Roof(MeshBuilder mb, Vector3 eaveCenter, float halfX, float halfZ, float rise, Quaternion rot, int slot = Aged, float overhang = 0.45f)
-        {
-            float hx = halfX + overhang, hz = halfZ + overhang;
-            float slope = Mathf.Sqrt(hx * hx + rise * rise);
-            float pitch = Mathf.Atan2(rise, hx) * Mathf.Rad2Deg;
-            int boards = Mathf.CeilToInt(2f * hz / 0.26f);
-            for (int side = -1; side <= 1; side += 2)
-                for (int k = 0; k < boards; k++)
-                {
-                    float z = -hz + (k + 0.5f) * 2f * hz / boards;
-                    var mid = new Vector3(side * hx * 0.5f, rise * 0.5f + 0.02f * (k % 2), z);
-                    var r = rot * Quaternion.Euler(0f, 0f, side * pitch) * Quaternion.Euler(0f, 90f, 0f);
-                    mb.Box(eaveCenter + rot * mid, r, new Vector3(0.25f, 0.05f, slope + 0.05f), k % 3 == 0 ? Plank : slot,
-                           new Vector2(k * 0.37f, side * 0.71f));
-                }
-            mb.Box(eaveCenter + rot * new Vector3(0f, rise + 0.05f, 0f), rot, new Vector3(0.18f, 0.16f, 2f * hz + 0.1f), Wood);
-        }
+        static void Roof(MeshBuilder mb, Vector3 eaveCenter, float halfX, float halfZ, float rise, Quaternion rot, int slot = Aged, float overhang = 0.45f) =>
+            TimberBuildings.Roof(mb, eaveCenter, halfX, halfZ, rise, rot, slot, overhang);
 
         /// <summary>A winch drum with its crank: a log drum on two cheeks, an iron crank handle.</summary>
         static void Drum(MeshBuilder mb, Vector3 center, Quaternion rot, float length = 1.3f, float radius = 0.28f)
@@ -147,50 +129,10 @@ namespace HotPatata.Editor
             pile.AddComponent<BoxCollider>().size = new Vector3(4.2f, 1.6f, 1.8f);
         }
 
-        /// <summary>A small log hut: plank floor on sleepers, log walls (boxes that collide), a door gap, a pitched roof.</summary>
-        static void Hut(Transform p, string name, Vector3 foot, Quaternion rot, float halfX, float halfZ)
-        {
-            const float WallH = 2.6f;
-            var root = new GameObject(name).transform;
-            root.SetParent(p, false);
-            Timber(root, name + " frame", mb =>
-            {
-                // log walls: courses of logs with their ends crossing at the corners
-                for (int course = 0; course < 9; course++)
-                {
-                    float y = 0.15f + course * 0.29f;
-                    foreach (int s in new[] { -1, 1 })
-                    {
-                        bool alongX = course % 2 == 0;
-                        var a = foot + rot * (alongX ? new Vector3(-halfX - 0.35f, y, s * halfZ) : new Vector3(s * halfX, y + 0.145f, -halfZ - 0.35f));
-                        var b = foot + rot * (alongX ? new Vector3(halfX + 0.35f, y, s * halfZ) : new Vector3(s * halfX, y + 0.145f, halfZ + 0.35f));
-                        if (!alongX && s > 0 && course < 7)
-                        {
-                            // the door in the +X wall
-                            mb.Tube(new[] { a, Vector3.Lerp(a, b, 0.36f) }, new[] { 0.16f, 0.16f }, 8, Wood, true, course * 0.2f);
-                            mb.Tube(new[] { Vector3.Lerp(a, b, 0.64f), b }, new[] { 0.16f, 0.16f }, 8, Wood, true, course * 0.3f);
-                        }
-                        else mb.Tube(new[] { a, b }, new[] { 0.16f, 0.16f }, 8, Wood, true, course * 0.37f + s);
-                    }
-                }
-                Roof(mb, foot + Vector3.up * (WallH + 0.1f), halfX, halfZ, 1.5f, rot * Quaternion.Euler(0f, 90f, 0f), Aged, 0.6f);
-            });
-            // walls collide as boxes (the door gap stays open)
-            foreach (int s in new[] { -1, 1 })
-                SolidTimberInvisible(root, name + " wall z" + s, foot + rot * new Vector3(0f, WallH / 2f, s * halfZ), rot, new Vector3(2f * halfX + 0.4f, WallH, 0.32f));
-            SolidTimberInvisible(root, name + " wall x-", foot + rot * new Vector3(-halfX, WallH / 2f, 0f), rot, new Vector3(0.32f, WallH, 2f * halfZ));
-            foreach (int s in new[] { -1, 1 })
-                SolidTimberInvisible(root, name + " wall x+" + s, foot + rot * new Vector3(halfX, WallH / 2f, s * halfZ * 0.68f), rot, new Vector3(0.32f, WallH, halfZ * 0.64f));
-        }
+        static void Hut(Transform p, string name, Vector3 foot, Quaternion rot, float halfX, float halfZ) => TimberBuildings.Hut(p, name, foot, rot, halfX, halfZ);
 
-        /// <summary>A box collider on Environment with no renderer (the drawn timber is beside it).</summary>
-        static void SolidTimberInvisible(Transform p, string name, Vector3 center, Quaternion rot, Vector3 size)
-        {
-            var go = new GameObject(name) { layer = Layer("Environment") };
-            go.transform.SetParent(p, false);
-            go.transform.SetPositionAndRotation(center, rot);
-            go.AddComponent<BoxCollider>().size = size;
-        }
+        static void SolidTimberInvisible(Transform p, string name, Vector3 center, Quaternion rot, Vector3 size) =>
+            TimberBuildings.SolidInvisible(p, name, center, rot, size);
 
         // ------------------------------------------------------------------ pulleys, signs, trestles
 
@@ -277,108 +219,12 @@ namespace HotPatata.Editor
             GlyphSign(p, at + Vector3.up * 1.75f + facing * 0.02f, facing, glyph, 0.95f);
         }
 
-        /// <summary>
-        /// A trestle tower: four splayed legs from the ground up to <paramref name="top"/>, horizontal girts every 3.5 m and cross braces
-        /// on each face; the legs collide (a body stops at them).
-        /// </summary>
-        static void Trestle(Transform p, string name, Vector3 center, float top, Vector2 half, float yaw)
-        {
-            var rot = Quaternion.Euler(0f, yaw, 0f);
-            var corners = new[] { new Vector2(-1, -1), new Vector2(1, -1), new Vector2(1, 1), new Vector2(-1, 1) };
-            var heads = new Vector3[4];
-            var feet = new Vector3[4];
-            for (int i = 0; i < 4; i++)
-            {
-                var c = corners[i];
-                heads[i] = new Vector3(center.x, top, center.z) + rot * new Vector3(c.x * half.x, 0f, c.y * half.y);
-                var footXZ = new Vector3(center.x, 0f, center.z) + rot * new Vector3(c.x * (half.x + 0.06f * top), 0f, c.y * (half.y + 0.06f * top));
-                feet[i] = new Vector3(footXZ.x, GroundAt(footXZ.x, footXZ.z) - 0.4f, footXZ.z);
-            }
-            float bottom = feet.Max(f => f.y);
-            Timber(p, name, mb =>
-            {
-                for (int i = 0; i < 4; i++) mb.Beam(feet[i], heads[i] + Vector3.up * 0.2f, 0.3f, 0.3f, Wood, new Vector2(i * 0.7f, 0f));
-                var levels = new List<float>();
-                for (float y = bottom + 2.4f; y < top - 0.6f; y += 3.5f) levels.Add(y);
-                levels.Add(top - 0.35f);
-                Vector3 Leg(int i, float y) => Vector3.Lerp(feet[i], heads[i], Mathf.InverseLerp(feet[i].y, heads[i].y, y));
-                for (int k = 0; k < levels.Count; k++)
-                    for (int i = 0; i < 4; i++)
-                    {
-                        int j = (i + 1) % 4;
-                        mb.Beam(Leg(i, levels[k]), Leg(j, levels[k]), 0.14f, 0.2f, Wood);
-                        if (k > 0)
-                        {
-                            mb.Beam(Leg(i, levels[k - 1]), Leg(j, levels[k]), 0.1f, 0.16f, Wood);
-                            mb.Beam(Leg(j, levels[k - 1]), Leg(i, levels[k]), 0.1f, 0.16f, Wood);
-                        }
-                    }
-            });
-            for (int i = 0; i < 4; i++)
-            {
-                var go = new GameObject(name + " leg " + i) { layer = Layer("Environment") };
-                go.transform.SetParent(p, false);
-                var a = feet[i];
-                var b = heads[i];
-                go.transform.SetPositionAndRotation((a + b) * 0.5f, Quaternion.LookRotation((b - a).normalized, Vector3.forward));
-                go.AddComponent<BoxCollider>().size = new Vector3(0.3f, 0.3f, Vector3.Distance(a, b));
-            }
-        }
-
         // ------------------------------------------------------------------ the winch house (act E)
 
         static Vector3 HouseCenter, TerraceCenter;
 
-        /// <summary>A plank wall from <paramref name="a"/> to <paramref name="b"/> (x, z) between two heights, its openings (distance along it, width, height); it collides.</summary>
-        static void PlankWall(Transform p, string name, Vector2 a, Vector2 b, float y0, float y1, params (float at, float width, float height)[] doors)
-        {
-            var along = (b - a).normalized;
-            float length = Vector2.Distance(a, b);
-            var dir3 = new Vector3(along.x, 0f, along.y);
-            var normal = new Vector3(along.y, 0f, -along.x);
-            var rot = Quaternion.LookRotation(dir3);
-            // the solid pieces: between the openings full height, above each opening
-            var cuts = doors.OrderBy(d => d.at).ToList();
-            float x = 0f;
-            int piece = 0;
-            void Solid(float s0, float s1, float h0, float h1)
-            {
-                if (s1 - s0 < 0.02f || h1 - h0 < 0.02f) return;
-                var c = V3(a + along * ((s0 + s1) / 2f), (h0 + h1) / 2f);
-                SolidTimberInvisible(p, $"{name} {++piece}", c, rot, new Vector3(0.24f, h1 - h0, s1 - s0));
-            }
-            foreach (var d in cuts)
-            {
-                Solid(x, d.at - d.width / 2f, y0, y1);
-                Solid(d.at - d.width / 2f, d.at + d.width / 2f, y0 + d.height, y1);
-                x = d.at + d.width / 2f;
-            }
-            Solid(x, length, y0, y1);
-            Timber(p, name + " boards", mb =>
-            {
-                int boards = Mathf.CeilToInt(length / 0.24f);
-                var boardRot = Quaternion.LookRotation(Vector3.up, normal);
-                for (int k = 0; k < boards; k++)
-                {
-                    float s = (k + 0.5f) * length / boards;
-                    float h0 = y0, h1 = y1;
-                    var door = cuts.FirstOrDefault(d => Mathf.Abs(s - d.at) < d.width / 2f);
-                    if (door.width > 0f) h0 = y0 + door.height;
-                    var c = V3(a + along * s, (h0 + h1) / 2f);
-                    mb.Box(c, boardRot, new Vector3(length / boards - 0.01f, 0.05f, h1 - h0), k % 4 == 1 ? Aged : Plank, new Vector2(k * 0.31f, k * 0.17f));
-                }
-                // posts at the ends and round the openings, a sill and a plate beam
-                mb.Beam(V3(a, y0 - 0.2f), V3(a, y1 + 0.1f), 0.24f, 0.24f, Wood);
-                mb.Beam(V3(b, y0 - 0.2f), V3(b, y1 + 0.1f), 0.24f, 0.24f, Wood);
-                foreach (var d in cuts)
-                {
-                    foreach (float e in new[] { -1f, 1f })
-                        mb.Beam(V3(a + along * (d.at + e * (d.width / 2f + 0.09f)), y0), V3(a + along * (d.at + e * (d.width / 2f + 0.09f)), y0 + d.height + 0.2f), 0.18f, 0.18f, Wood);
-                    mb.Beam(V3(a + along * (d.at - d.width / 2f - 0.3f), y0 + d.height + 0.1f), V3(a + along * (d.at + d.width / 2f + 0.3f), y0 + d.height + 0.1f), 0.2f, 0.2f, Wood);
-                }
-                mb.Beam(V3(a, y1 - 0.1f) + normal * 0.08f, V3(b, y1 - 0.1f) + normal * 0.08f, 0.16f, 0.22f, Wood);
-            });
-        }
+        static void PlankWall(Transform p, string name, Vector2 a, Vector2 b, float y0, float y1, params (float at, float width, float height)[] doors) =>
+            TimberBuildings.PlankWall(p, name, a, b, y0, y1, doors);
 
         /// <summary>A floor outline: the rectangle less a notch round the trunk from the west wall (or a slit to its hole) and an optional square cut at the north-east corner.</summary>
         static List<Vector2> FloorOutline(float x0, float x1, float z0, float z1, TimberKit.Trunk trunk, float cut)
