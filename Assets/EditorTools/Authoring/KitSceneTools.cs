@@ -255,10 +255,53 @@ namespace HotPatata.Editor
         static void Resize(GameObject root, string what, System.Action resize)
         {
             Undo.RegisterFullObjectHierarchyUndo(root, what);
+            var kind = KindOf(root, out _);
+            var before = Measure(root, kind);
             resize();
+            // a hand-made visual (a forest look, docs/OBSTACLES.md §4.1) follows the new size: the kit's resize only knows its own parts
+            var after = Measure(root, kind);
+            if (before.HasValue && after.HasValue) Refit(root, kind, before.Value, after.Value);
             PrefabUtility.RecordPrefabInstancePropertyModifications(root.transform);
             EditorSceneManager.MarkSceneDirty(root.scene);
         }
+
+        /// <summary>The size the kit's resize writes (what a hand-made visual is scaled by), in the frame its visual is drawn in.</summary>
+        static Vector3? Measure(GameObject root, Kind kind)
+        {
+            switch (kind)
+            {
+                case Kind.Actuator:
+                    var platform = root.GetComponent<SignalActuator>().Platform;
+                    var box = platform != null ? platform.GetComponentsInChildren<BoxCollider>(true).FirstOrDefault(c => !c.isTrigger) : null;
+                    return box != null ? new Vector3(box.size.x, 1f, box.size.z) : (Vector3?)null;   // a deck's thickness never stretches its posts
+                case Kind.Zone:
+                case Kind.Curtain:
+                    return root.GetComponent<BoxCollider>().size;
+                case Kind.Screen:
+                    var screen = root.GetComponentsInChildren<BoxCollider>(true).FirstOrDefault(c => c.gameObject.layer == CourseKit.Layer(BodyScreen.LayerName));
+                    return screen != null ? new Vector3(screen.size.x, screen.size.y, 1f) : (Vector3?)null;
+                case Kind.Plate:
+                    var plate = root.GetComponent<BoxCollider>().size;
+                    return new Vector3(plate.x, 1f, plate.z);
+                default:
+                    return null;
+            }
+        }
+
+        /// <summary>Scales every outermost <see cref="CustomVisual"/> of <paramref name="root"/> by the change of size.</summary>
+        static void Refit(GameObject root, Kind kind, Vector3 before, Vector3 after)
+        {
+            Vector3 ratio = new Vector3(Ratio(after.x, before.x), Ratio(after.y, before.y), Ratio(after.z, before.z));
+            if ((ratio - Vector3.one).sqrMagnitude < 1e-8f) return;
+            foreach (var visual in root.GetComponentsInChildren<CustomVisual>(true))
+            {
+                if (visual.transform.parent != null && visual.transform.parent.GetComponentInParent<CustomVisual>(true) != null) continue;
+                // a body screen's frame keeps its depth; its net and the curtain's sparks scale in the wall's plane
+                visual.transform.localScale = Vector3.Scale(visual.transform.localScale, ratio);
+            }
+        }
+
+        static float Ratio(float after, float before) => before > 1e-4f ? after / before : 1f;
 
         /// <summary>A door, bridge or lift: its platform's box (closed, where it stands) and its open position as a ghost with a handle.</summary>
         static void SizeActuator(GameObject root)

@@ -207,7 +207,7 @@ namespace HotPatata.Editor
 
         // ------------------------------------------------------------------ campfire (checkpoint)
 
-        static Material ParticleMaterial(string name, Color color, bool additive) =>
+        internal static Material ParticleMaterial(string name, Color color, bool additive) =>
             MakeUnlitMaterial(name, color, AssetDatabase.LoadAssetAtPath<Texture2D>(SoftDot), additive);
 
         /// <summary>
@@ -320,7 +320,7 @@ namespace HotPatata.Editor
             presentation.Configure(Tuning, checkpoint, flames, embers, smoke, light, audio, scale);
         }
 
-        static ParticleSystem Particles(Transform parent, string name, Material material, float scale, Vector2 lifetime, Vector2 speed, Vector2 size, float rate,
+        internal static ParticleSystem Particles(Transform parent, string name, Material material, float scale, Vector2 lifetime, Vector2 speed, Vector2 size, float rate,
                                         float radius, float gravity, Color start, Color end, float noise = 0f, float grow = 1f)
         {
             var go = new GameObject(name);
