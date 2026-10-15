@@ -7,11 +7,14 @@ The tools come in three steps (M18). This guide covers what is built:
 | Step | What you get | State |
 |---|---|---|
 | 1. The level and its timber | a new level scene, decks, walkways and stairs, rope bridges, railings, houses, trestle towers; the menu; the day | built |
-| 2. The nature | a sculpted terrain with the nature look, valley walls, water, giant trees, forest, mist, sound | next |
-| 3. The game | forest looks for the kit, size handles, wiring, contracts, numbered checkpoints, Verify Level, the route runner, Play from here, props | after |
+| 2. The nature | the terrain in the nature look, valley walls, water, giant trees, forests (planted or painted), mist, sound | built |
+| 3. The game | forest looks for the kit, size handles, wiring, contracts, numbered checkpoints, Verify Level, the route runner, Play from here, props | next |
 
 Until step 3, place the kit (`Assets/Prefabs/Gameplay`, `Obstacles`, `Platforms`) and the checkpoints by hand, as in
 `docs/OBSTACLES.md`, and check your level with `HotPatata/Course/Check Section Contracts`.
+
+A good order: make the level (§1), shape the land (§2), plant the giant trees (§3), hang the timber on them (§4 to §7),
+plant the forest round it (§8), then the mist and the sound (§9).
 
 ---
 
@@ -26,13 +29,40 @@ Until step 3, place the kit (`Assets/Prefabs/Gameplay`, `Obstacles`, `Platforms`
      moment at the last checkpoint.
 3. **Create Level**. The scene opens: `Assets/Scenes/Levels/<name>.unity`.
 
-You can press Play at once: the players start on a flat forest floor. Everything you add goes under
-`SectionRoot/Level` (its groups: `Timber`, `Trees`, `Kit`, `Props`).
+You can press Play at once: the players start on a flat forest floor (a 256 m terrain) with a safety net far under it.
+Everything you add goes under `SectionRoot/Level` (its groups: `Timber`, `Trees`, `Kit`, `Props`).
 
-The level's settings (menu name, players, day) are on the `Level` object (`LevelSettings`). After changing the day:
-`HotPatata/Level/Apply Look`.
+The level's settings are on the `Level` object (`LevelSettings`): menu name, players, day (**Apply the day** after
+changing it), and the terrain, mist and sound tools below.
 
-## 2. Add timber
+## 2. Shape the land
+
+The level's ground is a Unity **Terrain** (`Level/Terrain`). Select it and sculpt it with its own brushes (Raise or Lower,
+Set Height, Smooth, Stamp): dig a ravine, raise a hill, flatten a clearing. It is drawn as the forest floor of the nature
+courses by itself: leaf litter where it is flat, rock where it is steep, in the height mist. (Its Paint Texture tool is not
+used.)
+
+- **Valley walls**: on the `Level` object, **Raise valley walls round the edge** lifts the terrain's border into rock walls
+  (choose their width and height). Ctrl+Z undoes it.
+- **Water**: `GameObject > HotPatata Level > Water`. A surface at the piece's height (drag the yellow squares to size it,
+  turn the piece to turn its flow) with a kill zone under it down to its depth: falling in, or throwing the bomb into it,
+  fails the section. Dig the ground under it first.
+- The safety net follows the terrain on every save (always under its lowest point).
+
+After reshaping the ground under timber: `HotPatata/Level/Rebuild All Pieces` (the posts find the new ground).
+
+## 3. Giant trees
+
+`GameObject > HotPatata Level > Giant Tree` grows a hero tree (the kind PatataRanger's post is built round), 40 to 70 m.
+
+- **Start from** an old oak, a tall fir, a pine or a snag (Inspector), then adjust its height, girth, crown and seed.
+- **The white handle at the top of the trunk** leans the tree and sets its height.
+- **Add a carrying limb**: a dot on the trunk (drag it up or down) and a handle at its tip (drag it to aim it, lengthen it,
+  raise it). Limbs hold hangers (a deck far from the ground hangs from them) and can carry leaves.
+- The trunk and the big limbs always collide: players stop at them, a thrown bomb explodes on them.
+- A tree takes a second or two to grow: it regrows when you let go of a handle.
+
+## 4. Add timber
 
 `GameObject > HotPatata Level` (or right click in the Hierarchy) adds a piece where the Scene view looks, built at once:
 
@@ -46,9 +76,13 @@ The level's settings (menu name, players, day) are on the `Level` object (`Level
 | **Trestle Tower** | four braced legs from the ground up to the piece's height |
 
 Every piece has a **Wear** (new, or aged boards) and most a **Support** (Auto lets the kit choose, or force Posts, Tower,
-Braces, Hangers or None). Hangers need something above to tie to (a giant tree's limb, step 2).
+Braces, Hangers or None). Hangers tie to a giant tree's limbs or trunk above them.
 
-## 3. Shape it in the Scene view
+**A deck round a giant tree**: set its **Trunk** to the tree, raise the deck to its height, then **Ring round the trunk**
+(or **Arc**) in its Inspector. It is cut round the trunk and braced to it, and the tree's crown limbs are sawn off round
+the deck by themselves (stubs only, so no limb runs through it). A deck near a trunk is braced to it even without the field.
+
+## 5. Shape it in the Scene view
 
 Select a piece. Its points show as yellow dots:
 
@@ -64,7 +98,7 @@ The geometry follows when you let go of the mouse (the line is drawn live while 
 A deck's Inspector has ready shapes (Rectangle, Rounded, Oval and, once it has a Trunk, a Ring or an Arc round the trunk)
 to start from and then pull into shape.
 
-## 4. Join pieces
+## 6. Join pieces
 
 - **Select an end dot** (the first or last point of a walkway, either end of a bridge) and **drag it onto a deck's edge or
   onto another walkway's or bridge's end**: when it is close enough on screen a green ring shows; let go and it is
@@ -75,21 +109,46 @@ to start from and then pull into shape.
 - **A deck's own openings** (Add opening in its Inspector) are cyan dots on its edge: slide them where a gap should be.
 - A bridge shows its length and the slope at its ends; keep it at 18° or less.
 
-## 5. Presets
+## 7. Presets
 
 **Save As Preset** in a piece's Inspector saves its settings (width, rails, supports, wear...), never its shape. Use it
 again with **Apply Preset**, or drag the preset from the Project window into the Scene view: a new piece of that kind
 appears there with those settings.
 
-## 6. Save
+## 8. Forest
 
-Saving the scene (Ctrl+S) writes the pieces' meshes to `Assets/Art/Generated/<level>/Pieces/` (one folder per piece;
-removed pieces' folders are deleted) and gathers the level's walk lines. The Console then says how many pieces and meshes,
-and lists anything a piece cannot be built as drawn (a hanger with nothing above, a scaled piece...).
+Two ways, together:
 
-If you reshape the ground under pieces: `HotPatata/Level/Rebuild All Pieces`.
+- **Forest Area** (`GameObject > HotPatata Level > Forest Area`): draw its outline like a deck's (dots, +, Ctrl+click, or
+  the pencil). Inside it the forest is planted by itself, like PatataRanger's: giants in groves with clearings, an
+  understory, ferns, grass, bushes, rocks, logs and moss. Set how dense each layer is, how open the clearings are, and how
+  far it keeps from the paths. Nothing grows on a walkway, a bridge, a deck, a pass arc, on water, on rock too steep, or
+  too near a giant tree, and it replants by itself when a piece near it changes (**Replant now** forces it). Nothing in it
+  collides: it is decoration.
+- **Painted**, one by one: select the terrain, **Paint Trees** (pines, firs, broadleaves, snags, bushes) and **Paint
+  Details** (ferns, grass). If the terrain has none, **Set up the forest brushes** on the `Level` object. Then **Clear
+  painted paths** takes off what was painted on a path, in a solid, on water or on a pass arc.
 
-## 7. Put it in the menu
+## 9. Mist and sound
+
+- **Mist**: it lies a little under the ground everywhere (the team walks in its veil), thick at dawn, as the day says.
+  On the `Level` object: **Mist density** (thinner or thicker than the day) and **Mist depth**. A **Mist Zone**
+  (`GameObject > HotPatata Level > Mist Zone`) fills its box with mist up to its top: a ravine, a hollow, a clearing at
+  dawn. The mist is baked again on every save (or **Bake the mist now**).
+- **Ambience**: on the `Level` object, each section's ambience (Forest, River, Canopy, Cave...): from the start, then from
+  each checkpoint. Written on save.
+- **Sound Source**: a river, a waterfall, a fire, wind... at a spot (pick its sound and how far it is heard). The sounds
+  are the folders of `Assets/Audio/Ambience/Emitters`; drop files there (`Assets/Audio/README.md`).
+- **Ambience Zone**: a box where the ambience is another one (a cave in the forest).
+
+## 10. Save
+
+Saving the scene (Ctrl+S) writes the pieces' meshes and the forests' plantings to `Assets/Art/Generated/<level>/Pieces/`
+(one folder per piece; removed pieces' folders are deleted), gathers the level's walk lines, refits the safety net, bakes
+the mist and writes the sections' ambience. The Console then says what was written, and lists anything a piece cannot be
+built as drawn (a hanger with nothing above, a scaled piece...).
+
+## 11. Put it in the menu
 
 `HotPatata/Level/Register In Menu...` with your level open:
 

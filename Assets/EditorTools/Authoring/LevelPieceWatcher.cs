@@ -81,8 +81,9 @@ namespace HotPatata.Editor
             int written = LevelMeshStore.Persist(scene);
             int orphans = LevelMeshStore.DeleteOrphans(scene);
             LevelRoutes.Gather(scene);
+            string land = LevelTerrain.OnSave(scene);
             var findings = LevelQuickCheck.Run(scene);
-            string summary = $"[Level] {scene.name} saved: {TimberLinks.Pieces(scene).Count()} piece(s), {written} mesh(es) written, {orphans} old folder(s) removed";
+            string summary = $"[Level] {scene.name} saved: {TimberLinks.Pieces(scene).Count()} piece(s), {written} asset(s) written, {orphans} old folder(s) removed{land}";
             if (findings.Count == 0) Debug.Log(summary + ", quick checks clean.");
             else Debug.LogWarning(summary + $", {findings.Count} quick check finding(s):\n- " + string.Join("\n- ", findings));
         }

@@ -50,34 +50,70 @@ namespace HotPatata.Editor
         [MenuItem(Add + "Railing", priority = 13)] static void AddRailing() => Create<RailingShape>("Railing", 0f);
         [MenuItem(Add + "House", priority = 14)] static void AddHouse() => Create<HouseShape>("House", 0f);
         [MenuItem(Add + "Trestle Tower", priority = 15)] static void AddTrestle() => Create<TrestleShape>("Trestle", 6f);
+        [MenuItem(Add + "Giant Tree", priority = 30)] static void AddTree() => Create<HeroTreeShape>("Giant tree", -0.4f, LevelGroup.Trees);
+        [MenuItem(Add + "Forest Area", priority = 31)] static void AddForest() => Create<ForestArea>("Forest", 0f, LevelGroup.Trees);
+        [MenuItem(Add + "Water", priority = 32)] static void AddWater() => Create<WaterShape>("Water", 0.5f, LevelGroup.Props);
 
-        static void Create<T>(string name, float above) where T : LevelPiece
+        [MenuItem(Add + "Mist Zone", priority = 50)]
+        static void AddMistZone()
+        {
+            var go = NewObject("Mist zone", Ground(0f) + Vector3.up * 2f, LevelGroup.Props);
+            Undo.AddComponent<MistZone>(go);
+        }
+
+        [MenuItem(Add + "Sound Source", priority = 51)]
+        static void AddSound()
+        {
+            var settings = LevelScenes.SettingsOf(EditorSceneManager.GetActiveScene());
+            var parent = settings != null ? settings.Group(LevelGroup.Props) : null;
+            var at = Ground(1f);
+            var audio = NatureKit.Ambient(parent, "Sound source", parent != null ? parent.InverseTransformPoint(at) : at, NatureAudioFactory.Ambience.River, 0.8f, 40f);
+            audio.GetComponent<AmbientLoop>().Configure("");
+            Undo.RegisterCreatedObjectUndo(audio.gameObject, "Add sound source");
+            Selection.activeGameObject = audio.gameObject;
+        }
+
+        [MenuItem(Add + "Ambience Zone", priority = 52)]
+        static void AddAmbienceZone()
+        {
+            var go = NewObject("Ambience zone", Ground(4f), LevelGroup.Props);
+            Undo.AddComponent<AmbienceZone>(go).Configure("Cave", new Vector3(20f, 10f, 20f), 1);
+        }
+
+        /// <summary>Where the Scene view looks, on the ground, <paramref name="above"/> it.</summary>
+        static Vector3 Ground(float above)
         {
             var view = SceneView.lastActiveSceneView;
             var pivot = view != null ? view.pivot : Vector3.zero;
             float ground = SceneSite.GroundAt(new Vector2(pivot.x, pivot.z), pivot.y + 200f);
-            var at = new Vector3(pivot.x, (float.IsNaN(ground) ? pivot.y : ground) + above, pivot.z);
-            CreatePiece(typeof(T), name, at);
+            return new Vector3(pivot.x, (float.IsNaN(ground) ? pivot.y : ground) + above, pivot.z);
         }
 
-        /// <summary>A new piece of type <paramref name="type"/> at <paramref name="at"/>, in its level group, selected and built.</summary>
-        public static LevelPiece CreatePiece(Type type, string name, Vector3 at)
+        static GameObject NewObject(string name, Vector3 at, LevelGroup group)
         {
-            var scene = EditorSceneManager.GetActiveScene();
-            var settings = LevelScenes.SettingsOf(scene);
-            var go = new GameObject(ObjectNames.GetUniqueName(Siblings(settings), name));
+            var settings = LevelScenes.SettingsOf(EditorSceneManager.GetActiveScene());
+            var go = new GameObject(ObjectNames.GetUniqueName(Siblings(settings, group), name));
             Undo.RegisterCreatedObjectUndo(go, "Add " + name);
-            if (settings != null) Undo.SetTransformParent(go.transform, settings.Group(LevelGroup.Timber), "Add " + name);
+            if (settings != null) Undo.SetTransformParent(go.transform, settings.Group(group), "Add " + name);
             go.transform.position = at;
+            Selection.activeGameObject = go;
+            return go;
+        }
+
+        static void Create<T>(string name, float above, LevelGroup group = LevelGroup.Timber) where T : LevelPiece => CreatePiece(typeof(T), name, Ground(above), group);
+
+        /// <summary>A new piece of type <paramref name="type"/> at <paramref name="at"/>, in its level group, selected and built.</summary>
+        public static LevelPiece CreatePiece(Type type, string name, Vector3 at, LevelGroup group = LevelGroup.Timber)
+        {
+            var go = NewObject(name, at, group);
             var piece = (LevelPiece)Undo.AddComponent(go, type);
             piece.EnsureId();
-            Selection.activeGameObject = go;
             LevelPieceBuilder.Rebuild(piece);
             return piece;
         }
 
-        static string[] Siblings(LevelSettings settings) =>
-            settings == null ? Array.Empty<string>() : settings.Group(LevelGroup.Timber).Cast<Transform>().Select(t => t.name).ToArray();
+        static string[] Siblings(LevelSettings settings, LevelGroup group = LevelGroup.Timber) =>
+            settings == null ? Array.Empty<string>() : settings.Group(group).Cast<Transform>().Select(t => t.name).ToArray();
     }
 
     /// <summary>HotPatata/Level/New Level: the level's scene name, its name in the menu, the players it needs and its day.</summary>

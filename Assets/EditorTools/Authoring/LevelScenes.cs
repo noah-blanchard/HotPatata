@@ -69,8 +69,11 @@ namespace HotPatata.Editor
             float groundY = starts.Count > 0 ? starts.Min(s => s.y) : 0f;
             var terrain = MakeTerrain(name, level, new Vector3(start.x, groundY, start.z));
             SafetyNet(level, terrain);
+            LevelTerrain.SetupBrushes(terrain);
 
             if (section.GetComponent<RouteWalks>() == null) section.gameObject.AddComponent<RouteWalks>();
+            LevelTerrain.BakeMist(scene, settings);
+            LevelTerrain.WriteAudio(scene, settings);
             LookBuilder.ApplyToScene(scene);
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
@@ -79,7 +82,10 @@ namespace HotPatata.Editor
             return scene;
         }
 
-        /// <summary>A flat Unity terrain centred on the start, its surface at <paramref name="surface"/>'s height (it can be dug and raised).</summary>
+        /// <summary>
+        /// A flat Unity terrain centred on the start, its surface at <paramref name="surface"/>'s height (it can be dug and raised),
+        /// drawn in the nature look (<see cref="LevelTerrain.ApplyLook"/>).
+        /// </summary>
         static Terrain MakeTerrain(string levelName, Transform parent, Vector3 surface)
         {
             string folder = LevelMeshStore.GeneratedRoot + levelName + "/Terrain";
@@ -92,7 +98,6 @@ namespace HotPatata.Editor
             for (int z = 0; z < TerrainResolution; z++)
                 for (int x = 0; x < TerrainResolution; x++) heights[z, x] = flat;
             data.SetHeights(0, 0, heights);
-            data.terrainLayers = new[] { GroundLayer(folder) };
             AssetDatabase.CreateAsset(data, folder + "/" + levelName + "_Terrain.asset");
 
             var go = Terrain.CreateTerrainGameObject(data);
@@ -102,24 +107,8 @@ namespace HotPatata.Editor
             go.transform.position = new Vector3(surface.x - TerrainSize / 2f, surface.y - TerrainDepth, surface.z - TerrainSize / 2f);
             GameObjectUtility.SetStaticEditorFlags(go, StaticEditorFlags.BatchingStatic | StaticEditorFlags.ContributeGI);
             var terrain = go.GetComponent<Terrain>();
-            terrain.drawInstanced = false;
+            LevelTerrain.ApplyLook(terrain);
             return terrain;
-        }
-
-        /// <summary>The forest floor the terrain is painted with (leaf litter, the nature courses' ground).</summary>
-        static TerrainLayer GroundLayer(string folder)
-        {
-            string path = folder + "/Ground.terrainlayer";
-            var layer = AssetDatabase.LoadAssetAtPath<TerrainLayer>(path);
-            if (layer != null) return layer;
-            layer = new TerrainLayer
-            {
-                diffuseTexture = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Art/Textures/Nature/LeafLitter/leaves_forest_ground_diff_1k.jpg"),
-                normalMapTexture = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Art/Textures/Nature/LeafLitter/leaves_forest_ground_nor_gl_1k.jpg"),
-                tileSize = new Vector2(4f, 4f),
-            };
-            AssetDatabase.CreateAsset(layer, path);
-            return layer;
         }
 
         /// <summary>A kill zone under the whole terrain: nothing falls out of the world.</summary>
@@ -128,6 +117,7 @@ namespace HotPatata.Editor
             var at = terrain.transform.position + new Vector3(TerrainSize / 2f, -NetDrop, TerrainSize / 2f);
             var net = CourseKit.Place(parent, CourseKit.GameplayDir + "KillZone", "Safety net", at, Quaternion.identity);
             net.transform.localScale = new Vector3(TerrainSize * 3f, 4f, TerrainSize * 3f);
+            net.AddComponent<LevelSafetyNet>();
         }
 
         /// <summary>The authored levels' scenes.</summary>
