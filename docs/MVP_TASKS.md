@@ -32,7 +32,7 @@ playtest and cannot be closed by code.
 | M13 Fourth course: PatataCanopy | built: 25 sections in 5 acts in the tree tops, every section with a contract; three new generic systems (body screen, hands-free plate, switch) and the section-contract check; automated verification in M13.6; atmosphere pass built (M13.7: its own cooler day, a height mist, giant trees, a forest floor that follows the course, leaf roofs, god rays, fireflies) | 2-player clear, every puzzle forced and fun at 2 and at 4, host + 3 clients, 1080p/60 fps, readability review (in the mist) |
 | M14 PatataWilds contracts | not started | give every PatataWilds section a contract and close its shortcuts (M14) |
 | M15 Fifth course: PatataTemple | built: 15 sections in 3 acts for **three players**, every section with a contract that says why two fail; four systems for three (heavy plate, hourglass plate, sun beam, pivot carrying its riders), a level's minimum players in the menu; its own valley, pyramid, day and storm; automated verification in M15.6 | a clear by three, every puzzle failing with two and fun with four, host + 2 clients, 1080p/60 fps, readability review (the storm) |
-| M18 Authored levels | step 1 built (M18.1): `HotPatata/Level/New Level`, timber pieces drawn in the Scene view (decks, walkways and stairs, rope bridges, railings, houses, trestles), ends that attach and open rails, presets, meshes written on save, the menu's display names and Register In Menu, a level's borrowed day; automated checks pass | the owner's try of step 1; step 2 (M18.2, the nature) and step 3 (M18.3, the kit, the checks, the guide's example level) |
+| M18 Authored levels | step 1 built (M18.1): `HotPatata/Level/New Level`, timber pieces drawn in the Scene view (decks, walkways and stairs, rope bridges, railings, houses, trestles), ends that attach and open rails, presets, meshes written on save, the menu's display names and Register In Menu, a level's borrowed day; automated checks pass | step 2 (M18.2, the nature) and step 3 (M18.3, the kit, the checks, the guide's example level) |
 | M16 Audio (#46–#49) | built (code, mixer, settings, docs): a drop-in sound library, sounds are folders of `Assets/Audio`; music by place and act, ambience in layers, movement sounds back (spec §11), bomb, run, obstacle and menu sounds; automated checks pass (M16.6) | the owner's sounds and music; the listening pass with two players (M16.6) |
 | Cleanup and generic obstacles | done: only `PatataWilds`, `IndustrialPlant` and `PassSandbox` (plus `Bootstrap`) remain; every obstacle system is generic (references, `IObstacleState`, `ObstacleVisualDriver`, `CustomVisual`, overridable poses, `ObstaclePrefabValidator`), with two example variants; the obstacle catalogue is `docs/OBSTACLES.md` | |
 
@@ -1667,7 +1667,8 @@ before the next starts.
 - [x] PatataRanger built from the same shared code: its meshes unchanged but its roofs (their slopes were upside down);
 - [x] `LevelAuthoringTests`, `ConfigurationTests`, `MenuFlowTests`, `NatureLookTests`, `CourseContractTests` and the Ranger
   route runner pass;
-- [ ] the owner makes a small level with the step-1 tools and finds them usable.
+- [x] the owner made a test level with the step-1 tools and found them usable (after three fixes from that try: the handles
+  showed nowhere, the pencil stopped after one point, ends joined only decks; they now join walkways and bridges end to end too).
 
 ## M18.2 — The nature
 
