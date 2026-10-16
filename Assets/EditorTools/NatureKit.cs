@@ -207,7 +207,7 @@ namespace HotPatata.Editor
 
         // ------------------------------------------------------------------ campfire (checkpoint)
 
-        static Material ParticleMaterial(string name, Color color, bool additive) =>
+        internal static Material ParticleMaterial(string name, Color color, bool additive) =>
             MakeUnlitMaterial(name, color, AssetDatabase.LoadAssetAtPath<Texture2D>(SoftDot), additive);
 
         /// <summary>
@@ -248,17 +248,28 @@ namespace HotPatata.Editor
             so.FindProperty("padRenderer").objectReferenceValue = null;
             so.ApplyModifiedPropertiesWithoutUndo();
             var fire = Campfire(parent, firePosition, checkpoint);
-            if (so.FindProperty("trigger").objectReferenceValue is BoxCollider trigger)
-            {
-                var local = trigger.transform.InverseTransformPoint(fire.transform.position);
-                var zone = new Bounds(trigger.center, trigger.size);
-                zone.Encapsulate(new Bounds(new Vector3(local.x, trigger.center.y, local.z),
-                                            new Vector3(CampfireGatherRadius * 2f, trigger.size.y, CampfireGatherRadius * 2f)));
-                trigger.center = zone.center;
-                trigger.size = zone.size;
-                PrefabUtility.RecordPrefabInstancePropertyModifications(trigger);
-            }
+            FitCampfireZone(checkpoint, fire.transform.position, false);
             return fire;
+        }
+
+        /// <summary>
+        /// Stretches <paramref name="checkpoint"/>'s trigger over the clearing round a fire at <paramref name="fire"/> (world): from its
+        /// zone as it is (a course builder's arch checkpoint keeps its arch), or <paramref name="fromPrefab"/>, from the checkpoint
+        /// prefab's own zone (an authored level's campfire moved by hand: the zone follows it). Returns whether the zone changed.
+        /// </summary>
+        public static bool FitCampfireZone(Checkpoint checkpoint, Vector3 fire, bool fromPrefab)
+        {
+            if (!(new SerializedObject(checkpoint).FindProperty("trigger").objectReferenceValue is BoxCollider trigger)) return false;
+            var source = fromPrefab ? PrefabUtility.GetCorrespondingObjectFromSource(trigger) : null;
+            var zone = source != null ? new Bounds(source.center, source.size) : new Bounds(trigger.center, trigger.size);
+            var local = trigger.transform.InverseTransformPoint(fire);
+            zone.Encapsulate(new Bounds(new Vector3(local.x, zone.center.y, local.z),
+                                        new Vector3(CampfireGatherRadius * 2f, zone.size.y, CampfireGatherRadius * 2f)));
+            if ((trigger.center - zone.center).sqrMagnitude < 1e-6f && (trigger.size - zone.size).sqrMagnitude < 1e-6f) return false;
+            trigger.center = zone.center;
+            trigger.size = zone.size;
+            PrefabUtility.RecordPrefabInstancePropertyModifications(trigger);
+            return true;
         }
 
         public const string CampfirePrefabPath = NatureTreeBuilder.PrefabDir + "Campfire.prefab";
@@ -320,7 +331,7 @@ namespace HotPatata.Editor
             presentation.Configure(Tuning, checkpoint, flames, embers, smoke, light, audio, scale);
         }
 
-        static ParticleSystem Particles(Transform parent, string name, Material material, float scale, Vector2 lifetime, Vector2 speed, Vector2 size, float rate,
+        internal static ParticleSystem Particles(Transform parent, string name, Material material, float scale, Vector2 lifetime, Vector2 speed, Vector2 size, float rate,
                                         float radius, float gravity, Color start, Color end, float noise = 0f, float grow = 1f)
         {
             var go = new GameObject(name);

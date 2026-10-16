@@ -68,6 +68,22 @@ namespace HotPatata.Editor
         [MenuItem(Menu + "Launch Pad", priority = Zones + 13)] static void LaunchPad() => Place(CourseKit.ObstaclesDir + "LaunchPad", "Launch pad");
         [MenuItem(Menu + "Kill Zone", priority = Zones + 14)] static void Kill() => Place(CourseKit.GameplayDir + "KillZone", "Kill zone");
 
+        // ------------------------------------------------------------------ forest looks (ForestKitBuilder)
+
+        const string Forest = Menu + "Forest/";
+        const int Looks = 200;
+
+        [MenuItem(Forest + "Winch (hourglass plate)", priority = Looks)] static void Winch() => Place(ForestKitBuilder.Winch, "Winch");
+        [MenuItem(Forest + "Lever (hands-free plate)", priority = Looks + 1)] static void Lever() => Place(ForestKitBuilder.Lever, "Lever");
+        [MenuItem(Forest + "Drawbridge", priority = Looks + 2)] static void ForestDrawbridge() => Place(ForestKitBuilder.Drawbridge, "Drawbridge", 3f);
+        [MenuItem(Forest + "Cage (lift)", priority = Looks + 3)] static void Cage() => Place(ForestKitBuilder.Cage, "Cage");
+        [MenuItem(Forest + "Signal Ring (hoop)", priority = Looks + 4)] static void SignalRing() => Place(ForestKitBuilder.SignalRing, "Signal ring", 2f);
+        [MenuItem(Forest + "Bell Arch (arch)", priority = Looks + 5)] static void BellArch() => Place(ForestKitBuilder.Bell, "Bell arch");
+        [MenuItem(Forest + "Log Chute (tube)", priority = Looks + 6)] static void Chute() => Place(ForestKitBuilder.Chute, "Log chute");
+        [MenuItem(Forest + "Rope Net (body screen)", priority = Looks + 7)] static void Net() => Place(ForestKitBuilder.Net, "Rope net");
+        [MenuItem(Forest + "Embers (hot zone)", priority = Looks + 8)] static void Embers() => Place(ForestKitBuilder.Embers, "Embers");
+        [MenuItem(Forest + "Sparks (laser curtain)", priority = Looks + 9)] static void Sparks() => Place(ForestKitBuilder.Sparks, "Sparks");
+
         // ------------------------------------------------------------------ placing
 
         /// <summary>
@@ -80,11 +96,8 @@ namespace HotPatata.Editor
             var scene = EditorSceneManager.GetActiveScene();
             var settings = LevelScenes.SettingsOf(scene);
             var parent = settings != null ? settings.Group(LevelGroup.Kit) : null;
-            var view = SceneView.lastActiveSceneView;
-            var pivot = view != null ? view.pivot : Vector3.zero;
-            // the level's ground (its terrain first): what was just placed there is not the ground
-            float ground = LevelNature.GroundAt(EditorSceneManager.GetActiveScene(), new Vector2(pivot.x, pivot.z));
-            var at = new Vector3(pivot.x, float.IsNaN(ground) ? pivot.y : ground, pivot.z);
+            // the floor the Scene view looks at (a deck, a walkway, the ground), found before the new element stands there
+            var at = LevelNature.ViewFloor(scene);
             var siblings = parent != null ? parent.Cast<Transform>().Select(t => t.name).ToArray() : Array.Empty<string>();
             var go = CourseKit.Place(parent, prefabPathNoExt, ObjectNames.GetUniqueName(siblings, name), at, Quaternion.identity);
             Undo.RegisterCreatedObjectUndo(go, "Add " + name);

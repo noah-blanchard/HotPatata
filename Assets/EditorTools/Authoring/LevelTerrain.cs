@@ -272,7 +272,8 @@ namespace HotPatata.Editor
             int checkpoints = RegisterLevelWindow.CheckpointsOf(scene);
             var envs = new string[checkpoints + 1];
             for (int i = 0; i <= checkpoints; i++) envs[i] = i < settings.SectionAmbience.Count ? settings.SectionAmbience[i] ?? "" : "";
-            CourseKit.WriteCourseAudio(section, Enumerable.Repeat(1, checkpoints + 1).ToArray(), envs, settings.DefaultAmbience);
+            var acts = Enumerable.Range(0, checkpoints + 1).Select(i => i < settings.SectionActs.Count ? Mathf.Max(1, settings.SectionActs[i]) : 1).ToArray();
+            CourseKit.WriteCourseAudio(section, acts, envs, settings.DefaultAmbience);
             EditorUtility.SetDirty(section.GetComponent<CourseAudio>());
         }
 
@@ -292,6 +293,8 @@ namespace HotPatata.Editor
             if (settings == null) return "";
             var parts = new List<string>();
             if (FitSafetyNet(scene)) parts.Add("safety net refitted");
+            int zones = LevelCourse.FitZones(scene);
+            if (zones > 0) parts.Add($"{zones} checkpoint zone(s) fitted round their campfire");
             if (Terrains(scene).Any())
             {
                 if (BakeMist(scene, settings)) LookBuilder.ApplyToScene(scene);   // a new mist field takes the day's still mist

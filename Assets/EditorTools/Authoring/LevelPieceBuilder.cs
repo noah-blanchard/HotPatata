@@ -24,7 +24,7 @@ namespace HotPatata.Editor
         /// <summary>The share of aged boards of a worn piece (a new one keeps the kit's own).</summary>
         public const float AgedDeck = 0.6f, AgedWalk = 0.55f, AgedBridge = 0.65f;
         /// <summary>Two outline edges closer than this (not neighbours) are a seam: no rail along it (a ring round a trunk).</summary>
-        public const float SeamGap = 0.35f;
+        public const float SeamGap = TimberDeckShape.SeamGap;
         /// <summary>
         /// A piece wider or longer than this (m), or with this many points, is not built: a point thrown far away (a click near the
         /// horizon) would make the kit lay boards for minutes and freeze the Editor.
@@ -106,9 +106,7 @@ namespace HotPatata.Editor
             var scale = piece.transform.lossyScale;
             root.transform.localScale = new Vector3(1f / NonZero(scale.x), 1f / NonZero(scale.y), 1f / NonZero(scale.z));
             var output = root.AddComponent<LevelPieceOutput>();
-            string name = piece.name;
             TimberKit.ClearReport();
-            Vector3[] line = null;
             string tooBig = TooBig(piece);
             if (tooBig != null)
             {
@@ -118,18 +116,7 @@ namespace HotPatata.Editor
                 piece.SetOutput(root);
                 return;
             }
-            switch (piece)
-            {
-                case TimberDeckShape deck: BuildDeck(deck, root.transform, name); break;
-                case TimberWalkShape walk: line = BuildWalk(walk, root.transform, name); break;
-                case RopeBridgeShape bridge: line = BuildBridge(bridge, root.transform, name); break;
-                case RailingShape railing: TimberKit.Railing(root.transform, name, railing.WorldPoints(), railing.Seed); break;
-                case HouseShape house: BuildHouse(house, root.transform, name); break;
-                case TrestleShape trestle: BuildTrestle(trestle, root.transform, name); break;
-                case HeroTreeShape tree: LevelNature.BuildTree(tree, root.transform, name); break;
-                case WaterShape water: LevelNature.BuildWater(water, root.transform, name); break;
-                case ForestArea forest: LevelForest.Plant(forest, root.transform); break;
-            }
+            var line = BuildGeometry(piece, root.transform);
             output.Configure(Signature(piece), line, TimberKit.Unheld.Count);
             TimberKit.ClearReport();
             root.hideFlags = HideFlags.NotEditable;
@@ -137,6 +124,44 @@ namespace HotPatata.Editor
             EditorUtility.SetDirty(piece);
             if (piece.gameObject.scene.IsValid()) EditorSceneManager.MarkSceneDirty(piece.gameObject.scene);
         }
+
+        /// <summary>
+        /// Lays a piece's geometry under <paramref name="root"/> (world space): what a rebuild puts in its output, and what freezing a piece
+        /// records (<see cref="TimberFreezer"/>). Returns the line a walker treads on it, or null.
+        /// </summary>
+        public static Vector3[] BuildGeometry(LevelPiece piece, Transform root)
+        {
+            string name = piece.name;
+            switch (piece)
+            {
+                case TimberDeckShape deck: BuildDeck(deck, root, name); break;
+                case TimberWalkShape walk: return BuildWalk(walk, root, name);
+                case RopeBridgeShape bridge: return BuildBridge(bridge, root, name);
+                case RailingShape railing: TimberKit.Railing(root, name, railing.WorldPoints(), railing.Seed); break;
+                case HouseShape house: BuildHouse(house, root, name); break;
+                case TrestleShape trestle: BuildTrestle(trestle, root, name); break;
+                case ShelterShape shelter:
+                    TimberStructures.Shelter(root, name, shelter.transform.position, Yaw(shelter), shelter.Size, shelter.Height, shelter.Roof, shelter.RoofRise,
+                                             shelter.LowWalls, shelter.Drum, shelter.Wear == TimberWear.Aged);
+                    break;
+                case GantryShape gantry:
+                    TimberStructures.Gantry(root, name, gantry.transform.position, Yaw(gantry), gantry.Span, gantry.Depth, gantry.Height, gantry.Pulley, gantry.RopeDrop, gantry.Roof);
+                    break;
+                case SignShape sign:
+                    TimberStructures.Sign(root, name, sign.transform.position, Yaw(sign), sign.Posts, sign.Board, sign.BoardHeight, sign.Glyph, sign.Roof);
+                    break;
+                case PulleyBeamShape beam:
+                    TimberStructures.PulleyBeam(root, name, beam.transform.position, Yaw(beam), beam.Reach, beam.Height, beam.Post, beam.RopeDrop);
+                    break;
+                case HeroTreeShape tree: LevelNature.BuildTree(tree, root, name); break;
+                case WaterShape water: LevelNature.BuildWater(water, root, name); break;
+                case ForestArea forest: LevelForest.Plant(forest, root); break;
+            }
+            return null;
+        }
+
+        /// <summary>A piece's turn round the vertical (structures stand upright whatever the piece's tilt).</summary>
+        static Quaternion Yaw(LevelPiece piece) => Quaternion.Euler(0f, piece.transform.eulerAngles.y, 0f);
 
         static float NonZero(float v) => Mathf.Abs(v) < 1e-4f ? 1f : v;
 
@@ -151,6 +176,10 @@ namespace HotPatata.Editor
                 RailingShape r => r.WorldPoints(),
                 HouseShape h => new[] { Vector3.zero, new Vector3(h.Size.x, h.WallHeight, h.Size.y) },
                 TrestleShape t => new[] { Vector3.zero, new Vector3(t.Half.x * 2f, 0f, t.Half.y * 2f) },
+                ShelterShape sh => new[] { Vector3.zero, new Vector3(sh.Size.x, sh.Height + sh.RoofRise, sh.Size.y) },
+                GantryShape g => new[] { Vector3.zero, new Vector3(g.Span, g.Height, g.Depth) },
+                SignShape sg => new[] { Vector3.zero, new Vector3(sg.Board.x, sg.BoardHeight + sg.Board.y, 0f) },
+                PulleyBeamShape pb => new[] { Vector3.zero, new Vector3(0f, pb.Height, pb.Reach) },
                 HeroTreeShape tree => new[] { Vector3.zero, new Vector3(tree.Lean.x, tree.Height, tree.Lean.y) },
                 WaterShape water => new[] { Vector3.zero, new Vector3(water.Size.x, water.Depth, water.Size.y) },
                 ForestArea forest => forest.WorldOutline().Select(p => new Vector3(p.x, 0f, p.y)).ToList(),
@@ -304,6 +333,7 @@ namespace HotPatata.Editor
                 TimberBuildings.PlankWall(root, $"{name} {wall} wall", Flat(wa), Flat(wb), y, top, doors, house.Wear == TimberWear.Aged ? 2 : 4);
             }
             bool ridgeAlongX = house.Size.x >= house.Size.y;
+            using var roof = ElementRecorder.Tag("Roof", walk: TimberWalk.None, solid: false);
             TimberBuildings.Frame(root, name + " roof", mb =>
             {
                 var eave = W(Vector3.zero) + Vector3.up * (house.WallHeight + 0.1f);
@@ -372,6 +402,23 @@ namespace HotPatata.Editor
                     break;
                 case TrestleShape tr:
                     V(s, tr.Half);
+                    break;
+                case ShelterShape sh:
+                    V(s, new Vector3(sh.Size.x, sh.Height, sh.Size.y));
+                    V(s, new Vector3(sh.RoofRise, sh.LowWalls, sh.Drum ? 1f : 0f));
+                    s.Append(sh.Roof).Append(sh.Wear).Append('|');
+                    break;
+                case GantryShape g:
+                    V(s, new Vector3(g.Span, g.Height, g.Depth));
+                    V(s, new Vector3(g.Pulley ? 1f : 0f, g.RopeDrop, g.Roof ? 1f : 0f));
+                    break;
+                case SignShape sg:
+                    V(s, new Vector3(sg.Board.x, sg.BoardHeight, sg.Board.y));
+                    s.Append(sg.Posts).Append(sg.Glyph).Append(sg.Roof).Append('|');
+                    break;
+                case PulleyBeamShape pb:
+                    V(s, new Vector3(pb.Reach, pb.Height, pb.RopeDrop));
+                    s.Append(pb.Post).Append('|');
                     break;
                 case HeroTreeShape tree:
                     s.Append(tree.TreeKind).Append('|');

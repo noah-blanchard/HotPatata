@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using HotPatata;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -108,5 +109,29 @@ namespace HotPatata.Editor
                 if (LevelTerrain.Covers(terrain, p)) return terrain.SampleHeight(new Vector3(p.x, 0f, p.y)) + terrain.transform.position.y;
             return SceneSite.GroundAt(p, 2000f, 4000f);
         }
+
+        /// <summary>
+        /// Where something added from the menu goes: the floor the Scene view looks at (the middle of the view), a deck, a walkway, a
+        /// kit platform or the ground, never a rail's top or a trunk; else the ground under the view's pivot.
+        /// </summary>
+        public static Vector3 ViewFloor(Scene scene)
+        {
+            var view = SceneView.lastActiveSceneView;
+            if (view != null && view.camera != null)
+            {
+                var cam = view.camera.transform;
+                var hits = Physics.RaycastAll(cam.position, cam.forward, 3000f, LayerMask.GetMask("Environment"), QueryTriggerInteraction.Ignore)
+                                  .Where(h => h.collider.gameObject.scene == scene).OrderBy(h => h.distance);
+                foreach (var hit in hits)
+                    if (hit.normal.y > 0.6f && IsFloor(hit.collider)) return hit.point;
+            }
+            var pivot = view != null ? view.pivot : Vector3.zero;
+            float ground = GroundAt(scene, new Vector2(pivot.x, pivot.z));
+            return new Vector3(pivot.x, float.IsNaN(ground) ? pivot.y : ground, pivot.z);
+        }
+
+        /// <summary>A collider one stands on: the terrain, a piece's walking surface, or anything that is not the timber's rails and trees.</summary>
+        static bool IsFloor(Collider c) =>
+            c is TerrainCollider || c.GetComponent<WalkableProxy>() != null || c.GetComponentInParent<LevelPieceOutput>() == null;
     }
 }

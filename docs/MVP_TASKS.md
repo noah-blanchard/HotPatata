@@ -32,7 +32,7 @@ playtest and cannot be closed by code.
 | M13 Fourth course: PatataCanopy | built: 25 sections in 5 acts in the tree tops, every section with a contract; three new generic systems (body screen, hands-free plate, switch) and the section-contract check; automated verification in M13.6; atmosphere pass built (M13.7: its own cooler day, a height mist, giant trees, a forest floor that follows the course, leaf roofs, god rays, fireflies) | 2-player clear, every puzzle forced and fun at 2 and at 4, host + 3 clients, 1080p/60 fps, readability review (in the mist) |
 | M14 PatataWilds contracts | not started | give every PatataWilds section a contract and close its shortcuts (M14) |
 | M15 Fifth course: PatataTemple | built: 15 sections in 3 acts for **three players**, every section with a contract that says why two fail; four systems for three (heavy plate, hourglass plate, sun beam, pivot carrying its riders), a level's minimum players in the menu; its own valley, pyramid, day and storm; automated verification in M15.6 | a clear by three, every puzzle failing with two and fun with four, host + 2 clients, 1080p/60 fps, readability review (the storm) |
-| M18 Authored levels | step 3a built (M18.3a): checkpoints numbered along the course, kit size handles, wiring and the Link tool, contracts by handles, Verify Level, the route runner on any level, Play from here; step 2 built (M18.2): the terrain in the nature look, valley walls, water, giant trees sawn round their decks, forests planted or painted off the paths, mist baked on save, sound by section; step 1 built (M18.1): `HotPatata/Level/New Level`, timber pieces drawn in the Scene view (decks, walkways and stairs, rope bridges, railings, houses, trestles), ends that attach and open rails, presets, meshes written on save, the menu's display names and Register In Menu, a level's borrowed day; automated checks pass | the owner's try of step 3a (the game: kit handles, wiring, contracts, checkpoints, Verify Level, route runner); step 3b (forest looks of the kit, props, the example level) |
+| M18 Authored levels | step 3b built (M18.3b): the kit's ten forest looks (Prefab Variants, `Kit/Forest`), the prop library at real size with Solid boxes, sets and a small-props brush, checkpoints whose campfire finds floor and room beside them (the zone follows it), Verify checks spawns and campfires, the example level `OldOak` in the menu (Verify clean, route runner passes); step 3a built (M18.3a): checkpoints numbered along the course, kit size handles, wiring and the Link tool, contracts by handles, Verify Level, the route runner on any level, Play from here; step 2 built (M18.2): the terrain in the nature look, valley walls, water, giant trees sawn round their decks, forests planted or painted off the paths, mist baked on save, sound by section; step 1 built (M18.1): `HotPatata/Level/New Level`, timber pieces drawn in the Scene view (decks, walkways and stairs, rope bridges, railings, houses, trestles), ends that attach and open rails, presets, meshes written on save, the menu's display names and Register In Menu, a level's borrowed day; automated checks pass | the owner's try of steps 3a and 3b (the game tools, forest looks, props, checkpoints, the example level); step 4 (timber by hand, the structure library: M18.4) |
 | M16 Audio (#46–#49) | built (code, mixer, settings, docs): a drop-in sound library, sounds are folders of `Assets/Audio`; music by place and act, ambience in layers, movement sounds back (spec §11), bomb, run, obstacle and menu sounds; automated checks pass (M16.6) | the owner's sounds and music; the listening pass with two players (M16.6) |
 | Cleanup and generic obstacles | done: only `PatataWilds`, `IndustrialPlant` and `PassSandbox` (plus `Bootstrap`) remain; every obstacle system is generic (references, `IObstacleState`, `ObstacleVisualDriver`, `CustomVisual`, overridable poses, `ObstaclePrefabValidator`), with two example variants; the obstacle catalogue is `docs/OBSTACLES.md` | |
 
@@ -1692,10 +1692,40 @@ Split in two PRs (3a the game and the checks, 3b the look and the example), each
   here; `LevelGameTests` pass, `PatataRangerTests` pass on the shared runner; a trial level numbered, verified (three
   sections without a contract found, then none), walked by the route runner and played from its second checkpoint;
 - [ ] 3a: the owner wires and checks a level with the step-3a tools and finds them usable;
-- [ ] 3b: forest variants of the kit;
-- [ ] 3b: the CC0 props as prefabs, sets and a small-props brush;
-- [ ] 3b: the guide completed with pictures, and a short example level (3 checkpoints) made with the tools that passes Verify
-  Level, is in the menu and is played online (host + client).
+- [x] 3b: forest variants of the kit: ten Prefab Variants (`ForestKitBuilder`), validated, sized by the handles, under
+  `Kit/Forest` in the GameObject menu; `LevelLookTests` and `ObstaclePrefabTests` pass;
+- [x] 3b: the CC0 props as prefabs at their real size (`PropLibraryBuilder`, `PropSolid`), three sets and a small-props brush;
+- [x] 3b: checkpoints placed on the floor in view, their campfire beside them on the first side with floor and room, moved by a
+  handle with the zone following, refitted on save; Verify finds spawns in a rail or in the air and campfires too near or far;
+- [x] 3b: the guide completed with pictures, and a short example level (3 checkpoints) made with the tools that passes Verify
+  Level, is in the menu and is played online (host + client): `OldOak`, Verify clean, `AuthoredLevelTests` pass (the route runner
+  walks its six walks), a headless host + client bot session on it (development build, `-patataScene OldOak`): 44 catches
+  accepted in 80 s, no error on either side;
+- [ ] 3b: the owner tries the forest looks, the props and the checkpoints, and plays The Old Oak.
+
+## M18.4 — Timber by hand, the structure library
+
+Decided with the owner (2026-10-16): structures reusable in any level, not tied to one; boards and ropes moved one by one.
+Three stacked PRs: elements and freezing (4a), the structures and their library (4b), PatataRanger as an authored level (4c).
+
+- [x] 4a: a piece frozen into its elements (`TimberFreezer`): boards, beams, posts, ropes, iron, walls, each its own GameObject,
+  looking exactly like the piece; a walking surface laid from the walkable boards (a stair stays a ramp, a missing board is a
+  hole) and the walk line the checks read; meshes shared through the timber catalogue; elements added by hand, tools on
+  selected elements (wood, solid, jitter, set down, align), board-end and rope handles (an end hangs on what it touches);
+  Verify Level warns of loose ropes and posts; `TimberElementTests` pass, `LevelAuthoringTests` still pass;
+- [x] 4b: four structure pieces (`ShelterShape`, `GantryShape`, `SignShape`, `PulleyBeamShape`, drawn by `TimberStructures`,
+  no level constant), frozen like the rest; the structure library (`Assets/Prefabs/Structures/`: eleven prefabs made by
+  `StructureLibraryBuilder`, only the missing ones, one regenerated on demand; Save to library from any frozen structure);
+  the prop sets made of elements;
+- [x] 4c: PatataRanger handed over as an authored level: drawn one last time with its timber frozen in place (78 structures,
+  5978 elements), its `LevelSettings` written (music and ambience per section kept), its builder removed; 0 contract and 0
+  walk-probe finding at the last build, `PatataRangerTests` (route runner) pass. Its land, trees and forest stay baked meshes,
+  not level pieces (a terrain and hero trees of its own, not `LevelTerrain`/`HeroTreeShape`);
+- [x] tidy-up: the timber code in one folder (`Assets/EditorTools/Timber`); one mesh catalogue for every mesh the tools make
+  (elements, pieces, forest looks: `Assets/Art/Generated/Catalog/`, the per-piece folders gone), cleaned on every save; boards
+  share meshes (drawn long to the centimetre, a grain of their own only for planks: PatataRanger's 4087 meshes to 2357);
+  the forest looks drawn with the shared timber shapes;
+- [ ] the owner freezes, edits and saves structures in a level and finds it usable.
 
 ---
 

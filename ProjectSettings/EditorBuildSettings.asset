@@ -26,5 +26,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/PatataRanger.unity
     guid: eea8f75f101284b44b0b20119d9cfcb5
+  - enabled: 1
+    path: Assets/Scenes/Levels/OldOak.unity
+    guid: 9cd4103d149e17e4ea7797fb50c63f92
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0

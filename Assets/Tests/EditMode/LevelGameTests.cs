@@ -118,5 +118,61 @@ namespace HotPatata.Tests
             var problems = WalkProbe.Run(new[] { ("Blocked walk", (IList<Vector3>)walk) });
             Assert.IsTrue(problems.Any(p => p.message.Contains("in the way") && p.blocker != null && p.blocker.gameObject == post), "the post in the walk is not found");
         }
+
+        [Test]
+        public void Checkpoint_ItsCampfireStandsBesideItOnItsFloor_AndTheZoneFollowsIt()
+        {
+            // a deck 6 m up, 8 m by 12 m: the checkpoint near its east edge, so its right (east) has no floor
+            var deck = Piece<TimberDeckShape>("Deck", new Vector3(0f, 6f, 40f));
+            deck.Outline.Clear();
+            deck.Outline.AddRange(DeckShapes.Rectangle(8f, 12f));
+            LevelPieceBuilder.Refresh(new LevelPiece[] { deck });
+            Physics.SyncTransforms();
+            var parent = new GameObject("Kit").transform;
+            var cp = LevelCourse.AddCheckpoint(scene, parent, Origin + new Vector3(2f, 6f, 40f));
+            var fire = LevelCourse.FireOf(cp);
+            Assert.IsNotNull(fire, "no campfire");
+            Assert.AreEqual(cp.transform, fire.transform.parent, "the campfire moves with its checkpoint");
+            var off = fire.transform.position - cp.transform.position;
+            Assert.That(new Vector2(off.x, off.z).magnitude, Is.InRange(3f, 6f), "the campfire stands beside the spawns");
+            Assert.AreEqual(0f, off.y, 0.01f, "the campfire is on the checkpoint's floor");
+            Assert.IsTrue(Physics.Raycast(fire.transform.position + Vector3.up, Vector3.down, 1.5f, LayerMask.GetMask("Environment")),
+                          $"the campfire stands off the deck at {fire.transform.position - Origin}");
+
+            var trigger = (BoxCollider)new SerializedObject(cp).FindProperty("trigger").objectReferenceValue;
+            Physics.SyncTransforms();
+            Assert.IsTrue(trigger.bounds.Contains(fire.transform.position + Vector3.up * 0.5f), "the zone covers the campfire");
+            Assert.Less(trigger.bounds.size.y, 3.5f, "the zone is a man's height, not a tower");
+
+            // moved by hand: the zone follows it, and shrinks back from where it was
+            fire.transform.position = cp.transform.position + new Vector3(0f, 0f, 4.5f);
+            Assert.IsTrue(LevelCourse.FitZone(cp, false));
+            Physics.SyncTransforms();
+            Assert.IsTrue(trigger.bounds.Contains(fire.transform.position + Vector3.up * 0.5f), "the zone does not follow the campfire");
+            Assert.Less(trigger.bounds.max.x - cp.transform.position.x, 2.5f, "the zone still reaches where the campfire was");
+        }
+
+        [Test]
+        public void Verify_FindsACheckpointWhoseSpawnsAreInARailOrInTheAir()
+        {
+            var parent = new GameObject("Kit").transform;
+            List<LevelFinding> Findings(Checkpoint cp)
+            {
+                Physics.SyncTransforms();
+                var all = new List<LevelFinding>();
+                LevelVerifier.Spawns(scene, all);
+                return all.Where(f => f.context == cp.gameObject).ToList();
+            }
+            var clear = LevelCourse.AddCheckpoint(scene, parent, Origin + new Vector3(-20f, 0f, 0f));
+            Assert.IsEmpty(Findings(clear), "a checkpoint in the open is fine");
+            var railed = LevelCourse.AddCheckpoint(scene, parent, Origin + new Vector3(20f, 0f, 0f));
+            var rail = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            rail.layer = LayerMask.NameToLayer("Environment");
+            rail.transform.position = railed.GetComponentsInChildren<PlayerSpawn>()[0].transform.position + Vector3.up;
+            rail.transform.localScale = new Vector3(0.2f, 1.2f, 3f);
+            Assert.IsTrue(Findings(railed).Any(f => f.severity == LevelFinding.Severity.Error && f.message.Contains("stands in")), "a spawn in a rail is not found");
+            var floating = LevelCourse.AddCheckpoint(scene, parent, Origin + new Vector3(0f, 6f, 40f));
+            Assert.IsTrue(Findings(floating).Any(f => f.message.Contains("stands on nothing")), "a spawn in the air is not found");
+        }
     }
 }

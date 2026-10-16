@@ -117,7 +117,10 @@ namespace HotPatata.Editor
         }
     }
 
-    /// <summary>A checkpoint's tools in an authored level (ARCHITECTURE §27): play from it, its section's contract.</summary>
+    /// <summary>
+    /// A checkpoint's tools in an authored level (ARCHITECTURE §27): play from it, its section's contract, and in the Scene view its
+    /// zone (where the team reaches it), its spawns and its campfire, the fire moved with its handle (the zone follows).
+    /// </summary>
     [CustomEditor(typeof(Checkpoint)), CanEditMultipleObjects]
     public sealed class CheckpointEditor : UnityEditor.Editor
     {
@@ -135,6 +138,49 @@ namespace HotPatata.Editor
                 using (new EditorGUI.DisabledScope(settings == null || hasContract))
                     if (GUILayout.Button(hasContract ? "Its section has a contract" : "Add this section's contract"))
                         LevelCourse.AddContract(cp.transform, settings.MinPlayers);
+            }
+            if (LevelScenes.SettingsOf(cp.gameObject.scene) != null && LevelCourse.FireOf(cp) != null)
+            {
+                EditorGUILayout.HelpBox("The team gathers at the campfire (its child): move it where you like, 3 to 6 m from the checkpoint, " +
+                                        "on the same floor (drag its orange ring in the Scene view): the checkpoint's zone follows it.", MessageType.None);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("Place the campfire beside it")) LevelCourse.PlaceFire(cp);
+                    if (GUILayout.Button("Fit the zone round the campfire")) LevelCourse.FitZone(cp);
+                }
+            }
+        }
+
+        void OnSceneGUI()
+        {
+            var cp = (Checkpoint)target;
+            if (LevelScenes.SettingsOf(cp.gameObject.scene) == null) return;
+            // the zone: reaching it (with the bomb) reaches the checkpoint
+            if (new SerializedObject(cp).FindProperty("trigger").objectReferenceValue is BoxCollider trigger)
+                using (new Handles.DrawingScope(new Color(1f, 0.7f, 0.25f, 0.9f), trigger.transform.localToWorldMatrix))
+                    Handles.DrawWireCube(trigger.center, trigger.size);
+            // the spawns: where the team comes back after a reset
+            Handles.color = new Color(0.5f, 0.85f, 1f);
+            foreach (var spawn in cp.GetComponentsInChildren<PlayerSpawn>(true))
+                Handles.DrawWireDisc(spawn.transform.position, Vector3.up, 0.35f, 2f);
+            PieceHandles.Label(cp.transform.position + Vector3.up * 2.2f, $"{cp.name}: spawns");
+            var fire = LevelCourse.FireOf(cp);
+            if (fire == null) return;
+            var at = fire.transform.position;
+            Handles.color = new Color(1f, 0.55f, 0.2f);
+            Handles.DrawWireDisc(at, Vector3.up, NatureKit.CampfireGatherRadius, 2f);
+            Handles.DrawDottedLine(cp.transform.position + Vector3.up * 0.1f, at + Vector3.up * 0.1f, 4f);
+            float d = Vector3.Distance(new Vector3(at.x, 0f, at.z), new Vector3(cp.transform.position.x, 0f, cp.transform.position.z));
+            PieceHandles.Label(at + Vector3.up * 1.6f, d < 3f || d > 6f ? $"campfire {d:0.0} m away (3 to 6 m)" : "campfire: the team gathers here");
+            EditorGUI.BeginChangeCheck();
+            var moved = Handles.Slider2D(at, Vector3.up, Vector3.right, Vector3.forward, HandleUtility.GetHandleSize(at) * 0.12f, Handles.CircleHandleCap, 0f);
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(fire.transform, "Move the campfire");
+                // it stays on the checkpoint's floor
+                moved.y = cp.transform.position.y;
+                fire.transform.position = moved;
+                LevelCourse.FitZone(cp);
             }
         }
     }
