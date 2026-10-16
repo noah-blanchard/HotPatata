@@ -123,10 +123,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: HotPatata::HotPatata.NetworkBootstrap
   menuScene: Bootstrap
   gameplayScenes:
+  - LongClimb
   - PassSandbox
-  sceneCheckpoints: 01000000
-  sceneMinPlayers: 02000000
+  sceneCheckpoints: 0600000001000000
+  sceneMinPlayers: 0200000002000000
+  sceneMaxPlayers: 0200000004000000
   sceneDisplayNames:
+  - The Long Climb
   - 
   devOnlyScenes:
   - PassSandbox

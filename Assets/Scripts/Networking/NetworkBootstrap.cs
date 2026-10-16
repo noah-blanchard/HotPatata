@@ -45,6 +45,8 @@ namespace HotPatata
         int[] sceneCheckpoints = { 1 };
         [SerializeField, Tooltip("Players a gameplay scene needs online (same order; a level for three needs three, PROJECT_SPEC §15e).")]
         int[] sceneMinPlayers = { 2 };
+        [SerializeField, Tooltip("Players a gameplay scene allows online, at most (same order; a level for two is for exactly two, PROJECT_SPEC §16).")]
+        int[] sceneMaxPlayers = { 4 };
         [SerializeField, Tooltip("The name the menu shows for each gameplay scene (same order; the scene's name when empty): an authored level's own name.")]
         string[] sceneDisplayNames = System.Array.Empty<string>();
         [SerializeField, Tooltip("Test scenes listed only in the Editor and in development builds, never in a release build.")]
@@ -73,6 +75,9 @@ namespace HotPatata
 
         /// <summary>Players gameplay scene <paramref name="index"/> needs online (2 when not listed).</summary>
         public int MinPlayersOf(int index) => index >= 0 && index < sceneMinPlayers.Length ? Mathf.Max(1, sceneMinPlayers[index]) : 2;
+        /// <summary>Players gameplay scene <paramref name="index"/> allows online (4 when not listed, never under its minimum).</summary>
+        public int MaxPlayersOf(int index) =>
+            Mathf.Max(MinPlayersOf(index), index >= 0 && index < sceneMaxPlayers.Length && sceneMaxPlayers[index] > 0 ? sceneMaxPlayers[index] : 4);
         /// <summary>The name the menu shows for gameplay scene <paramref name="index"/>: its display name, else the scene's.</summary>
         public string DisplayNameOf(int index)
         {
@@ -82,8 +87,12 @@ namespace HotPatata
 
         /// <summary>Players the selected level needs online.</summary>
         public int SceneMinPlayers => MinPlayersOf(sceneIndex);
-        /// <summary>The lobby holds enough players for the selected level (the host's Start is offered only then).</summary>
-        public bool LobbyHasEnoughPlayers => LobbyPlayerCount >= SceneMinPlayers;
+        /// <summary>Players the selected level allows online.</summary>
+        public int SceneMaxPlayers => MaxPlayersOf(sceneIndex);
+        /// <summary>The lobby holds enough players for the selected level, and not too many (the host's Start is offered only then).</summary>
+        public bool LobbyHasEnoughPlayers => LobbyFits(LobbyPlayerCount, SceneMinPlayers, SceneMaxPlayers);
+        /// <summary>A lobby of <paramref name="players"/> can start a level for <paramref name="min"/> to <paramref name="max"/> players.</summary>
+        public static bool LobbyFits(int players, int min, int max) => players >= min && players <= Mathf.Max(min, max);
 
         public bool InSession => mode == Mode.InGame;
         public Mode Phase => mode;
@@ -222,6 +231,7 @@ namespace HotPatata
             T[] Pick<T>(T[] all, T fallback) => keep.Select(i => i < all.Length ? all[i] : fallback).ToArray();
             sceneCheckpoints = Pick(sceneCheckpoints, 0);
             sceneMinPlayers = Pick(sceneMinPlayers, 2);
+            sceneMaxPlayers = Pick(sceneMaxPlayers, 4);
             sceneDisplayNames = Pick(sceneDisplayNames, "");
             gameplayScenes = Pick(gameplayScenes, "");
             sceneIndex = Mathf.Clamp(sceneIndex, 0, Mathf.Max(0, gameplayScenes.Length - 1));
@@ -335,8 +345,10 @@ namespace HotPatata
             if (mode != Mode.Lobby || !nm.IsServer || NoLevel()) return;
             if (!LobbyHasEnoughPlayers)
             {
-                message = $"{GameplayScene} needs {SceneMinPlayers} players.";
-                PatataLog.Run($"[Session] not starting {GameplayScene}: {LobbyPlayerCount} of {SceneMinPlayers} players");
+                message = LobbyPlayerCount < SceneMinPlayers
+                    ? $"{GameplayScene} needs {SceneMinPlayers} players."
+                    : $"{GameplayScene} is for {SceneMaxPlayers} players at most.";
+                PatataLog.Run($"[Session] not starting {GameplayScene}: {LobbyPlayerCount} players, it takes {SceneMinPlayers} to {SceneMaxPlayers}");
                 return;
             }
             PatataLog.Run($"[Session] starting {GameplayScene} with {nm.ConnectedClientsIds.Count} connected");

@@ -19,6 +19,7 @@ namespace HotPatata
     {
         [SerializeField, Tooltip("The level's name in the menu (the scene's name when empty).")] string displayName;
         [SerializeField, Range(1, 4), Tooltip("Players the level needs online (PROJECT_SPEC §15e).")] int minPlayers = 2;
+        [SerializeField, Range(1, 4), Tooltip("Players the level allows online, at most (PROJECT_SPEC §16: a level for two is for exactly two).")] int maxPlayers = 4;
         [SerializeField, Tooltip("The day that lights the level, from dawn at the start to its last moment at the last checkpoint.")] LevelDay day = LevelDay.Ranger;
         [Header("Mist (baked from the terrain on every save)")]
         [SerializeField, Range(0f, 3f), Tooltip("The day's mist, thinner (under 1) or thicker (over 1).")] float mistDensity = 1f;
@@ -33,6 +34,8 @@ namespace HotPatata
 
         public string DisplayName { get => displayName; set => displayName = value; }
         public int MinPlayers { get => minPlayers; set => minPlayers = Mathf.Clamp(value, 1, 4); }
+        /// <summary>Players the level allows online, never under <see cref="MinPlayers"/>.</summary>
+        public int MaxPlayers { get => Mathf.Max(minPlayers, maxPlayers); set => maxPlayers = Mathf.Clamp(value, 1, 4); }
         public LevelDay Day { get => day; set => day = value; }
         public float MistDensity { get => mistDensity; set => mistDensity = Mathf.Clamp(value, 0f, 3f); }
         public float MistDepth { get => mistDepth; set => mistDepth = Mathf.Clamp(value, 0f, 10f); }

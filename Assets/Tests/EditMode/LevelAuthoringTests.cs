@@ -39,6 +39,8 @@ namespace HotPatata.Tests
         public void TearDown()
         {
             foreach (var go in scene.GetRootGameObjects().Except(before)) Object.DestroyImmediate(go);
+            // the runner reverts the undo history once the author's scenes are back: a piece a freeze or an undo test destroyed would come back in them
+            Undo.ClearAll();
             MeshCatalog.Folder = MeshCatalog.DefaultFolder;
             AssetDatabase.DeleteAsset(StoreFolder.TrimEnd('/'));
             LevelPieceWatcher.Enabled = true;
@@ -254,6 +256,20 @@ namespace HotPatata.Tests
             Assert.IsTrue(before.Any(m => m == null), "nothing of the old deck went");
         }
 
+        [Test]
+        public void Meshes_OfAPieceRebuiltAsItWas_StayDrawnWhenSaved()
+        {
+            // the catalogue already holds the same content: storing it again destroys the fresh copy, the piece must point at the stored one
+            var deck = Piece<TimberDeckShape>("Deck", new Vector3(0f, 3f, 0f));
+            var pieces = new LevelPiece[] { deck };
+            LevelPieceBuilder.Rebuild(pieces);
+            LevelMeshStore.Persist(pieces, StoreFolder);
+            LevelPieceBuilder.Rebuild(pieces);
+            LevelMeshStore.Persist(pieces, StoreFolder);
+            Assert.IsTrue(deck.Output.GetComponentsInChildren<MeshFilter>(true).All(f => f.sharedMesh != null), "a board lost its mesh");
+            Assert.IsTrue(deck.Output.GetComponentsInChildren<MeshCollider>(true).All(c => c.sharedMesh != null), "the walking surface lost its mesh");
+        }
+
         // ------------------------------------------------------------------ menu
 
         [Test]
@@ -309,6 +325,37 @@ namespace HotPatata.Tests
                 Assert.IsFalse(bootstrap.HasLevel, "a release build with only the sandbox has no level to start");
                 bootstrap.SceneIndex = 3;
                 Assert.AreEqual(0, bootstrap.SceneIndex);
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
+        [Test]
+        public void Menu_KeepsEachLevelsMaxPlayers_AndALevelForTwoTakesNoThird()
+        {
+            var go = new GameObject("Bootstrap");
+            try
+            {
+                var bootstrap = go.AddComponent<NetworkBootstrap>();
+                var so = new SerializedObject(bootstrap);
+                CourseKit.WriteMenu(so, new[]
+                {
+                    new CourseKit.MenuEntry { scene = "Duo", checkpoints = 7, minPlayers = 2, maxPlayers = 2, displayName = "The Duo" },
+                    new CourseKit.MenuEntry { scene = "PassSandbox", checkpoints = 1, minPlayers = 2 },
+                    new CourseKit.MenuEntry { scene = "TrioLevel", checkpoints = 6, minPlayers = 3 },
+                });
+                CourseKit.RegisterInMenu(so, "NewOne", 2, CourseKit.MenuSlot.First);
+                so.ApplyModifiedPropertiesWithoutUndo();
+
+                var menu = CourseKit.ReadMenu(new SerializedObject(bootstrap));
+                CollectionAssert.AreEqual(new[] { 4, 2, 4, 4 }, menu.Select(CourseKit.MaxOf).ToArray(), "unset = four, and the list moves together");
+                Assert.AreEqual(2, bootstrap.MaxPlayersOf(1));
+                Assert.AreEqual(4, bootstrap.MaxPlayersOf(9), "not listed: four");
+
+                Assert.IsTrue(NetworkBootstrap.LobbyFits(2, 2, 2));
+                Assert.IsFalse(NetworkBootstrap.LobbyFits(3, 2, 2), "a level for two takes no third");
+                Assert.IsFalse(NetworkBootstrap.LobbyFits(2, 3, 4));
+                Assert.IsTrue(NetworkBootstrap.LobbyFits(3, 3, 1), "a max under the min counts as the min");
+                Assert.IsFalse(NetworkBootstrap.LobbyFits(4, 3, 1));
             }
             finally { Object.DestroyImmediate(go); }
         }

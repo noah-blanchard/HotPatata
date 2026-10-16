@@ -310,7 +310,41 @@ namespace HotPatata.Editor
                     Paint(parent, name + " axe handle", center, faceRot,
                           new List<Vector2> { new Vector2(-0.12f * s, -s), new Vector2(0.02f * s, -s), new Vector2(0.02f * s, 0.95f * s), new Vector2(-0.12f * s, 0.95f * s) }, TimberPaintColor.Amber);
                     break;
+                case SignGlyph.Sun:
+                    // a gold disc and eight rays round it
+                    Paint(parent, name + " sun", center, faceRot, Poly2.Radial(Vector2.zero, _ => 0.48f * s, 24), TimberPaintColor.Amber);
+                    for (int k = 0; k < 8; k++)
+                    {
+                        float a = k * Mathf.PI / 4f;
+                        var dir = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
+                        var across = new Vector2(-dir.y, dir.x);
+                        Paint(parent, name + " sun ray", center, faceRot,
+                              new List<Vector2> { dir * 0.6f * s - across * 0.11f * s, dir * s, dir * 0.6f * s + across * 0.11f * s }, TimberPaintColor.Amber);
+                    }
+                    break;
+                case SignGlyph.Moon:
+                    Paint(parent, name + " moon", center, faceRot, Crescent(s), TimberPaintColor.Blue);
+                    break;
             }
+        }
+
+        /// <summary>A crescent moon <paramref name="s"/> in radius, horns up and to the right: the outer arc, then the inner one back.</summary>
+        public static List<Vector2> Crescent(float s)
+        {
+            var list = new List<Vector2>();
+            const int samples = 14;
+            // the outer circle's left side (from its top horn round to its bottom horn), then a smaller circle's left side, shifted right, back up
+            for (int i = 0; i <= samples; i++)
+            {
+                float a = Mathf.Lerp(60f, 300f, i / (float)samples) * Mathf.Deg2Rad;
+                list.Add(new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * s);
+            }
+            for (int i = samples - 1; i >= 1; i--)
+            {
+                float a = Mathf.Lerp(78f, 282f, i / (float)samples) * Mathf.Deg2Rad;
+                list.Add(new Vector2(0.42f * s, 0f) + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * 0.82f * s);
+            }
+            return list;
         }
 
         /// <summary>A flat painted shape (its outline in the plane of <paramref name="rot"/>'s x and z, proud along its y), drawn only.</summary>

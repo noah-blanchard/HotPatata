@@ -33,18 +33,27 @@ namespace HotPatata
         /// <summary>Shows the bootstrap's current level and spawn point (they may have changed since the rows were built).</summary>
         public static void SyncLevelChoices(ChoiceRow level, ChoiceRow spawn, NetworkBootstrap bootstrap)
         {
-            level.SetOptions(bootstrap.GameplayScenes.Select((_, i) => LevelLabel(bootstrap.DisplayNameOf(i), bootstrap.MinPlayersOf(i))).ToList(), bootstrap.SceneIndex);
+            level.SetOptions(bootstrap.GameplayScenes.Select((_, i) => LevelLabel(bootstrap.DisplayNameOf(i), bootstrap.MinPlayersOf(i), bootstrap.MaxPlayersOf(i))).ToList(), bootstrap.SceneIndex);
             spawn.SetOptions(NetworkBootstrap.SpawnLabels(bootstrap.SceneCheckpointCount), RunOptions.StartCheckpoint);
             spawn.style.display = bootstrap.SceneCheckpointCount > 0 ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
-        /// <summary>A level's name in the list, with the players it needs when that is more than two ("PatataTemple (3+ players)").</summary>
-        public static string LevelLabel(string name, int minPlayers) => minPlayers > 2 ? $"{name} ({minPlayers}+ players)" : name;
+        /// <summary>
+        /// A level's name in the list, with its players when they are not the usual two to four: "The Long Climb (2 players)" for a
+        /// level for exactly two, "PatataTemple (3+ players)", "Duo Run (2-3 players)".
+        /// </summary>
+        public static string LevelLabel(string name, int minPlayers, int maxPlayers = 4)
+        {
+            maxPlayers = UnityEngine.Mathf.Max(minPlayers, maxPlayers);
+            if (maxPlayers == minPlayers) return $"{name} ({minPlayers} player{(minPlayers > 1 ? "s" : "")})";
+            if (maxPlayers < 4) return $"{name} ({minPlayers}-{maxPlayers} players)";
+            return minPlayers > 2 ? $"{name} ({minPlayers}+ players)" : name;
+        }
 
         /// <summary>"PatataWilds, from CP3": the level and spawn point the host has picked.</summary>
         public static string LevelSummary(NetworkBootstrap bootstrap)
         {
-            string level = LevelLabel(bootstrap.DisplayNameOf(bootstrap.SceneIndex), bootstrap.SceneMinPlayers);
+            string level = LevelLabel(bootstrap.DisplayNameOf(bootstrap.SceneIndex), bootstrap.SceneMinPlayers, bootstrap.SceneMaxPlayers);
             return RunOptions.StartCheckpoint > 0 ? $"{level}, from CP{RunOptions.StartCheckpoint}" : level;
         }
     }

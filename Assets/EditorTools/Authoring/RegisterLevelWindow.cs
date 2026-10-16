@@ -43,7 +43,7 @@ namespace HotPatata.Editor
             {
                 int sandbox = entries.FindIndex(e => e.scene == "PassSandbox");
                 entries.Insert(sandbox >= 0 ? sandbox : entries.Count,
-                               new CourseKit.MenuEntry { scene = scene.name, displayName = settings.DisplayName, checkpoints = checkpoints, minPlayers = settings.MinPlayers });
+                               new CourseKit.MenuEntry { scene = scene.name, displayName = settings.DisplayName, checkpoints = checkpoints, minPlayers = settings.MinPlayers, maxPlayers = settings.MaxPlayers });
             }
             list = new ReorderableList(entries, typeof(CourseKit.MenuEntry), true, true, false, false)
             {
@@ -54,7 +54,9 @@ namespace HotPatata.Editor
                     bool mine = e.scene == scene.name;
                     string shown = string.IsNullOrWhiteSpace(e.displayName) ? e.scene : e.displayName;
                     var style = mine ? EditorStyles.boldLabel : EditorStyles.label;
-                    EditorGUI.LabelField(r, $"{i + 1}. {shown}   ({e.scene}, CP{e.checkpoints}, {e.minPlayers}+ players)", style);
+                    int max = CourseKit.MaxOf(e);
+                    string players = max == e.minPlayers ? $"{e.minPlayers} players" : max < 4 ? $"{e.minPlayers}-{max} players" : $"{e.minPlayers}+ players";
+                    EditorGUI.LabelField(r, $"{i + 1}. {shown}   ({e.scene}, CP{e.checkpoints}, {players})", style);
                 },
             };
         }
@@ -73,6 +75,7 @@ namespace HotPatata.Editor
             EditorGUILayout.LabelField("Level", scene.name, EditorStyles.boldLabel);
             mine.displayName = EditorGUILayout.TextField("Name in the menu", mine.displayName);
             mine.minPlayers = EditorGUILayout.IntSlider("Players needed", mine.minPlayers, 1, 4);
+            mine.maxPlayers = EditorGUILayout.IntSlider("Players at most", Mathf.Max(mine.minPlayers, CourseKit.MaxOf(mine)), mine.minPlayers, 4);
             mine.checkpoints = checkpoints;
             EditorGUILayout.LabelField("Checkpoints", checkpoints == 0 ? "none yet (only the start is offered)" : $"CP1 to CP{checkpoints}");
             entries[index] = mine;
@@ -93,6 +96,7 @@ namespace HotPatata.Editor
             Undo.RecordObject(settings, "Register level");
             settings.DisplayName = mine.displayName;
             settings.MinPlayers = mine.minPlayers;
+            settings.MaxPlayers = CourseKit.MaxOf(mine);
             EditorUtility.SetDirty(settings);
             EditorSceneManager.MarkSceneDirty(scene);
             var written = remove ? entries.Where(e => e.scene != scene.name).ToList() : entries;

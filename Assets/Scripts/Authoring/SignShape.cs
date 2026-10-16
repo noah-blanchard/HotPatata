@@ -2,8 +2,8 @@ using UnityEngine;
 
 namespace HotPatata
 {
-    /// <summary>What is painted on a sign's board (the courses' clues).</summary>
-    public enum SignGlyph { None, Owl, Leaf, Axe }
+    /// <summary>What is painted on a sign's board (the courses' clues; Sun and Moon name the two lanes, PROJECT_SPEC §15g).</summary>
+    public enum SignGlyph { None, Owl, Leaf, Axe, Sun, Moon }
 
     /// <summary>
     /// A sign of an authored level (ARCHITECTURE §27.1): a board on one or two posts, its face along the piece's forward, a glyph

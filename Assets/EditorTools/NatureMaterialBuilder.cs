@@ -84,6 +84,8 @@ namespace HotPatata.Editor
             Rock("Nature_RockFace", "RockFace", 4f, "ForestLeaves", 0.25f),
             Rock("Nature_Cliff", "Cliff", 6f, "Grass", 0.35f),
             Rock("Nature_RockWall", "RockWall", 3f, null, 0f),
+            Rock("Nature_CaveRock", "CaveRock", 4f, null, 0f, 0.85f),
+            Rock("Nature_Granite", "Granite", 5f, "Grass", 0.3f),
             Rock("Nature_RocksGround", "RocksGround", 2.5f, null, 0f),
             Rock("Nature_StoneWall", "StoneWall", 2.5f, null, 0f),
             // PatataRanger's valley (ARCHITECTURE §25.5): rock wherever the ground is too steep to walk, leaf litter on all the rest
@@ -171,6 +173,18 @@ namespace HotPatata.Editor
             Prop("Nature_Prop_ClayPot", "planter_pot_clay"),
             Prop("Nature_Prop_DiyaLantern", "brass_diya_lantern"),
             Prop("Nature_Prop_BrassPot", "brass_pot_01"),
+            // The Long Climb's caves, mine and cliffs (PROJECT_SPEC §15g)
+            Prop("Nature_Prop_Cliff01", "namaqualand_cliff_01"),
+            Prop("Nature_Prop_Cliff02", "namaqualand_cliff_02"),
+            Prop("Nature_Prop_CoastalCliff", "coastal_cliff_04"),
+            Prop("Nature_Prop_PineRoots", "pine_roots"),
+            Prop("Nature_Prop_Pickaxe", "picke_dirty_01"),
+            Prop("Nature_Prop_Spade", "rusted_spade_01"),
+            Prop("Nature_Prop_Bucket2", "wooden_bucket_02"),
+            Prop("Nature_Prop_MineLadder", "wooden_ladder"),
+            Prop("Nature_Prop_Mushroom1", "cave_mushroom_01"),
+            Prop("Nature_Prop_Mushroom2", "cave_mushroom_02"),
+            Prop("Nature_Prop_Calcite", "calcite_druse"),
             Prop("Nature_Prop_CarvedPlate", "carved_wooden_plate"),
             // foliage (cut-out atlases, both faces, wind)
             Spray("Nature_Leaves_Fir", NatureTextureFactory.Spray.Fir, 1f),

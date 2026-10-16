@@ -2218,3 +2218,36 @@ it into its elements, one GameObject each, moved by hand from then on (one way: 
 
 Tests: `TimberElementTests` (a frozen deck, stair, bridge and house look and walk like their pieces, holes, attached ends,
 ropes on anchors, the catalogue, solid elements, the four structures built and frozen with solid posts and painted glyphs).
+
+### 27.2 Rock, mine and lane pieces (M20)
+
+The pieces The Long Climb needed (PROJECT_SPEC §15g), reusable by any level; drawn like the rest by `LevelPieceBuilder`.
+
+- **Caves.** `RockShellShape` is a tunnel along a line through its points (the floor's centre line) or a cavern domed over a
+  closed outline, with a clear width and height, a thickness, a roughness, its own rock floor or the terrain's, closed ends and
+  skylights (roof holes, piece space). `LevelRock` builds one mesh of shared vertices (smooth rock): a superellipse section swept
+  along the line (a tunnel) or rings from the outline up to a crown (a cavern), every vertex pushed **outward only** by a noise
+  (`LevelRock.Noise`), so the clear space the piece is drawn with stays clear; the inside in `Nature_CaveRock`, the outside in
+  `Nature_MossyRock` (moss on what faces up). The same mesh is its collider on Environment, a `WalkableProxy` of kind Solid (the
+  static organic ground's exception to the box-only rule, §25.5), and a `CourseCeiling`: no lob passes a cave's roof, and Verify
+  Level reports a pass under it.
+- **Cliffs.** `CliffShape` is a block of rock over a closed outline: bands from its foot (sunk into the ground) up to each ledge,
+  stepping back by the ledge's inset, then to its top, every face leaning back a little (`batter`) and pushed out by the noise; the
+  top and the shelves are walked on (the same mesh, Solid). Its rock is granite (`Nature_Granite`), sandstone (`Nature_Cliff`) or
+  mossy. Its inspector lists its faces and says which a jump and a mantle climb (under `CliffShape.LockedFace`, 3.4 m); the
+  section's contract still declares the Climb lock.
+- **Timber stands on rock.** `SceneSite.GroundAt` skips timber outputs but not rock ones (`SceneSite.IsRock`): a post finds a
+  cliff's top or a cave's floor.
+- **Mine timber.** `MineFrameShape` (frames every few metres along a line: two posts on the ground, a cap beam, lagging boards,
+  a lantern under some caps) and `MineRailShape` (sleepers and two iron rails on the ground, decoration) are drawn by
+  `TimberMine` through the timber kit, so they freeze into elements (§27.1); their posts collide as boxes.
+- **Lane markers.** `LaneMarkerShape` (a post with an arm, or an arch over the path) carries its lane's glyph (`SignGlyph.Sun`,
+  `SignGlyph.Moon`, painted gold or blue), ribbons of its colour and a lantern.
+- **Lanterns** are the prop library's (`Lantern_01`), prefab instances under the output: `LevelPieceBuilder.Meshes` leaves their
+  meshes alone (never copied into the catalogue) and `TimberFreezer` carries them into the frozen structure (`Props`).
+- **The library.** The structure library gains `Lanes/` (Sun and Moon posts and arches) and `Mine/` (an entrance, a gallery, a
+  track); the prop library gains the caves' and the mine's CC0 props (rock formations, pine roots, a pickaxe, a spade, a ladder,
+  mushrooms, a calcite druse).
+
+Tests: `LevelRockTests` (a tunnel's ceiling and clear space, a skylight and a dead end, a cavern's dome and floor, a cliff's top,
+shelf and faces, mine frames standing on rock and freezing with their lanterns, lane markers' glyphs, a track on the ground).

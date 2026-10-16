@@ -153,6 +153,18 @@ namespace HotPatata.Editor
                 case PulleyBeamShape beam:
                     TimberStructures.PulleyBeam(root, name, beam.transform.position, Yaw(beam), beam.Reach, beam.Height, beam.Post, beam.RopeDrop);
                     break;
+                case MineFrameShape frames:
+                    TimberMine.Frames(root, name, frames.WorldPoints(), frames.Width, frames.Height, frames.Spacing, frames.Lagging, frames.LanternEvery,
+                                      frames.Wear == TimberWear.Aged, p => SceneSite.GroundAt(p, frames.transform.position.y + 1f, 6f));
+                    break;
+                case MineRailShape rails:
+                    TimberMine.Track(root, name, Curves.Spline(rails.WorldPoints(), 0.5f), rails.Gauge, rails.Decay, p => SceneSite.GroundAt(p, rails.transform.position.y + 1f, 4f));
+                    break;
+                case LaneMarkerShape marker:
+                    TimberMine.LaneMarker(root, name, marker.transform.position, Yaw(marker), marker.Lane, marker.Form, marker.Span, marker.Height, marker.Lantern);
+                    break;
+                case RockShellShape shell: LevelRock.BuildShell(shell, root, name); break;
+                case CliffShape cliff: LevelRock.BuildCliff(cliff, root, name); break;
                 case HeroTreeShape tree: LevelNature.BuildTree(tree, root, name); break;
                 case WaterShape water: LevelNature.BuildWater(water, root, name); break;
                 case ForestArea forest: LevelForest.Plant(forest, root); break;
@@ -180,6 +192,11 @@ namespace HotPatata.Editor
                 GantryShape g => new[] { Vector3.zero, new Vector3(g.Span, g.Height, g.Depth) },
                 SignShape sg => new[] { Vector3.zero, new Vector3(sg.Board.x, sg.BoardHeight + sg.Board.y, 0f) },
                 PulleyBeamShape pb => new[] { Vector3.zero, new Vector3(0f, pb.Height, pb.Reach) },
+                MineFrameShape mf => mf.WorldPoints(),
+                MineRailShape mr => mr.WorldPoints(),
+                LaneMarkerShape lm => new[] { Vector3.zero, new Vector3(lm.Span, lm.Height, 0f) },
+                RockShellShape rs => rs.WorldPoints(),
+                CliffShape cl => cl.WorldOutline().Select(p => new Vector3(p.x, 0f, p.y)).Append(new Vector3(cl.WorldOutline()[0].x, cl.Height, cl.WorldOutline()[0].y)).ToList(),
                 HeroTreeShape tree => new[] { Vector3.zero, new Vector3(tree.Lean.x, tree.Height, tree.Lean.y) },
                 WaterShape water => new[] { Vector3.zero, new Vector3(water.Size.x, water.Depth, water.Size.y) },
                 ForestArea forest => forest.WorldOutline().Select(p => new Vector3(p.x, 0f, p.y)).ToList(),
@@ -191,7 +208,9 @@ namespace HotPatata.Editor
             var bounds = new Bounds(points[0], Vector3.zero);
             foreach (var p in points) bounds.Encapsulate(p);
             float span = Mathf.Max(bounds.size.x, bounds.size.y, bounds.size.z);
-            if (piece is TimberWalkShape || piece is RailingShape) span = Mathf.Max(span, Curves.Length(points));
+            if (piece is TimberWalkShape || piece is RailingShape || piece is MineFrameShape || piece is MineRailShape
+                || piece is RockShellShape rock && rock.Kind == RockShellKind.Tunnel)
+                span = Mathf.Max(span, Curves.Length(points));
             float max = piece is ForestArea ? MaxForestSpan : MaxSpan;
             return span > max ? $"it spans {span:F0} m (at most {max:F0} m)" : null;
         }
@@ -211,9 +230,12 @@ namespace HotPatata.Editor
 
         /// <summary>The meshes a piece's output draws and collides with.</summary>
         public static IEnumerable<Mesh> Meshes(GameObject output) =>
-            output.GetComponentsInChildren<MeshFilter>(true).Select(f => f.sharedMesh)
-                .Concat(output.GetComponentsInChildren<MeshCollider>(true).Select(c => c.sharedMesh))
+            output.GetComponentsInChildren<MeshFilter>(true).Where(Own).Select(f => f.sharedMesh)
+                .Concat(output.GetComponentsInChildren<MeshCollider>(true).Where(Own).Select(c => c.sharedMesh))
                 .Where(m => m != null).Distinct();
+
+        /// <summary>A part the piece made itself, not a prop it hangs (a prefab instance: a lantern keeps its own meshes).</summary>
+        static bool Own(Component c) => !PrefabUtility.IsPartOfPrefabInstance(c);
 
         // ------------------------------------------------------------------ the pieces
 
@@ -419,6 +441,32 @@ namespace HotPatata.Editor
                 case PulleyBeamShape pb:
                     V(s, new Vector3(pb.Reach, pb.Height, pb.RopeDrop));
                     s.Append(pb.Post).Append('|');
+                    break;
+                case MineFrameShape mf:
+                    foreach (var p in mf.Points) V(s, p);
+                    V(s, new Vector3(mf.Width, mf.Height, mf.Spacing));
+                    s.Append(mf.Lagging).Append(mf.LanternEvery).Append(mf.Wear).Append('|');
+                    break;
+                case MineRailShape mr:
+                    foreach (var p in mr.Points) V(s, p);
+                    V(s, new Vector3(mr.Gauge, mr.Decay, 0f));
+                    break;
+                case LaneMarkerShape lm:
+                    V(s, new Vector3(lm.Span, lm.Height, lm.Lantern ? 1f : 0f));
+                    s.Append(lm.Lane).Append(lm.Form).Append('|');
+                    break;
+                case RockShellShape rs:
+                    s.Append(rs.Kind).Append(rs.Floor).Append(rs.CloseStart).Append(rs.CloseEnd).Append('|');
+                    foreach (var p in rs.Points) V(s, p);
+                    V(s, new Vector3(rs.Width, rs.Height, rs.Thickness));
+                    V(s, new Vector3(rs.Roughness, 0f, 0f));
+                    foreach (var sky in rs.Skylights) V(s, new Vector3(sky.at.x, sky.radius, sky.at.y));
+                    break;
+                case CliffShape cl:
+                    foreach (var p in cl.Outline) V(s, p);
+                    V(s, new Vector3(cl.Height, cl.Roughness, cl.Sink));
+                    V(s, new Vector3(cl.Batter, (int)cl.Rock, 0f));
+                    foreach (var l in cl.Ledges) V(s, new Vector3(l.height, l.inset, 0f));
                     break;
                 case HeroTreeShape tree:
                     s.Append(tree.TreeKind).Append('|');

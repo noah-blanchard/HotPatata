@@ -350,6 +350,8 @@ namespace HotPatata.Editor
                 findings.Add(LevelFinding.Error($"The menu offers CP1 to CP{entry.checkpoints}, the level has {checkpoints} (Register In Menu again)."));
             if (entry.minPlayers != settings.MinPlayers)
                 findings.Add(LevelFinding.Error($"The menu asks {entry.minPlayers} players, the level {settings.MinPlayers} (Register In Menu again)."));
+            if (CourseKit.MaxOf(entry) != settings.MaxPlayers)
+                findings.Add(LevelFinding.Error($"The menu allows {CourseKit.MaxOf(entry)} players at most, the level {settings.MaxPlayers} (Register In Menu again)."));
             if (!EditorBuildSettings.scenes.Any(s => s.path == scene.path && s.enabled))
                 findings.Add(LevelFinding.Error("The level is in the menu but not in the build (Register In Menu again)."));
         }
