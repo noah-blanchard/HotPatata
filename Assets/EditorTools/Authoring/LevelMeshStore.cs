@@ -41,14 +41,21 @@ namespace HotPatata.Editor
             {
                 if (piece.Output == null) continue;
                 written += PersistFoliage(piece, levelFolder);
-                var saved = new Dictionary<Mesh, Mesh>();
-                foreach (var mesh in LevelPieceBuilder.Meshes(piece.Output).Where(m => !MeshCatalog.Contains(m)))
-                    saved[mesh] = MeshCatalog.Store(mesh);
+                // who draws and collides with what, read before storing: a mesh the catalogue already holds (the same content, a piece
+                // rebuilt as it was) is destroyed by Store, and a component holding a destroyed mesh reads null
+                var filters = piece.Output.GetComponentsInChildren<MeshFilter>(true).Where(f => f.sharedMesh != null).Select(f => (f, id: f.sharedMesh.GetInstanceID())).ToList();
+                var colliders = piece.Output.GetComponentsInChildren<MeshCollider>(true).Where(c => c.sharedMesh != null).Select(c => (c, id: c.sharedMesh.GetInstanceID())).ToList();
+                var saved = new Dictionary<int, Mesh>();
+                foreach (var mesh in LevelPieceBuilder.Meshes(piece.Output).Where(m => !MeshCatalog.Contains(m)).ToList())
+                {
+                    int id = mesh.GetInstanceID();
+                    saved[id] = MeshCatalog.Store(mesh);
+                }
                 if (saved.Count == 0) continue;
-                foreach (var filter in piece.Output.GetComponentsInChildren<MeshFilter>(true))
-                    if (filter.sharedMesh != null && saved.TryGetValue(filter.sharedMesh, out var m)) filter.sharedMesh = m;
-                foreach (var collider in piece.Output.GetComponentsInChildren<MeshCollider>(true))
-                    if (collider.sharedMesh != null && saved.TryGetValue(collider.sharedMesh, out var m)) collider.sharedMesh = m;
+                foreach (var (filter, id) in filters)
+                    if (saved.TryGetValue(id, out var m)) filter.sharedMesh = m;
+                foreach (var (collider, id) in colliders)
+                    if (saved.TryGetValue(id, out var m)) collider.sharedMesh = m;
                 written += saved.Count;
             }
             MeshCatalog.Flush();

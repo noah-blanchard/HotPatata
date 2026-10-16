@@ -256,6 +256,20 @@ namespace HotPatata.Tests
             Assert.IsTrue(before.Any(m => m == null), "nothing of the old deck went");
         }
 
+        [Test]
+        public void Meshes_OfAPieceRebuiltAsItWas_StayDrawnWhenSaved()
+        {
+            // the catalogue already holds the same content: storing it again destroys the fresh copy, the piece must point at the stored one
+            var deck = Piece<TimberDeckShape>("Deck", new Vector3(0f, 3f, 0f));
+            var pieces = new LevelPiece[] { deck };
+            LevelPieceBuilder.Rebuild(pieces);
+            LevelMeshStore.Persist(pieces, StoreFolder);
+            LevelPieceBuilder.Rebuild(pieces);
+            LevelMeshStore.Persist(pieces, StoreFolder);
+            Assert.IsTrue(deck.Output.GetComponentsInChildren<MeshFilter>(true).All(f => f.sharedMesh != null), "a board lost its mesh");
+            Assert.IsTrue(deck.Output.GetComponentsInChildren<MeshCollider>(true).All(c => c.sharedMesh != null), "the walking surface lost its mesh");
+        }
+
         // ------------------------------------------------------------------ menu
 
         [Test]
