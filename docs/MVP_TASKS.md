@@ -34,7 +34,7 @@ playtest and cannot be closed by code.
 | M15 Fifth course: PatataTemple | archived (M19), its systems kept; was built: 15 sections in 3 acts for **three players**, every section with a contract that says why two fail; four systems for three (heavy plate, hourglass plate, sun beam, pivot carrying its riders), a level's minimum players in the menu; its own valley, pyramid, day and storm; automated verification in M15.6 | a clear by three, every puzzle failing with two and fun with four, host + 2 clients, 1080p/60 fps, readability review (the storm) |
 | M18 Authored levels | step 3b built (M18.3b): the kit's ten forest looks (Prefab Variants, `Kit/Forest`), the prop library at real size with Solid boxes, sets and a small-props brush, checkpoints whose campfire finds floor and room beside them (the zone follows it), Verify checks spawns and campfires, the example level `OldOak` in the menu (Verify clean, route runner passes); step 3a built (M18.3a): checkpoints numbered along the course, kit size handles, wiring and the Link tool, contracts by handles, Verify Level, the route runner on any level, Play from here; step 2 built (M18.2): the terrain in the nature look, valley walls, water, giant trees sawn round their decks, forests planted or painted off the paths, mist baked on save, sound by section; step 1 built (M18.1): `HotPatata/Level/New Level`, timber pieces drawn in the Scene view (decks, walkways and stairs, rope bridges, railings, houses, trestles), ends that attach and open rails, presets, meshes written on save, the menu's display names and Register In Menu, a level's borrowed day; automated checks pass | the owner's try of steps 3a and 3b (the game tools, forest looks, props, checkpoints, the example level); step 4 (timber by hand, the structure library: M18.4) |
 | M16 Audio (#46–#49) | built (code, mixer, settings, docs): a drop-in sound library, sounds are folders of `Assets/Audio`; music by place and act, ambience in layers, movement sounds back (spec §11), bomb, run, obstacle and menu sounds; automated checks pass (M16.6) | the owner's sounds and music; the listening pass with two players (M16.6) |
-| **M20 The Long Climb** | in progress: the v1.0 level for two (PROJECT_SPEC §15g): exactly two players (a level's maximum), the rock, mine and lane pieces, the caves' and mine's CC0 props and library structures (M20.1–M20.4) | the blockout of the 7 acts (M20.5, then the owner's OK), dressing (M20.6), playtests (M20.7) |
+| **M20 The Long Climb** | in progress: the v1.0 level for two (PROJECT_SPEC §15g): exactly two players (a level's maximum), the rock, mine and lane pieces, the caves' and mine's CC0 props and library structures (M20.1–M20.4); the blockout of the seven acts laid, checked and walked (M20.5) | the owner's OK on the blockout, dressing (M20.6), playtests (M20.7) |
 | **M19 Fresh start** | done: every map archived (`docs/MAP_ARCHIVE.md`, branch `archive/maps-v1`); only `Bootstrap` and `PassSandbox` remain, the sandbox dev-only (never listed in a release build); new levels copied from `Templates/CourseTemplate` | the first new map, by hand with the level tools |
 | Cleanup and generic obstacles | done: only `PatataWilds`, `IndustrialPlant` and `PassSandbox` (plus `Bootstrap`) remain; every obstacle system is generic (references, `IObstacleState`, `ObstacleVisualDriver`, `CustomVisual`, overridable poses, `ObstaclePrefabValidator`), with two example variants; the obstacle catalogue is `docs/OBSTACLES.md` | |
 
@@ -1781,10 +1781,13 @@ stacked PRs: the pieces, the blockout (then the owner's OK), the dressing.
 
 ## M20.5 — The blockout
 
-- [ ] `LongClimb` made with New Level (min 2, max 2, the Ranger day), its terrain, the seven acts' rock, trees, timber and kit,
-  the wiring, the checkpoints numbered along the course, a contract per section, the fuse overrides, the lane markers;
-- [ ] Verify Level reports no error, `CourseContractCheck` nothing, the route runner walks it; `LongClimbTests`;
-- [ ] registered first in the menu; a gallery of the acts; **the owner's OK** before the dressing.
+- [x] `LongClimb` made with New Level (min 2, max 2, the Ranger day), its terrain (960 m: the valley, the ridge, the sunken
+  hollow, the ravine, the plateau), the seven acts' rock, trees, timber and kit, the wiring, six checkpoints in order and the
+  finish (the bell arch opens the lookout's cabin), a contract per section, the fuse overrides, the lane markers, each section's
+  ambience and music act;
+- [x] Verify Level reports no error, `CourseContractCheck` nothing, the route runner walks it (`AuthoredLevelTests`); `LongClimbTests`;
+- [x] registered first in the menu (exactly two players);
+- [ ] a gallery of the acts; **the owner's OK** before the dressing.
 
 ## M20.6 — Dressing
 
