@@ -11,6 +11,7 @@ The tools come in three steps (M18). This guide covers what is built:
 | 3a. The game | checkpoints numbered along the course, size handles, wiring, contracts, Verify Level, the route runner, Play from here | built |
 | 3b. The look | forest looks for the kit, props, the example level (`OldOak`, archived since) | built |
 | 4. Timber by hand | structures (shelter, gantry, sign, pulley beam), freezing into elements, the structure library | built |
+| 5. Rock and mine | caves (tunnels and caverns), cliffs, mine timber, lane markers (M20) | built |
 
 A good order: make the level (§1), shape the land (§2), plant the giant trees (§3), hang the timber on them (§4 to §7),
 plant the forest round it (§8), the mist and the sound (§9), then the game (§10), checked and played (§11), and dress it
@@ -338,6 +339,49 @@ does it at once).
 
 **PatataRanger** (archived, `docs/MAP_ARCHIVE.md` §6.5) was a level made of frozen timber: every deck, stair, bridge, hut, booth
 and tower a structure of elements. The library's booths, gantries, pulleys and signs come from it.
+
+## 20. Caves
+
+`GameObject > HotPatata Level > Rock > Cave Tunnel` or `Cavern` (in `Level/Props`).
+
+- **A tunnel**: its dots are the floor's centre line (dots, +, Ctrl+click, or the pencil). **Width** and **Height** are its clear
+  space inside: the rock only bulges outward (**Roughness**), so what you draw is what a player has. **Thickness** is the rock's.
+  Its ends are mouths; tick **Close start** or **Close end** for a dead end.
+- **A cavern**: its dots are its outline on the floor (keep it round: the dome rises from it to its middle, **Height** high).
+- **Floor**: the terrain is the floor; tick **Floor** for a rock floor at the piece's height (a cave above the ground, or over a
+  dug river).
+- **Skylights**: **Add skylight** in the inspector, then drag its cyan dot: a hole in the roof (its radius in the list). A sun
+  beam fits under one.
+- Its walls and roof stop players and the bomb, and **its roof is a ceiling**: nothing is lobbed over it (a Lob lock holds under
+  it), and a pass drawn under it is reported.
+- A tunnel's mouth can open inside a cavern's wall: their rocks overlap, the way is clear.
+- Dress it with the props (§15): the rock formations, roots, mushrooms, the calcite druse, lanterns.
+
+## 21. Cliffs
+
+`GameObject > HotPatata Level > Rock > Cliff`: a block of rock over its outline (dots, or **Rectangle** / **Oval**), from the
+piece's height up **Height** (the white handle on top). Each **Ledge** steps its face back by its inset at its height: a shelf one
+walks on. Its top is walked on too; timber stands on it (a deck's posts find it).
+
+- **Rock**: granite (grey, lichen), sandstone (layered) or mossy. **Batter** leans its faces back; **Sink** buries its foot.
+- The inspector lists its faces from the foot: a face under 3.4 m is climbed by a jump and a mantle. To stop a climb, keep it
+  5 m and declare the Climb lock in the section's contract (§10).
+- A spine between two lanes is a long thin cliff; a wall round a hollow is a ring of them.
+
+## 22. Mine timber
+
+- **Mine Frames** (`GameObject > HotPatata Level > Mine > Mine Frames`): frames along its line every **Spacing**, two posts on the
+  ground (or rock) under each, a cap beam **Height** up, **Lagging** boards over the caps, a lantern under every few caps. Its
+  posts stop players and the bomb. Put it inside a cave tunnel, its line along the tunnel's.
+- **Mine Track** (`Mine > Mine Track`): sleepers and two rails on the ground along its line, some rotted (**Decay**). Decoration.
+- Both freeze into elements (§17); the lanterns go with them.
+- The library's `Structures/Mine/` holds an entrance, a 9 m gallery and an 8 m track.
+
+## 23. Lane markers
+
+Where a team splits onto two lanes (PROJECT_SPEC §15g), name each lane: `GameObject > HotPatata Level > Structure > Lane Marker`.
+**Lane** Sun (gold) or Moon (blue), **Form** a post beside the path or an arch over it (**Span**), a **Lantern**. Its face is the
+piece's forward (the arrow): turn it toward the team coming. The library's `Structures/Lanes/` holds the four of them.
 
 ## Rules
 

@@ -17,6 +17,7 @@ throwing a live bomb between them.
     development builds (`NetworkBootstrap.devOnlyScenes`), never in a release build;
   - new levels (M18): scenes in `Assets/Scenes/Levels/` the owner builds by hand with the `HotPatata/Level` tools
     (`docs/LEVEL_AUTHORING.md`), copied from `Assets/Scenes/Templates/CourseTemplate.unity`; in the menu only once registered.
+    The first is `LongClimb` ("The Long Climb", M20, spec §15g), for exactly two players.
   - Every earlier map (`PatataWilds`, `PatataCanopy`, `PatataTemple`, `IndustrialPlant`, `PatataRanger`, `OldOak`, and the
     older `PrototypeCourse`, `PlaytestCourse`, `PatataPark`, `PatataWorks`, `IndustrialLab`) is described obstacle by obstacle
     in `docs/MAP_ARCHIVE.md`; the scenes and their builders are kept on the branch `archive/maps-v1` (§9 there: bringing one back).
@@ -34,8 +35,9 @@ M10 (bomb obstacles, #68), M13 (body screens, hands-free plates, switches, secti
 sun beams, pivots, a level's minimum players) and M16 (audio: a drop-in sound library, `Assets/Audio/README.md`) built the kit;
 the courses that used them (M11, M12, M13, M15, M17) are archived. M18 (authored levels: the owner builds levels by hand in the
 Editor: timber, nature, the game, forest looks, props, frozen timber and the structure library) is built. **The fresh start**
-(M19): no map but the sandbox; the next maps are built by hand with the level tools. M6 (UX) and M7 (hardening, external
-playtest) follow.
+(M19): no map but the sandbox; the next maps are built with the level tools. **M20** (in progress): The Long Climb, the v1.0
+level for exactly two (spec §15g: split Sun / Moon lanes), with the rock, mine and lane pieces (ARCHITECTURE §27.2) and a level's
+maximum players. M6 (UX) and M7 (hardening, external playtest) follow.
 The live table is at the top of `docs/MVP_TASKS.md`.
 
 ## Docs (read before implementing)

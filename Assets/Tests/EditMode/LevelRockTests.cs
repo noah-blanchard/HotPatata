@@ -11,7 +11,7 @@ namespace HotPatata.Tests
     /// The rock and mine pieces of the authored levels (ARCHITECTURE §27.2): a cave tunnel and a cavern are solid rock with a roof that is a
     /// ceiling (no lob passes it) and their clear space inside, skylights are real holes; a cliff's top and shelves are walked on and its
     /// faces stop a body; mine frames stand on what is under them, their posts solid; lane markers draw their lane's glyph; the timber ones
-    /// freeze into elements (their lanterns carried over). Built far from the origin, removed after; the watcher is off while they run.
+    /// freeze into elements (their lanterns carried over). Built far from the origin, removed after (the undo history cleared, so nothing comes back); the watcher is off while they run.
     /// </summary>
     public class LevelRockTests
     {
@@ -39,6 +39,8 @@ namespace HotPatata.Tests
         public void TearDown()
         {
             foreach (var go in scene.GetRootGameObjects().Except(before)) Object.DestroyImmediate(go);
+            // the runner reverts the undo history once the author's scenes are back: a piece a freeze destroyed would come back in them
+            Undo.ClearAll();
             MeshCatalog.Folder = MeshCatalog.DefaultFolder;
             AssetDatabase.DeleteAsset(StoreFolder.TrimEnd('/'));
             LevelPieceWatcher.Enabled = true;

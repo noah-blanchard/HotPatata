@@ -1184,13 +1184,78 @@ The shorter hold fuse: 5.0 s from checkpoint 8, 4.5 s from checkpoint 13 (§20).
 
 ---
 
+## 15g. The Long Climb — the v1.0 level for two (M20)
+
+> §15f was PatataRanger's blueprint (archived, removed with the maps at the fresh start); the letter is not reused.
+
+Asked for by the owner for v1.0.0 (grilled 2026-10-16): an **authored level** (ARCHITECTURE §27, made with the level tools, no
+builder) close to PatataRanger's look, with **more of the actual co-op**: the two players are **split onto two lanes** most of the
+way and must still pass the one bomb between them. Start, a cave and an old mine, a misty hollow, a cliff, two giant trees, the
+crowns. Scene `Assets/Scenes/Levels/LongClimb.unity`, "The Long Climb" in the menu, first in the level list.
+
+Target:
+
+- **exactly two players**: the menu says "(2 players)", the host's Start waits for the second and refuses a third (§16); a level
+  for three and four comes later;
+- **7 acts, 7 checkpoints** (one campfire per act, the last checkpoint is the finish): about 20 minutes clean, a first clear in
+  30–45; each act chains three or four trials under one contract (a deliberate departure from §12.3's 30–60 s: the owner found
+  close checkpoints took the challenge away, `MAP_ARCHIVE.md` §8);
+- **difficulty ramps to hard**: acts 1–2 teach the split and crossed wiring, 3–5 combine, 6–7 everything on a short fuse;
+- **time pressure from the kit's own timers**: ring windows, hourglass sand, race hoops and the fuse (6 s, 5 s from CP3, 4.5 s
+  from CP5); no run timer;
+- **the Ranger day** (a morning climbing out of the mist): dawn mist at the camp, the cave lit by lanterns, thick fog in the hollow,
+  sun breaking through as the team climbs into the crowns.
+
+### The grammar of two lanes
+
+- **The split.** About two thirds of the route are **two lanes**, the **Sun** lane and the **Moon** lane, named where they part by
+  a lane marker (a sun or a moon painted on a round board, ribbons of gold or blue, a lantern). The lanes meet again at each
+  campfire (a checkpoint needs both players inside) and split again soon after.
+- **Four kinds of split**: side by side across a divide (a chasm, a rock spine, a net: passes across it); high and low (a ledge
+  over a stream, a catwalk over a cave river: passes up and down); out of sight (rock between them: the bomb crosses only by a
+  chute, colour and pips telling which); crossing lanes (a braid: the lanes swap sides, over and under).
+- **Each lane is opened from the other.** A lane's doors, bridges and lifts are worked from the other lane (a lever, a plate, a
+  winch, a ring, a sun beam): one source drives one actuator (§17.2), so neither player moves on alone.
+- **Asymmetric lanes, turning roles.** One lane is the harder parkour (the runner's), the other the switches (the thinker's); who
+  takes which changes act by act, and the markers say which lane is which.
+- **The bomb binds them**: nobody catches their own throw and the fuse is shorter than any lane, so the bomb keeps crossing.
+- Nothing new in the kit's rules: the level is made of the existing systems; **no heavy plate** (kept for the level for three and
+  four) and nothing industrial (no conveyor, no piston).
+
+### Places and pieces
+
+- New reusable pieces (ARCHITECTURE §27.2, LEVEL_AUTHORING §20–§23): **caves** (a rock tunnel along a line, a cavern over an
+  outline, their roof a ceiling), **cliffs** (faces, ledges, a walkable top), **mine timber** (frames and a track) and **lane
+  markers**.
+- The locks are the void, water, faces of 5 m and real roofs (a cave's roof, a house's ceiling): §13.20.
+- The cave is lantern-lit and readable: lanterns, sun shafts through cracks (some are sun beams of the puzzles).
+
+### Route
+
+| Act (ends at) | Place | Split | What it forces |
+|---|---|---|---|
+| 1 Le Camp (CP1, the cave mouth) | the ranger camp at dawn, a trail between boulders | side by side | warm-up passes together; a rock spine splits the trail (Sun on the stream bank, Moon on a ledge), passes through net windows in the spine; Moon's lever lowers Sun's drawbridge, Sun's winch opens Moon's gate; together again, a ring opens the mine gate |
+| 2 La Vieille Mine (CP2, the underground lake) | a cave with old mine timber and an underground river | high and low | Sun rides rafts down the river (a ride longer than a fuse), Moon runs the mine catwalks over rotten planks, passes up and down through shafts; Moon cuts a sun shaft to raise the river's portcullis; the catwalk ends, the bomb goes down a mine chute |
+| 3 Le Creux des Brumes (CP3, the cliff foot) | out of the cave into a misty hollow: bog walks, dead trees | out of sight | rock and mist hide the other lane; a plate lights a beacon where the receiver stands, passes go blind to it; two chutes (colour and pips) cross the walls, the receiver calls the pad; cold springs to wait in; crossed winches. Fuse 5 s from here |
+| 4 La Falaise (CP4, the cliff top) | a granite face of about 35 m | high and low (vertical) | one rides cages up the face, worked by the other's winches; the other climbs a ledge relay past a swinging log; a lever on the mid ledge raises the next cage; a catapult fires the bomb to the top ledge as the receiver arrives |
+| 5 Les Troncs Jumeaux (CP5, the high deck between the trees) | two giant firs about 30 m apart, a stair round each | crossing lanes | each climbs a tree; rope bridges braid between them at three heights, over and under, and the players swap trees at each; passes where the stairs come near; each tree's winch drops the other's drawbridge. Fuse 4.5 s from here |
+| 6 La Canopée (CP6, the crown landing) | long walks on two branches over the void | side by side, then braided | a 14 m void between the branches; Sun's ring opens Moon's gate, Moon's light shaft holds Sun's bridge; a shuttle ride longer than a fuse; sparks on one lane, nets on the other; a race hoop |
+| 7 La Couronne (the finish) | the crowns, the old signal tower | everything at once | each lane's last gate opened from the other; a race hoop drops both drawbridges for 13 s; Moon's lever turns the pivot bridge to Sun's dock; the bomb through the bell arch, the whole team aboard |
+
+The distances are tuned in the blockout; every act declares its contract (what it forces, each lock) and Verify Level reports
+nothing before the level is listed.
+
+---
+
 ## 16. Multiplayer product behavior
 
 Target session:
 
 - one player hosts;
 - friends join by code;
-- 2–4 players (PatataTemple needs three, §15e: the host's Start waits for them);
+- 2–4 players (PatataTemple needs three, §15e: the host's Start waits for them); a level may also allow fewer than four:
+  The Long Climb is for exactly two (§15g), so the host's Start is refused with a third in the lobby, and the level list says
+  "(2 players)";
 - cooperative;
 - no public matchmaking required for MVP.
 
@@ -1240,7 +1305,7 @@ Do not implement unless this file is changed:
 - cosmetics;
 - multiple bomb types;
 - multiple courses (exceptions, owner decisions: `PatataWilds`, the outdoor course of §15c, M12, `PatataCanopy`, the
-  tree-top course of §15d, M13, `PatataTemple`, the temple for three of §15e, M15, and `IndustrialPlant`, the closed factory built on §15b's rules, beside `PassSandbox`; the earlier `PrototypeCourse`, `PlaytestCourse`, `PatataPark`
+  tree-top course of §15d, M13, `PatataTemple`, the temple for three of §15e, M15, and `IndustrialPlant`, the closed factory built on §15b's rules, beside `PassSandbox`, all archived at the fresh start; then `LongClimb`, the authored level for two of §15g, M20; the earlier `PrototypeCourse`, `PlaytestCourse`, `PatataPark`
   and `PatataWorks` were removed in the cleanup, archived in OBSTACLES.md §3.2). Still no campaign, no level
   select beyond the Bootstrap level list, and no procedural levels (PatataWilds' generated trees, plants and terrain are
   art with fixed seeds, not a generated route);

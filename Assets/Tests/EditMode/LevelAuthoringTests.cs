@@ -39,6 +39,8 @@ namespace HotPatata.Tests
         public void TearDown()
         {
             foreach (var go in scene.GetRootGameObjects().Except(before)) Object.DestroyImmediate(go);
+            // the runner reverts the undo history once the author's scenes are back: a piece a freeze or an undo test destroyed would come back in them
+            Undo.ClearAll();
             MeshCatalog.Folder = MeshCatalog.DefaultFolder;
             AssetDatabase.DeleteAsset(StoreFolder.TrimEnd('/'));
             LevelPieceWatcher.Enabled = true;
