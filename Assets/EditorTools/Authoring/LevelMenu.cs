@@ -54,6 +54,22 @@ namespace HotPatata.Editor
         [MenuItem(Add + "Structure/Gantry", priority = 21)] static void AddGantry() => Create<GantryShape>("Gantry", 0f);
         [MenuItem(Add + "Structure/Sign", priority = 22)] static void AddSign() => Create<SignShape>("Sign", 0f);
         [MenuItem(Add + "Structure/Pulley Beam", priority = 23)] static void AddPulleyBeam() => Create<PulleyBeamShape>("Pulley beam", 0f);
+        [MenuItem(Add + "Structure/Lane Marker", priority = 24)] static void AddLaneMarker() => Create<LaneMarkerShape>("Lane marker", 0f);
+        [MenuItem(Add + "Mine/Mine Frames", priority = 26)] static void AddMineFrames() => Create<MineFrameShape>("Mine frames", 0f);
+        [MenuItem(Add + "Mine/Mine Track", priority = 27)] static void AddMineTrack() => Create<MineRailShape>("Mine track", 0f);
+        [MenuItem(Add + "Rock/Cave Tunnel", priority = 33)] static void AddTunnel() => Create<RockShellShape>("Cave tunnel", 0f, LevelGroup.Props);
+        [MenuItem(Add + "Rock/Cavern", priority = 34)]
+        static void AddCavern()
+        {
+            var piece = (RockShellShape)CreatePiece(typeof(RockShellShape), "Cavern", Ground(0f), LevelGroup.Props);
+            Undo.RecordObject(piece, "Cavern");
+            piece.Kind = RockShellKind.Cavern;
+            piece.Height = 10f;
+            piece.Points.Clear();
+            piece.Points.AddRange(DeckShapes.Oval(24f, 20f, 16));
+            LevelPieceBuilder.Rebuild(piece);
+        }
+        [MenuItem(Add + "Rock/Cliff", priority = 35)] static void AddCliff() => Create<CliffShape>("Cliff", -0.5f, LevelGroup.Props);
         [MenuItem(Add + "Giant Tree", priority = 30)] static void AddTree() => Create<HeroTreeShape>("Giant tree", -0.4f, LevelGroup.Trees);
         [MenuItem(Add + "Forest Area", priority = 31)] static void AddForest() => Create<ForestArea>("Forest", 0f, LevelGroup.Trees);
         [MenuItem(Add + "Water", priority = 32)] static void AddWater() => Create<WaterShape>("Water", 0.5f, LevelGroup.Props);

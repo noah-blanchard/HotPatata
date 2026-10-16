@@ -84,6 +84,8 @@ namespace HotPatata.Editor
             Rock("Nature_RockFace", "RockFace", 4f, "ForestLeaves", 0.25f),
             Rock("Nature_Cliff", "Cliff", 6f, "Grass", 0.35f),
             Rock("Nature_RockWall", "RockWall", 3f, null, 0f),
+            Rock("Nature_CaveRock", "CaveRock", 4f, null, 0f, 0.85f),
+            Rock("Nature_Granite", "Granite", 5f, "Grass", 0.3f),
             Rock("Nature_RocksGround", "RocksGround", 2.5f, null, 0f),
             Rock("Nature_StoneWall", "StoneWall", 2.5f, null, 0f),
             // PatataRanger's valley (ARCHITECTURE §25.5): rock wherever the ground is too steep to walk, leaf litter on all the rest

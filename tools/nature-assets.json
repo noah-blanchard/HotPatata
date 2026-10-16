@@ -16,6 +16,8 @@
     { "id": "rock_face_03",          "folder": "RockFace",     "res": "2k" },
     { "id": "cliff_side",            "folder": "Cliff",        "res": "2k" },
     { "id": "rock_wall_10",          "folder": "RockWall",     "res": "1k" },
+    { "id": "aerial_rocks_02",       "folder": "CaveRock",     "res": "2k" },
+    { "id": "lichen_rock",           "folder": "Granite",      "res": "2k" },
     { "id": "rocks_ground_01",       "folder": "RocksGround",  "res": "1k" },
     { "id": "pine_bark",             "folder": "PineBark",     "res": "1k" },
     { "id": "bark_brown_01",         "folder": "BarkBrown",    "res": "1k" },

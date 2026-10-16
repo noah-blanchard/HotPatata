@@ -45,10 +45,19 @@ namespace HotPatata.Editor
             var hits = Physics.RaycastAll(new Vector3(p.x, from, p.y), Vector3.down, reach, LayerMask.GetMask("Environment"), QueryTriggerInteraction.Ignore);
             foreach (var hit in hits)
             {
-                if (hit.collider.GetComponentInParent<LevelPieceOutput>() != null) continue;   // timber never stands on timber
+                // timber never stands on timber, but stands on rock (a cave's floor, a cliff's top)
+                var output = hit.collider.GetComponentInParent<LevelPieceOutput>();
+                if (output != null && !IsRock(output)) continue;
                 if (float.IsNaN(best) || hit.point.y > best) best = hit.point.y;
             }
             return best;
+        }
+
+        /// <summary>A rock piece's output (a cave, a cliff): ground the timber stands on.</summary>
+        public static bool IsRock(LevelPieceOutput output)
+        {
+            var piece = output.transform.parent != null ? output.transform.parent.GetComponent<LevelPiece>() : null;
+            return piece is RockShellShape || piece is CliffShape;
         }
     }
 }

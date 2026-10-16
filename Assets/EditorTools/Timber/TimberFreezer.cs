@@ -20,7 +20,8 @@ namespace HotPatata.Editor
         /// <summary>The pieces that freeze: timber (not trees, water or forests).</summary>
         public static bool CanFreeze(LevelPiece piece) =>
             piece is TimberDeckShape || piece is TimberWalkShape || piece is RopeBridgeShape || piece is RailingShape || piece is HouseShape || piece is TrestleShape
-            || piece is ShelterShape || piece is GantryShape || piece is SignShape || piece is PulleyBeamShape;
+            || piece is ShelterShape || piece is GantryShape || piece is SignShape || piece is PulleyBeamShape
+            || piece is MineFrameShape || piece is MineRailShape || piece is LaneMarkerShape;
 
         /// <summary>Freezes every piece that can be (one undo step); returns the structures made.</summary>
         public static List<FrozenStructure> Freeze(IEnumerable<LevelPiece> pieces)
@@ -120,6 +121,12 @@ namespace HotPatata.Editor
                 if (collider.GetComponent<WalkableProxy>() != null || recorder.IsReplaced(collider.transform)) continue;
                 collider.transform.SetParent(Group("Bodies"), true);
                 collider.gameObject.hideFlags = HideFlags.None;
+            }
+            // props the piece hangs (prefab instances: a lantern) go with it as they are
+            foreach (var prop in temp.GetComponentsInChildren<Transform>(true).Where(p => PrefabUtility.IsOutermostPrefabInstanceRoot(p.gameObject)).ToList())
+            {
+                prop.SetParent(Group("Props"), true);
+                prop.gameObject.hideFlags = HideFlags.None;
             }
             foreach (var mesh in LevelPieceBuilder.Meshes(temp).Where(m => !EditorUtility.IsPersistent(m)).ToList()) Object.DestroyImmediate(mesh);
             Object.DestroyImmediate(temp);
