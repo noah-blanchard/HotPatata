@@ -21,7 +21,7 @@ need to drag anything in the Inspector. How it works is in `docs/ARCHITECTURE.md
 |---|---|
 | `Menu/` | the main menu |
 | `Lobby/` | an online lobby. It crossfades in when you host or join, and back to the menu music when you leave. Empty = the menu music continues |
-| `Courses/<Level>/` | a level, for every act that has no folder of its own (`<Level>` = scene name: `PatataWilds`, `PatataCanopy`, `PatataTemple`, `IndustrialPlant`, `PassSandbox`) |
+| `Courses/<Level>/` | a level, for every act that has no folder of its own (`<Level>` = scene name, e.g. `PassSandbox`; a new level gets its folders from `HotPatata/Audio/Create Folder Skeleton`) |
 | `Courses/<Level>/Act1/` … `Act5/` | that act only. It crossfades when the team reaches the act's first checkpoint |
 | `Results/` | the results screen once the run is complete. Empty = the level's music continues |
 
@@ -44,11 +44,11 @@ Ambience is built in **layers**. Each layer has two folders:
 |---|---|
 | `Menu/` | the main menu and the lobby (the misty clearing) |
 | `Courses/<Level>/` | everywhere in that level |
-| `Environments/<Env>/` | where the team is. The level builders name each section's environment: **PatataWilds** `Forest`, `River`, `Cliffs`, `Cave`, `Summit`; **PatataCanopy** `Canopy`, `HollowOak` (act 3); **PatataTemple** `Jungle` (act 1), `Temple` (act 2), `Storm` (act 3); **IndustrialPlant** `Factory`. `Meadow` is free for a new section |
+| `Environments/<Env>/` | where the team is. A level names each section's environment on its `Level` object (`Forest`, `River`, `Cliffs`, `Cave`, `Meadow`, `Summit`, `Canopy`, `HollowOak`, `Jungle`, `Temple`, `Storm`, `Factory`: the environments the archived courses used) |
 | `Courses/<Level>/Act<N>/` | added on top during that act. Its `Beds` start with generated birds, crickets and wind (`placeholder_*`), as the day goes |
 | `Courses/<Level>/Act<N>/Replace/` | replaces the environment's layer during that act |
 | `Emitters/<Kind>/` | loops fixed in the world by the builders: `River`, `Waterfall`, `Fire` (every campfire) |
-| `Thunder/` | one-shots a moment after each lightning flash in PatataTemple's storm, louder as the storm grows |
+| `Thunder/` | one-shots a moment after each lightning flash in the Temple day's storm, louder as the storm grows |
 
 Layers fade in and out as the team moves on.
 

@@ -281,12 +281,45 @@ namespace HotPatata.Tests
         }
 
         [Test]
+        public void ReleaseMenu_HidesTheSandbox_AndKeepsItsListsTogether()
+        {
+            var go = new GameObject("Bootstrap");
+            try
+            {
+                var bootstrap = go.AddComponent<NetworkBootstrap>();
+                var so = new SerializedObject(bootstrap);
+                CourseKit.WriteMenu(so, new[]
+                {
+                    new CourseKit.MenuEntry { scene = "MyLevel", checkpoints = 4, minPlayers = 2, displayName = "My Level" },
+                    new CourseKit.MenuEntry { scene = "PassSandbox", checkpoints = 1, minPlayers = 2 },
+                    new CourseKit.MenuEntry { scene = "TrioLevel", checkpoints = 6, minPlayers = 3 },
+                });
+                so.ApplyModifiedPropertiesWithoutUndo();
+                Assert.AreEqual(3, bootstrap.GameplayScenes.Count, "the Editor and development builds list everything");
+
+                bootstrap.HideDevOnlyScenes();   // what a release build does on start
+                CollectionAssert.AreEqual(new[] { "MyLevel", "TrioLevel" }, bootstrap.GameplayScenes.ToArray());
+                Assert.AreEqual("My Level", bootstrap.DisplayNameOf(0));
+                Assert.AreEqual(3, bootstrap.MinPlayersOf(1), "each list moves with its level");
+                Assert.IsTrue(bootstrap.HasLevel);
+
+                CourseKit.WriteMenu(so, new[] { new CourseKit.MenuEntry { scene = "PassSandbox", checkpoints = 1, minPlayers = 2 } });
+                so.ApplyModifiedPropertiesWithoutUndo();
+                bootstrap.HideDevOnlyScenes();
+                Assert.IsFalse(bootstrap.HasLevel, "a release build with only the sandbox has no level to start");
+                bootstrap.SceneIndex = 3;
+                Assert.AreEqual(0, bootstrap.SceneIndex);
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
+        [Test]
         public void LevelNames_AreSceneNamesNotTaken()
         {
             Assert.IsNull(LevelScenes.NameProblem("MyNewLevel42"));
             Assert.IsNotNull(LevelScenes.NameProblem("My Level"), "spaces");
             Assert.IsNotNull(LevelScenes.NameProblem("4Level"), "a digit first");
-            Assert.IsNotNull(LevelScenes.NameProblem("PatataRanger"), "a course's name");
+            Assert.IsNotNull(LevelScenes.NameProblem("PassSandbox"), "a scene's name");
         }
     }
 }

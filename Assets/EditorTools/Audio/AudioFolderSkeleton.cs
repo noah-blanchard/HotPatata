@@ -17,10 +17,7 @@ namespace HotPatata.Editor
         const string KeepFile = ".gitkeep";
 
         /// <summary>Acts of each course (its builder's sections); a course not listed gets its own folders and no act folders.</summary>
-        static readonly Dictionary<string, int> CourseActs = new Dictionary<string, int>
-        {
-            { "PatataWilds", 5 }, { "PatataCanopy", 5 }, { "PatataTemple", 3 },
-        };
+        static readonly Dictionary<string, int> CourseActs = new Dictionary<string, int>();
 
         [MenuItem("HotPatata/Audio/Create Folder Skeleton")]
         public static void Create()

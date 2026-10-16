@@ -13,9 +13,6 @@ namespace HotPatata.Tests
     {
         static readonly string[] Scenes =
         {
-            "Assets/Scenes/PatataWilds.unity",
-            "Assets/Scenes/PatataCanopy.unity",
-            "Assets/Scenes/IndustrialPlant.unity",
             "Assets/Scenes/PassSandbox.unity"
         };
 

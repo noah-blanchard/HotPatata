@@ -7,7 +7,7 @@
 
 ---
 
-# Status (last updated 2026-10-10)
+# Status (last updated 2026-10-16)
 
 A ticked box is verified by the automated tests (see [`TESTING.md`](TESTING.md)), by recorded bot/latency runs, or
 by the owner's own play. An unticked box in a finished milestone is a **human gate**: it needs a group or external
@@ -26,19 +26,20 @@ playtest and cannot be closed by code.
 | M8 Post-validation polish | gated on M7.4; some pulled forward through M9 | |
 | M9 Movement and look pass | done (pulled forward by the owner) | |
 | M10 Bomb obstacles (#68) | done (pulled forward by the owner, M7.4 gate lifted for it); `PlaytestCourse` removed in the cleanup, the obstacles live on in the kept courses | group playtest of the obstacles (now in PatataWilds and the plant) |
-| Spike #87 industrial look | the full closed `IndustrialPlant` (11 rooms, 9 checkpoints, every obstacle) built in the industrial look, with a material library, anti-tiling and decals (ARCHITECTURE §25.2) | play-test, real textures per surface (optional), performance on a player build, adopt/revise/reject decision |
+| Spike #87 industrial look | the look kept, its course archived (M19); was the full closed `IndustrialPlant` (11 rooms, 9 checkpoints, every obstacle) built in the industrial look, with a material library, anti-tiling and decals (ARCHITECTURE §25.2) | play-test, real textures per surface (optional), performance on a player build, adopt/revise/reject decision |
 | M11 Second course (#83) | factory built, then removed in the cleanup; its layouts became the industrial plant's | |
-| M12 Third course: PatataWilds | built: 25 sections in 5 acts, nature look from Poly Haven, campfire checkpoints, dawn to dusk; automated verification in M12.8 | 2-player 20+ min clear, host + 3 clients, 1080p/60 fps, readability review |
-| M13 Fourth course: PatataCanopy | built: 25 sections in 5 acts in the tree tops, every section with a contract; three new generic systems (body screen, hands-free plate, switch) and the section-contract check; automated verification in M13.6; atmosphere pass built (M13.7: its own cooler day, a height mist, giant trees, a forest floor that follows the course, leaf roofs, god rays, fireflies) | 2-player clear, every puzzle forced and fun at 2 and at 4, host + 3 clients, 1080p/60 fps, readability review (in the mist) |
-| M14 PatataWilds contracts | not started | give every PatataWilds section a contract and close its shortcuts (M14) |
-| M15 Fifth course: PatataTemple | built: 15 sections in 3 acts for **three players**, every section with a contract that says why two fail; four systems for three (heavy plate, hourglass plate, sun beam, pivot carrying its riders), a level's minimum players in the menu; its own valley, pyramid, day and storm; automated verification in M15.6 | a clear by three, every puzzle failing with two and fun with four, host + 2 clients, 1080p/60 fps, readability review (the storm) |
+| M12 Third course: PatataWilds | archived (M19); was built: 25 sections in 5 acts, nature look from Poly Haven, campfire checkpoints, dawn to dusk; automated verification in M12.8 | 2-player 20+ min clear, host + 3 clients, 1080p/60 fps, readability review |
+| M13 Fourth course: PatataCanopy | archived (M19), its systems kept; was built: 25 sections in 5 acts in the tree tops, every section with a contract; three new generic systems (body screen, hands-free plate, switch) and the section-contract check; automated verification in M13.6; atmosphere pass built (M13.7: its own cooler day, a height mist, giant trees, a forest floor that follows the course, leaf roofs, god rays, fireflies) | 2-player clear, every puzzle forced and fun at 2 and at 4, host + 3 clients, 1080p/60 fps, readability review (in the mist) |
+| M14 PatataWilds contracts | dropped (PatataWilds archived, M19) | |
+| M15 Fifth course: PatataTemple | archived (M19), its systems kept; was built: 15 sections in 3 acts for **three players**, every section with a contract that says why two fail; four systems for three (heavy plate, hourglass plate, sun beam, pivot carrying its riders), a level's minimum players in the menu; its own valley, pyramid, day and storm; automated verification in M15.6 | a clear by three, every puzzle failing with two and fun with four, host + 2 clients, 1080p/60 fps, readability review (the storm) |
 | M18 Authored levels | step 3b built (M18.3b): the kit's ten forest looks (Prefab Variants, `Kit/Forest`), the prop library at real size with Solid boxes, sets and a small-props brush, checkpoints whose campfire finds floor and room beside them (the zone follows it), Verify checks spawns and campfires, the example level `OldOak` in the menu (Verify clean, route runner passes); step 3a built (M18.3a): checkpoints numbered along the course, kit size handles, wiring and the Link tool, contracts by handles, Verify Level, the route runner on any level, Play from here; step 2 built (M18.2): the terrain in the nature look, valley walls, water, giant trees sawn round their decks, forests planted or painted off the paths, mist baked on save, sound by section; step 1 built (M18.1): `HotPatata/Level/New Level`, timber pieces drawn in the Scene view (decks, walkways and stairs, rope bridges, railings, houses, trestles), ends that attach and open rails, presets, meshes written on save, the menu's display names and Register In Menu, a level's borrowed day; automated checks pass | the owner's try of steps 3a and 3b (the game tools, forest looks, props, checkpoints, the example level); step 4 (timber by hand, the structure library: M18.4) |
 | M16 Audio (#46–#49) | built (code, mixer, settings, docs): a drop-in sound library, sounds are folders of `Assets/Audio`; music by place and act, ambience in layers, movement sounds back (spec §11), bomb, run, obstacle and menu sounds; automated checks pass (M16.6) | the owner's sounds and music; the listening pass with two players (M16.6) |
+| **M19 Fresh start** | done: every map archived (`docs/MAP_ARCHIVE.md`, branch `archive/maps-v1`); only `Bootstrap` and `PassSandbox` remain, the sandbox dev-only (never listed in a release build); new levels copied from `Templates/CourseTemplate` | the first new map, by hand with the level tools |
 | Cleanup and generic obstacles | done: only `PatataWilds`, `IndustrialPlant` and `PassSandbox` (plus `Bootstrap`) remain; every obstacle system is generic (references, `IObstacleState`, `ObstacleVisualDriver`, `CustomVisual`, overridable poses, `ObstaclePrefabValidator`), with two example variants; the obstacle catalogue is `docs/OBSTACLES.md` | |
 
-**Next up:** the group playtest of PatataCanopy (M13.6) and of PatataTemple with three (M15.6), then M14 (PatataWilds contracts), the group playtest of PatataWilds
-and the plant (M12.8, M10.4), then M6 and M7 (M7.4 external playtest gates any other
-new mechanic). M3.7 is the oldest open gate.
+**Next up:** the first new map, built by hand with the level tools (M18) on the lessons of `docs/MAP_ARCHIVE.md` §8; the owner's
+try of M18.3–M18.4; then M6 and M7 (M7.4 external playtest gates any other new mechanic). The playtests of the archived courses
+(M10.4, M12.8, M13.6, M15.6) are moot. M3.7 is the oldest open gate.
 
 ---
 
@@ -1726,6 +1727,23 @@ Three stacked PRs: elements and freezing (4a), the structures and their library 
   share meshes (drawn long to the centimetre, a grain of their own only for planks: PatataRanger's 4087 meshes to 2357);
   the forest looks drawn with the shared timber shapes;
 - [ ] the owner freezes, edits and saves structures in a level and finds it usable.
+
+---
+
+# Milestone 19 — Fresh start
+
+Decided by the owner (2026-10-16): with the level tools in place, start the maps again from nothing.
+
+- [x] every obstacle, puzzle and section of every map described in `docs/MAP_ARCHIVE.md` (the archived courses of the cleanup
+  included);
+- [x] the project as it was kept on the branch `archive/maps-v1` (every map playable there);
+- [x] the maps removed: `PatataWilds`, `PatataCanopy`, `PatataTemple`, `IndustrialPlant`, `PatataRanger`, `OldOak`, their builders,
+  tests, generated land, audio folders and skies; the kit, its looks, the four days, the level tools and the structure library
+  stay;
+- [x] `PassSandbox` the only level, listed in the Editor and development builds only (`NetworkBootstrap.devOnlyScenes`); a release
+  build with no level says so on the menu;
+- [x] new levels copied from `Assets/Scenes/Templates/CourseTemplate.unity` (the plant's scene emptied);
+- [ ] the first new map.
 
 ---
 

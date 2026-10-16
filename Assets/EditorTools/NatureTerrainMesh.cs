@@ -11,8 +11,8 @@ namespace HotPatata.Editor
     /// <summary>
     /// The terrain meshes of the nature courses (ARCHITECTURE §25.3): a grid of world points cut into chunks of 16 x 16 cells, a
     /// mesh asset each (collider-free, <see cref="NatureTerrain"/>), two triangles per cell unless <c>keep</c> refuses one, the
-    /// chunk's material chosen from the most common tag of its triangles. Shared by PatataWilds (<see cref="NatureDressing"/>) and
-    /// PatataCanopy's forest floor.
+    /// chunk's material chosen from the most common tag of its triangles. Used by the level terrain
+    /// (<see cref="LevelTerrain"/>).
     /// </summary>
     public static class NatureTerrainMesh
     {

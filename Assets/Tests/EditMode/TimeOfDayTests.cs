@@ -32,8 +32,9 @@ namespace HotPatata.Tests
         [Test]
         public void CheckpointTimes_GoFromDawnToDusk()
         {
-            var times = PatataWildsLook.CheckpointTimes(PatataWildsBuilder.CheckpointCount);
-            Assert.AreEqual(PatataWildsBuilder.CheckpointCount + 1, times.Length);
+            const int checkpoints = 25;
+            var times = PatataWildsLook.CheckpointTimes(checkpoints);
+            Assert.AreEqual(checkpoints + 1, times.Length);
             Assert.AreEqual(0f, times[0]);
             Assert.AreEqual(PatataWildsLook.MomentCount - 1, times[times.Length - 1], 1e-4f);
             for (int i = 1; i < times.Length; i++) Assert.Greater(times[i], times[i - 1]);

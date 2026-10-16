@@ -15,7 +15,7 @@
 | `FlightHistoryTests` | EditMode | the host's flight record used for lag-compensated catches |
 | `MovingPlatformTests` | EditMode | `MovingPlatform.Evaluate`, the pure clock-to-position maths |
 | `SimulationClockTests` | EditMode | #92 the client clock: in step it follows the frame, NGO corrections are slewed (never backwards, at most `clockMaxSlew`), a real desync snaps; offline it is the local clock |
-| `CarrierRegistryTests` | EditMode | #92 carrier ids: stable FNV-1a hash, follows the sibling path not the name, unique in every course scene and PassSandbox |
+| `CarrierRegistryTests` | EditMode | #92 carrier ids: stable FNV-1a hash, follows the sibling path not the name, unique in PassSandbox (add a level's scene to its list) |
 | `CarrierMotionTests` | EditMode | #97 the velocity of a point on a sliding or turning carrier, what a player leaving one keeps (all of it, capped), the aim assist solving a pass between two riders of one lift as on still ground |
 | `RiderReconstructionTests` | EditMode | #92 a remote rider glued to the carrier as drawn locally whatever the lagging world position, board and leave blends without a pop, the offset smoothed, a teleport snaps |
 | `HazardRewindTests` | EditMode | #92 the host's rewound hazard verdict: capsule vs (rotated) box, a box carried with its mover to another time, the verdict at the claimed time and not now, the claim cap, a door's edge armed only while closing, a moving platform posed at any time by the formula it moves by |
@@ -44,16 +44,13 @@
 | `ObstaclePrefabTests` | EditMode | the obstacle prefab contract (docs/OBSTACLES.md §4): every obstacle prefab of the project (kit and variants) passes `ObstaclePrefabValidator`, the validator catches each break (moving part is the root, missing waypoint, collider in a hand-made visual, mesh collider, non-gameplay layer, no kinematic body, hazard without kill trigger, replicated system without its network companion), the example variants are Prefab Variants of the kit, the look passes leave hand-made visuals alone |
 | `ZoneRuleTests` | EditMode | #68 pure rules: fuse-zone severity, flight-sweep geometry, actuator motion, transit exit arc; a hands-free plate is not held by its carrier alone; a switch turns its targets over at half travel |
 | `BombObstacleTests` | PlayMode | #68 kit on the PassSandbox floor: fuse zones, curtains and windows, gates, plates, doors, arch checkpoint, tubes; a body screen stops a runner (jumping into it too) and lets the pass through; a hands-free plate ignores its carrier; a plate's switch cuts a curtain and the curtain comes back |
-| `CourseContractTests` | EditMode | section contracts (PROJECT_SPEC §13.20): the reach envelopes (climb = jump + mantle, gaps shrink uphill and end out of reach, a lob clears any roofless wall), the scan finds a body screen walked round until walls close its ends and a curtain flown round and over, then every course scene checked; findings are warnings (logged, the test passes) |
+| `CourseContractTests` | EditMode | section contracts (PROJECT_SPEC §13.20): the reach envelopes (climb = jump + mantle, gaps shrink uphill and end out of reach, a lob clears any roofless wall), the scan finds a body screen walked round until walls close its ends and a curtain flown round and over, then every level of `Assets/Scenes/Levels` checked; findings are warnings (logged, the test passes) |
 | `KitSkinTests` | EditMode | KayKit kit (ARCHITECTURE §25.1): palette families, exact box tiling, unstretched pieces on the grid, edge-standing platforms as blocks |
 | `IndustrialLookTests` | EditMode | industrial look (ARCHITECTURE §25.2): the bevelled box stays inside its box and faces outward, the material library (every surface, anti-tiling keyword, a texture each), grunge and decal placeholders and their import, the decal material, themes, texture file names and folders (displacement maps are linear, the signs folder is decals), relief (a height map and a shallow depth on every textured surface), signs as decals without hazard red, the look set's scope |
-| `IndustrialPlantTests` | PlayMode | `IndustrialPlant`: nine checkpoints, climbs, drops and spread, every kit obstacle present, the building closed in 26 directions from every route point, passes clear, signals one-to-one, no sun, many warm lamps, a bright neutral fill and its own exposure volume, diverse floors/walls/ceilings and decals (never on moving surfaces), mouldings and props in every room (collider-free, never on a mover), no two rooms' floors overlapping at one height, the level list (PatataWilds, PatataCanopy, the plant with nine spawn choices, PassSandbox) and nothing else in the build, every checkpoint resets then finish and rematch, the atrium plate pass, every transit flight reaches its pad |
 | `NatureLookTests` | EditMode | nature look (ARCHITECTURE §25.3): every library material on `HotPatata/Nature` with its maps and mapping, foliage cut-out/two-sided/wind, the gameplay variants (banded hazard, rotten planks, slot logs, lantern), Poly Haven file names, the skies as cubemaps, generated shapes inside their box (rock may bulge 30 cm out of its sides, never above its top) and identical on every build, the rock skirt hidden under its slab and widening below, trees deterministic and within their LOD budgets, PatataCanopy's giants (70 m and more, crowns from 45 m, a tight bole, roots on the ground) within their budgets, leaf-roof cards never under their origin |
 | `TimeOfDayTests` | EditMode | the nature courses' days: the blender's step (blend forward, snap back and over big jumps), segments and checkpoint times, each course's five presets in order (dawn low, noon high, dusk low and cool), the mist thick at dawn, thin at noon, back at dusk, PatataCanopy's own cooler day with its haze beyond the longest pass |
-| `PatataWildsTests` | PlayMode | `PatataWilds` (PROJECT_SPEC §15c): route spread, turns, climb and drop, 25 checkpoints and the summit finish, the summit fuse overrides, passes clear of solids, ceilings, decoration and scattered plants (normal passes at most 14 m), signals one-to-one, campfires instead of pads (catch when reached, out on restart), water always over a kill zone, the time of day following the checkpoint, no mesh collider and generated visuals inside their colliders, banded hazards, 3D ambience on the Ambience group with each emitter naming its folder, the course's audio map (acts and environments, M16), first in the menu with 25 spawn choices, Hold the Rope with two players, every checkpoint resets then finish and rematch, every transit flight reaches its pad |
-| `PatataTempleTests` | PlayMode | `PatataTemple` (PROJECT_SPEC §15e): 15 checkpoints, one finish, a contract for three per section with its "With two" line, three arches, the fuse overrides, the heavy and hourglass plates, beams and pivots present and wired (hourglasses replicated), passes clear of ceilings and solids, the altar over the pyramid and above every floor, the canopy under every floor near it; on the course: the heavy slab ignores its carrier and two empty hands raise the bridge, a body in a wing's light raises another wing's herse, the rose's plate turns its pivot |
 | `VerticalCarrierRideTests` | PlayMode | #97 at a pinned frame rate (30 / 60 / 144, `Time.captureFramerate`), a rider stays grounded and on a lift on every frame, within 5 cm of the drawn deck, up at 4 / 7 / 9 m/s, down, and through reversals mid-travel, never falling through; a jump off a rising lift keeps its rise; a tap pass between two riders of a 9 m/s lift is caught |
-| `CarrierFallZoneTests` | PlayMode | #97 on every course: no kill zone lies across the ride of a lift, bridge or door a player stands on (a bridge that retracts into the void may cross one); the pulleys and the well climbed through the next section's fall zone |
+| `CarrierFallZoneTests` | PlayMode | #97 on PassSandbox (add a level when it has carriers): no kill zone lies across the ride of a lift, bridge or door a player stands on (a bridge that retracts into the void may cross one); the archived courses' pulleys and well climbed through the next section's fall zone |
 | `DevCheatsTests` | PlayMode | the map-testing cheats: noclip flies through the floor and walks again when off, invincible sends a falling player back to their spawn without a reset, no explosions hands the bomb back (world contact or fuse) |
 | `TrioObstacleTests` | PlayMode | the systems for three on PassSandbox's `KitDemo/TrioObstacles` (PROJECT_SPEC §13.21–13.24): the heavy plate needs two empty hands (a lob does not free its thrower), the hourglass plate runs on after release, a body in the sun beam turns the pivot, which carries its rider a quarter round and turns their view |
 | `TrioSystemTests` | EditMode | the pure rules for three: counted bodies, the player a hands-free plate ignores in each bomb state, the hourglass end, the pivot's carry and yaw, the rider rebuilt in the carrier's frame, the beam's cut point, the lightning's pulse (never a step) |
@@ -62,13 +59,12 @@
 | `LevelGameTests` | EditMode | M18.3a authored levels' game tools: walking distances follow a stair to a deck rather than the straight line, a contract's section is its checkpoint's (the start's under the level; a level for three asks why two fail), the wiring says what drives and how long it holds, a resized door and plate read back their size, the walk probe finds a post in a walkway; a checkpoint's campfire stands 3 to 6 m beside it on its own deck (not off its edge),
 inside its zone, and the zone follows the fire when it is moved; Verify finds a spawn in a rail or in the air |
 | `LevelLookTests` | EditMode | M18.3b: the ten forest looks are Prefab Variants of their kit prefab that keep the obstacle contract and the kit's colliders, with a renderers-only `CustomVisual` (the chute: its pipe in wood); the props are decoration drawn in the nature look until made solid; a scanned ruin stands at its real height; Solid fits a box on Environment round a prop and takes it away; the workbench and the woodpile are solid |
-| `AuthoredLevelTests` | PlayMode | every scene of `Assets/Scenes/Levels` (one fixture each: the example `OldOak`, and any level of yours): a run, a bomb and one finish; the route runner (`RouteRunner`, shared with `PatataRangerTests`) walks every walkway, stair and bridge |
-| `PatataCanopyTests` | PlayMode | `PatataCanopy` (PROJECT_SPEC §15d): 25 checkpoints, one finish, a contract per section, the fuse overrides, passes clear of ceilings, solids and decoration (normal passes at most 14.5 m), signals one-to-one, three switches with targets, hands-free plates, body screens on their layer, campfires, second in the menu with 25 spawn choices, Les Lucioles, Pont-levis croisé, La Plaque, La Poulie ridden to the ledge with no reset, the spore bridge, every checkpoint resets then finish and rematch, every transit flight reaches its pad; the forest (M13.7): giants and plants clear of every pass, deck trunks from the forest floor to their decks, the floor about 40 m under every checkpoint and the safety net under it, nothing under a leaf roof's underside, the mist on the floor and light at deck height, light shafts clear of every pass at every moment of the day |
+| `AuthoredLevelTests` | PlayMode | every scene of `Assets/Scenes/Levels` (one fixture each, none until there is a level): a run, a bomb and one finish; the route runner (`RouteRunner`) walks every walkway, stair and bridge |
 
 EditMode tests live in `Assets/Tests/EditMode/`. PlayMode tests live in `Assets/Tests/PlayMode/`: they load
-`PassSandbox` (or `IndustrialPlant`, `PatataWilds`, `PatataCanopy`) through `SandboxTestBase` and drive players through
+`PassSandbox` (or an authored level) through `SandboxTestBase` and drive players through
 `PlayerInputReader.Scripted`. After touching the bomb obstacles run `ZoneRuleTests`, `BombObstacleTests` and
-`BombStateTests`; after a course builder change, the tests of that course.
+`BombStateTests`; after a level change, `AuthoredLevelTests` and `CourseContractTests`.
 
 ### Running them
 
@@ -81,19 +77,17 @@ unity command test_status                                      # results also in
 ```
 
 Run only the suites for the system you touched, not the whole project every time. After any throw/catch tuning
-change, run `PassFeelTests`. After a movement change, run `SprintSlideTests` and `MovementTests`. After a course
-change, run that course's suite. After an obstacle system or kit prefab change (`MovingPlatform`, `SignalActuator`,
+change, run `PassFeelTests`. After a movement change, run `SprintSlideTests` and `MovementTests`. After a level
+change, run `AuthoredLevelTests` and `CourseContractTests`. After an obstacle system or kit prefab change (`MovingPlatform`, `SignalActuator`,
 `FallingPlatform`, `RotatingObstacle`, `BombTransit`, zones, `ObstacleVisualDriver`, `ObstaclePrefabValidator`, a prefab or a
 variant), run `ObstaclePrefabTests`, `ObstacleKitTests`, `PrefabKitTests` and `BombObstacleTests`. After a kit look change
-(`KitSkin`, `KayKitKitBuilder`), run `KitSkinTests` and the course suites; after an industrial look change (shader,
-materials, `IndustrialPlantBuilder`), run `IndustrialLookTests` and `IndustrialPlantTests`. After a nature change (`HotPatata/Nature`, the
-nature materials, `NatureShapes`, `NatureTreeBuilder`, `PatataWildsLook`, `PatataWildsBuilder`, `NatureDressing`), rebuild
-PatataWilds and run `NatureLookTests`, `TimeOfDayTests`, `KitSkinTests` and `PatataWildsTests`; after a change to the
-level list (`CourseKit.RegisterInMenu`), also `IndustrialPlantTests` and `MenuStationTests`. After a change to
-`PatataCanopyBuilder`, rebuild PatataCanopy and run `PatataCanopyTests` and `CourseContractTests`; after a change to the
+(`KitSkin`, `KayKitKitBuilder`), run `KitSkinTests`; after an industrial look change (shader,
+materials), run `IndustrialLookTests`. After a nature change (`HotPatata/Nature`, the
+nature materials, `NatureShapes`, `NatureTreeBuilder`, a day's look table, `NatureDressing`), run `NatureLookTests`,
+`TimeOfDayTests`, `KitSkinTests`, `LevelLookTests` and `LevelNatureTests`; after a change to the level list (`CourseKit.WriteMenu`,
+`NetworkBootstrap`'s dev-only scenes), `LevelAuthoringTests` and `MenuStationTests`. After a change to the
 body screen, hands-free plate or switch, `ZoneRuleTests`, `ObstaclePrefabTests`, `ConfigurationTests` and
-`BombObstacleTests`; after `SectionContract` or `CourseContractCheck`, `CourseContractTests`. After a change to
-`PatataTempleBuilder` or `PatataTempleLook`, rebuild PatataTemple and run `PatataTempleTests` and `CourseContractTests`; after a
+`BombObstacleTests`; after `SectionContract` or `CourseContractCheck`, `CourseContractTests`. After a
 change to the plates, the sun beam, the pivot or the carrier rotation (`PlayerMotor.Carry`, `RiderReconstruction`),
 `TrioSystemTests`, `TrioObstacleTests`, `ZoneRuleTests`, `RiderReconstructionTests`, `ObstaclePrefabTests` and
 `BombObstacleTests`.
@@ -234,7 +228,7 @@ HotPatata.exe -batchmode -nographics -patataJoin 127.0.0.1 -patataBot -patataBot
 
 - **Riders:** `[Sync] rider` lines on every peer. The gap should stay within ±5 cm (it was about speed × (RTT + 0.1 s)
   before stage 1). `PassSandbox` has two moving carriers and its lifts are slow (1.9 m/s); for fast lifts use
-  `-patataBotMove RideFast` (the fastest-rising carrier of the scene) with `-patataScene IndustrialPlant` (or a course)
+  `-patataBotMove RideFast` (the fastest-rising carrier of the scene) with `-patataScene <a level>`
   and `-patataCheckpoint`. The `ride` line must show no ground flips and no rider pops (#97).
 - **Hazards:** with `-patataBotMove RunAcross` near a rotating bar, the host logs each ignored trigger and each rewound
   hit (`[Sync] hazard ...`). The two should agree almost always; a disagreement is the lag that stage 3 removes.

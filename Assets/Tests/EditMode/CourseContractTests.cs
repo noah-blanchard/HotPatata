@@ -1,3 +1,4 @@
+using System.Linq;
 using HotPatata.Editor;
 using NUnit.Framework;
 using UnityEditor;
@@ -7,19 +8,15 @@ using UnityEngine;
 namespace HotPatata.Tests
 {
     /// <summary>
-    /// Section contracts (PROJECT_SPEC §13.20): the reach envelopes they are measured with, then every course scene checked
+    /// Section contracts (PROJECT_SPEC §13.20): the reach envelopes they are measured with, then every level checked
     /// against its contracts and the screen and curtain scans (<see cref="CourseContractCheck"/>). Findings are warnings,
     /// not failures: they point at a mechanic a team could skip.
     /// </summary>
     public class CourseContractTests
     {
-        static readonly string[] Courses =
-        {
-            "Assets/Scenes/PatataCanopy.unity",
-            "Assets/Scenes/PatataTemple.unity",
-            "Assets/Scenes/PatataWilds.unity",
-            "Assets/Scenes/IndustrialPlant.unity"
-        };
+        /// <summary>Every level of <c>Assets/Scenes/Levels</c> (the authored levels); none yet after the fresh start.</summary>
+        static string[] Courses() => !AssetDatabase.IsValidFolder("Assets/Scenes/Levels") ? new string[0]
+            : AssetDatabase.FindAssets("t:Scene", new[] { "Assets/Scenes/Levels" }).Select(AssetDatabase.GUIDToAssetPath).OrderBy(p => p).ToArray();
 
         GameTuning tuning;
 
@@ -98,20 +95,28 @@ namespace HotPatata.Tests
             }
         }
 
-        [TestCaseSource(nameof(Courses))]
-        public void Course_KeepsItsContracts(string path)
+        [Test]
+        public void Levels_KeepTheirContracts()
         {
-            if (AssetDatabase.LoadAssetAtPath<SceneAsset>(path) == null) Assert.Ignore(path + " is not built");
+            var levels = Courses();
+            if (levels.Length == 0) Assert.Pass("no level yet");
+            var findings = new System.Collections.Generic.List<string>();
+            foreach (var path in levels) findings.AddRange(Findings(path));
+            if (findings.Count > 0) Assert.Pass(string.Join("\n", findings));
+        }
+
+        System.Collections.Generic.IEnumerable<string> Findings(string path)
+        {
             var open = UnityEngine.SceneManagement.SceneManager.GetSceneByPath(path);
             bool alreadyOpen = open.isLoaded;   // never close a scene the developer has open
             var scene = alreadyOpen ? open : EditorSceneManager.OpenScene(path, OpenSceneMode.Additive);
             try
             {
                 var problems = CourseContractCheck.Problems(scene, tuning);
-                if (problems.Count == 0) return;
+                if (problems.Count == 0) return new string[0];
                 string report = $"{problems.Count} finding(s) in {scene.name}:\n  " + string.Join("\n  ", problems);
                 Debug.LogWarning("[CourseContract] " + report);   // a warning, never a failure
-                Assert.Pass(report);
+                return new[] { report };
             }
             finally
             {

@@ -13,7 +13,7 @@ namespace HotPatata.Tests
 {
     /// <summary>
     /// No kill zone lies across the travel of a lift, a bridge or a door a player can stand on (#97). The pulleys of PatataCanopy and
-    /// the well of PatataTemple climbed through the next section's fall zone, which lay beside them past the turn: whoever rode them
+    /// the well of PatataTemple (archived, docs/MAP_ARCHIVE.md) climbed through the next section's fall zone, which lay beside them past the turn: whoever rode them
     /// "fell" a few decimetres up and the team reset. A carrier that retracts into the void (its lowest pose inside a kill zone, a
     /// rising bridge) is never stood on there, so it may cross one.
     /// </summary>
@@ -54,10 +54,6 @@ namespace HotPatata.Tests
             Assert.IsEmpty(errors, scene + ": a rider would enter a kill zone");
         }
 
-        [UnityTest] public IEnumerator PatataWilds_NoKillZoneAcrossACarrier() => Check("PatataWilds");
-        [UnityTest] public IEnumerator PatataCanopy_NoKillZoneAcrossACarrier() => Check("PatataCanopy");
-        [UnityTest] public IEnumerator PatataTemple_NoKillZoneAcrossACarrier() => Check("PatataTemple");
-        [UnityTest] public IEnumerator IndustrialPlant_NoKillZoneAcrossACarrier() => Check("IndustrialPlant");
         [UnityTest] public IEnumerator PassSandbox_NoKillZoneAcrossACarrier() => Check("PassSandbox");
     }
 }

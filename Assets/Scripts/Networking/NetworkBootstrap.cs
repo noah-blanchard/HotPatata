@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using UnityEngine;
@@ -39,13 +40,15 @@ namespace HotPatata
         public static NetworkBootstrap Instance { get; private set; }
 
         [SerializeField] string menuScene = "Bootstrap";
-        [SerializeField] string[] gameplayScenes = { "PatataWilds", "IndustrialPlant", "PassSandbox" };
+        [SerializeField] string[] gameplayScenes = { "PassSandbox" };
         [SerializeField, Tooltip("Highest checkpoint id of each gameplay scene (same order), offered as a start point.")]
-        int[] sceneCheckpoints = { 9, 9, 7, 1 };
-        [SerializeField, Tooltip("Players a gameplay scene needs online (same order; PatataTemple needs three, PROJECT_SPEC §15e).")]
-        int[] sceneMinPlayers = { 2, 2, 2, 2 };
+        int[] sceneCheckpoints = { 1 };
+        [SerializeField, Tooltip("Players a gameplay scene needs online (same order; a level for three needs three, PROJECT_SPEC §15e).")]
+        int[] sceneMinPlayers = { 2 };
         [SerializeField, Tooltip("The name the menu shows for each gameplay scene (same order; the scene's name when empty): an authored level's own name.")]
         string[] sceneDisplayNames = System.Array.Empty<string>();
+        [SerializeField, Tooltip("Test scenes listed only in the Editor and in development builds, never in a release build.")]
+        string[] devOnlyScenes = { "PassSandbox" };
         [SerializeField] ushort port = 7777;
         [SerializeField, Tooltip("Player colours and shapes for the lobby list, and the defaults of the settings screen.")] GameTuning tuning;
 
@@ -62,7 +65,10 @@ namespace HotPatata
         bool leaving;
         int autoStartPlayers;
 
-        string GameplayScene => gameplayScenes[Mathf.Clamp(sceneIndex, 0, gameplayScenes.Length - 1)];
+        string GameplayScene => HasLevel ? gameplayScenes[Mathf.Clamp(sceneIndex, 0, gameplayScenes.Length - 1)] : "";
+
+        /// <summary>The menu lists at least one level (a release build without any level has nothing to start).</summary>
+        public bool HasLevel => gameplayScenes.Length > 0;
         int SceneCheckpoints => sceneIndex >= 0 && sceneIndex < sceneCheckpoints.Length ? sceneCheckpoints[sceneIndex] : 0;
 
         /// <summary>Players gameplay scene <paramref name="index"/> needs online (2 when not listed).</summary>
@@ -92,7 +98,7 @@ namespace HotPatata
             get => sceneIndex;
             set
             {
-                sceneIndex = Mathf.Clamp(value, 0, gameplayScenes.Length - 1);
+                sceneIndex = Mathf.Clamp(value, 0, Mathf.Max(0, gameplayScenes.Length - 1));
                 RunOptions.StartCheckpoint = Mathf.Clamp(RunOptions.StartCheckpoint, 0, SceneCheckpoints);
             }
         }
@@ -123,6 +129,7 @@ namespace HotPatata
 
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            if (!Debug.isDebugBuild) HideDevOnlyScenes();   // a release build never lists the test scenes
             nm = GetComponent<NetworkManager>();
             transport = GetComponent<UnityTransport>();
         }
@@ -202,10 +209,37 @@ namespace HotPatata
             }
         }
 
+        /// <summary>
+        /// Takes the dev-only scenes (<see cref="devOnlyScenes"/>: PassSandbox) out of the level list, keeping the four arrays in step.
+        /// Called on a release build; the Editor and development builds keep them.
+        /// </summary>
+        public void HideDevOnlyScenes()
+        {
+            var keep = new List<int>();
+            for (int i = 0; i < gameplayScenes.Length; i++)
+                if (Array.IndexOf(devOnlyScenes, gameplayScenes[i]) < 0) keep.Add(i);
+            if (keep.Count == gameplayScenes.Length) return;
+            T[] Pick<T>(T[] all, T fallback) => keep.Select(i => i < all.Length ? all[i] : fallback).ToArray();
+            sceneCheckpoints = Pick(sceneCheckpoints, 0);
+            sceneMinPlayers = Pick(sceneMinPlayers, 2);
+            sceneDisplayNames = Pick(sceneDisplayNames, "");
+            gameplayScenes = Pick(gameplayScenes, "");
+            sceneIndex = Mathf.Clamp(sceneIndex, 0, Mathf.Max(0, gameplayScenes.Length - 1));
+        }
+
+        /// <summary>No level to start: says so on the menu and returns true.</summary>
+        bool NoLevel()
+        {
+            if (HasLevel) return false;
+            message = "No level in this build yet.";
+            return true;
+        }
+
         // ------------------------------------------------------------------ local and direct IP
 
         public void PlayLocal()
         {
+            if (NoLevel()) return;
             mode = Mode.InGame;
             message = "";
             SceneManager.LoadScene(GameplayScene);
@@ -213,6 +247,7 @@ namespace HotPatata
 
         public void StartHostDirect()
         {
+            if (NoLevel()) return;
             directMode = true;
             transport.SetConnectionData("127.0.0.1", port, "0.0.0.0");   // listen on every interface
             message = "";
@@ -243,7 +278,7 @@ namespace HotPatata
 
         public async System.Threading.Tasks.Task HostOnlineAsync()
         {
-            if (mode == Mode.Working) return;
+            if (mode == Mode.Working || NoLevel()) return;
             directMode = false;
             message = "";
             status = "Creating your game...";
@@ -297,7 +332,7 @@ namespace HotPatata
         /// <summary>Host only: everybody in the lobby loads the level together.</summary>
         public void StartLevel()
         {
-            if (mode != Mode.Lobby || !nm.IsServer) return;
+            if (mode != Mode.Lobby || !nm.IsServer || NoLevel()) return;
             if (!LobbyHasEnoughPlayers)
             {
                 message = $"{GameplayScene} needs {SceneMinPlayers} players.";
