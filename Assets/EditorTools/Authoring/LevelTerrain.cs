@@ -272,7 +272,8 @@ namespace HotPatata.Editor
             int checkpoints = RegisterLevelWindow.CheckpointsOf(scene);
             var envs = new string[checkpoints + 1];
             for (int i = 0; i <= checkpoints; i++) envs[i] = i < settings.SectionAmbience.Count ? settings.SectionAmbience[i] ?? "" : "";
-            CourseKit.WriteCourseAudio(section, Enumerable.Repeat(1, checkpoints + 1).ToArray(), envs, settings.DefaultAmbience);
+            var acts = Enumerable.Range(0, checkpoints + 1).Select(i => i < settings.SectionActs.Count ? Mathf.Max(1, settings.SectionActs[i]) : 1).ToArray();
+            CourseKit.WriteCourseAudio(section, acts, envs, settings.DefaultAmbience);
             EditorUtility.SetDirty(section.GetComponent<CourseAudio>());
         }
 

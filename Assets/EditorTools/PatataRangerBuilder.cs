@@ -265,7 +265,7 @@ namespace HotPatata.Editor
         {
             var go = new GameObject(name);
             go.transform.SetParent(p, false);
-            var mb = new MeshBuilder(TimberKit.Slots);
+            var mb = TimberKit.Visual();
             build(mb);
             TimberKit.AddVisual(go, name, mb);
             go.AddComponent<CourseDecoration>();
@@ -279,13 +279,11 @@ namespace HotPatata.Editor
             go.transform.SetParent(p, false);
             go.transform.SetPositionAndRotation(center, rotation);
             go.AddComponent<BoxCollider>().size = size;
-            var mb = new MeshBuilder(TimberKit.Slots);
-            mb.Box(Vector3.zero, Quaternion.identity, size, slot);
             var visual = new GameObject("Visual");
             visual.transform.SetParent(go.transform, false);
-            var mesh = OrganicAssets.Save(mb.ToMesh(name + " box", out var slots));
-            visual.AddComponent<MeshFilter>().sharedMesh = mesh;
-            visual.AddComponent<MeshRenderer>().sharedMaterials = TimberKit.Materials(slots);
+            var mb = TimberKit.Visual();
+            mb.Box(go.transform.position, go.transform.rotation, size, slot);
+            TimberKit.AddVisual(visual, name + " box", mb);
             return go;
         }
 

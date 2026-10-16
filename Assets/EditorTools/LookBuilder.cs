@@ -133,7 +133,7 @@ namespace HotPatata.Editor
             if (scene.name == PatataWildsLook.SceneName) PatataWildsLook.Apply(scene);
             if (scene.name == PatataCanopyBuilder.SceneName) PatataCanopyLook.Apply(scene);
             if (scene.name == PatataTempleBuilder.SceneName) PatataTempleLook.Apply(scene);
-            if (scene.name == PatataRangerBuilder.SceneName) PatataRangerLook.Apply(scene);
+            if (scene.name == PatataRangerLook.SceneName) PatataRangerLook.Apply(scene);
             if (scene.name == MenuForestLook.SceneName) MenuForestLook.Apply(scene);
             // an authored level borrows a nature course's day (ARCHITECTURE §27): the same presets and sky, its own rig
             if (level != null) ApplyDay(scene, level.Day);

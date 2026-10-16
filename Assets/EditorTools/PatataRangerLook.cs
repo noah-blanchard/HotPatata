@@ -11,6 +11,9 @@ namespace HotPatata.Editor
     /// </summary>
     public static class PatataRangerLook
     {
+        /// <summary>PatataRanger's scene (an authored level since M18.4c: its look is applied by its name).</summary>
+        public const string SceneName = "PatataRanger";
+
         const string PresetDir = "Assets/Settings/Look/TimeOfDay/Ranger/";
         const string SkyMaterialPath = "Assets/Art/Materials/Sky_PatataRanger.mat";
 

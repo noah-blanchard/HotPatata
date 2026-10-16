@@ -27,6 +27,8 @@ namespace HotPatata
         [SerializeField, Tooltip("The ambience (Assets/Audio/Ambience/Environments) where a section says nothing.")] string defaultAmbience = "Forest";
         [SerializeField, Tooltip("The ambience of each section: from the start (0), then from each checkpoint id. Empty = the default.")]
         List<string> sectionAmbience = new List<string>();
+        [SerializeField, Tooltip("The music's act of each section: from the start (0), then from each checkpoint id. Empty = act 1.")]
+        List<int> sectionActs = new List<int>();
         [SerializeField, HideInInspector] Transform timber, trees, kit, props;
 
         public string DisplayName { get => displayName; set => displayName = value; }
@@ -36,6 +38,7 @@ namespace HotPatata
         public float MistDepth { get => mistDepth; set => mistDepth = Mathf.Clamp(value, 0f, 10f); }
         public string DefaultAmbience { get => defaultAmbience; set => defaultAmbience = value ?? ""; }
         public List<string> SectionAmbience => sectionAmbience;
+        public List<int> SectionActs => sectionActs;
 
         /// <summary>Where new pieces of a kind go (the level itself when the group is gone).</summary>
         public Transform Group(LevelGroup group)
