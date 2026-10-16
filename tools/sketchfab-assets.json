@@ -12,6 +12,9 @@
     { "uid": "5bf4021555b04d9a8ed6b22d25ec28f8", "id": "precolumbian_bowl",     "tris": 8000,  "height": 1.0, "res": "1k", "used": "PatataTemple offerings" },
     { "uid": "dffe3b1e1dbc4d16a3663f76ff9aa4f2", "id": "face_urn",              "tris": 10000, "height": 1.0, "res": "1k", "used": "PatataTemple offerings" },
     { "uid": "5c84b6ca2878423da99ea6ce806e6e00", "id": "duck_nest_eggs",        "tris": 20000, "height": 1.0, "res": "1k", "used": "PatataCanopy living canopy" },
+    { "uid": "4830c4bb2a3e4125a143da24d9e590f6", "id": "cave_mushroom_01",      "tris": 6000,  "height": 1.0, "res": "1k", "used": "The Long Climb cave fungi" },
+    { "uid": "f6fba4cca72047c09669150fb336f117", "id": "cave_mushroom_02",      "tris": 6000,  "height": 1.0, "res": "1k", "used": "The Long Climb cave fungi" },
+    { "uid": "c8484fd6e4ba483b844e843be31971fd", "id": "calcite_druse",         "tris": 12000, "height": 1.0, "res": "1k", "used": "The Long Climb cave crystals" },
     { "uid": "218caec043db49d4b41855ab7e92765d", "id": "tree_frog",             "tris": 8000,  "height": 1.0, "res": "1k", "used": "PatataCanopy living canopy" }
   ]
 }

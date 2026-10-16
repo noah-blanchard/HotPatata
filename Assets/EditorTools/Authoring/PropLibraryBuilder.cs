@@ -45,6 +45,11 @@ namespace HotPatata.Editor
             { "maya_relief_pillar", ("Ruins", 2.4f) }, { "maya_stela_fragment", ("Ruins", 1.6f) }, { "olmec_face_fragment", ("Ruins", 1.2f) },
             { "olmec_standing_figure", ("Ruins", 1.6f) }, { "palenque_relief_wall", ("Ruins", 1.6f) }, { "precolumbian_bowl", ("Ruins", 0.28f) },
             { "duck_nest_eggs", ("Wildlife", 0.32f) }, { "tree_frog", ("Wildlife", 0.12f) },
+            // The Long Climb: the caves, the mine and the cliffs
+            { "namaqualand_cliff_01", ("Rocks", 0f) }, { "namaqualand_cliff_02", ("Rocks", 0f) }, { "coastal_cliff_04", ("Rocks", 0f) },
+            { "calcite_druse", ("Rocks", 0.7f) }, { "pine_roots", ("Wood", 0f) },
+            { "picke_dirty_01", ("Mine", 0f) }, { "rusted_spade_01", ("Mine", 0f) }, { "wooden_bucket_02", ("Containers", 0f) }, { "wooden_ladder", ("Mine", 0f) },
+            { "cave_mushroom_01", ("Plants", 0.28f) }, { "cave_mushroom_02", ("Plants", 0.22f) },
         };
 
         public static string PrefabPath(string model) => Models.TryGetValue(model, out var m) ? $"{Folder}{m.kind}/{model}.prefab" : null;

@@ -44,6 +44,14 @@ namespace HotPatata.Editor
             Make<SignShape>("Signs", "Signpost", s => { s.Posts = 1; s.Board = new Vector2(0.9f, 0.5f); s.BoardHeight = 1.6f; s.Glyph = SignGlyph.None; s.Roof = false; }),
             Make<PulleyBeamShape>("Pulleys", "Pulley Beam", p => { p.Post = false; p.Reach = 3.5f; p.Height = 5f; }),
             Make<PulleyBeamShape>("Pulleys", "Pulley Post", p => { p.Post = true; p.Reach = 2.5f; p.Height = 4f; }),
+            // the two lanes' markers (PROJECT_SPEC §15g) and the old mine (ARCHITECTURE §27.2)
+            Make<LaneMarkerShape>("Lanes", "Sun Post", m => { m.Lane = Lane.Sun; m.Form = LaneMarkerForm.Post; }),
+            Make<LaneMarkerShape>("Lanes", "Moon Post", m => { m.Lane = Lane.Moon; m.Form = LaneMarkerForm.Post; }),
+            Make<LaneMarkerShape>("Lanes", "Sun Arch", m => { m.Lane = Lane.Sun; m.Form = LaneMarkerForm.Arch; }),
+            Make<LaneMarkerShape>("Lanes", "Moon Arch", m => { m.Lane = Lane.Moon; m.Form = LaneMarkerForm.Arch; }),
+            Make<MineFrameShape>("Mine", "Mine Entrance", f => { f.Points.Clear(); f.Points.AddRange(new[] { Vector3.zero, new Vector3(0f, 0f, 3f) }); f.Spacing = 3f; f.LanternEvery = 2; }),
+            Make<MineFrameShape>("Mine", "Mine Gallery 9 m", f => { f.Points.Clear(); f.Points.AddRange(new[] { Vector3.zero, new Vector3(0f, 0f, 9f) }); }),
+            Make<MineRailShape>("Mine", "Mine Track 8 m", r => { r.Points.Clear(); r.Points.AddRange(new[] { Vector3.zero, new Vector3(0f, 0f, 8f) }); }),
         };
 
         static Entry Make<T>(string category, string name, Action<T> setup) where T : LevelPiece =>

@@ -173,6 +173,18 @@ namespace HotPatata.Editor
             Prop("Nature_Prop_ClayPot", "planter_pot_clay"),
             Prop("Nature_Prop_DiyaLantern", "brass_diya_lantern"),
             Prop("Nature_Prop_BrassPot", "brass_pot_01"),
+            // The Long Climb's caves, mine and cliffs (PROJECT_SPEC §15g)
+            Prop("Nature_Prop_Cliff01", "namaqualand_cliff_01"),
+            Prop("Nature_Prop_Cliff02", "namaqualand_cliff_02"),
+            Prop("Nature_Prop_CoastalCliff", "coastal_cliff_04"),
+            Prop("Nature_Prop_PineRoots", "pine_roots"),
+            Prop("Nature_Prop_Pickaxe", "picke_dirty_01"),
+            Prop("Nature_Prop_Spade", "rusted_spade_01"),
+            Prop("Nature_Prop_Bucket2", "wooden_bucket_02"),
+            Prop("Nature_Prop_MineLadder", "wooden_ladder"),
+            Prop("Nature_Prop_Mushroom1", "cave_mushroom_01"),
+            Prop("Nature_Prop_Mushroom2", "cave_mushroom_02"),
+            Prop("Nature_Prop_Calcite", "calcite_druse"),
             Prop("Nature_Prop_CarvedPlate", "carved_wooden_plate"),
             // foliage (cut-out atlases, both faces, wind)
             Spray("Nature_Leaves_Fir", NatureTextureFactory.Spray.Fir, 1f),
