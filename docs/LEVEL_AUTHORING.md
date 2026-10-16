@@ -331,6 +331,10 @@ place the kit's gameplay prefab (a winch plate, a gate) in it in the level, neve
 
 `HotPatata/Level/Clean Timber Catalog` removes the meshes no scene or prefab uses any more (save first).
 
+**PatataRanger** (`Assets/Scenes/PatataRanger.unity`) is a level made of frozen timber: every deck, stair, bridge, hut, booth
+and tower is a structure of elements. Open it to move its boards, ropes and posts, or save its booths and towers to the
+library. Its land, giant trees and forest were baked by its old builder: move them as objects, they are not pieces.
+
 ## Rules
 
 - Never edit a piece's `Generated` child: change the piece and it is rebuilt. A frozen structure's elements are yours to

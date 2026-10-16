@@ -8,7 +8,7 @@ namespace HotPatata.Editor
 {
     /// <summary>
     /// The organic kit's buildings (ARCHITECTURE §25.5, §27): plank walls that collide (their doors left open), pitched board roofs,
-    /// a log hut and a braced trestle tower. Shared by PatataRanger and the authored levels' pieces. Drawn timber is decoration
+    /// a braced trestle tower. Shared by the authored levels' pieces and the structures (TimberStructures). Drawn timber is decoration
     /// (renderers, <see cref="CourseDecoration"/>); what a body must not pass collides as boxes on Environment.
     /// </summary>
     public static class TimberBuildings
@@ -133,45 +133,6 @@ namespace HotPatata.Editor
                 }
                 mb.Beam(V3(a, y1 - 0.1f) + normal * 0.08f, V3(b, y1 - 0.1f) + normal * 0.08f, 0.16f, 0.22f, Wood);
             });
-        }
-
-        /// <summary>A small log hut: log walls (boxes that collide), a door gap in its +X wall, a pitched roof.</summary>
-        public static void Hut(Transform p, string name, Vector3 foot, Quaternion rot, float halfX, float halfZ)
-        {
-            const float WallH = 2.6f;
-            var root = new GameObject(name).transform;
-            root.SetParent(p, false);
-            Frame(root, name + " frame", mb =>
-            {
-                // log walls: courses of logs with their ends crossing at the corners
-                var logs = ElementRecorder.Tag("Walls", TimberElementKind.Log, TimberWalk.None, solid: true);
-                for (int course = 0; course < 9; course++)
-                {
-                    float y = 0.15f + course * 0.29f;
-                    foreach (int s in new[] { -1, 1 })
-                    {
-                        bool alongX = course % 2 == 0;
-                        var a = foot + rot * (alongX ? new Vector3(-halfX - 0.35f, y, s * halfZ) : new Vector3(s * halfX, y + 0.145f, -halfZ - 0.35f));
-                        var b = foot + rot * (alongX ? new Vector3(halfX + 0.35f, y, s * halfZ) : new Vector3(s * halfX, y + 0.145f, halfZ + 0.35f));
-                        if (!alongX && s > 0 && course < 7)
-                        {
-                            // the door in the +X wall
-                            mb.Tube(new[] { a, Vector3.Lerp(a, b, 0.36f) }, new[] { 0.16f, 0.16f }, 8, Wood, true, course * 0.2f);
-                            mb.Tube(new[] { Vector3.Lerp(a, b, 0.64f), b }, new[] { 0.16f, 0.16f }, 8, Wood, true, course * 0.3f);
-                        }
-                        else mb.Tube(new[] { a, b }, new[] { 0.16f, 0.16f }, 8, Wood, true, course * 0.37f + s);
-                    }
-                }
-                logs.Dispose();
-                using var roof = ElementRecorder.Tag("Roof", walk: TimberWalk.None, solid: false);
-                Roof(mb, foot + Vector3.up * (WallH + 0.1f), halfX, halfZ, 1.5f, rot * Quaternion.Euler(0f, 90f, 0f), Aged, 0.6f);
-            });
-            // walls collide as boxes (the door gap stays open); frozen, each log collides instead
-            foreach (int s in new[] { -1, 1 })
-                ElementRecorder.Replaced(SolidInvisible(root, name + " wall z" + s, foot + rot * new Vector3(0f, WallH / 2f, s * halfZ), rot, new Vector3(2f * halfX + 0.4f, WallH, 0.32f)));
-            ElementRecorder.Replaced(SolidInvisible(root, name + " wall x-", foot + rot * new Vector3(-halfX, WallH / 2f, 0f), rot, new Vector3(0.32f, WallH, 2f * halfZ)));
-            foreach (int s in new[] { -1, 1 })
-                ElementRecorder.Replaced(SolidInvisible(root, name + " wall x+" + s, foot + rot * new Vector3(halfX, WallH / 2f, s * halfZ * 0.68f), rot, new Vector3(0.32f, WallH, halfZ * 0.64f)));
         }
 
         /// <summary>

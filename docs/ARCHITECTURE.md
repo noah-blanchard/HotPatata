@@ -2332,5 +2332,12 @@ it into its elements, one GameObject each, moved by hand from then on (one way: 
   again only when asked (Assets > HotPatata > Regenerate Library Structure). The prop library's sets are made of elements too. It is scenery and level geometry
   only: a gameplay prefab of the kit is placed beside or in it in the level, never built into it.
 
+- **Handing a course over.** `ElementRecorder.FreezeInPlace` makes the kit draw every piece of timber frozen, in place: elements
+  under the piece's root (a `FrozenStructure` of its own, its surface laid from its boards), walls as `TimberWall`s, the boxes they
+  stand for never made. PatataRanger was handed over this way (M18.4c, `RangerConversion`, run once): its builder drew it one
+  last time frozen, the scene got its `LevelSettings` (menu name, two players, the Ranger day, each section's music act and
+  ambience: `LevelSettings.SectionActs`), and the builder was removed. Its land, giant trees, forest and mist stay as they were
+  baked (meshes in `Assets/Art/Generated/PatataRanger/`); the scene is the source from then on.
+
 Tests: `TimberElementTests` (a frozen deck, stair, bridge and house look and walk like their pieces, holes, attached ends,
 ropes on anchors, the catalogue, solid elements, the four structures built and frozen with solid posts and painted glyphs).

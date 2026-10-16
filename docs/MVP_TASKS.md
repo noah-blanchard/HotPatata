@@ -1717,8 +1717,10 @@ Three stacked PRs: elements and freezing (4a), the structures and their library 
   no level constant), frozen like the rest; the structure library (`Assets/Prefabs/Structures/`: eleven prefabs made by
   `StructureLibraryBuilder`, only the missing ones, one regenerated on demand; Save to library from any frozen structure);
   the prop sets made of elements;
-- [ ] 4c: PatataRanger converted once into an authored level (its timber as pieces and library structures, its land and trees
-  as level pieces, its game kept), its builder removed; the route runner passes, no contract or walk-probe finding;
+- [x] 4c: PatataRanger handed over as an authored level: drawn one last time with its timber frozen in place (78 structures,
+  5978 elements), its `LevelSettings` written (music and ambience per section kept), its builder removed; 0 contract and 0
+  walk-probe finding at the last build, `PatataRangerTests` (route runner) pass. Its land, trees and forest stay baked meshes,
+  not level pieces (a terrain and hero trees of its own, not `LevelTerrain`/`HeroTreeShape`);
 - [ ] the owner freezes, edits and saves structures in a level and finds it usable.
 
 ---
