@@ -2178,8 +2178,10 @@ seeds the kit's randomness, its data, its place, its ends' decks, the openings c
 duplicated piece gets its own id. The ground is not in the signature: after reshaping the ground, Rebuild All Pieces.
 
 **Meshes.** While a level is edited, the pieces' meshes live in memory (`OrganicAssets.BeginInMemory`); on save,
-`LevelMeshStore` writes each piece's into `Assets/Art/Generated/<Level>/Pieces/<piece id>/` (Git LFS) and deletes the
-folders of pieces no longer in the scene. A rebuilt mesh refills its asset, so its GUID stays.
+`LevelMeshStore` writes them into the mesh catalogue (`MeshCatalog`, §27.1: found again by their content, shared with the frozen
+timber) and the forests' plantings into `Assets/Art/Generated/<Level>/Foliage/<piece id>.asset` (Git LFS), deleting the
+plantings of pieces no longer in the scene. A level folder holds the level's own data only (its terrain, plantings, mist); the
+pieces' old per-piece folders (`Pieces/`) are emptied into the catalogue the next time the level is saved.
 
 **On save** the level also gathers its walk lines (every walkway and bridge, on its walking surface) into its
 `RouteWalks` (`LevelRoutes`), and the quick checks (`LevelQuickCheck`: a piece not built, a hanger with nothing to tie to, a
@@ -2273,7 +2275,8 @@ Tests: `LevelAuthoringTests`, `LevelNatureTests`, `LevelGameTests`; `AuthoredLev
   `Assets/Prefabs/Variants/Forest/` (winch, lever, drawbridge, cage, signal ring, bell arch, chute, net, embers, sparks;
   docs/OBSTACLES.md §4.1). Each keeps its base's system, colliders and gameplay cues; the kit's construction (KayKit rims,
   posts, lintels, boxes) is hidden (an object holding only renderers switched off, a collider's renderer disabled) and drawn
-  again with the timber kit's meshes (`Assets/Art/Generated/ForestKit/`) under a `CustomVisual`, on the moving part where the
+  again with the shared timber shapes (`TimberStructures`: logs, plank rims and decks, the winch drum; meshes in the catalogue,
+  §27.1) under a `CustomVisual`, on the moving part where the
   part moves. The chute only changes its pipe's materials (a tube lays its pipe per level). Their particles use their own
   materials (`Nature_EmberZone`, `Nature_SparkCurtain`). `KitSceneTools`' size handles scale a variant's `CustomVisual` by the
   change of size (a deck's thickness never stretches its posts).
@@ -2309,9 +2312,16 @@ it into its elements, one GameObject each, moved by hand from then on (one way: 
   `FrozenStructure` (groups: boards, frame, supports, each rail...): the structure looks exactly like the piece. Colliders the
   elements stand for (a wall's boxes, now its boards'; the rail walls, now `TimberWall`s) are dropped; others (a house's
   `CourseCeiling`) are kept. Walkways and bridges attached to a frozen piece keep their ends where they were, as free points.
-- **The catalogue.** `TimberCatalog` keeps one mesh per shape (named after its shape's key, a hash), as sub-assets of sixteen
-  `TimberMeshBank` files in `Assets/Art/Generated/Timber/`, shared by every level and prefab. It is written as meshes are made
-  (a prefab may hold them); `HotPatata/Level/Clean Timber Catalog` removes the ones nothing uses.
+- **The catalogue.** `MeshCatalog` is the one store of the meshes the level tools make (the elements, the pieces' drawn timber
+  and surfaces, giant trees, water, the kit's forest looks), in `Assets/Art/Generated/Catalog/`: one mesh per shape, named after
+  its shape's key or its content's hash, shared by every level and prefab. Small meshes are sub-assets of sixteen `MeshBank`
+  files, large ones (over `LargeVertices`) files of their own in `Meshes/` (a bank is rewritten whole when it changes). A board
+  is drawn long to the centimetre (`TimberBoard.DrawnSize`; its collider keeps the exact size) and only boards keep a grain variant
+  of their own (`DrawnGrain`, four), so boards of a deck share meshes. Meshes are written as they are made (a prefab may hold
+  them) and removed once no saved scene, prefab or generated asset, and no open object, uses them: on every scene or prefab save
+  (`MeshCatalog.CleanSoon`; each file is read again only when it changed), or by `HotPatata/Level/Clean Mesh Catalog`.
+- **Where the code is.** The timber code is one folder, `Assets/EditorTools/Timber` (the kit, the buildings and structures, the
+  elements, freezing, the catalogue); the authored levels' pieces, handles and checks stay in `Assets/EditorTools/Authoring`.
 - **The walking surface.** A frozen structure's boards have no collider of their own: `WalkSurfaceBuilder` lays one closed
   collider (a `WalkableProxy`) from its walkable boards, so a walker never catches a board's edge. A slab board gets a slab a
   little wider than itself (the gaps close); the boards of a run (a walkway's boards and treads, a bridge's slats) get one

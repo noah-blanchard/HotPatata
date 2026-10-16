@@ -77,7 +77,7 @@ namespace HotPatata
         {
             var s = new StringBuilder("path|");
             s.Append(profile).Append('|').Append(seat).Append('|').Append(caps).Append(closed).Append('|');
-            s.Append(Mm(radius)).Append(',').Append(Mm(width)).Append(',').Append(Mm(height)).Append(',').Append(Mm(sag)).Append('|').Append(Grain).Append('|');
+            s.Append(Mm(radius)).Append(',').Append(Mm(width)).Append(',').Append(Mm(height)).Append(',').Append(Mm(sag)).Append('|').Append(DrawnGrain).Append('|');
             foreach (var p in points) s.Append(Mm(p.x)).Append(',').Append(Mm(p.y)).Append(',').Append(Mm(p.z)).Append(';');
             return s.ToString();
         }

@@ -53,7 +53,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: board|160|180|2072|0|0|0|Timber|False
+  builtFrom: board|160|180|2070|0|0|0|Timber|False
   size: {x: 0.16, y: 0.18, z: 2.0719314}
   cutStart: 0
   cutEnd: 0
@@ -64,7 +64,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 625355304628711275}
-  m_Mesh: {fileID: -6062811355395350597, guid: 91a60ebc2d376ac4b9e245f7f3d8caf2, type: 2}
+  m_Mesh: {fileID: -6479166008111928151, guid: 17eabeb49f0c3cf45a08bb3573a6011d, type: 2}
 --- !u!23 &9016155887306621000
 MeshRenderer:
   m_ObjectHideFlags: 0

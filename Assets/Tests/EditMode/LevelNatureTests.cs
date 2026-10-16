@@ -26,6 +26,7 @@ namespace HotPatata.Tests
         public void SetUp()
         {
             LevelPieceWatcher.Enabled = false;
+            MeshCatalog.Folder = StoreFolder + "Catalog/";
             scene = SceneManager.GetActiveScene();
             before = scene.GetRootGameObjects();
             var ground = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -39,6 +40,7 @@ namespace HotPatata.Tests
         public void TearDown()
         {
             foreach (var go in scene.GetRootGameObjects().Except(before)) Object.DestroyImmediate(go);
+            MeshCatalog.Folder = MeshCatalog.DefaultFolder;
             AssetDatabase.DeleteAsset(StoreFolder.TrimEnd('/'));
             LevelPieceWatcher.Enabled = true;
         }
@@ -139,7 +141,7 @@ namespace HotPatata.Tests
             Assert.IsFalse(EditorUtility.IsPersistent(forest.Output.GetComponentInChildren<FoliageInstancer>().Set));
             LevelMeshStore.Persist(pieces, StoreFolder);
             Assert.IsTrue(EditorUtility.IsPersistent(forest.Output.GetComponentInChildren<FoliageInstancer>().Set), "the planting stayed in memory");
-            Assert.IsTrue(File.Exists(LevelMeshStore.PiecesFolder(StoreFolder) + forest.PieceId + "/Foliage.asset"));
+            Assert.IsTrue(File.Exists(LevelMeshStore.FoliageFolder(StoreFolder) + forest.PieceId + ".asset"));
         }
 
         [Test]

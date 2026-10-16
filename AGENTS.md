@@ -132,7 +132,7 @@ same PR. Code comments cite doc sections (e.g. `PROJECT_SPEC §8.3`), so never r
   a `LevelPieceOutput`), they are made with `HotPatata/Level/New Level` and listed with `Register In Menu`, and they follow
   every other rule here. A piece frozen into its elements (`TimberFreezer`, ARCHITECTURE §27.1) and the structure library's
   prefabs (`Assets/Prefabs/Structures/`) are edited by hand, element by element; never their generated `Walk surface`, nor
-  the timber catalogue's banks (`Assets/Art/Generated/Timber/`). A new section declares a `SectionContract` (spec §13.20, how-to
+  the mesh catalogue (`Assets/Art/Generated/Catalog/`: every mesh the level tools make, cleaned on save). A new section declares a `SectionContract` (spec §13.20, how-to
   in docs/OBSTACLES.md §5): what it forces, and each shortcut with the geometry that locks it (14 m gaps, faces of 3.4 m or
   more, walls up to a roof; a window a player fits through is not bomb-only). `CourseContractCheck` must report nothing. The level list's order lives in one place,
   `CourseKit` (`RegisterInMenu` for the builders, `WriteMenu` for the Register In Menu window; each level's minimum players

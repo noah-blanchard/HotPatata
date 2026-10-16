@@ -9,9 +9,11 @@ using UnityEngine.SceneManagement;
 namespace HotPatata.Editor
 {
     /// <summary>
-    /// Where the meshes of an authored level's pieces live (ARCHITECTURE §27): in memory while they are edited, then, when the scene is
-    /// saved, in <c>Assets/Art/Generated/&lt;Level&gt;/Pieces/&lt;piece id&gt;/</c> (Git LFS), one folder per piece so a piece's rebuild
-    /// only ever replaces its own. A folder whose piece left the scene is deleted with it.
+    /// Where what an authored level's pieces make is kept (ARCHITECTURE §27, §27.1): in memory while they are edited, then, when the
+    /// scene is saved, their meshes in the mesh catalogue (<see cref="MeshCatalog"/>, shared with the frozen timber, found again by their
+    /// content) and their forests' planting (a <see cref="FoliageSet"/>, the level's own data) in
+    /// <c>Assets/Art/Generated/&lt;Level&gt;/Foliage/&lt;piece id&gt;.asset</c> (Git LFS). A planting whose piece left the level is
+    /// deleted with it; meshes nothing uses leave the catalogue on their own (<see cref="MeshCatalog.CleanSoon"/>).
     /// </summary>
     public static class LevelMeshStore
     {
@@ -19,13 +21,19 @@ namespace HotPatata.Editor
 
         public static string LevelFolder(Scene scene) => GeneratedRoot + scene.name + "/";
 
-        public static string PiecesFolder(string levelFolder) => levelFolder + "Pieces/";
+        public static string FoliageFolder(string levelFolder) => levelFolder + "Foliage/";
 
-        /// <summary>Writes the meshes of every piece of <paramref name="scene"/> still in memory; returns how many were written.</summary>
+        /// <summary>Where the pieces' meshes were kept before the catalogue (one folder per piece): moved out when a level is saved.</summary>
+        public static string LegacyPiecesFolder(string levelFolder) => levelFolder + "Pieces/";
+
+        /// <summary>Writes what the pieces of <paramref name="scene"/> hold in memory; returns how many assets were written.</summary>
         public static int Persist(Scene scene) =>
             string.IsNullOrEmpty(scene.path) ? 0 : Persist(TimberLinks.Pieces(scene), LevelFolder(scene));
 
-        /// <summary>Writes the in-memory meshes of <paramref name="pieces"/> under <paramref name="levelFolder"/>.</summary>
+        /// <summary>
+        /// Writes the pieces' meshes into the catalogue (and moves there any a piece still holds from its old folder) and their
+        /// planting under <paramref name="levelFolder"/>; returns how many were written.
+        /// </summary>
         public static int Persist(IEnumerable<LevelPiece> pieces, string levelFolder)
         {
             int written = 0;
@@ -33,37 +41,40 @@ namespace HotPatata.Editor
             {
                 if (piece.Output == null) continue;
                 written += PersistFoliage(piece, levelFolder);
-                var fresh = LevelPieceBuilder.Meshes(piece.Output).Where(m => !EditorUtility.IsPersistent(m)).ToList();
-                if (fresh.Count == 0) continue;
-                piece.EnsureId();
-                OrganicAssets.Begin(PiecesFolder(levelFolder) + piece.PieceId + "/");
-                try
-                {
-                    var saved = new Dictionary<Mesh, Mesh>();
-                    foreach (var mesh in fresh) saved[mesh] = OrganicAssets.Save(mesh);
-                    foreach (var filter in piece.Output.GetComponentsInChildren<MeshFilter>(true))
-                        if (filter.sharedMesh != null && saved.TryGetValue(filter.sharedMesh, out var m)) filter.sharedMesh = m;
-                    foreach (var collider in piece.Output.GetComponentsInChildren<MeshCollider>(true))
-                        if (collider.sharedMesh != null && saved.TryGetValue(collider.sharedMesh, out var m)) collider.sharedMesh = m;
-                    written += saved.Count;
-                }
-                finally { OrganicAssets.End(); }
+                var saved = new Dictionary<Mesh, Mesh>();
+                foreach (var mesh in LevelPieceBuilder.Meshes(piece.Output).Where(m => !MeshCatalog.Contains(m)))
+                    saved[mesh] = MeshCatalog.Store(mesh);
+                if (saved.Count == 0) continue;
+                foreach (var filter in piece.Output.GetComponentsInChildren<MeshFilter>(true))
+                    if (filter.sharedMesh != null && saved.TryGetValue(filter.sharedMesh, out var m)) filter.sharedMesh = m;
+                foreach (var collider in piece.Output.GetComponentsInChildren<MeshCollider>(true))
+                    if (collider.sharedMesh != null && saved.TryGetValue(collider.sharedMesh, out var m)) collider.sharedMesh = m;
+                written += saved.Count;
             }
+            MeshCatalog.Flush();
             return written;
         }
 
-        /// <summary>A forest's planting (an in-memory <see cref="FoliageSet"/>), written as Foliage.asset in its piece's folder.</summary>
+        /// <summary>A forest's planting (an in-memory <see cref="FoliageSet"/>, or one in its old piece folder), written as Foliage/&lt;id&gt;.asset.</summary>
         static int PersistFoliage(LevelPiece piece, string levelFolder)
         {
             int written = 0;
             foreach (var instancer in piece.Output.GetComponentsInChildren<FoliageInstancer>(true))
             {
                 var set = instancer.Set;
-                if (set == null || EditorUtility.IsPersistent(set)) continue;
+                if (set == null) continue;
                 piece.EnsureId();
-                string folder = PiecesFolder(levelFolder) + piece.PieceId;
-                Directory.CreateDirectory(folder);
-                string path = folder + "/Foliage.asset";
+                string path = FoliageFolder(levelFolder) + piece.PieceId + ".asset";
+                if (EditorUtility.IsPersistent(set))
+                {
+                    // planted before the catalogue: its file moves to the level's foliage folder
+                    string at = AssetDatabase.GetAssetPath(set);
+                    if (at == path) continue;
+                    Directory.CreateDirectory(FoliageFolder(levelFolder).TrimEnd('/'));
+                    if (AssetDatabase.LoadAssetAtPath<FoliageSet>(path) == null && string.IsNullOrEmpty(AssetDatabase.MoveAsset(at, path))) written++;
+                    continue;
+                }
+                Directory.CreateDirectory(FoliageFolder(levelFolder).TrimEnd('/'));
                 var existing = AssetDatabase.LoadAssetAtPath<FoliageSet>(path);
                 if (existing != null)
                 {
@@ -83,23 +94,51 @@ namespace HotPatata.Editor
             return written;
         }
 
-        /// <summary>Deletes the mesh folders of pieces no longer in the level; returns how many.</summary>
+        /// <summary>Deletes the plantings of pieces no longer in the level, and the old piece folders once emptied; returns how many.</summary>
         public static int DeleteOrphans(Scene scene) =>
             string.IsNullOrEmpty(scene.path) ? 0 : DeleteOrphans(TimberLinks.Pieces(scene).Select(p => p.PieceId), LevelFolder(scene));
 
         public static int DeleteOrphans(IEnumerable<string> liveIds, string levelFolder)
         {
-            string folder = PiecesFolder(levelFolder).TrimEnd('/');
-            if (!AssetDatabase.IsValidFolder(folder)) return 0;
             var live = new HashSet<string>(liveIds.Where(id => !string.IsNullOrEmpty(id)));
             int deleted = 0;
-            foreach (var dir in Directory.GetDirectories(folder))
+            string foliage = FoliageFolder(levelFolder).TrimEnd('/');
+            if (AssetDatabase.IsValidFolder(foliage))
+                foreach (var file in Directory.GetFiles(foliage, "*.asset"))
+                {
+                    if (live.Contains(Path.GetFileNameWithoutExtension(file))) continue;
+                    if (AssetDatabase.DeleteAsset(file.Replace('\\', '/'))) deleted++;
+                }
+            // the pieces' old folders: their meshes are in the catalogue now, their plantings in Foliage/ (what is still used stays)
+            string legacy = LegacyPiecesFolder(levelFolder).TrimEnd('/');
+            if (AssetDatabase.IsValidFolder(legacy))
             {
-                string id = Path.GetFileName(dir);
-                if (live.Contains(id)) continue;
-                if (AssetDatabase.DeleteAsset(dir.Replace('\\', '/'))) deleted++;
+                var stillUsed = new HashSet<string>(OpenDependencies());
+                foreach (var dir in Directory.GetDirectories(legacy))
+                {
+                    var assets = Directory.GetFiles(dir, "*.asset").Select(f => f.Replace('\\', '/')).ToList();
+                    if (assets.Any(stillUsed.Contains)) continue;
+                    if (AssetDatabase.DeleteAsset(dir.Replace('\\', '/'))) deleted++;
+                }
+                if (Directory.GetDirectories(legacy).Length == 0 && Directory.GetFiles(legacy, "*.asset").Length == 0) AssetDatabase.DeleteAsset(legacy);
             }
             return deleted;
+        }
+
+        /// <summary>The asset files the open scenes' meshes and plantings come from.</summary>
+        static IEnumerable<string> OpenDependencies()
+        {
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                var scene = SceneManager.GetSceneAt(i);
+                if (!scene.isLoaded) continue;
+                foreach (var root in scene.GetRootGameObjects())
+                {
+                    foreach (var f in root.GetComponentsInChildren<MeshFilter>(true)) if (f.sharedMesh != null) yield return AssetDatabase.GetAssetPath(f.sharedMesh);
+                    foreach (var c in root.GetComponentsInChildren<MeshCollider>(true)) if (c.sharedMesh != null) yield return AssetDatabase.GetAssetPath(c.sharedMesh);
+                    foreach (var fi in root.GetComponentsInChildren<FoliageInstancer>(true)) if (fi.Set != null) yield return AssetDatabase.GetAssetPath(fi.Set);
+                }
+            }
         }
     }
 }

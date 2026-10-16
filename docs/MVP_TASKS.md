@@ -1721,6 +1721,10 @@ Three stacked PRs: elements and freezing (4a), the structures and their library 
   5978 elements), its `LevelSettings` written (music and ambience per section kept), its builder removed; 0 contract and 0
   walk-probe finding at the last build, `PatataRangerTests` (route runner) pass. Its land, trees and forest stay baked meshes,
   not level pieces (a terrain and hero trees of its own, not `LevelTerrain`/`HeroTreeShape`);
+- [x] tidy-up: the timber code in one folder (`Assets/EditorTools/Timber`); one mesh catalogue for every mesh the tools make
+  (elements, pieces, forest looks: `Assets/Art/Generated/Catalog/`, the per-piece folders gone), cleaned on every save; boards
+  share meshes (drawn long to the centimetre, a grain of their own only for planks: PatataRanger's 4087 meshes to 2357);
+  the forest looks drawn with the shared timber shapes;
 - [ ] the owner freezes, edits and saves structures in a level and finds it usable.
 
 ---

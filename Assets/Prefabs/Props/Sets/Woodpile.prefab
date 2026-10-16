@@ -53,7 +53,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|2|0,0,-700;0,0,700;|Timber|False
+  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|0|0,0,-700;0,0,700;|Timber|False
   points:
   - {x: 0, y: 0, z: -0.7}
   - {x: 0, y: 0, z: 0.7}
@@ -76,7 +76,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 289995106982406000}
-  m_Mesh: {fileID: 5296085699200931934, guid: e764192acf6ec9a4daf5fa704e756597, type: 2}
+  m_Mesh: {fileID: -7466289211284445178, guid: db11c3b0385e81f4895db8560fa358fe, type: 2}
 --- !u!23 &1602828752516240159
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -179,7 +179,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|4|0,0,-700;0,0,700;|Timber|False
+  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|0|0,0,-700;0,0,700;|Timber|False
   points:
   - {x: 0, y: 0, z: -0.7}
   - {x: 0, y: 0, z: 0.7}
@@ -202,7 +202,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 393843730284578067}
-  m_Mesh: {fileID: -124737121257481320, guid: f9fa23216b1bc434a825c6ee5c15a5bd, type: 2}
+  m_Mesh: {fileID: -7466289211284445178, guid: db11c3b0385e81f4895db8560fa358fe, type: 2}
 --- !u!23 &7119569101551471373
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -305,7 +305,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|2|0,0,-700;0,0,700;|Timber|False
+  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|0|0,0,-700;0,0,700;|Timber|False
   points:
   - {x: 0, y: 0, z: -0.7}
   - {x: 0, y: 0, z: 0.7}
@@ -328,7 +328,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 515941645669695089}
-  m_Mesh: {fileID: 5296085699200931934, guid: e764192acf6ec9a4daf5fa704e756597, type: 2}
+  m_Mesh: {fileID: -7466289211284445178, guid: db11c3b0385e81f4895db8560fa358fe, type: 2}
 --- !u!23 &4830364238671795013
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -600,7 +600,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|2|0,0,-700;0,0,700;|Timber|False
+  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|0|0,0,-700;0,0,700;|Timber|False
   points:
   - {x: 0, y: 0, z: -0.7}
   - {x: 0, y: 0, z: 0.7}
@@ -623,7 +623,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1431644456587942759}
-  m_Mesh: {fileID: 5296085699200931934, guid: e764192acf6ec9a4daf5fa704e756597, type: 2}
+  m_Mesh: {fileID: -7466289211284445178, guid: db11c3b0385e81f4895db8560fa358fe, type: 2}
 --- !u!23 &7753067930703359499
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -726,7 +726,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|6|0,0,-700;0,0,700;|Timber|False
+  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|0|0,0,-700;0,0,700;|Timber|False
   points:
   - {x: 0, y: 0, z: -0.7}
   - {x: 0, y: 0, z: 0.7}
@@ -749,7 +749,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2082342226982647645}
-  m_Mesh: {fileID: 1017997159098200294, guid: b461e822c1638994bb8d2411371b2867, type: 2}
+  m_Mesh: {fileID: -7466289211284445178, guid: db11c3b0385e81f4895db8560fa358fe, type: 2}
 --- !u!23 &6305723210720109644
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -852,7 +852,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|4|0,0,-700;0,0,700;|Timber|False
+  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|0|0,0,-700;0,0,700;|Timber|False
   points:
   - {x: 0, y: 0, z: -0.7}
   - {x: 0, y: 0, z: 0.7}
@@ -875,7 +875,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3004331652339053315}
-  m_Mesh: {fileID: -124737121257481320, guid: f9fa23216b1bc434a825c6ee5c15a5bd, type: 2}
+  m_Mesh: {fileID: -7466289211284445178, guid: db11c3b0385e81f4895db8560fa358fe, type: 2}
 --- !u!23 &5212448880748412424
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -978,7 +978,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|6|0,0,-700;0,0,700;|Timber|False
+  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|0|0,0,-700;0,0,700;|Timber|False
   points:
   - {x: 0, y: 0, z: -0.7}
   - {x: 0, y: 0, z: 0.7}
@@ -1001,7 +1001,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3101677352631428590}
-  m_Mesh: {fileID: 1017997159098200294, guid: b461e822c1638994bb8d2411371b2867, type: 2}
+  m_Mesh: {fileID: -7466289211284445178, guid: db11c3b0385e81f4895db8560fa358fe, type: 2}
 --- !u!23 &5809824897806384619
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1104,7 +1104,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|4|0,0,-700;0,0,700;|Timber|False
+  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|0|0,0,-700;0,0,700;|Timber|False
   points:
   - {x: 0, y: 0, z: -0.7}
   - {x: 0, y: 0, z: 0.7}
@@ -1127,7 +1127,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3430889475571414710}
-  m_Mesh: {fileID: -124737121257481320, guid: f9fa23216b1bc434a825c6ee5c15a5bd, type: 2}
+  m_Mesh: {fileID: -7466289211284445178, guid: db11c3b0385e81f4895db8560fa358fe, type: 2}
 --- !u!23 &6010781304610934171
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1356,7 +1356,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|6|0,0,-700;0,0,700;|Timber|False
+  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|0|0,0,-700;0,0,700;|Timber|False
   points:
   - {x: 0, y: 0, z: -0.7}
   - {x: 0, y: 0, z: 0.7}
@@ -1379,7 +1379,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4127438152831588352}
-  m_Mesh: {fileID: 1017997159098200294, guid: b461e822c1638994bb8d2411371b2867, type: 2}
+  m_Mesh: {fileID: -7466289211284445178, guid: db11c3b0385e81f4895db8560fa358fe, type: 2}
 --- !u!23 &6843292901872934065
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1661,7 +1661,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|2|0,0,-700;0,0,700;|Timber|False
+  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|0|0,0,-700;0,0,700;|Timber|False
   points:
   - {x: 0, y: 0, z: -0.7}
   - {x: 0, y: 0, z: 0.7}
@@ -1684,7 +1684,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4911641285824562834}
-  m_Mesh: {fileID: 5296085699200931934, guid: e764192acf6ec9a4daf5fa704e756597, type: 2}
+  m_Mesh: {fileID: -7466289211284445178, guid: db11c3b0385e81f4895db8560fa358fe, type: 2}
 --- !u!23 &8925194865539099806
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1787,7 +1787,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|4|0,0,-700;0,0,700;|Timber|False
+  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|0|0,0,-700;0,0,700;|Timber|False
   points:
   - {x: 0, y: 0, z: -0.7}
   - {x: 0, y: 0, z: 0.7}
@@ -1810,7 +1810,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4952401010891124244}
-  m_Mesh: {fileID: -124737121257481320, guid: f9fa23216b1bc434a825c6ee5c15a5bd, type: 2}
+  m_Mesh: {fileID: -7466289211284445178, guid: db11c3b0385e81f4895db8560fa358fe, type: 2}
 --- !u!23 &8293219229075390829
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1913,7 +1913,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|6|0,0,-700;0,0,700;|Timber|False
+  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|0|0,0,-700;0,0,700;|Timber|False
   points:
   - {x: 0, y: 0, z: -0.7}
   - {x: 0, y: 0, z: 0.7}
@@ -1936,7 +1936,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5224140726623630803}
-  m_Mesh: {fileID: 1017997159098200294, guid: b461e822c1638994bb8d2411371b2867, type: 2}
+  m_Mesh: {fileID: -7466289211284445178, guid: db11c3b0385e81f4895db8560fa358fe, type: 2}
 --- !u!23 &3901396517628036636
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2039,7 +2039,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|2|0,0,-700;0,0,700;|Timber|False
+  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|0|0,0,-700;0,0,700;|Timber|False
   points:
   - {x: 0, y: 0, z: -0.7}
   - {x: 0, y: 0, z: 0.7}
@@ -2062,7 +2062,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5477373309106031599}
-  m_Mesh: {fileID: 5296085699200931934, guid: e764192acf6ec9a4daf5fa704e756597, type: 2}
+  m_Mesh: {fileID: -7466289211284445178, guid: db11c3b0385e81f4895db8560fa358fe, type: 2}
 --- !u!23 &1026653111374448896
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2165,7 +2165,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|6|0,0,-700;0,0,700;|Timber|False
+  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|0|0,0,-700;0,0,700;|Timber|False
   points:
   - {x: 0, y: 0, z: -0.7}
   - {x: 0, y: 0, z: 0.7}
@@ -2188,7 +2188,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6104593892373641257}
-  m_Mesh: {fileID: 1017997159098200294, guid: b461e822c1638994bb8d2411371b2867, type: 2}
+  m_Mesh: {fileID: -7466289211284445178, guid: db11c3b0385e81f4895db8560fa358fe, type: 2}
 --- !u!23 &117454241019386585
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2291,7 +2291,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|4|0,0,-700;0,0,700;|Timber|False
+  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|0|0,0,-700;0,0,700;|Timber|False
   points:
   - {x: 0, y: 0, z: -0.7}
   - {x: 0, y: 0, z: 0.7}
@@ -2314,7 +2314,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6227770828864110683}
-  m_Mesh: {fileID: -124737121257481320, guid: f9fa23216b1bc434a825c6ee5c15a5bd, type: 2}
+  m_Mesh: {fileID: -7466289211284445178, guid: db11c3b0385e81f4895db8560fa358fe, type: 2}
 --- !u!23 &5364950567360172189
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2417,7 +2417,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|4|0,0,-700;0,0,700;|Timber|False
+  builtFrom: path|Round|Center|TrueFalse|160,100,100,0|0|0,0,-700;0,0,700;|Timber|False
   points:
   - {x: 0, y: 0, z: -0.7}
   - {x: 0, y: 0, z: 0.7}
@@ -2440,7 +2440,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6295108560829017437}
-  m_Mesh: {fileID: -124737121257481320, guid: f9fa23216b1bc434a825c6ee5c15a5bd, type: 2}
+  m_Mesh: {fileID: -7466289211284445178, guid: db11c3b0385e81f4895db8560fa358fe, type: 2}
 --- !u!23 &6249347462930462636
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2762,7 +2762,7 @@ Transform:
   m_Children:
   - {fileID: 8620500554447070403}
   - {fileID: 9051295840738486863}
-  - {fileID: 7733175897327070070}
+  - {fileID: 5277804651875443123}
   - {fileID: 1961097461722141954}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -3215,7 +3215,7 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 9c605dad352fa5e4db220c69915fe18c, type: 3}
---- !u!4 &7733175897327070070 stripped
+--- !u!4 &5277804651875443123 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 551648468131164054, guid: 9c605dad352fa5e4db220c69915fe18c, type: 3}
   m_PrefabInstance: {fileID: 5663661385371356709}

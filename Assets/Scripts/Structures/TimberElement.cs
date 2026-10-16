@@ -16,14 +16,14 @@ namespace HotPatata
 
     /// <summary>
     /// One piece of timber an author can move by hand (ARCHITECTURE §27.1): a board, a post, a beam, a rope, an iron band. It holds its
-    /// shape's data only; the editor (HotPatata.Editor.TimberElementBuilder) draws its mesh from the shared timber catalogue and gives
+    /// shape's data only; the editor (HotPatata.Editor.TimberElementBuilder) draws its mesh from the shared mesh catalogue and gives
     /// it a collider when it is <see cref="Solid"/>. Gameplay never reads an element: it is level geometry, like the pieces it was frozen from.
     /// </summary>
     [DisallowMultipleComponent]
     public abstract class TimberElement : MonoBehaviour
     {
         /// <summary>A grain variant shifts the texture so neighbouring boards differ (the catalogue keeps this many per shape).</summary>
-        public const int GrainVariants = 8;
+        public const int GrainVariants = 4;
 
         [SerializeField] TimberElementKind kind;
         [SerializeField] TimberWood wood = TimberWood.Timber;
@@ -37,6 +37,12 @@ namespace HotPatata
         public TimberElementKind Kind { get => kind; set => kind = value; }
         public TimberWood Wood { get => wood; set => wood = value; }
         public int Grain { get => grain; set => grain = Mathf.Clamp(value, 0, GrainVariants - 1); }
+
+        /// <summary>
+        /// The grain the element is drawn with: its own for boards (side by side, they must differ), the first for the rest (a post, a
+        /// rope or a beam alone shows no repeat), so the catalogue shares their meshes.
+        /// </summary>
+        public int DrawnGrain => wood == TimberWood.Plank || wood == TimberWood.PlankAged ? ((grain % GrainVariants) + GrainVariants) % GrainVariants : 0;
         public bool Solid { get => solid; set => solid = value; }
         public TimberWalk Walk { get => walk; set => walk = value; }
         public int Run { get => run; set => run = value; }

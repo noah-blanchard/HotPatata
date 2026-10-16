@@ -31,10 +31,19 @@ namespace HotPatata
 
         void OnValidate() => Size = size;
 
-        /// <summary>Millimetres for the size, tenths of a degree for the cuts: what makes two boards share a mesh.</summary>
-        public override string ShapeKey() =>
-            string.Format(CultureInfo.InvariantCulture, "board|{0}|{1}|{2}|{3}|{4}|{5}", Mm(size.x), Mm(size.y), Mm(size.z),
-                          Mathf.RoundToInt(cutStart * 10f), Mathf.RoundToInt(cutEnd * 10f), Grain);
+        /// <summary>
+        /// The size its mesh is drawn at: across and thick to the millimetre, long to the centimetre (boards cut a few millimetres apart
+        /// share one mesh; the collider keeps the exact size).
+        /// </summary>
+        public Vector3 DrawnSize => new Vector3(Mathf.Round(size.x * 1000f) / 1000f, Mathf.Round(size.y * 1000f) / 1000f, Mathf.Max(0.01f, Mathf.Round(size.z * 100f) / 100f));
+
+        /// <summary>The drawn size, whole degrees for the cuts and the grain: what makes two boards share a mesh.</summary>
+        public override string ShapeKey()
+        {
+            var drawn = DrawnSize;
+            return string.Format(CultureInfo.InvariantCulture, "board|{0}|{1}|{2}|{3}|{4}|{5}", Mm(drawn.x), Mm(drawn.y), Mm(drawn.z),
+                                 Mathf.RoundToInt(cutStart), Mathf.RoundToInt(cutEnd), DrawnGrain);
+        }
 
         static int Mm(float v) => Mathf.RoundToInt(v * 1000f);
     }

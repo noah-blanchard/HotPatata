@@ -26,7 +26,7 @@ namespace HotPatata.Tests
         {
             LevelPieceWatcher.Enabled = false;
             TimberElementWatcher.Enabled = false;
-            TimberCatalog.Folder = CatalogFolder;
+            MeshCatalog.Folder = CatalogFolder;
             scene = SceneManager.GetActiveScene();
             before = scene.GetRootGameObjects();
             var ground = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -40,7 +40,7 @@ namespace HotPatata.Tests
         public void TearDown()
         {
             foreach (var go in scene.GetRootGameObjects().Except(before)) Object.DestroyImmediate(go);
-            TimberCatalog.Folder = TimberCatalog.DefaultFolder;
+            MeshCatalog.Folder = MeshCatalog.DefaultFolder;
             AssetDatabase.DeleteAsset(CatalogFolder.TrimEnd('/'));
             LevelPieceWatcher.Enabled = true;
             TimberElementWatcher.Enabled = true;
@@ -247,7 +247,7 @@ namespace HotPatata.Tests
             a.Size = b.Size = new Vector3(0.2f, 0.05f, 2.3f);
             c.Size = new Vector3(0.2f, 0.05f, 2.4f);
             foreach (var e in new TimberElement[] { a, b, c }) TimberElementBuilder.Refresh(e);
-            Assert.AreEqual(2, TimberCatalog.Flush(), "two shapes, two new meshes");
+            Assert.AreEqual(2, MeshCatalog.Flush(), "two shapes, two new meshes");
             var ma = a.GetComponent<MeshFilter>().sharedMesh;
             Assert.AreSame(ma, b.GetComponent<MeshFilter>().sharedMesh, "the same board drew two meshes");
             Assert.AreNotSame(ma, c.GetComponent<MeshFilter>().sharedMesh, "a longer board drew the same mesh");

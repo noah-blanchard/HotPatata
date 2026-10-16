@@ -19,7 +19,7 @@ namespace HotPatata
 
         public override string ShapeKey()
         {
-            var s = new StringBuilder("turned|").Append(sides).Append('|').Append(Grain).Append('|');
+            var s = new StringBuilder("turned|").Append(sides).Append('|').Append(DrawnGrain).Append('|');
             foreach (var p in profile)
                 s.Append(Mathf.RoundToInt(p.x * 1000f).ToString(CultureInfo.InvariantCulture)).Append(',')
                  .Append(Mathf.RoundToInt(p.y * 1000f).ToString(CultureInfo.InvariantCulture)).Append(';');

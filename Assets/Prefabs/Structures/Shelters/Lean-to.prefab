@@ -189,7 +189,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: board|290|50|2550|0|0|6|Plank|False
+  builtFrom: board|290|50|2550|0|0|2|Plank|False
   size: {x: 0.29, y: 0.05, z: 2.5495098}
   cutStart: 0
   cutEnd: 0
@@ -200,7 +200,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 198543931846967289}
-  m_Mesh: {fileID: 1981528868331243942, guid: db11c3b0385e81f4895db8560fa358fe, type: 2}
+  m_Mesh: {fileID: 4749902111983852342, guid: db11c3b0385e81f4895db8560fa358fe, type: 2}
 --- !u!23 &2159688328368264428
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -304,7 +304,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: board|212|50|1000|0|0|4|PlankAged|True
+  builtFrom: board|212|50|1000|0|0|0|PlankAged|True
   size: {x: 0.21222222, y: 0.05, z: 1}
   cutStart: 0
   cutEnd: 0
@@ -315,7 +315,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 249655400869087464}
-  m_Mesh: {fileID: -7926166143767241951, guid: b461e822c1638994bb8d2411371b2867, type: 2}
+  m_Mesh: {fileID: 8222324373186699926, guid: b461e822c1638994bb8d2411371b2867, type: 2}
 --- !u!23 &1942832468033790072
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1440,7 +1440,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: board|221|50|1000|0|0|4|PlankAged|True
+  builtFrom: board|221|50|1000|0|0|0|PlankAged|True
   size: {x: 0.22076923, y: 0.05, z: 1}
   cutStart: 0
   cutEnd: 0
@@ -1451,7 +1451,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2050762518343150176}
-  m_Mesh: {fileID: 3045478551823370316, guid: 1f0dbf1baafc1934880cec2f30716439, type: 2}
+  m_Mesh: {fileID: 2509588239673983410, guid: 1f0dbf1baafc1934880cec2f30716439, type: 2}
 --- !u!23 &6900722310991866421
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1826,7 +1826,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: board|221|50|1000|0|0|4|PlankAged|True
+  builtFrom: board|221|50|1000|0|0|0|PlankAged|True
   size: {x: 0.22076923, y: 0.05, z: 1}
   cutStart: 0
   cutEnd: 0
@@ -1837,7 +1837,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2232282619475261651}
-  m_Mesh: {fileID: 3045478551823370316, guid: 1f0dbf1baafc1934880cec2f30716439, type: 2}
+  m_Mesh: {fileID: 2509588239673983410, guid: 1f0dbf1baafc1934880cec2f30716439, type: 2}
 --- !u!23 &2489962413977038456
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1962,7 +1962,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: board|221|50|1000|0|0|4|PlankAged|True
+  builtFrom: board|221|50|1000|0|0|0|PlankAged|True
   size: {x: 0.22076923, y: 0.05, z: 1}
   cutStart: 0
   cutEnd: 0
@@ -1973,7 +1973,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2431495757563851790}
-  m_Mesh: {fileID: 3045478551823370316, guid: 1f0dbf1baafc1934880cec2f30716439, type: 2}
+  m_Mesh: {fileID: 2509588239673983410, guid: 1f0dbf1baafc1934880cec2f30716439, type: 2}
 --- !u!23 &7402766686545600263
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2347,7 +2347,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: board|160|200|2452|0|0|0|Timber|False
+  builtFrom: board|160|200|2450|0|0|0|Timber|False
   size: {x: 0.16, y: 0.2, z: 2.4515302}
   cutStart: 0
   cutEnd: 0
@@ -2358,7 +2358,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2567259995731569730}
-  m_Mesh: {fileID: -1961171450493237794, guid: 17eabeb49f0c3cf45a08bb3573a6011d, type: 2}
+  m_Mesh: {fileID: 574519035595948474, guid: b8a1fbfab2e15894da459b3596232867, type: 2}
 --- !u!23 &6773133888875392084
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2462,7 +2462,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: board|221|50|1000|0|0|4|PlankAged|True
+  builtFrom: board|221|50|1000|0|0|0|PlankAged|True
   size: {x: 0.22076923, y: 0.05, z: 1}
   cutStart: 0
   cutEnd: 0
@@ -2473,7 +2473,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2718586257181032210}
-  m_Mesh: {fileID: 3045478551823370316, guid: 1f0dbf1baafc1934880cec2f30716439, type: 2}
+  m_Mesh: {fileID: 2509588239673983410, guid: 1f0dbf1baafc1934880cec2f30716439, type: 2}
 --- !u!23 &3024659201942802646
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2711,7 +2711,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: board|160|200|2452|0|0|0|Timber|False
+  builtFrom: board|160|200|2450|0|0|0|Timber|False
   size: {x: 0.16, y: 0.2, z: 2.4515302}
   cutStart: 0
   cutEnd: 0
@@ -2722,7 +2722,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2893626055897902108}
-  m_Mesh: {fileID: -1961171450493237794, guid: 17eabeb49f0c3cf45a08bb3573a6011d, type: 2}
+  m_Mesh: {fileID: 574519035595948474, guid: b8a1fbfab2e15894da459b3596232867, type: 2}
 --- !u!23 &8815545963347083220
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2825,7 +2825,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: board|290|50|2550|0|0|7|PlankAged|False
+  builtFrom: board|290|50|2550|0|0|3|PlankAged|False
   size: {x: 0.29, y: 0.05, z: 2.5495098}
   cutStart: 0
   cutEnd: 0
@@ -2836,7 +2836,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2973526003977032959}
-  m_Mesh: {fileID: -2544773765785186008, guid: db11c3b0385e81f4895db8560fa358fe, type: 2}
+  m_Mesh: {fileID: -7683965714623284324, guid: db11c3b0385e81f4895db8560fa358fe, type: 2}
 --- !u!23 &6198617598815834696
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -3111,7 +3111,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: board|221|50|1000|0|0|4|PlankAged|True
+  builtFrom: board|221|50|1000|0|0|0|PlankAged|True
   size: {x: 0.22076923, y: 0.05, z: 1}
   cutStart: 0
   cutEnd: 0
@@ -3122,7 +3122,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3243696038691007779}
-  m_Mesh: {fileID: 3045478551823370316, guid: 1f0dbf1baafc1934880cec2f30716439, type: 2}
+  m_Mesh: {fileID: 2509588239673983410, guid: 1f0dbf1baafc1934880cec2f30716439, type: 2}
 --- !u!23 &73587316065986714
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -3872,7 +3872,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: board|212|50|1000|0|0|4|PlankAged|True
+  builtFrom: board|212|50|1000|0|0|0|PlankAged|True
   size: {x: 0.21222222, y: 0.05, z: 1}
   cutStart: 0
   cutEnd: 0
@@ -3883,7 +3883,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3808261505114405620}
-  m_Mesh: {fileID: -7926166143767241951, guid: b461e822c1638994bb8d2411371b2867, type: 2}
+  m_Mesh: {fileID: 8222324373186699926, guid: b461e822c1638994bb8d2411371b2867, type: 2}
 --- !u!23 &719757064396220446
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -4165,7 +4165,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: board|212|50|1000|0|0|4|PlankAged|True
+  builtFrom: board|212|50|1000|0|0|0|PlankAged|True
   size: {x: 0.21222222, y: 0.05, z: 1}
   cutStart: 0
   cutEnd: 0
@@ -4176,7 +4176,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4141998756046686270}
-  m_Mesh: {fileID: -7926166143767241951, guid: b461e822c1638994bb8d2411371b2867, type: 2}
+  m_Mesh: {fileID: 8222324373186699926, guid: b461e822c1638994bb8d2411371b2867, type: 2}
 --- !u!23 &3676513149445868496
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -4449,7 +4449,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: board|290|50|2550|0|0|5|PlankAged|False
+  builtFrom: board|290|50|2550|0|0|1|PlankAged|False
   size: {x: 0.29, y: 0.05, z: 2.5495098}
   cutStart: 0
   cutEnd: 0
@@ -4460,7 +4460,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4946482762075370185}
-  m_Mesh: {fileID: 6278803830619951518, guid: db11c3b0385e81f4895db8560fa358fe, type: 2}
+  m_Mesh: {fileID: 7935751816333758002, guid: db11c3b0385e81f4895db8560fa358fe, type: 2}
 --- !u!23 &6318691370626966428
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -4564,7 +4564,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: board|212|50|1000|0|0|4|PlankAged|True
+  builtFrom: board|212|50|1000|0|0|0|PlankAged|True
   size: {x: 0.21222222, y: 0.05, z: 1}
   cutStart: 0
   cutEnd: 0
@@ -4575,7 +4575,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5103340448961610171}
-  m_Mesh: {fileID: -7926166143767241951, guid: b461e822c1638994bb8d2411371b2867, type: 2}
+  m_Mesh: {fileID: 8222324373186699926, guid: b461e822c1638994bb8d2411371b2867, type: 2}
 --- !u!23 &4345251686988650475
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -4814,7 +4814,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: board|212|50|1000|0|0|4|PlankAged|True
+  builtFrom: board|212|50|1000|0|0|0|PlankAged|True
   size: {x: 0.21222222, y: 0.05, z: 1}
   cutStart: 0
   cutEnd: 0
@@ -4825,7 +4825,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5200889197357259988}
-  m_Mesh: {fileID: -7926166143767241951, guid: b461e822c1638994bb8d2411371b2867, type: 2}
+  m_Mesh: {fileID: 8222324373186699926, guid: b461e822c1638994bb8d2411371b2867, type: 2}
 --- !u!23 &8114425933253278432
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -5222,7 +5222,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: board|212|50|1000|0|0|4|PlankAged|True
+  builtFrom: board|212|50|1000|0|0|0|PlankAged|True
   size: {x: 0.21222222, y: 0.05, z: 1}
   cutStart: 0
   cutEnd: 0
@@ -5233,7 +5233,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5537415043539435667}
-  m_Mesh: {fileID: -7926166143767241951, guid: b461e822c1638994bb8d2411371b2867, type: 2}
+  m_Mesh: {fileID: 8222324373186699926, guid: b461e822c1638994bb8d2411371b2867, type: 2}
 --- !u!23 &8752320710156823442
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -5494,7 +5494,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: board|212|50|1000|0|0|4|PlankAged|True
+  builtFrom: board|212|50|1000|0|0|0|PlankAged|True
   size: {x: 0.21222222, y: 0.05, z: 1}
   cutStart: 0
   cutEnd: 0
@@ -5505,7 +5505,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5958630276636228399}
-  m_Mesh: {fileID: -7926166143767241951, guid: b461e822c1638994bb8d2411371b2867, type: 2}
+  m_Mesh: {fileID: 8222324373186699926, guid: b461e822c1638994bb8d2411371b2867, type: 2}
 --- !u!23 &1602754442098765487
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -5630,7 +5630,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: board|212|50|1000|0|0|4|PlankAged|True
+  builtFrom: board|212|50|1000|0|0|0|PlankAged|True
   size: {x: 0.21222222, y: 0.05, z: 1}
   cutStart: 0
   cutEnd: 0
@@ -5641,7 +5641,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6111344404361443464}
-  m_Mesh: {fileID: -7926166143767241951, guid: b461e822c1638994bb8d2411371b2867, type: 2}
+  m_Mesh: {fileID: 8222324373186699926, guid: b461e822c1638994bb8d2411371b2867, type: 2}
 --- !u!23 &4238801007391162090
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -6352,7 +6352,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: board|290|50|2550|0|0|4|PlankAged|False
+  builtFrom: board|290|50|2550|0|0|0|PlankAged|False
   size: {x: 0.29, y: 0.05, z: 2.5495098}
   cutStart: 0
   cutEnd: 0
@@ -6363,7 +6363,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7055360874325258917}
-  m_Mesh: {fileID: -5919626225049322115, guid: db11c3b0385e81f4895db8560fa358fe, type: 2}
+  m_Mesh: {fileID: 6387759876518669054, guid: db11c3b0385e81f4895db8560fa358fe, type: 2}
 --- !u!23 &8090997306502364803
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -7559,7 +7559,7 @@ MonoBehaviour:
   walk: 0
   run: 0
   order: 0
-  builtFrom: board|221|50|1000|0|0|4|PlankAged|True
+  builtFrom: board|221|50|1000|0|0|0|PlankAged|True
   size: {x: 0.22076923, y: 0.05, z: 1}
   cutStart: 0
   cutEnd: 0
@@ -7570,7 +7570,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8161387414747240895}
-  m_Mesh: {fileID: 3045478551823370316, guid: 1f0dbf1baafc1934880cec2f30716439, type: 2}
+  m_Mesh: {fileID: 2509588239673983410, guid: 1f0dbf1baafc1934880cec2f30716439, type: 2}
 --- !u!23 &3703784578820579015
 MeshRenderer:
   m_ObjectHideFlags: 0

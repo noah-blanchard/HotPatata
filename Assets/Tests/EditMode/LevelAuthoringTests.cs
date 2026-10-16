@@ -25,6 +25,7 @@ namespace HotPatata.Tests
         public void SetUp()
         {
             LevelPieceWatcher.Enabled = false;
+            MeshCatalog.Folder = StoreFolder + "Catalog/";
             scene = SceneManager.GetActiveScene();
             before = scene.GetRootGameObjects();
             var ground = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -38,6 +39,7 @@ namespace HotPatata.Tests
         public void TearDown()
         {
             foreach (var go in scene.GetRootGameObjects().Except(before)) Object.DestroyImmediate(go);
+            MeshCatalog.Folder = MeshCatalog.DefaultFolder;
             AssetDatabase.DeleteAsset(StoreFolder.TrimEnd('/'));
             LevelPieceWatcher.Enabled = true;
         }
@@ -228,7 +230,7 @@ namespace HotPatata.Tests
         // ------------------------------------------------------------------ meshes
 
         [Test]
-        public void Meshes_StayInMemoryUntilSaved_ThenOneFolderPerPiece()
+        public void Meshes_StayInMemoryUntilSaved_ThenGoToTheCatalogue()
         {
             var deck = Piece<TimberDeckShape>("Deck", new Vector3(0f, 3f, 0f));
             var walk = Piece<TimberWalkShape>("Walk", new Vector3(10f, 0f, 0f));
@@ -238,19 +240,18 @@ namespace HotPatata.Tests
 
             int written = LevelMeshStore.Persist(pieces, StoreFolder);
             Assert.Greater(written, 0);
-            Assert.IsTrue(pieces.SelectMany(p => LevelPieceBuilder.Meshes(p.Output)).All(EditorUtility.IsPersistent), "a mesh left in memory");
-            string deckFolder = LevelMeshStore.PiecesFolder(StoreFolder) + deck.PieceId;
-            var files = Directory.GetFiles(deckFolder, "*.asset");
-            string guid = AssetDatabase.AssetPathToGUID(files[0].Replace('\\', '/'));
+            Assert.IsTrue(pieces.SelectMany(p => LevelPieceBuilder.Meshes(p.Output)).All(m => EditorUtility.IsPersistent(m) && MeshCatalog.Contains(m)),
+                          "a mesh left in memory or out of the catalogue");
+            var before = LevelPieceBuilder.Meshes(deck.Output).ToList();
 
             deck.transform.position += Vector3.up;
             LevelPieceBuilder.Refresh(pieces);
             LevelMeshStore.Persist(pieces, StoreFolder);
-            Assert.AreEqual(files.Length, Directory.GetFiles(deckFolder, "*.asset").Length, "the rebuild left stale meshes");
-            Assert.AreEqual(guid, AssetDatabase.AssetPathToGUID(files[0].Replace('\\', '/')), "the rebuilt mesh is a new asset");
-
-            Assert.AreEqual(1, LevelMeshStore.DeleteOrphans(new[] { walk.PieceId }, StoreFolder));
-            Assert.IsFalse(Directory.Exists(deckFolder), "the removed deck's folder stays");
+            var after = LevelPieceBuilder.Meshes(deck.Output).ToList();
+            Assert.IsTrue(after.All(MeshCatalog.Contains), "the rebuilt deck's meshes are not in the catalogue");
+            Assert.Greater(MeshCatalog.Clean(false), 0, "the moved deck's old meshes stay in the catalogue");
+            Assert.IsTrue(after.All(m => m != null) && LevelPieceBuilder.Meshes(walk.Output).All(m => m != null), "a mesh still used was cleaned away");
+            Assert.IsTrue(before.Any(m => m == null), "nothing of the old deck went");
         }
 
         // ------------------------------------------------------------------ menu

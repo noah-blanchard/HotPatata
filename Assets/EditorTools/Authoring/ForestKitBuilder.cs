@@ -15,12 +15,12 @@ namespace HotPatata.Editor
     /// keeps its system, colliders and gameplay cues (icons, a zone's colour, an hourglass's sand, a curtain's field: a gameplay
     /// element always reads the same, PROJECT_SPEC §19); only the kit's construction (KayKit rims, posts, lintels, boxes) is hidden
     /// and drawn again under a <see cref="CustomVisual"/> (renderers only). Menu HotPatata/Kit/Build Forest Looks; never edit the
-    /// variants by hand: change this builder and rebuild. Meshes in Assets/Art/Generated/ForestKit/.
+    /// variants by hand: change this builder and rebuild. Drawn with the shared timber shapes (<see cref="TimberStructures"/>,
+    /// <see cref="TimberBuildings"/>); meshes in the mesh catalogue (<see cref="MeshCatalog"/>).
     /// </summary>
     public static class ForestKitBuilder
     {
         public const string Folder = "Assets/Prefabs/Variants/Forest/";
-        public const string MeshFolder = "Assets/Art/Generated/ForestKit/";
 
         public const string Winch = Folder + "Forest_Winch.prefab";
         public const string Lever = Folder + "Forest_Lever.prefab";
@@ -58,13 +58,9 @@ namespace HotPatata.Editor
         {
             NatureMaterialBuilder.Ensure(false);
             Directory.CreateDirectory(Folder.TrimEnd('/'));
-            OrganicAssets.Begin(MeshFolder);
-            try
-            {
-                foreach (var (variant, basePath, dress) in Looks()) MakeVariant(basePath, variant, dress);
-            }
-            finally { OrganicAssets.End(); }
+            foreach (var (variant, basePath, dress) in Looks()) MakeVariant(basePath, variant, dress);
             AssetDatabase.SaveAssets();
+            MeshCatalog.CleanSoon();   // the looks' previous meshes, if they changed
             Debug.Log($"[ForestKit] {Looks().Count()} forest looks built in {Folder}");
         }
 
@@ -76,6 +72,7 @@ namespace HotPatata.Editor
                 var instance = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(basePath), preview);
                 instance.name = Path.GetFileNameWithoutExtension(variantPath);
                 dress(instance);
+                MeshCatalog.Flush();   // the prefab holds catalogue meshes: written first
                 PrefabUtility.SaveAsPrefabAsset(instance, variantPath);
             }
             finally { EditorSceneManager.ClosePreviewScene(preview); }
@@ -102,7 +99,7 @@ namespace HotPatata.Editor
             build(mb);
             if (mb.Triangles > 0)
             {
-                var mesh = OrganicAssets.Save(mb.ToMesh("ForestKit " + name, out var slots));
+                var mesh = MeshCatalog.Store(mb.ToMesh("ForestKit " + name, out var slots));
                 var art = new GameObject("Timber");
                 art.transform.SetParent(root, false);
                 art.AddComponent<MeshFilter>().sharedMesh = mesh;
@@ -111,34 +108,14 @@ namespace HotPatata.Editor
             return root;
         }
 
-        static List<Vector3> Circle(Vector3 center, float radius, int samples, Vector3 axisA, Vector3 axisB)
-        {
-            var list = new List<Vector3>();
-            for (int i = 0; i <= samples; i++)
-            {
-                float a = i / (float)samples * Mathf.PI * 2f;
-                list.Add(center + (axisA * Mathf.Cos(a) + axisB * Mathf.Sin(a)) * radius);
-            }
-            return list;
-        }
+        static List<Vector3> Circle(Vector3 center, float radius, int samples, Vector3 axisA, Vector3 axisB) =>
+            TimberStructures.Circle(center, radius, samples, axisA, axisB);
 
-        /// <summary>A rim of short planks round a plate's pad (its radius), lying on the ground.</summary>
-        static void PlankRim(MeshBuilder mb, float radius)
-        {
-            int boards = Mathf.CeilToInt(2f * Mathf.PI * radius / 0.32f);
-            for (int k = 0; k < boards; k++)
-            {
-                float a = k / (float)boards * 360f;
-                var rot = Quaternion.Euler(0f, a, 0f);
-                mb.Box(rot * new Vector3(0f, 0.03f, radius), rot, new Vector3(0.3f, 0.06f, 0.36f), k % 4 == 1 ? Aged : Plank, new Vector2(k * 0.37f, 0f));
-            }
-        }
+        static void PlankRim(MeshBuilder mb, float radius) => TimberStructures.PlankRim(mb, Vector3.zero, radius);
 
-        static void Post(MeshBuilder mb, Vector3 foot, float height, float size = 0.18f) =>
-            mb.Beam(foot + Vector3.down * 0.1f, foot + Vector3.up * height, size, size, Wood);
+        static void Log(MeshBuilder mb, Vector3 a, Vector3 b, float radius, float shift = 0f) => TimberStructures.Log(mb, a, b, radius, shift);
 
-        static void Log(MeshBuilder mb, Vector3 a, Vector3 b, float radius, float shift = 0f) =>
-            mb.Tube(new[] { a, b }, new[] { radius, radius * 0.92f }, 9, Wood, true, shift);
+        static void PlankDeck(MeshBuilder mb, Vector3 size, bool straps) => TimberStructures.PlankDeck(mb, size, straps);
 
         // ------------------------------------------------------------------ the looks
 
@@ -151,23 +128,9 @@ namespace HotPatata.Editor
                 PlankRim(mb, 1.36f);
                 var z = 2.15f;
                 mb.Beam(new Vector3(-1.1f, 0.08f, z), new Vector3(1.1f, 0.08f, z), 0.24f, 0.16f, Wood);   // the sill the frame stands on
-                foreach (float x in new[] { -0.9f, 0.9f })
-                {
-                    Post(mb, new Vector3(x, 0f, z), 1.3f, 0.2f);
-                    mb.Beam(new Vector3(x, 0.1f, z - 0.55f), new Vector3(x, 0.95f, z), 0.1f, 0.12f, Wood);   // a strut
-                }
+                foreach (float x in new[] { -0.9f, 0.9f }) mb.Beam(new Vector3(x, 0.1f, z - 0.55f), new Vector3(x, 0.95f, z), 0.1f, 0.12f, Wood);   // a strut
                 var drum = new Vector3(0f, 0.95f, z);
-                mb.Tube(new[] { drum + Vector3.left * 0.82f, drum + Vector3.right * 0.82f }, new[] { 0.22f, 0.22f }, 14, Wood, true);
-                for (int k = 0; k < 6; k++)
-                {
-                    float x = -0.55f + k * 0.2f;
-                    var ring = Circle(drum + Vector3.right * x, 0.25f, 12, Vector3.up, Vector3.forward);
-                    mb.Tube(ring, ring.Select(_ => 0.028f).ToList(), 5, Rope);
-                }
-                var hub = drum + Vector3.right * 1.05f;
-                mb.Tube(new[] { drum, hub }, new[] { 0.05f, 0.05f }, 8, Iron, true);
-                mb.Beam(hub, hub + new Vector3(0f, 0.42f, -0.12f), 0.06f, 0.06f, Iron);
-                mb.Tube(new[] { hub + new Vector3(0f, 0.42f, -0.12f), hub + new Vector3(0.28f, 0.42f, -0.12f) }, new[] { 0.04f, 0.04f }, 8, Wood, true);
+                TimberStructures.Drum(mb, drum, Quaternion.identity, 1.64f, 0.22f);
                 mb.Tube(new[] { drum + new Vector3(0f, 0.2f, 0.1f), drum + new Vector3(0f, 2.4f, 1.2f) }, new[] { 0.03f, 0.03f }, 6, Rope);   // the rope away to what it works
             });
         }
@@ -199,24 +162,6 @@ namespace HotPatata.Editor
             if (visual != null) Hide(visual.transform);
             var size = box.size;
             Visual(bridge.Platform, "DrawbridgeVisual", box.transform.localPosition, mb => PlankDeck(mb, size, true));
-        }
-
-        /// <summary>Planks across a deck of <paramref name="size"/> (centred, its top at +y/2), two stringers under them, iron straps.</summary>
-        static void PlankDeck(MeshBuilder mb, Vector3 size, bool straps)
-        {
-            float top = size.y / 2f;
-            int boards = Mathf.CeilToInt(size.z / 0.26f);
-            for (int k = 0; k < boards; k++)
-            {
-                float z = -size.z / 2f + (k + 0.5f) * size.z / boards;
-                mb.Box(new Vector3(0f, top - 0.03f, z), Quaternion.identity, new Vector3(size.x - 0.02f, 0.06f, size.z / boards - 0.02f), k % 4 == 1 ? Aged : Plank,
-                       new Vector2(k * 0.31f, k * 0.17f));
-            }
-            foreach (float x in new[] { -size.x / 2f + 0.18f, size.x / 2f - 0.18f })
-                mb.Box(new Vector3(x, top - 0.06f - (size.y - 0.06f) / 2f, 0f), Quaternion.identity, new Vector3(0.22f, size.y - 0.06f, size.z - 0.04f), Wood);
-            if (!straps) return;
-            foreach (float z in new[] { -size.z * 0.3f, 0f, size.z * 0.3f })
-                mb.Box(new Vector3(0f, top + 0.005f, z), Quaternion.identity, new Vector3(size.x - 0.1f, 0.02f, 0.08f), Iron);
         }
 
         /// <summary>A cage lift: a plank floor, four corner posts and a frame on top, a rope up to its pulley (open sides: nothing to lean on).</summary>

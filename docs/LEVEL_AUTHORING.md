@@ -203,8 +203,9 @@ contract** says whether each lock holds.
 
 ## 12. Save
 
-Saving the scene (Ctrl+S) writes the pieces' meshes and the forests' plantings to `Assets/Art/Generated/<level>/Pieces/`
-(one folder per piece; removed pieces' folders are deleted), gathers the level's walk lines, fits each checkpoint's zone round
+Saving the scene (Ctrl+S) writes the pieces' meshes to the shared mesh catalogue (`Assets/Art/Generated/Catalog/`) and the
+forests' plantings to `Assets/Art/Generated/<level>/Foliage/` (removed pieces' plantings are deleted, and meshes nothing uses
+any more leave the catalogue), gathers the level's walk lines, fits each checkpoint's zone round
 its campfire, refits the safety net, bakes
 the mist and writes the sections' ambience. The Console then says what was written, and lists anything a piece cannot be
 built as drawn (a hanger with nothing above, a scaled piece...).
@@ -329,7 +330,8 @@ Select a frozen structure and click **Save to library...** (its Inspector): it b
 window into any level. It is yours: open it in Prefab Mode to change it, or make a Prefab Variant. A structure is scenery:
 place the kit's gameplay prefab (a winch plate, a gate) in it in the level, never inside the prefab.
 
-`HotPatata/Level/Clean Timber Catalog` removes the meshes no scene or prefab uses any more (save first).
+Meshes no scene or prefab uses any more leave the catalogue by themselves when you save (`HotPatata/Level/Clean Mesh Catalog`
+does it at once).
 
 **PatataRanger** (`Assets/Scenes/PatataRanger.unity`) is a level made of frozen timber: every deck, stair, bridge, hut, booth
 and tower is a structure of elements. Open it to move its boards, ropes and posts, or save its booths and towers to the

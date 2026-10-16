@@ -191,7 +191,7 @@ namespace HotPatata.Editor
                 var prop = root.AddComponent<PropSolid>();
                 build(root.transform);
                 if (solid) PropSolidEditor.SetSolid(prop, true, false);
-                TimberCatalog.Flush();
+                MeshCatalog.Flush();
                 PrefabUtility.SaveAsPrefabAsset(root, SetFolder + name + ".prefab");
             }
             finally { Object.DestroyImmediate(root); }
