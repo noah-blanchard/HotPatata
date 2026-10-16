@@ -140,13 +140,7 @@ namespace HotPatata.Editor
             Selection.activeGameObject = finish.gameObject;
         }
 
-        static Vector3 ViewGround()
-        {
-            var view = SceneView.lastActiveSceneView;
-            var pivot = view != null ? view.pivot : Vector3.zero;
-            // the level's ground (its terrain first): what was just placed there is not the ground
-            float ground = LevelNature.GroundAt(EditorSceneManager.GetActiveScene(), new Vector2(pivot.x, pivot.z));
-            return new Vector3(pivot.x, float.IsNaN(ground) ? pivot.y : ground, pivot.z);
-        }
+        /// <summary>The floor the Scene view looks at: a checkpoint or the finish goes on the deck in view, not on the ground under it.</summary>
+        static Vector3 ViewGround() => LevelNature.ViewFloor(EditorSceneManager.GetActiveScene());
     }
 }

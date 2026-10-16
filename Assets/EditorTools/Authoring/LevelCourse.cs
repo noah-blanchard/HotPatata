@@ -14,8 +14,10 @@ namespace HotPatata.Editor
     /// </summary>
     public static class LevelCourse
     {
-        /// <summary>The campfire stands this far beside its checkpoint (the tests want 3 to 6 m).</summary>
-        static readonly Vector3 FireOffset = new Vector3(3.2f, 0f, 1f);
+        /// <summary>The campfire stands this far beside its checkpoint: past its spawns, never on one (the tests want 3 to 6 m).</summary>
+        public const float FireDistance = 3.4f;
+        /// <summary>The room a campfire needs round it: its stone ring and the team gathered at it.</summary>
+        const float FireRoom = 1.1f;
 
         public static List<Checkpoint> Checkpoints(Scene scene) =>
             scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<Checkpoint>(true)).ToList();
@@ -37,9 +39,78 @@ namespace HotPatata.Editor
             var go = CourseKit.AddCheckpoint(parent, $"CP_{id:00}", id, at, 0f);
             Undo.RegisterCreatedObjectUndo(go, "Add checkpoint");
             var cp = go.GetComponent<Checkpoint>();
-            NatureKit.CampfireCheckpoint(go.transform, cp, at + FireOffset);
+            Physics.SyncTransforms();
+            // the fire is the checkpoint's child (it moves with it): its position is local
+            NatureKit.CampfireCheckpoint(go.transform, cp, go.transform.InverseTransformPoint(FireSpot(cp)));
             return cp;
         }
+
+        /// <summary>A checkpoint's campfire (its child), or null.</summary>
+        public static CampfirePresentation FireOf(Checkpoint cp) => cp.GetComponentsInChildren<CampfirePresentation>(true).FirstOrDefault();
+
+        /// <summary>
+        /// Where a checkpoint's campfire goes: <see cref="FireDistance"/> beside it, on the first side (its right, its left, ahead, behind,
+        /// then the diagonals) with floor at its height all round the fire and nothing in the way (a rail, a trunk, a deck's edge); its
+        /// right when no side has room.
+        /// </summary>
+        public static Vector3 FireSpot(Checkpoint cp)
+        {
+            var t = cp.transform;
+            var c = t.position;
+            var ignore = new HashSet<Collider>(cp.GetComponentsInChildren<Collider>(true));
+            float[] turns = { 90f, -90f, 0f, 180f, 45f, -45f, 135f, -135f };
+            foreach (float turn in turns)
+            {
+                var dir = Quaternion.AngleAxis(turn, Vector3.up) * t.forward;
+                var spot = c + dir * FireDistance;
+                if (HasRoom(c, spot, ignore)) return spot;
+            }
+            return c + t.right * FireDistance;
+        }
+
+        static bool HasRoom(Vector3 from, Vector3 spot, HashSet<Collider> ignore)
+        {
+            int solid = LayerMask.GetMask("Environment", "Hazard");
+            bool Floor(Vector3 p) => Physics.RaycastAll(p + Vector3.up * 1f, Vector3.down, 1.6f, solid, QueryTriggerInteraction.Ignore)
+                                            .Any(h => !ignore.Contains(h.collider) && h.normal.y > 0.6f && Mathf.Abs(h.point.y - from.y) < 0.4f);
+            if (!Floor(spot)) return false;
+            for (int k = 0; k < 4; k++)
+                if (!Floor(spot + Quaternion.AngleAxis(k * 90f + 45f, Vector3.up) * Vector3.forward * FireRoom)) return false;
+            // nothing standing round the fire or between it and the spawns
+            bool Standing(Collider col) => !ignore.Contains(col) && !(col is TerrainCollider) && col.GetComponent<WalkableProxy>() == null;
+            // nor on the kit's volumes (a plate, a zone, a gate): the fire marks the checkpoint alone
+            int bodies = LayerMask.GetMask("Player", "PlayerCatch", "Bomb");
+            bool InTheWay(Collider col) => Standing(col) && ((1 << col.gameObject.layer) & bodies) == 0 &&
+                                          (!col.isTrigger || (col.GetComponentInParent<LevelSafetyNet>() == null && col.GetComponentInParent<MistZone>() == null));
+            if (Physics.OverlapCapsule(spot + Vector3.up * (FireRoom + 0.25f), spot + Vector3.up * 1.6f, FireRoom, ~0, QueryTriggerInteraction.Collide).Any(InTheWay)) return false;
+            return !Physics.RaycastAll(from + Vector3.up * 0.8f, spot - from, Vector3.Distance(from, spot), solid, QueryTriggerInteraction.Ignore).Any(h => Standing(h.collider));
+        }
+
+        /// <summary>Puts <paramref name="cp"/>'s campfire back beside it (<see cref="FireSpot"/>) and fits its zone round it (undoable).</summary>
+        public static void PlaceFire(Checkpoint cp)
+        {
+            var fire = FireOf(cp);
+            if (fire == null) return;
+            Physics.SyncTransforms();
+            Undo.RecordObject(fire.transform, "Place the campfire");
+            fire.transform.position = FireSpot(cp);
+            FitZone(cp);
+        }
+
+        /// <summary>Fits <paramref name="cp"/>'s zone round its campfire wherever it stands (a fire moved by hand); returns whether it changed.</summary>
+        public static bool FitZone(Checkpoint cp, bool undo = true)
+        {
+            var fire = FireOf(cp);
+            if (fire == null) return false;
+            var trigger = new SerializedObject(cp).FindProperty("trigger").objectReferenceValue as BoxCollider;
+            if (trigger != null && undo) Undo.RecordObject(trigger, "Fit the checkpoint's zone");
+            bool changed = NatureKit.FitCampfireZone(cp, fire.transform.position, true);
+            if (changed) EditorUtility.SetDirty(cp);
+            return changed;
+        }
+
+        /// <summary>On a save: every checkpoint's zone follows its campfire. Returns how many were refitted.</summary>
+        public static int FitZones(Scene scene) => Checkpoints(scene).Count(cp => FitZone(cp, false));
 
         /// <summary>The finish (the course's end volume) at <paramref name="at"/>.</summary>
         public static FinishZone AddFinish(Transform parent, Vector3 at)

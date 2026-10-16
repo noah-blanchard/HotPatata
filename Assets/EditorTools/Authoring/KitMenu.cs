@@ -96,11 +96,8 @@ namespace HotPatata.Editor
             var scene = EditorSceneManager.GetActiveScene();
             var settings = LevelScenes.SettingsOf(scene);
             var parent = settings != null ? settings.Group(LevelGroup.Kit) : null;
-            var view = SceneView.lastActiveSceneView;
-            var pivot = view != null ? view.pivot : Vector3.zero;
-            // the level's ground (its terrain first): what was just placed there is not the ground
-            float ground = LevelNature.GroundAt(EditorSceneManager.GetActiveScene(), new Vector2(pivot.x, pivot.z));
-            var at = new Vector3(pivot.x, float.IsNaN(ground) ? pivot.y : ground, pivot.z);
+            // the floor the Scene view looks at (a deck, a walkway, the ground), found before the new element stands there
+            var at = LevelNature.ViewFloor(scene);
             var siblings = parent != null ? parent.Cast<Transform>().Select(t => t.name).ToArray() : Array.Empty<string>();
             var go = CourseKit.Place(parent, prefabPathNoExt, ObjectNames.GetUniqueName(siblings, name), at, Quaternion.identity);
             Undo.RegisterCreatedObjectUndo(go, "Add " + name);

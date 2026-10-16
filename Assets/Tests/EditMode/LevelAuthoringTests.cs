@@ -198,6 +198,20 @@ namespace HotPatata.Tests
         }
 
         [Test]
+        public void RingRoundATrunk_JoinsOnItsOuterEdgeNeverOnItsSeam()
+        {
+            // a walkway arriving where the ring's outline closes (at 0 degrees): it joins the outer edge, facing out
+            var deck = Piece<TimberDeckShape>("Ring", new Vector3(0f, 3f, 0f));
+            deck.Outline.Clear();
+            deck.Outline.AddRange(DeckShapes.RoundTrunk(Vector2.zero, 1f, 3f, 0f, 360f).Select(p => new Vector3(p.x, 0f, p.y)));
+            float along = deck.NearestAlong(Origin + new Vector3(4.6f, 3f, 0.05f), out float distance);
+            var point = deck.EdgePoint(along, out var outward);
+            Assert.Less(distance, 0.6f, "joined far from where it arrives");
+            Assert.Greater(Vector3.Dot(outward, Vector3.right), 0.9f, $"joined on the seam (outward {outward})");
+            Assert.Greater(point.x - Origin.x, 3.9f, "joined inside the ring");
+        }
+
+        [Test]
         public void House_WallsStopButTheDoorIsOpenAndTheRoofIsACeiling()
         {
             var house = Piece<HouseShape>("House", Vector3.zero);

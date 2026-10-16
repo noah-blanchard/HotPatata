@@ -266,6 +266,15 @@ component and its references. The logic stays one implementation; maps differ by
 
 Example: `Variants/Platform_Moving_Boulder` (a moving platform drawn as a scanned boulder).
 
+**The forest looks** (`Assets/Prefabs/Variants/Forest/`, M18.3b) are made this way by a builder, `ForestKitBuilder` (menu
+`HotPatata/Kit/Build Forest Looks`; never edit them by hand): `Forest_Winch` (hourglass plate), `Forest_Lever` (hands-free
+plate), `Forest_Drawbridge`, `Forest_Cage` (lift), `Forest_SignalRing` (hoop), `Forest_BellArch` (arch), `Forest_Chute` (tube:
+only its pipe's materials change, a tube lays its pipe per level), `Forest_Net` (body screen), `Forest_Embers` (hot zone),
+`Forest_Sparks` (laser curtain). Each keeps its base's colliders and gameplay cues (icons, a zone's colour, the hourglass's
+sand, a curtain's field); only the kit's construction is hidden and drawn again in timber under a `CustomVisual`. Authored
+levels place them from `GameObject > HotPatata Level > Kit > Forest` (docs/LEVEL_AUTHORING.md §14); the size handles scale
+their visual with them.
+
 ### 4.2 Another motion for an existing system (no code)
 
 - **Moving platform:** move `Waypoint_A` / `Waypoint_B`; set speed, phase, `PingPong` or `Dwell`.

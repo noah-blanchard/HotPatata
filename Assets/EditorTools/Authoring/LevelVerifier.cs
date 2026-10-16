@@ -101,6 +101,17 @@ namespace HotPatata.Editor
             }
             foreach (var cp in checkpoints.Where(c => c.GetComponentInChildren<CampfirePresentation>(true) == null))
                 findings.Add(LevelFinding.Warning($"{cp.name} is a pad, not a campfire (the nature courses' checkpoints are campfires).", cp));
+            foreach (var cp in checkpoints)
+            {
+                var fire = LevelCourse.FireOf(cp);
+                if (fire == null) continue;
+                var off = fire.transform.position - cp.transform.position;
+                float d = new Vector2(off.x, off.z).magnitude;
+                if (d < 3f || d > 6f || Mathf.Abs(off.y) > 0.5f)
+                    findings.Add(LevelFinding.Error($"{cp.name}'s campfire stands {d:0.0} m away and {off.y:+0.0;-0.0} m up: it goes 3 to 6 m beside its spawns, on their floor " +
+                                                    "(Place the campfire beside it, on the checkpoint).", cp, fire.transform.position));
+            }
+            Spawns(scene, findings);
             var finishes = scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<FinishZone>(true)).ToList();
             if (finishes.Count == 0) findings.Add(LevelFinding.Error("No finish (GameObject > HotPatata Level > Finish)."));
             if (finishes.Count > 1) findings.Add(LevelFinding.Error($"{finishes.Count} finishes: a level has one.", finishes[1]));
@@ -110,6 +121,33 @@ namespace HotPatata.Editor
                 var d = LevelCourse.WalkDistances(scene, start, checkpoints.Select(c => c.transform.position).Append(finishes[0].transform.position).ToList());
                 if (!float.IsInfinity(d.Last()) && d.Take(d.Length - 1).Where(x => !float.IsInfinity(x)).Any(x => x > d.Last() + 1f))
                     findings.Add(LevelFinding.Warning("The finish is reached before the last checkpoint.", finishes[0]));
+            }
+        }
+
+        /// <summary>
+        /// Every spawn (the start's and each checkpoint's, spread round its fire) stands on something and has room for a body: a
+        /// checkpoint too near a rail, a trunk or a deck's edge puts a player in the rail or in the air.
+        /// </summary>
+        public static void Spawns(Scene scene, List<LevelFinding> findings)
+        {
+            int solid = LayerMask.GetMask("Environment", "Hazard", BodyScreen.LayerName);
+            foreach (var spawn in scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<PlayerSpawn>(true)))
+            {
+                var p = spawn.transform.position;
+                var cp = spawn.GetComponentInParent<Checkpoint>();
+                string who = cp != null ? $"{cp.name}'s spawn {spawn.name}" : $"The start's spawn {spawn.name}";
+                Object context = cp != null ? (Object)cp.gameObject : spawn.gameObject;
+                bool floor = Physics.RaycastAll(p + Vector3.up * 1f, Vector3.down, 1.6f, solid, QueryTriggerInteraction.Ignore).Any(h => h.normal.y > 0.6f);
+                if (!floor)
+                {
+                    findings.Add(LevelFinding.Error($"{who} stands on nothing (move it onto the deck, clear of its edge).", context, p));
+                    continue;
+                }
+                var blocker = Physics.OverlapCapsule(p + Vector3.up * (WalkProbe.BodyRadius + 0.1f), p + Vector3.up * (WalkProbe.BodyHeight - WalkProbe.BodyRadius),
+                                                     WalkProbe.BodyRadius, solid, QueryTriggerInteraction.Ignore)
+                                     .FirstOrDefault(c => !(c is TerrainCollider) && c.GetComponent<WalkableProxy>() == null);
+                if (blocker != null)
+                    findings.Add(LevelFinding.Error($"{who} stands in {blocker.name} ({blocker.transform.parent?.name}): move it clear of rails and trunks.", context, p));
             }
         }
 

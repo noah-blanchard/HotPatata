@@ -95,7 +95,10 @@ namespace HotPatata
             return transform.position;
         }
 
-        /// <summary>How far round the outline (0..1) the edge point nearest <paramref name="world"/> is, and its flat distance.</summary>
+        /// <summary>
+        /// How far round the outline (0..1) the edge point nearest <paramref name="world"/> is, and its flat distance. Never on a seam
+        /// (a whole ring's outline doubling back on itself, <see cref="SeamGap"/>): nothing is joined there, it has no outside.
+        /// </summary>
         public float NearestAlong(Vector3 world, out float distance)
         {
             var ring = WorldOutline();
@@ -108,6 +111,11 @@ namespace HotPatata
                 var b = ring[(i + 1) % ring.Count];
                 var ab = b - a;
                 float l = ab.magnitude;
+                if (IsSeam(ring, i))
+                {
+                    run += l;
+                    continue;
+                }
                 float t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / Mathf.Max(1e-6f, ab.sqrMagnitude));
                 float dist = Vector2.Distance(p, a + ab * t);
                 if (dist < distance)
@@ -118,6 +126,27 @@ namespace HotPatata
                 run += l;
             }
             return best;
+        }
+
+        /// <summary>Two outline edges closer than this (not neighbours) are a seam (a ring round a trunk): no rail, no join.</summary>
+        public const float SeamGap = 0.35f;
+
+        /// <summary>Whether edge <paramref name="i"/> of <paramref name="ring"/> lies on a seam: its middle within <see cref="SeamGap"/> of an edge that is not its neighbour.</summary>
+        public static bool IsSeam(IList<Vector2> ring, int i)
+        {
+            int n = ring.Count;
+            if (n < 4) return false;
+            var mid = (ring[i] + ring[(i + 1) % n]) * 0.5f;
+            for (int j = 0; j < n; j++)
+            {
+                int gap = Mathf.Abs(j - i);
+                if (gap <= 1 || gap >= n - 1) continue;
+                var a = ring[j];
+                var ab = ring[(j + 1) % n] - a;
+                float t = Mathf.Clamp01(Vector2.Dot(mid - a, ab) / Mathf.Max(1e-6f, ab.sqrMagnitude));
+                if (Vector2.Distance(mid, a + ab * t) < SeamGap) return true;
+            }
+            return false;
         }
 
         public static float Perimeter(IList<Vector2> p)

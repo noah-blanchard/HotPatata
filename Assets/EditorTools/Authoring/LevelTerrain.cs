@@ -292,6 +292,8 @@ namespace HotPatata.Editor
             if (settings == null) return "";
             var parts = new List<string>();
             if (FitSafetyNet(scene)) parts.Add("safety net refitted");
+            int zones = LevelCourse.FitZones(scene);
+            if (zones > 0) parts.Add($"{zones} checkpoint zone(s) fitted round their campfire");
             if (Terrains(scene).Any())
             {
                 if (BakeMist(scene, settings)) LookBuilder.ApplyToScene(scene);   // a new mist field takes the day's still mist

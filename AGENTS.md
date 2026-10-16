@@ -23,7 +23,8 @@ throwing a live bomb between them.
   - `IndustrialPlant` (closed lamp-lit factory, eleven rooms, 9 checkpoints, fourth in the menu);
   - `PassSandbox` (one bomb, the kit demo, the pass range; last in the menu).
   - Authored levels (M18): scenes in `Assets/Scenes/Levels/` the owner builds by hand with the `HotPatata/Level` tools
-    (`docs/LEVEL_AUTHORING.md`); in the menu only once registered.
+    (`docs/LEVEL_AUTHORING.md`); in the menu only once registered. `OldOak` ("The Old Oak", 3 checkpoints, before the sandbox in
+    the menu) is the guide's example, made with the tools.
   - The older courses (`PrototypeCourse`, `PlaytestCourse`, `PatataPark`, `PatataWorks`, `IndustrialLab`) were removed;
     their obstacle layouts are archived in `docs/OBSTACLES.md` §3.2.
 - **Code:** all gameplay code is in `Assets/Scripts/HotPatata.asmdef` (namespace `HotPatata`).
@@ -45,8 +46,9 @@ its own misty day, giant trees, a forest floor that follows the course); its pla
 course for three: heavy and hourglass plates, sun beams, pivots that carry their riders, a level's minimum players) is built;
 its playtest with three is open. M16 (audio: a drop-in sound library, `Assets/Audio/README.md`) is built; its listening pass is
 open. M18 (authored levels: the owner builds levels by hand in the Editor) has its steps 1 (the level and its timber) and 2 (the nature)
-built and tried by the owner, and its step 3a (the game: kit handles, wiring, contracts, Verify Level, route runner) built;
-step 3b (the kit's forest looks, props, the example level) follows the owner's try. M14 (contracts for PatataWilds) is next.
+built and tried by the owner, its step 3a (the game: kit handles, wiring, contracts, Verify Level, route runner) built and
+merged, and its step 3b (the kit's forest looks, props, the example level `OldOak`, checkpoints whose campfire finds its place)
+built; the owner's try of 3a and 3b is open. M14 (contracts for PatataWilds) is next.
 The live table is at the top of `docs/MVP_TASKS.md`.
 
 ## Docs (read before implementing)
@@ -58,7 +60,7 @@ The live table is at the top of `docs/MVP_TASKS.md`.
 | `docs/MVP_TASKS.md` | Ordered milestones with acceptance criteria and status. Work in order; do not skip criteria. |
 | `docs/TESTING.md` | Test suites, running tests, dev tools, bots, latency simulation, CI. |
 | `docs/OBSTACLES.md` | Every obstacle system, its looks, where the courses use it (removed courses archived), and how to make your own obstacle prefab. |
-| `docs/LEVEL_AUTHORING.md` | Making a level by hand in the Editor (authored levels, M18): new level, timber pieces, handles, presets, the menu. |
+| `docs/LEVEL_AUTHORING.md` | Making a level by hand in the Editor (authored levels, M18): new level, timber pieces, handles, presets, nature, the game, forest looks, props, the example level, the menu. |
 
 Keep the docs true: when a change alters behaviour, a rule or a milestone status, update the matching doc in the
 same PR. Code comments cite doc sections (e.g. `PROJECT_SPEC §8.3`), so never renumber sections.

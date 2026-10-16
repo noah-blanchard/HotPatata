@@ -24,7 +24,7 @@ namespace HotPatata.Editor
         /// <summary>The share of aged boards of a worn piece (a new one keeps the kit's own).</summary>
         public const float AgedDeck = 0.6f, AgedWalk = 0.55f, AgedBridge = 0.65f;
         /// <summary>Two outline edges closer than this (not neighbours) are a seam: no rail along it (a ring round a trunk).</summary>
-        public const float SeamGap = 0.35f;
+        public const float SeamGap = TimberDeckShape.SeamGap;
         /// <summary>
         /// A piece wider or longer than this (m), or with this many points, is not built: a point thrown far away (a click near the
         /// horizon) would make the kit lay boards for minutes and freeze the Editor.

@@ -9,10 +9,12 @@ The tools come in three steps (M18). This guide covers what is built:
 | 1. The level and its timber | a new level scene, decks, walkways and stairs, rope bridges, railings, houses, trestle towers; the menu; the day | built |
 | 2. The nature | the terrain in the nature look, valley walls, water, giant trees, forests (planted or painted), mist, sound | built |
 | 3a. The game | checkpoints numbered along the course, size handles, wiring, contracts, Verify Level, the route runner, Play from here | built |
-| 3b. The look | forest looks for the kit, props, the example level | next |
+| 3b. The look | forest looks for the kit, props, the example level (`OldOak`) | built |
 
 A good order: make the level (§1), shape the land (§2), plant the giant trees (§3), hang the timber on them (§4 to §7),
-plant the forest round it (§8), the mist and the sound (§9), then the game (§10), checked and played (§11).
+plant the forest round it (§8), the mist and the sound (§9), then the game (§10), checked and played (§11), and dress it
+(§14, §15). The example level, `Assets/Scenes/Levels/OldOak.unity` ("The Old Oak", §16), is made this way: open it to see
+each tool's result.
 
 ---
 
@@ -141,25 +143,34 @@ Two ways, together:
 
 ## 10. The game: checkpoints, kit, wiring, contracts
 
-**Checkpoints and the finish.** `GameObject > HotPatata Level > Checkpoint (campfire)` places a checkpoint with its campfire
-beside it (the nature courses' checkpoints are campfires); `Finish` places the end. Place them in any order, then
+**Checkpoints and the finish.** Look at the floor where it goes (a deck, a walkway, the ground: the middle of the Scene view)
+and `GameObject > HotPatata Level > Checkpoint (campfire)`: the checkpoint stands there, its four spawns round it, and its
+campfire (its child) 3.4 m beside them, on the first side with floor and room (its right, left, ahead, behind, then the
+diagonals): never off the deck, in a rail or on a plate. `Finish` places the end the same way. Place them in any order, then
 **Number checkpoints along the course** (on the `Level` object): they are numbered 1, 2, 3... in the order a team reaches
 them walking from the start (along the walkways and bridges, across the decks and the ground).
 
-**The kit.** `GameObject > HotPatata Level > Kit` (or right click in the Hierarchy) places any kit element where the Scene view
-looks, standing on the ground (raised where it hangs: a bridge, a hoop), in `Level/Kit`, selected: doors (one that rises, one
+A checkpoint needs room: its spawns stand 1.2 m round it and its fire 3.4 m away, so put it on a deck about 6 m by 9 m or more
+(or the ground). Select it to see, in the Scene view, its **zone** (orange box: the team reaches the checkpoint there), its
+**spawns** (blue rings) and its **campfire** (orange ring, where the team gathers): drag the ring to move the fire (3 to 6 m
+away, on the same floor); the zone follows it. **Place the campfire beside it** puts it back; the zone is also fitted round the
+fire on every save. Verify Level says when a spawn stands in a rail or in the air, or a fire is too near or too far.
+
+**The kit.** `GameObject > HotPatata Level > Kit` (or right click in the Hierarchy) places any kit element on the floor the Scene
+view looks at (a deck, a walkway or the ground; raised where it hangs: a bridge, a hoop), in `Level/Kit`, selected: doors (one that rises, one
 that slides aside), bridges, drawbridge, pivot, lift, moving, falling and plain platforms, conveyor; plates (plain,
 hands-free, heavy, hourglass), hoop, arch, sun beam, switch; hot, cold and forbidden zones, laser curtain, body screen, tube,
-cannon, rotating bar, sweeper, piston, crusher, windmill, launch pad, kill zone (what each does: docs/OBSTACLES.md). They keep
-the kit's own look for now (the forest looks come with step 3b). Select one in the Scene view:
+cannon, rotating bar, sweeper, piston, crusher, windmill, launch pad, kill zone (what each does: docs/OBSTACLES.md), in the
+kit's own look or, under `Kit/Forest`, in the forest's (§14). Select one in the Scene view:
 
 - a **door, bridge or lift**: drag its yellow box to size it; its open position is the blue ghost box: drag the blue ball to
   move where it opens to (and how far): up for a door that rises, aside for one that slides;
 - a **zone** (hot, cold, forbidden), a **laser curtain**, a **body screen**: drag its box to size it;
 - a **sun beam**: drag the square at its end to lengthen it; a **plate**: drag the square at its edge to size it.
 
-Every part follows (visual, collision, lethal edge). Ctrl+Z undoes it. A drawbridge or a pivot turns on a hinge: size it
-in its inspector.
+Every part follows (visual, collision, lethal edge; a forest look's own visual is scaled with it). Ctrl+Z undoes it. A
+drawbridge or a pivot turns on a hinge: size it in its inspector. A drawbridge lies flat when open; to make it climb to a
+higher deck, turn its `Waypoint_Open` child up (a negative X rotation: an 8 m bridge climbing 3.5 m is -26°), as the example's.
 
 **Wiring.** One source drives one actuator (no AND, no OR). Select the door (bridge, lift, switch) and press **Link: pick
 its source** in its inspector, then click the plate, the hoop or the sun beam that drives it. A switch's **Link: add a
@@ -178,8 +189,9 @@ contract** says whether each lock holds.
 
 - **Verify Level** (on the `Level` object, or `HotPatata/Level/Verify Level`): everything a level must hold, in a list.
   Click a line to select what it is about. Errors keep a level out of the menu: a section without a contract, a lock that
-  does not hold, checkpoint ids that skip, no finish, water without a kill zone, a pass out of reach or under a ceiling,
-  kit outside the level's section, a piece not built, the menu out of date. Warnings are worth a look: something in a
+  does not hold, checkpoint ids that skip, no finish, a spawn in a rail or in the air, a campfire too near, too far or on
+  another floor, water without a kill zone, a pass out of reach or under a ceiling, kit outside the level's section, a piece
+  not built, the menu out of date. Warnings are worth a look: something in a
   walkway's way, a step past its end, plants on a path, checkpoints out of order. It also gives the level's budget
   (triangles, plants, meshes).
 - **Run Route Runner** (on the `Level` object, or the `HotPatata/Level` menu): Play starts and player 1 walks every
@@ -191,7 +203,8 @@ contract** says whether each lock holds.
 ## 12. Save
 
 Saving the scene (Ctrl+S) writes the pieces' meshes and the forests' plantings to `Assets/Art/Generated/<level>/Pieces/`
-(one folder per piece; removed pieces' folders are deleted), gathers the level's walk lines, refits the safety net, bakes
+(one folder per piece; removed pieces' folders are deleted), gathers the level's walk lines, fits each checkpoint's zone round
+its campfire, refits the safety net, bakes
 the mist and writes the sections' ambience. The Console then says what was written, and lists anything a piece cannot be
 built as drawn (a hanger with nothing above, a scaled piece...).
 
@@ -205,6 +218,63 @@ built as drawn (a hanger with nothing above, a scaled piece...).
   checkpoint. **Remove from the menu** takes it out.
 
 A level is official (shipped in the menu) only once Verify Level reports no error.
+
+## 14. The kit in the forest look
+
+`GameObject > HotPatata Level > Kit > Forest` places the kit in timber, rope and stone (Prefab Variants of the kit in
+`Assets/Prefabs/Variants/Forest/`, docs/OBSTACLES.md §4.1): the same systems, colliders and gameplay cues (a plate's icon, a
+zone's colour, an hourglass's sand, a curtain's field), drawn for the forest.
+
+| Forest look | Kit element | Note |
+|---|---|---|
+| Winch | hourglass plate | a plank rim and a drum on its frame behind the pad; its sand counts down as the kit's |
+| Lever | hands-free plate | a plank rim and a lever on its block at the pad's edge |
+| Drawbridge | drawbridge | planks on two stringers with iron straps |
+| Cage | lift | a plank floor, four corner posts, a frame and its rope (open sides) |
+| Signal ring | hoop | a bent branch bound with rope, hung on two ropes |
+| Bell arch | arch | two log posts, a log lintel with braces and its bell |
+| Chute | tube | the kit's tube in wood (its pipe follows its path, so only its material changes) |
+| Net | body screen | a rope net between two log posts |
+| Embers | hot zone | charred logs and coals on its floor, sparks rising; its colour stays |
+| Sparks | laser curtain | a timber frame with an iron rail, sparks streaming down; its field stays |
+
+Size them with the same handles (§10). `HotPatata/Kit/Build Forest Looks` rebuilds them from their builder; never edit
+them by hand.
+
+## 15. Props
+
+**The library.** `Assets/Prefabs/Props/` holds the CC0 models at their real size, sorted by kind (Rocks, Wood, Plants,
+Containers, Household, Lanterns, Ruins, Wildlife), drawn in the nature look, plus ready sets in `Sets/` (a workbench, a
+woodpile, a rope corner). Drag one from the Project window into the Scene view, under `Level/Props`. A prop is decoration
+(walked through) until its **Solid** box is ticked (inspector): tick it for anything that looks walkable or in the way (the
+workbench and the woodpile are solid already). Mind a prop's size: some are groups (`wooden_barrels_01` is three barrels and
+their staves, 4 m wide). Keep props out of walkways, passes and checkpoint clearings. `HotPatata/Level/Build Prop Library`
+rebuilds the library.
+
+**The brush.** `HotPatata/Level/Props Brush`: choose pebbles, twigs, roots, moss or ferns, its radius and density, press
+**Paint**, then click and drag on the ground or a deck. It never paints on a walkway or a bridge's line. Shift erases what the
+brush painted (nothing else); Escape stops.
+
+## 16. The example level
+
+`Assets/Scenes/Levels/OldOak.unity`, "The Old Oak" in the menu (before the sandbox): three checkpoints, about three minutes
+for two players, made with these tools only.
+
+| Section | What it forces | Tools |
+|---|---|---|
+| Start to CP1 | the forest path, the oak's stair, the oak walk to the winch landing | ground walkway, giant tree, ring deck, stair, walkway, forest |
+| CP1 to CP2 | one holds the winch; the drawbridge climbs 3.5 m to the ridge; its sand lets the last one cross | hourglass winch wired to the drawbridge, a gap lock |
+| CP2 to CP3 | sparks in the hut's far door burn the bomb: one walks through, the other lobs it over the roof | house with a ceiling, laser curtain, a climb lock |
+| CP3 to the finish | a rope bridge over a fire pit whose embers burn the fuse fast | rope bridge, hot zone, a gap lock, the finish on the crow's nest |
+
+![The oak stair up to the terrace](images/old-oak/1-oak-stair.jpg)
+![The winch landing: CP1 and its campfire, the winch, the drawbridge raised](images/old-oak/2-winch-landing.jpg)
+![The ridge, the hut walk and the spark hut](images/old-oak/3-spark-hut.jpg)
+![The pine lookout and the rope bridge over the embers to the crow's nest](images/old-oak/4-rope-bridge.jpg)
+
+Around it: the valley's walls, a pond with its mist, a forest kept off the paths, props (the camp at the start, lanterns,
+barrels). A ring deck's seam (where its outline closes) is turned away from its joins. Verify Level reports nothing on it and
+the route runner walks it (`AuthoredLevelTests`).
 
 ## Rules
 
