@@ -276,9 +276,54 @@ Around it: the valley's walls, a pond with its mist, a forest kept off the paths
 barrels). A ring deck's seam (where its outline closes) is turned away from its joins. Verify Level reports nothing on it and
 the route runner walks it (`AuthoredLevelTests`).
 
+## 17. Freeze timber into elements
+
+A piece is redrawn from its settings, so you cannot move one of its boards. When its shape is right, **freeze** it: select
+it and click **Freeze into elements** in its Inspector. It becomes its boards, beams, posts, ropes and iron, each a
+GameObject you move, turn or delete as usual, sorted in groups (Boards, Frame, Supports, each rail). It looks exactly the
+same.
+
+- **One way.** The piece's handles and settings are gone (Ctrl+Z only). Freeze when the shape is settled.
+- **Walking.** The boards have no collider of their own: the structure lays a smooth walking surface under its walkable
+  boards when you let go of the mouse. Move a board up a little, the surface follows; **delete boards and it is a real hole**.
+- **What collides.** A board marked **Solid** stops players and the bomb (a wall's boards, a hut's logs, a tower's legs); the
+  rest is drawn only. The invisible walls of rails and bridge sides are **Wall** objects: drag their points (cyan cubes).
+- **Ropes.** Drag a rope's points (white) or its ends (yellow). An end let go on another element (or anything solid) hangs on
+  it (green) and follows it when it moves. **Attach** and **Detach** in the rope's Inspector do the same.
+- **Boards.** Drag a board's yellow end dots to make it longer or shorter (the other end stays). Change its size, its cuts or
+  its wood in the Inspector.
+- A walkway or bridge attached to a deck you freeze stays where it is, its end now a free point.
+
+## 18. Elements by hand
+
+`GameObject > HotPatata Level > Element` adds one **Plank**, **Post**, **Beam**, **Rope** or **Iron Strap** where the Scene
+view looks. With an element selected it goes beside it, in its structure (a plank there is part of the walking surface).
+
+With several elements selected, the Inspector's buttons work on all of them:
+
+| Button | What it does |
+|---|---|
+| New boards, Aged boards, Timber | their wood |
+| Solid, Drawn only | whether they stop players and the bomb |
+| Jitter | moves and turns each a little at random: hand-laid, not machined |
+| Set down | each onto what is under it (the ground, a deck, other timber) |
+| Align | each board level with the boards beside it |
+
+Verify Level warns about a rope that hangs on nothing and a post that stands on nothing.
+
+## 19. The structure library
+
+Select a frozen structure and click **Save to library...** (its Inspector): it becomes a prefab in
+`Assets/Prefabs/Structures/` (pick the folder for its kind: Shelters, Gantries, Signs, Pulleys...). Drag it from the Project
+window into any level. It is yours: open it in Prefab Mode to change it, or make a Prefab Variant. A structure is scenery:
+place the kit's gameplay prefab (a winch plate, a gate) in it in the level, never inside the prefab.
+
+`HotPatata/Level/Clean Timber Catalog` removes the meshes no scene or prefab uses any more (save first).
+
 ## Rules
 
-- Never edit a piece's `Generated` child: change the piece and it is rebuilt.
+- Never edit a piece's `Generated` child: change the piece and it is rebuilt. A frozen structure's elements are yours to
+  edit; never its `Walk surface` (it is laid from its boards).
 - Do not scale pieces: draw their size with their points.
 - The rules of AGENTS.md hold for authored levels as for the courses: collisions by layers, the kit's prefabs as they are,
   water over a kill zone, decoration out of the passes, a contract per section.

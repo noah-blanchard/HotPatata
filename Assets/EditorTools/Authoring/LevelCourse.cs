@@ -196,6 +196,12 @@ namespace HotPatata.Editor
                     nodes.Add(new Vector3(centre.x, deck.TopAt(centre), centre.y));
                 }
             }
+            // frozen timber: its walk lines, and every walkable board's top (the deck surfaces join them to the rest)
+            foreach (var frozen in WalkSurfaceBuilder.Structures(scene))
+            {
+                if (frozen.WalkLine.Length > 1) Chain(Curves.Resample(frozen.WalkLine, 1f));
+                nodes.AddRange(WalkSurfaceBuilder.StandingPoints(frozen));
+            }
             int targetsFrom = nodes.Count;
             nodes.AddRange(targets);
             // the ground between the pieces: a point every GroundStep metres over the area, on the ground

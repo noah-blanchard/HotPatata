@@ -81,6 +81,9 @@ namespace HotPatata.Editor
 
         public static Material[] Materials(int[] slots) => slots.Select(s => NatureMaterialBuilder.Load(SlotMaterials[s])).ToArray();
 
+        /// <summary>A mesh for drawn timber, every material slot, telling the <see cref="ElementRecorder"/> what it lays when one listens.</summary>
+        public static MeshBuilder Visual() => new MeshBuilder(Slots) { Recorder = ElementRecorder.Active };
+
         // ------------------------------------------------------------------ deck
 
         public struct DeckSpec
@@ -106,7 +109,7 @@ namespace HotPatata.Editor
         {
             var poly = Poly2.CounterClockwise(outline);
             var rng = new Random(Seed(name, spec.seed));
-            var vis = new MeshBuilder(Slots);
+            var vis = Visual();
             float w = spec.boardWidth > 0f ? spec.boardWidth : 0.2f;
             float g = spec.grain * Mathf.Deg2Rad;
             var along = new Vector2(Mathf.Sin(g), Mathf.Cos(g));
@@ -114,6 +117,7 @@ namespace HotPatata.Editor
             var origin = poly.Aggregate(Vector2.zero, (s, p) => s + p) / poly.Count;
 
             // boards
+            var boards = ElementRecorder.Tag("Boards", TimberElementKind.Plank, TimberWalk.Slab);
             float aMin = poly.Min(p => Vector2.Dot(p - origin, across)), aMax = poly.Max(p => Vector2.Dot(p - origin, across));
             int row = 0;
             for (float c = aMin + w * 0.5f; c < aMax - w * 0.3f; c += w + 0.012f, row++)
@@ -138,13 +142,16 @@ namespace HotPatata.Editor
                     }
                 }
             }
+            boards.Dispose();
 
             // rim board round the edge, under the boards' ends
+            using var frame = ElementRecorder.Tag("Frame", TimberElementKind.Trim);
             var rimPath = Poly2.Offset(poly, -0.04f).Select(p => new Vector3(p.x, top(p) - BoardThickness, p.y)).ToList();
             rimPath.Add(rimPath[0]);
             vis.Sweep(rimPath, 0.06f, 0.26f, Timber, MeshBuilder.Anchor.Top);
 
             // joists across the boards, bearers along them
+            using var beams = ElementRecorder.Tag(kind: TimberElementKind.Beam);
             float joistY = -BoardThickness, bearerY = joistY - 0.2f;
             var inner = Poly2.Offset(poly, -0.12f);
             float dMin = poly.Min(p => Vector2.Dot(p - origin, along)), dMax = poly.Max(p => Vector2.Dot(p - origin, along));
@@ -176,7 +183,9 @@ namespace HotPatata.Editor
                     }
                 }
             }
-            if (!spec.held) HoldDeck(vis, poly, top, posts, site, rng, spec.support);
+            if (!spec.held)
+                using (ElementRecorder.Tag("Supports", TimberElementKind.Post))
+                    HoldDeck(vis, poly, top, posts, site, rng, spec.support);
 
             var root = Finish(parent, name, vis, ProxySlab(poly, top), WalkableProxy.Kind.Deck, 0.08f);
             if (spec.rails) RailOutline(root.transform, name, poly, top, spec.openings, site.trunks, spec.railSkip);
@@ -276,6 +285,7 @@ namespace HotPatata.Editor
                     {
                         float d = Mathf.Clamp(gap * 0.85f, 1.2f, 5.5f);
                         var onTrunk = t.center + (q - t.center).normalized * (t.radius + 0.04f);
+                        using var brace = ElementRecorder.Tag(kind: TimberElementKind.Brace);
                         vis.Beam(new Vector3(onTrunk.x, underside - d, onTrunk.y), point, 0.16f, 0.18f, Timber);
                         low.Add(underside - d);
                     }
@@ -325,8 +335,12 @@ namespace HotPatata.Editor
             float splay = 0.07f * drop;
             var footL = new Vector3(left.x, gl - 0.35f, left.z) - side * splay;
             var footR = new Vector3(right.x, gr - 0.35f, right.z) + side * splay;
-            vis.Beam(footL, left, 0.22f, 0.22f, Timber);
-            vis.Beam(footR, right, 0.22f, 0.22f, Timber);
+            using (ElementRecorder.Tag(kind: TimberElementKind.Post))
+            {
+                vis.Beam(footL, left, 0.22f, 0.22f, Timber);
+                vis.Beam(footR, right, 0.22f, 0.22f, Timber);
+            }
+            using var braces = ElementRecorder.Tag(kind: TimberElementKind.Brace);
             vis.Beam(left - side * 0.35f + Vector3.down * 0.1f, right + side * 0.35f + Vector3.down * 0.1f, 0.2f, 0.24f, Timber);
             Vector3 L(float y) => Vector3.Lerp(footL, left, Mathf.InverseLerp(footL.y, left.y, y));
             Vector3 Rr(float y) => Vector3.Lerp(footR, right, Mathf.InverseLerp(footR.y, right.y, y));
@@ -352,8 +366,10 @@ namespace HotPatata.Editor
                 float drop = topCenter.y - site.GroundAt(new Vector2(heads[i].x, heads[i].z));
                 var f = heads[i] + new Vector3(corners[i].x, 0f, corners[i].y) * (0.06f * drop);
                 feet[i] = new Vector3(f.x, site.GroundAt(new Vector2(f.x, f.z)) - 0.35f, f.z);
-                vis.Beam(feet[i], heads[i], 0.26f, 0.26f, Timber);
+                using (ElementRecorder.Tag(kind: TimberElementKind.Post))
+                    vis.Beam(feet[i], heads[i], 0.26f, 0.26f, Timber);
             }
+            using var girts = ElementRecorder.Tag(kind: TimberElementKind.Brace);
             Vector3 Leg(int i, float y) => Vector3.Lerp(feet[i], heads[i], Mathf.InverseLerp(feet[i].y, heads[i].y, y));
             float bottom = feet.Max(f => f.y) + 0.8f;
             float prev = bottom;
@@ -380,6 +396,7 @@ namespace HotPatata.Editor
             if (gap > reach) return false;
             float d = Mathf.Clamp(gap * 0.85f, 1.2f, 5.5f);
             var on = t.center + (q - t.center).normalized * (t.radius + 0.04f);
+            using var brace = ElementRecorder.Tag(kind: TimberElementKind.Brace);
             vis.Beam(new Vector3(on.x, point.y - d, on.y), point, 0.16f, 0.18f, Timber);
             return true;
         }
@@ -393,7 +410,9 @@ namespace HotPatata.Editor
             if (above.Count == 0) { Unheld.Add(point); return; }
             var best = above.OrderBy(a => Vector2.Distance(new Vector2(a.x, a.z), q)).First();
             if (Vector2.Distance(new Vector2(best.x, best.z), q) > 22f) { Unheld.Add(point); return; }
+            using var hanger = ElementRecorder.Tag(kind: TimberElementKind.Rope);
             vis.Tube(new[] { point, best }, new[] { 0.028f, 0.028f }, 6, Rope);
+            using var stirrup = ElementRecorder.Tag(kind: TimberElementKind.Iron);
             vis.Beam(point + Vector3.down * 0.05f, point + Vector3.up * 0.25f, 0.06f, 0.06f, Iron);
         }
 
@@ -406,8 +425,10 @@ namespace HotPatata.Editor
                 float a = i / 24f * Mathf.PI * 2f;
                 ring.Add(new Vector3(t.center.x + Mathf.Cos(a) * (t.radius + 0.03f), y, t.center.y + Mathf.Sin(a) * (t.radius + 0.03f)));
             }
-            vis.Sweep(ring, 0.04f, height, Iron, MeshBuilder.Anchor.Center, false);
+            using (ElementRecorder.Tag(kind: TimberElementKind.Iron))
+                vis.Sweep(ring, 0.04f, height, Iron, MeshBuilder.Anchor.Center, false);
             if (!collar) return;
+            using var trim = ElementRecorder.Tag(kind: TimberElementKind.Trim);
             // a timber collar under the band: the deck's ledger bolted round the trunk
             var collarRing = ring.Select(p => p + (p - new Vector3(t.center.x, y, t.center.y)).normalized * 0.06f + Vector3.down * 0.2f).ToList();
             vis.Sweep(collarRing, 0.1f, 0.22f, Timber, MeshBuilder.Anchor.Center, false);
@@ -455,7 +476,7 @@ namespace HotPatata.Editor
                 flights.Add((i, j));
                 i = j;
             }
-            var vis = new MeshBuilder(Slots);
+            var vis = Visual();
             var sides = new Vector3[n];
             for (int i = 0; i < n; i++)
             {
@@ -464,6 +485,8 @@ namespace HotPatata.Editor
                 sides[i] = Vector3.Cross(Vector3.up, flat).normalized;
             }
             // flights become straight ramps between their ends (the proxy), with even steps on them
+            ElementRecorder.RunSurface(0, width, ProxyDepth);
+            var treads = ElementRecorder.Tag("Boards", TimberElementKind.Plank, TimberWalk.Run, 0);
             bool[] inFlight = new bool[n];
             foreach (var (i0, i1) in flights)
             {
@@ -483,6 +506,7 @@ namespace HotPatata.Editor
                     var (c, side) = AtS(p, s, sides, sc);
                     float y = p[i0].y + (k + 0.5f) * stepRise;
                     var fwd = Vector3.Cross(side, Vector3.up).normalized;
+                    ElementRecorder.Order(Mathf.RoundToInt(sc * 100f));
                     // a tread of two boards, its front edge a little proud
                     for (int b = 0; b < 2; b++)
                     {
@@ -493,7 +517,8 @@ namespace HotPatata.Editor
                     // the riser board under the tread's front
                     var riserTop = new Vector3(c.x, y - BoardThickness, c.z) - fwd * stepRun * 0.5f;
                     if (Mathf.Abs(stepRise) > 0.05f)
-                        vis.Box(riserTop + Vector3.down * Mathf.Abs(stepRise) * 0.5f, Quaternion.LookRotation(side, Vector3.up),
+                        using (ElementRecorder.Tag(kind: TimberElementKind.Trim, walk: TimberWalk.None))
+                            vis.Box(riserTop + Vector3.down * Mathf.Abs(stepRise) * 0.5f, Quaternion.LookRotation(side, Vector3.up),
                                 new Vector3(0.03f, Mathf.Abs(stepRise) - 0.02f, width - 0.1f), Timber);
                 }
             }
@@ -510,10 +535,13 @@ namespace HotPatata.Editor
                 var up = Vector3.Cross(fwd, side).normalized;
                 if (up.y < 0f) up = -up;
                 float len = width - 0.02f + R(rng, -0.03f, 0.03f);
+                ElementRecorder.Order(Mathf.RoundToInt(sc * 100f));
                 vis.Box(c - up * BoardThickness * 0.5f + side * R(rng, -0.02f, 0.02f), Quaternion.LookRotation(side, up),
                         new Vector3(boardStep - 0.015f, BoardThickness, len), rng.NextDouble() < Share(spec.agedShare, 0.25) ? PlankAged : Plank, new Vector2(R(rng, 0f, 3f), R(rng, 0f, 3f)));
             }
+            treads.Dispose();
             // stringers under both edges, following the smooth surface
+            var stringers = ElementRecorder.Tag("Frame", TimberElementKind.Beam);
             float inset = width * 0.5f - 0.08f;
             var left = surface.Select((v, i) => v - sides[i] * inset + Vector3.down * BoardThickness).ToList();
             var right = surface.Select((v, i) => v + sides[i] * inset + Vector3.down * BoardThickness).ToList();
@@ -521,6 +549,8 @@ namespace HotPatata.Editor
             var rightS = Curves.Resample(right, 0.5f);
             vis.Sweep(leftS, 0.08f, 0.26f, Timber, MeshBuilder.Anchor.Top);
             vis.Sweep(rightS, 0.08f, 0.26f, Timber, MeshBuilder.Anchor.Top);
+            stringers.Dispose();
+            using var supports = ElementRecorder.Tag("Supports", TimberElementKind.Post);
 
             // supports: sleepers where the walk lies on the ground, else a braced trestle bent about every 5.5 m, a brace to a trunk,
             // or hangers from the limbs above
@@ -533,6 +563,7 @@ namespace HotPatata.Editor
                 float drop = Mathf.Min(footL.y - site.GroundAt(new Vector2(footL.x, footL.z)), footR.y - site.GroundAt(new Vector2(footR.x, footR.z)));
                 if (spec.onGround || (walkAuto && !float.IsNaN(drop) && drop < 0.9f))
                 {
+                    using var sleeper = ElementRecorder.Tag(kind: TimberElementKind.Beam);
                     vis.Beam(c - side * (width * 0.5f + 0.1f) + Vector3.down * 0.42f, c + side * (width * 0.5f + 0.1f) + Vector3.down * 0.42f, 0.18f, 0.16f, Timber);
                     continue;
                 }
@@ -605,11 +636,14 @@ namespace HotPatata.Editor
             if (Curves.SagEndSlope(a, b, sag) > 20f) Debug.LogWarning($"[TimberKit] {name}: the bridge's ends pitch {Curves.SagEndSlope(a, b, sag):F0}°");
             var dirFlat = new Vector3(b.x - a.x, 0f, b.z - a.z).normalized;
             var side = Vector3.Cross(Vector3.up, dirFlat).normalized;
-            var vis = new MeshBuilder(Slots);
+            var vis = Visual();
             // slats
+            ElementRecorder.RunSurface(0, width, ProxyDepth * 0.75f);
+            var slats = ElementRecorder.Tag("Slats", TimberElementKind.Plank, TimberWalk.Run, 0);
             for (int i = 0; i < deck.Count; i++)
             {
                 if (i == 0 || i == deck.Count - 1) continue;
+                ElementRecorder.Order(i);
                 var tangent = (deck[Mathf.Min(i + 1, deck.Count - 1)] - deck[Mathf.Max(i - 1, 0)]).normalized;
                 var up = Vector3.Cross(tangent, side).normalized;
                 if (up.y < 0f) up = -up;
@@ -618,7 +652,9 @@ namespace HotPatata.Editor
                 vis.Box(c, rot, new Vector3(0.22f, BoardThickness, width + R(rng, 0.02f, 0.12f)), rng.NextDouble() < Share(spec.agedShare, 0.35) ? PlankAged : Plank,
                         new Vector2(R(rng, 0f, 3f), R(rng, 0f, 3f)));
             }
+            slats.Dispose();
             // foot ropes under the slats' ends, hand ropes above
+            var ropes = ElementRecorder.Tag("Ropes", TimberElementKind.Rope);
             float half = width * 0.5f;
             var footL = deck.Select(v => v - side * (half - 0.08f) + Vector3.down * 0.07f).ToList();
             var footR = deck.Select(v => v + side * (half - 0.08f) + Vector3.down * 0.07f).ToList();
@@ -643,7 +679,9 @@ namespace HotPatata.Editor
                     }
                 }
             }
+            ropes.Dispose();
             // posts at both ends, back-stays to stakes behind them
+            var ends = ElementRecorder.Tag("Posts", TimberElementKind.Post);
             foreach (var (end, back) in new[] { (a, -dirFlat), (b, dirFlat) })
                 foreach (float sgn in new[] { -1f, 1f })
                 {
@@ -651,14 +689,17 @@ namespace HotPatata.Editor
                     vis.Beam(foot + Vector3.down * 0.9f, foot + Vector3.up * (RailHeight + 0.25f), 0.2f, 0.2f, Timber, new Vector2(R(rng, 0f, 2f), 0f));
                     var stake = foot + back * 1.4f + Vector3.down * 0.05f;
                     vis.Beam(stake + Vector3.down * 0.3f, stake + Vector3.up * 0.25f, 0.1f, 0.1f, Timber);
+                    using var stay = ElementRecorder.Tag(kind: TimberElementKind.Rope);
                     vis.Tube(new[] { foot + Vector3.up * (RailHeight + 0.15f), stake + Vector3.up * 0.2f }, new[] { 0.03f, 0.03f }, 6, Rope);
                     vis.Tube(new[] { foot + Vector3.up * RailHeight, foot + Vector3.up * RailHeight - back * 0.25f }, new[] { 0.045f, 0.045f }, 6, Rope);
                 }
 
+            ends.Dispose();
             var proxy = new MeshBuilder();
             proxy.Sweep(deck, width, ProxyDepth * 0.75f, 0, MeshBuilder.Anchor.Top);
             var root = Finish(parent, name, vis, proxy, WalkableProxy.Kind.Bridge, 0.08f);
             if (spec.sideWalls)
+                using (ElementRecorder.Tag("Sides"))
                 foreach (float sgn in new[] { -1f, 1f })
                     WallChain(root.transform, name + (sgn < 0 ? " side L" : " side R"), deck.Select(v => v + side * sgn * (half + 0.06f)).ToList(), RailHeight + 0.05f);
             return root;
@@ -675,7 +716,8 @@ namespace HotPatata.Editor
             var rng = new Random(Seed(name, seed));
             var line = Curves.Resample(edge, 0.25f);
             if (line.Count < 2 || Curves.Length(line) < 0.6f) return null;
-            var vis = new MeshBuilder(Slots);
+            using var tag = ElementRecorder.Tag(name, TimberElementKind.Post, TimberWalk.None);
+            var vis = Visual();
             float total = Curves.Length(line);
             int posts = Mathf.Max(1, Mathf.RoundToInt(total / R(rng, 1.55f, 1.85f)));
             for (int i = 0; i <= posts; i++)
@@ -683,6 +725,7 @@ namespace HotPatata.Editor
                 var (pt, _) = Curves.At(line, total * i / posts);
                 vis.Beam(pt + Vector3.down * 0.3f, pt + Vector3.up * (RailHeight + 0.06f), 0.11f, 0.11f, Timber, new Vector2(R(rng, 0f, 2f), 0f));
             }
+            using var rails = ElementRecorder.Tag(kind: TimberElementKind.Rail);
             vis.Sweep(line.Select(v => v + Vector3.up * RailHeight).ToList(), 0.1f, 0.07f, Timber, MeshBuilder.Anchor.Top);
             vis.Sweep(line.Select(v => v + Vector3.up * 0.55f).ToList(), 0.05f, 0.09f, Timber, MeshBuilder.Anchor.Center);
             var root = new GameObject(name);
@@ -744,6 +787,7 @@ namespace HotPatata.Editor
         {
             var go = new GameObject(name) { layer = CourseKit.Layer("Environment") };
             go.transform.SetParent(parent, true);
+            ElementRecorder.RecordWall(go, line, height);
             var pts = Curves.Resample(line, 1.2f);
             for (int i = 0; i < pts.Count - 1; i++)
             {

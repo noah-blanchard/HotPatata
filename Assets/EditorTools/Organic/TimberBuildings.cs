@@ -22,7 +22,7 @@ namespace HotPatata.Editor
         {
             var go = new GameObject(name);
             go.transform.SetParent(p, false);
-            var mb = new MeshBuilder(TimberKit.Slots);
+            var mb = TimberKit.Visual();
             build(mb);
             TimberKit.AddVisual(go, name, mb);
             go.AddComponent<CourseDecoration>();
@@ -86,7 +86,7 @@ namespace HotPatata.Editor
             {
                 if (s1 - s0 < 0.02f || h1 - h0 < 0.02f) return;
                 var c = V3(a + along * ((s0 + s1) / 2f), (h0 + h1) / 2f);
-                SolidInvisible(p, $"{name} {++piece}", c, rot, new Vector3(0.24f, h1 - h0, s1 - s0));
+                ElementRecorder.Replaced(SolidInvisible(p, $"{name} {++piece}", c, rot, new Vector3(0.24f, h1 - h0, s1 - s0)));
             }
             foreach (var d in cuts)
             {
@@ -96,6 +96,7 @@ namespace HotPatata.Editor
                 x = d.at + d.width / 2f;
             }
             Solid(x, length, y0, y1);
+            using var wall = ElementRecorder.Tag(name, TimberElementKind.Plank, TimberWalk.None, solid: true);
             Frame(p, name + " boards", mb =>
             {
                 int boards = Mathf.CeilToInt(length / 0.24f);
@@ -117,6 +118,7 @@ namespace HotPatata.Editor
                     else mb.Box(V3(a + along * s, (y0 + y1) / 2f), boardRot, new Vector3(length / boards - 0.01f, 0.05f, y1 - y0), slot, shift);
                 }
                 // posts at the ends and round the openings, a sill and a plate beam
+                using var frame = ElementRecorder.Tag(kind: TimberElementKind.Post, solid: false);
                 mb.Beam(V3(a, y0 - 0.2f), V3(a, y1 + 0.1f), 0.24f, 0.24f, Wood);
                 mb.Beam(V3(b, y0 - 0.2f), V3(b, y1 + 0.1f), 0.24f, 0.24f, Wood);
                 foreach (var d in cuts)
@@ -142,6 +144,7 @@ namespace HotPatata.Editor
             Frame(root, name + " frame", mb =>
             {
                 // log walls: courses of logs with their ends crossing at the corners
+                var logs = ElementRecorder.Tag("Walls", TimberElementKind.Log, TimberWalk.None, solid: true);
                 for (int course = 0; course < 9; course++)
                 {
                     float y = 0.15f + course * 0.29f;
@@ -159,14 +162,16 @@ namespace HotPatata.Editor
                         else mb.Tube(new[] { a, b }, new[] { 0.16f, 0.16f }, 8, Wood, true, course * 0.37f + s);
                     }
                 }
+                logs.Dispose();
+                using var roof = ElementRecorder.Tag("Roof", walk: TimberWalk.None, solid: false);
                 Roof(mb, foot + Vector3.up * (WallH + 0.1f), halfX, halfZ, 1.5f, rot * Quaternion.Euler(0f, 90f, 0f), Aged, 0.6f);
             });
-            // walls collide as boxes (the door gap stays open)
+            // walls collide as boxes (the door gap stays open); frozen, each log collides instead
             foreach (int s in new[] { -1, 1 })
-                SolidInvisible(root, name + " wall z" + s, foot + rot * new Vector3(0f, WallH / 2f, s * halfZ), rot, new Vector3(2f * halfX + 0.4f, WallH, 0.32f));
-            SolidInvisible(root, name + " wall x-", foot + rot * new Vector3(-halfX, WallH / 2f, 0f), rot, new Vector3(0.32f, WallH, 2f * halfZ));
+                ElementRecorder.Replaced(SolidInvisible(root, name + " wall z" + s, foot + rot * new Vector3(0f, WallH / 2f, s * halfZ), rot, new Vector3(2f * halfX + 0.4f, WallH, 0.32f)));
+            ElementRecorder.Replaced(SolidInvisible(root, name + " wall x-", foot + rot * new Vector3(-halfX, WallH / 2f, 0f), rot, new Vector3(0.32f, WallH, 2f * halfZ)));
             foreach (int s in new[] { -1, 1 })
-                SolidInvisible(root, name + " wall x+" + s, foot + rot * new Vector3(halfX, WallH / 2f, s * halfZ * 0.68f), rot, new Vector3(0.32f, WallH, halfZ * 0.64f));
+                ElementRecorder.Replaced(SolidInvisible(root, name + " wall x+" + s, foot + rot * new Vector3(halfX, WallH / 2f, s * halfZ * 0.68f), rot, new Vector3(0.32f, WallH, halfZ * 0.64f)));
         }
 
         /// <summary>
@@ -193,7 +198,9 @@ namespace HotPatata.Editor
             float bottom = feet.Max(f => f.y);
             Frame(p, name, mb =>
             {
-                for (int i = 0; i < 4; i++) mb.Beam(feet[i], heads[i] + Vector3.up * 0.2f, 0.3f, 0.3f, Wood, new Vector2(i * 0.7f, 0f));
+                using (ElementRecorder.Tag(name, TimberElementKind.Post, TimberWalk.None, solid: true))
+                    for (int i = 0; i < 4; i++) mb.Beam(feet[i], heads[i] + Vector3.up * 0.2f, 0.3f, 0.3f, Wood, new Vector2(i * 0.7f, 0f));
+                using var girts = ElementRecorder.Tag(name, TimberElementKind.Brace, TimberWalk.None, solid: false);
                 var levels = new List<float>();
                 for (float y = bottom + 2.4f; y < top - 0.6f; y += 3.5f) levels.Add(y);
                 levels.Add(top - 0.35f);
@@ -218,6 +225,7 @@ namespace HotPatata.Editor
                 var b = heads[i];
                 go.transform.SetPositionAndRotation((a + b) * 0.5f, Quaternion.LookRotation((b - a).normalized, Vector3.forward));
                 go.AddComponent<BoxCollider>().size = new Vector3(0.3f, 0.3f, Vector3.Distance(a, b));
+                ElementRecorder.Replaced(go);
             }
         }
     }

@@ -106,9 +106,7 @@ namespace HotPatata.Editor
             var scale = piece.transform.lossyScale;
             root.transform.localScale = new Vector3(1f / NonZero(scale.x), 1f / NonZero(scale.y), 1f / NonZero(scale.z));
             var output = root.AddComponent<LevelPieceOutput>();
-            string name = piece.name;
             TimberKit.ClearReport();
-            Vector3[] line = null;
             string tooBig = TooBig(piece);
             if (tooBig != null)
             {
@@ -118,24 +116,35 @@ namespace HotPatata.Editor
                 piece.SetOutput(root);
                 return;
             }
-            switch (piece)
-            {
-                case TimberDeckShape deck: BuildDeck(deck, root.transform, name); break;
-                case TimberWalkShape walk: line = BuildWalk(walk, root.transform, name); break;
-                case RopeBridgeShape bridge: line = BuildBridge(bridge, root.transform, name); break;
-                case RailingShape railing: TimberKit.Railing(root.transform, name, railing.WorldPoints(), railing.Seed); break;
-                case HouseShape house: BuildHouse(house, root.transform, name); break;
-                case TrestleShape trestle: BuildTrestle(trestle, root.transform, name); break;
-                case HeroTreeShape tree: LevelNature.BuildTree(tree, root.transform, name); break;
-                case WaterShape water: LevelNature.BuildWater(water, root.transform, name); break;
-                case ForestArea forest: LevelForest.Plant(forest, root.transform); break;
-            }
+            var line = BuildGeometry(piece, root.transform);
             output.Configure(Signature(piece), line, TimberKit.Unheld.Count);
             TimberKit.ClearReport();
             root.hideFlags = HideFlags.NotEditable;
             piece.SetOutput(root);
             EditorUtility.SetDirty(piece);
             if (piece.gameObject.scene.IsValid()) EditorSceneManager.MarkSceneDirty(piece.gameObject.scene);
+        }
+
+        /// <summary>
+        /// Lays a piece's geometry under <paramref name="root"/> (world space): what a rebuild puts in its output, and what freezing a piece
+        /// records (<see cref="TimberFreezer"/>). Returns the line a walker treads on it, or null.
+        /// </summary>
+        public static Vector3[] BuildGeometry(LevelPiece piece, Transform root)
+        {
+            string name = piece.name;
+            switch (piece)
+            {
+                case TimberDeckShape deck: BuildDeck(deck, root, name); break;
+                case TimberWalkShape walk: return BuildWalk(walk, root, name);
+                case RopeBridgeShape bridge: return BuildBridge(bridge, root, name);
+                case RailingShape railing: TimberKit.Railing(root, name, railing.WorldPoints(), railing.Seed); break;
+                case HouseShape house: BuildHouse(house, root, name); break;
+                case TrestleShape trestle: BuildTrestle(trestle, root, name); break;
+                case HeroTreeShape tree: LevelNature.BuildTree(tree, root, name); break;
+                case WaterShape water: LevelNature.BuildWater(water, root, name); break;
+                case ForestArea forest: LevelForest.Plant(forest, root); break;
+            }
+            return null;
         }
 
         static float NonZero(float v) => Mathf.Abs(v) < 1e-4f ? 1f : v;
@@ -304,6 +313,7 @@ namespace HotPatata.Editor
                 TimberBuildings.PlankWall(root, $"{name} {wall} wall", Flat(wa), Flat(wb), y, top, doors, house.Wear == TimberWear.Aged ? 2 : 4);
             }
             bool ridgeAlongX = house.Size.x >= house.Size.y;
+            using var roof = ElementRecorder.Tag("Roof", walk: TimberWalk.None, solid: false);
             TimberBuildings.Frame(root, name + " roof", mb =>
             {
                 var eave = W(Vector3.zero) + Vector3.up * (house.WallHeight + 0.1f);

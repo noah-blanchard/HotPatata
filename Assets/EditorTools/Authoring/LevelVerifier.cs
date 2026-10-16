@@ -67,6 +67,7 @@ namespace HotPatata.Editor
             Guard("The passes", () => Passes(findings));
             Guard("The falls", () => Falls(scene, findings));
             Guard("The rules", () => Rules(scene, findings));
+            Guard("The timber", () => Timber(scene, findings));
             Guard("The menu", () => Menu(scene, settings, findings));
             Guard("The budget", () => Budget(scene, findings));
             return findings;
@@ -200,10 +201,18 @@ namespace HotPatata.Editor
                 walks.Add((piece.name, output.WalkLine));
                 owners[piece.name] = piece;
             }
+            var structures = new Dictionary<string, FrozenStructure>();
+            foreach (var frozen in WalkSurfaceBuilder.Structures(scene).Where(f => f.WalkLine.Length > 1))
+            {
+                walks.Add((frozen.name, frozen.WalkLine));
+                structures[frozen.name] = frozen;
+            }
             foreach (var problem in WalkProbe.Run(walks))
             {
                 string owner = problem.message.Split(':')[0];
-                findings.Add(LevelFinding.Warning(problem.message, problem.blocker != null ? (Object)problem.blocker.gameObject : owners.TryGetValue(owner, out var p) ? p : null, problem.at));
+                Object context = problem.blocker != null ? problem.blocker.gameObject
+                    : owners.TryGetValue(owner, out var p) ? p : structures.TryGetValue(owner, out var f) ? f : null;
+                findings.Add(LevelFinding.Warning(problem.message, context, problem.at));
             }
             foreach (var quick in LevelQuickCheck.Run(scene))
                 findings.Add(LevelFinding.Warning(quick, pieces.FirstOrDefault(p => quick.StartsWith(p.name + ":"))));
@@ -291,6 +300,43 @@ namespace HotPatata.Editor
             }
         }
 
+        // ------------------------------------------------------------------ the timber
+
+        /// <summary>A rope end or a post foot farther than this (m) from anything hangs or stands on nothing.</summary>
+        public const float TimberReach = 0.15f;
+
+        /// <summary>Frozen timber moved by hand: ropes that hang on nothing, posts that stand on nothing (one finding per structure).</summary>
+        static void Timber(Scene scene, List<LevelFinding> findings)
+        {
+            Physics.SyncTransforms();
+            var elements = scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<TimberElement>(false)).ToList();
+            var loose = new List<(TimberElement element, Vector3 at, string what)>();
+            foreach (var rope in elements.OfType<TimberPath>().Where(p => p.Kind == TimberElementKind.Rope && p.Points.Count >= 2))
+                foreach (bool start in new[] { true, false })
+                {
+                    if ((start ? rope.StartAnchor : rope.EndAnchor) != null) continue;
+                    var end = rope.transform.TransformPoint(start ? rope.Points[0] : rope.Points[rope.Points.Count - 1]);
+                    if (TimberElementTools.AnchorAt(rope, end, TimberReach) == null) loose.Add((rope, end, "a rope hangs on nothing"));
+                }
+            foreach (var post in elements.OfType<TimberBoard>().Where(b => b.Kind == TimberElementKind.Post))
+            {
+                var a = post.transform.TransformPoint(post.BackEnd);
+                var b = post.transform.TransformPoint(post.FrontEnd);
+                var foot = a.y < b.y ? a : b;
+                float ground = LevelNature.GroundAt(scene, new Vector2(foot.x, foot.z));
+                if (!float.IsNaN(ground) && foot.y <= ground + TimberReach) continue;
+                bool touches = Physics.OverlapSphere(foot, TimberReach + Mathf.Max(post.Size.x, post.Size.y) * 0.5f, ~0, QueryTriggerInteraction.Ignore)
+                    .Any(c => !c.transform.IsChildOf(post.transform) && c.GetComponentInParent<TimberWall>() == null);
+                if (!touches) loose.Add((post, foot, "a post stands on nothing"));
+            }
+            foreach (var group in loose.GroupBy(l => (l.element.Structure != null ? l.element.Structure.name : l.element.name, l.what)))
+            {
+                var first = group.First();
+                string where = first.element.Structure != null ? first.element.Structure.name : first.element.name;
+                findings.Add(LevelFinding.Warning($"{where}: {group.Count()} time(s) {group.Key.what} (first: {first.element.name}).", first.element, first.at));
+            }
+        }
+
         // ------------------------------------------------------------------ the menu
 
         static void Menu(Scene scene, LevelSettings settings, List<LevelFinding> findings)
@@ -314,6 +360,14 @@ namespace HotPatata.Editor
         {
             long triangles = 0, bytes = 0;
             var meshes = new HashSet<Mesh>();
+            // frozen timber: every element draws its (shared) mesh once more
+            foreach (var filter in scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<TimberElement>(false)).Select(e => e.GetComponent<MeshFilter>()))
+            {
+                var mesh = filter != null ? filter.sharedMesh : null;
+                if (mesh == null) continue;
+                triangles += (long)mesh.GetIndexCount(0) / 3;
+                if (meshes.Add(mesh)) bytes += (long)mesh.vertexCount * 48 + (long)mesh.GetIndexCount(0) * 4;
+            }
             foreach (var piece in TimberLinks.Pieces(scene).Where(p => p.Output != null))
                 foreach (var mesh in LevelPieceBuilder.Meshes(piece.Output))
                     if (meshes.Add(mesh))

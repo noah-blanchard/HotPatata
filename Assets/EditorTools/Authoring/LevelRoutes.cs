@@ -26,6 +26,8 @@ namespace HotPatata.Editor
                 if (output == null || output.WalkLine.Length < 2) continue;
                 lines.Add(new RouteWalks.Line { name = piece.name, points = Curves.Resample(output.WalkLine, Spacing).ToArray() });
             }
+            foreach (var frozen in WalkSurfaceBuilder.Structures(scene).Where(f => f.WalkLine.Length > 1).OrderBy(f => f.name))
+                lines.Add(new RouteWalks.Line { name = frozen.name, points = Curves.Resample(frozen.WalkLine, Spacing).ToArray() });
             var walks = scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<RouteWalks>(true)).FirstOrDefault();
             if (walks == null)
             {

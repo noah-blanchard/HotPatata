@@ -2291,3 +2291,40 @@ Tests: `LevelAuthoringTests`, `LevelNatureTests`, `LevelGameTests`; `AuthoredLev
 
 Tests: `LevelLookTests` (the variants and their visuals, the props, Solid), `ObstaclePrefabTests` (the variants keep the
 obstacle contract), `AuthoredLevelTests` on `OldOak`.
+
+### 27.1 Frozen timber and the structure library
+
+A piece of timber is parametric: it is redrawn from its data, so a single board cannot be moved by hand. **Freezing** turns
+it into its elements, one GameObject each, moved by hand from then on (one way: Ctrl+Z only).
+
+- **Elements** (`Assets/Scripts/Structures`, runtime assembly, read by no gameplay code): `TimberBoard` (a sawn piece: size
+  across, thick and long, ends cut on a slant; a board, a post, a beam, a brace, an iron strap), `TimberPath` (along a line:
+  round, a rope or a log; square, a rim board, a stringer, a rail; a two-point path sags; each end may hang on an object and
+  follows it), `TimberTurned` (a pulley, a drum) and `TimberWall` (an invisible wall along a line: a rail's, a bridge side's).
+  Each element says what it is (`TimberElementKind`), its wood (`TimberWood`: the kit's material slots), a grain variant,
+  whether it is solid (a box for a board, its own mesh for the others, on Environment) and its walking role (`TimberWalk`).
+- **Recording.** `TimberKit` and `TimberBuildings` draw through `TimberKit.Visual()`; while an `ElementRecorder` listens, each
+  box, sweep, tube and lathe they lay is written down with the tags the kit gives it (group, kind, walking role, run and
+  order, solid). `TimberFreezer` draws the piece once more under the recorder and makes one element per record under a
+  `FrozenStructure` (groups: boards, frame, supports, each rail...): the structure looks exactly like the piece. Colliders the
+  elements stand for (a wall's boxes, now its boards'; the rail walls, now `TimberWall`s) are dropped; others (a house's
+  `CourseCeiling`) are kept. Walkways and bridges attached to a frozen piece keep their ends where they were, as free points.
+- **The catalogue.** `TimberCatalog` keeps one mesh per shape (named after its shape's key, a hash), as sub-assets of sixteen
+  `TimberMeshBank` files in `Assets/Art/Generated/Timber/`, shared by every level and prefab. It is written as meshes are made
+  (a prefab may hold them); `HotPatata/Level/Clean Timber Catalog` removes the ones nothing uses.
+- **The walking surface.** A frozen structure's boards have no collider of their own: `WalkSurfaceBuilder` lays one closed
+  collider (a `WalkableProxy`) from its walkable boards, so a walker never catches a board's edge. A slab board gets a slab a
+  little wider than itself (the gaps close); the boards of a run (a walkway's boards and treads, a bridge's slats) get one
+  ramp swept through the middles of their tops, broken where a board is missing (a gap over `RunBreak` times the spacing round
+  it). A stair stays a smooth ramp; a board taken away leaves a real hole. The runs also give the structure's walk line
+  (`FrozenStructure.WalkLine`), gathered with the pieces' (route runner, walk probe, walking distances).
+- **Keeping in step.** `TimberElementWatcher` redraws what changed once the mouse lets go (an element whose shape key
+  changed, a rope whose anchor moved, a surface whose boards moved).
+- **Checks.** Verify Level reports ropes that hang on nothing and posts that stand on nothing, and counts the elements'
+  triangles in the budget.
+- **The library.** A frozen structure saved with *Save to library* is a prefab in `Assets/Prefabs/Structures/<kind>/`: it
+  belongs to the author (edit it in Prefab Mode, make variants), nothing regenerates it. It is scenery and level geometry
+  only: a gameplay prefab of the kit is placed beside or in it in the level, never built into it.
+
+Tests: `TimberElementTests` (a frozen deck, stair, bridge and house look and walk like their pieces, holes, attached ends,
+ropes on anchors, the catalogue, solid elements).

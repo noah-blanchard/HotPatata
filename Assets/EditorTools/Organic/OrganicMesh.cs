@@ -20,6 +20,9 @@ namespace HotPatata.Editor
         public readonly List<Vector2> UV = new List<Vector2>();
         readonly List<List<int>> sub = new List<List<int>>();
 
+        /// <summary>Told about every part drawn (a piece being frozen into elements, <see cref="ElementRecorder"/>); null: nothing records.</summary>
+        public ElementRecorder Recorder;
+
         public MeshBuilder(int submeshes = 1)
         {
             for (int i = 0; i < submeshes; i++) sub.Add(new List<int>());
@@ -57,6 +60,7 @@ namespace HotPatata.Editor
         /// </summary>
         public void Box(Vector3 center, Quaternion rotation, Vector3 size, int s, Vector2 uvShift = default)
         {
+            Recorder?.Box(center, rotation, size, s, uvShift);
             var h = size * 0.5f;
             Vector3 P(float x, float y, float z) => center + rotation * new Vector3(x * h.x, y * h.y, z * h.z);
             Vector2 U(float u, float v) => new Vector2(u, v) + uvShift;
@@ -125,6 +129,7 @@ namespace HotPatata.Editor
         public void Tube(IList<Vector3> points, IList<float> radii, int sides, int s, bool caps = false, float uvShift = 0f)
         {
             if (points.Count < 2) return;
+            Recorder?.Tube(points, radii, sides, s, caps, uvShift);
             var frames = Curves.Frames(points);
             var t = Sub(s);
             int first = V.Count;
@@ -177,6 +182,7 @@ namespace HotPatata.Editor
         public void Sweep(IList<Vector3> path, float width, float height, int s, Anchor anchor = Anchor.Center, bool caps = true, float uvShift = 0f)
         {
             if (path.Count < 2) return;
+            Recorder?.Sweep(path, width, height, s, anchor, caps, uvShift);
             int n = path.Count;
             var side = new Vector3[n];
             var up = new Vector3[n];
@@ -210,6 +216,7 @@ namespace HotPatata.Editor
         /// <summary>A solid of revolution round local up: <paramref name="profile"/> is (radius, height) from bottom to top (a bell, a drum, a lantern).</summary>
         public void Lathe(Vector3 origin, Quaternion rotation, IList<Vector2> profile, int sides, int s)
         {
+            Recorder?.Lathe(origin, rotation, profile, sides, s);
             var t = Sub(s);
             int first = V.Count;
             float run = 0f;

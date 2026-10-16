@@ -27,6 +27,15 @@ namespace HotPatata.Editor
                 if (GUILayout.Button("Rebuild")) LevelPieceBuilder.Rebuild(targets.Cast<LevelPiece>().ToList());
                 if (GUILayout.Button("Save As Preset")) TimberPreset.SaveAs(Piece);
             }
+            if (targets.Cast<LevelPiece>().Any(TimberFreezer.CanFreeze)
+                && GUILayout.Button(new GUIContent("Freeze into elements", "Turns the piece into its boards, beams and ropes, each moved by hand from then on. One way (Ctrl+Z only).")))
+            {
+                if (EditorUtility.DisplayDialog("Freeze into elements",
+                        "The piece becomes its boards, beams, posts and ropes: each can then be moved, resized or deleted by hand, " +
+                        "but the piece's handles and settings are gone (Ctrl+Z only).", "Freeze", "Cancel"))
+                    TimberFreezer.Freeze(targets.Cast<LevelPiece>().ToList());
+                GUIUtility.ExitGUI();
+            }
             using (new EditorGUILayout.HorizontalScope())
             {
                 preset = (TimberPreset)EditorGUILayout.ObjectField(preset, typeof(TimberPreset), false);
