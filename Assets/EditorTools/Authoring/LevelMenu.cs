@@ -50,6 +50,10 @@ namespace HotPatata.Editor
         [MenuItem(Add + "Railing", priority = 13)] static void AddRailing() => Create<RailingShape>("Railing", 0f);
         [MenuItem(Add + "House", priority = 14)] static void AddHouse() => Create<HouseShape>("House", 0f);
         [MenuItem(Add + "Trestle Tower", priority = 15)] static void AddTrestle() => Create<TrestleShape>("Trestle", 6f);
+        [MenuItem(Add + "Structure/Shelter", priority = 20)] static void AddShelter() => Create<ShelterShape>("Shelter", 0f);
+        [MenuItem(Add + "Structure/Gantry", priority = 21)] static void AddGantry() => Create<GantryShape>("Gantry", 0f);
+        [MenuItem(Add + "Structure/Sign", priority = 22)] static void AddSign() => Create<SignShape>("Sign", 0f);
+        [MenuItem(Add + "Structure/Pulley Beam", priority = 23)] static void AddPulleyBeam() => Create<PulleyBeamShape>("Pulley beam", 0f);
         [MenuItem(Add + "Giant Tree", priority = 30)] static void AddTree() => Create<HeroTreeShape>("Giant tree", -0.4f, LevelGroup.Trees);
         [MenuItem(Add + "Forest Area", priority = 31)] static void AddForest() => Create<ForestArea>("Forest", 0f, LevelGroup.Trees);
         [MenuItem(Add + "Water", priority = 32)] static void AddWater() => Create<WaterShape>("Water", 0.5f, LevelGroup.Props);

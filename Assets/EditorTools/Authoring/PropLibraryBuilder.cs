@@ -20,7 +20,6 @@ namespace HotPatata.Editor
     {
         public const string Folder = "Assets/Prefabs/Props/";
         public const string SetFolder = Folder + "Sets/";
-        public const string MeshFolder = "Assets/Art/Generated/PropSets/";
 
         /// <summary>Each model's kind (its folder) and, for the scans brought to a unit height, its real height (m).</summary>
         static readonly Dictionary<string, (string kind, float height)> Models = new Dictionary<string, (string, float)>
@@ -129,63 +128,58 @@ namespace HotPatata.Editor
         static void BuildSets()
         {
             Directory.CreateDirectory(SetFolder.TrimEnd('/'));
-            OrganicAssets.Begin(MeshFolder);
-            try
+            Set("Workbench", true, root =>
             {
-                Set("Workbench", true, root =>
+                Timber(root, "Bench", mb =>
                 {
-                    Timber(root, "Bench", mb =>
-                    {
-                        for (int k = 0; k < 4; k++) mb.Box(new Vector3(0f, 0.86f, -0.33f + k * 0.22f), Quaternion.identity, new Vector3(1.9f, 0.06f, 0.21f), k % 3 == 1 ? Aged : Plank);
-                        foreach (var x in new[] { -0.82f, 0.82f })
-                            foreach (var z in new[] { -0.34f, 0.34f }) mb.Beam(new Vector3(x, 0f, z), new Vector3(x, 0.83f, z), 0.1f, 0.1f, Wood);
-                        for (int k = 0; k < 3; k++) mb.Box(new Vector3(0f, 0.25f, -0.25f + k * 0.25f), Quaternion.identity, new Vector3(1.7f, 0.04f, 0.22f), Aged);
-                        mb.Beam(new Vector3(-0.82f, 0.4f, -0.34f), new Vector3(0.82f, 0.4f, -0.34f), 0.06f, 0.08f, Wood);
-                    });
-                    Prop(root, "hatchet", new Vector3(-0.5f, 0.89f, 0.05f), Quaternion.Euler(0f, 0f, 90f));
-                    Prop(root, "wooden_bowl_01", new Vector3(0.45f, 0.89f, -0.1f), Quaternion.identity);
-                    Prop(root, "jug_01", new Vector3(0.1f, 0.89f, 0.2f), Quaternion.Euler(0f, 40f, 0f));
-                    Prop(root, "wicker_basket_01", new Vector3(0.3f, 0.27f, 0f), Quaternion.Euler(0f, 10f, 0f));
-                    Prop(root, "wooden_stool_01", new Vector3(0.4f, 0f, 0.85f), Quaternion.Euler(0f, 25f, 0f));
+                    for (int k = 0; k < 4; k++) mb.Box(new Vector3(0f, 0.86f, -0.33f + k * 0.22f), Quaternion.identity, new Vector3(1.9f, 0.06f, 0.21f), k % 3 == 1 ? Aged : Plank);
+                    foreach (var x in new[] { -0.82f, 0.82f })
+                        foreach (var z in new[] { -0.34f, 0.34f }) mb.Beam(new Vector3(x, 0f, z), new Vector3(x, 0.83f, z), 0.1f, 0.1f, Wood);
+                    for (int k = 0; k < 3; k++) mb.Box(new Vector3(0f, 0.25f, -0.25f + k * 0.25f), Quaternion.identity, new Vector3(1.7f, 0.04f, 0.22f), Aged);
+                    mb.Beam(new Vector3(-0.82f, 0.4f, -0.34f), new Vector3(0.82f, 0.4f, -0.34f), 0.06f, 0.08f, Wood);
                 });
-                Set("Woodpile", true, root =>
+                Prop(root, "hatchet", new Vector3(-0.5f, 0.89f, 0.05f), Quaternion.Euler(0f, 0f, 90f));
+                Prop(root, "wooden_bowl_01", new Vector3(0.45f, 0.89f, -0.1f), Quaternion.identity);
+                Prop(root, "jug_01", new Vector3(0.1f, 0.89f, 0.2f), Quaternion.Euler(0f, 40f, 0f));
+                Prop(root, "wicker_basket_01", new Vector3(0.3f, 0.27f, 0f), Quaternion.Euler(0f, 10f, 0f));
+                Prop(root, "wooden_stool_01", new Vector3(0.4f, 0f, 0.85f), Quaternion.Euler(0f, 25f, 0f));
+            });
+            Set("Woodpile", true, root =>
+            {
+                Timber(root, "Logs", mb =>
                 {
-                    Timber(root, "Logs", mb =>
-                    {
-                        for (int row = 0; row < 4; row++)
-                            for (int k = 0; k < 7 - row; k++)
+                    for (int row = 0; row < 4; row++)
+                        for (int k = 0; k < 7 - row; k++)
+                        {
+                            var c = new Vector3(-1.1f + k * 0.36f + row * 0.18f, 0.17f + row * 0.31f, 0f);
+                            mb.Tube(new[] { c + Vector3.back * 0.7f, c + Vector3.forward * 0.7f }, new[] { 0.16f, 0.16f }, 8, Wood, true, k * 0.3f + row);
+                        }
+                    foreach (var x in new[] { -1.45f, 1.45f }) mb.Beam(new Vector3(x, -0.1f, 0f), new Vector3(x, 1.2f, 0f), 0.12f, 0.12f, Wood);
+                });
+                Prop(root, "tree_stump_02", new Vector3(2.4f, 0f, 0.6f), Quaternion.identity, 0.55f);
+                Prop(root, "hatchet", new Vector3(2.4f, 0.32f, 0.6f), Quaternion.Euler(-20f, 30f, 0f));
+            });
+            Set("Rope corner", false, root =>
+            {
+                Timber(root, "Coils", mb =>
+                {
+                    foreach (var (at, turns) in new[] { (new Vector3(0f, 0f, 0f), 6), (new Vector3(0.75f, 0f, 0.3f), 4) })
+                        for (int k = 0; k < turns; k++)
+                        {
+                            var ring = new List<Vector3>();
+                            for (int i = 0; i <= 16; i++)
                             {
-                                var c = new Vector3(-1.1f + k * 0.36f + row * 0.18f, 0.17f + row * 0.31f, 0f);
-                                mb.Tube(new[] { c + Vector3.back * 0.7f, c + Vector3.forward * 0.7f }, new[] { 0.16f, 0.16f }, 8, Wood, true, k * 0.3f + row);
+                                float a = i / 16f * Mathf.PI * 2f;
+                                ring.Add(at + new Vector3(Mathf.Cos(a) * (0.32f - k * 0.01f), 0.04f + k * 0.06f, Mathf.Sin(a) * (0.32f - k * 0.01f)));
                             }
-                        foreach (var x in new[] { -1.45f, 1.45f }) mb.Beam(new Vector3(x, -0.1f, 0f), new Vector3(x, 1.2f, 0f), 0.12f, 0.12f, Wood);
-                    });
-                    Prop(root, "tree_stump_02", new Vector3(2.4f, 0f, 0.6f), Quaternion.identity, 0.55f);
-                    Prop(root, "hatchet", new Vector3(2.4f, 0.32f, 0.6f), Quaternion.Euler(-20f, 30f, 0f));
+                            mb.Tube(ring, ring.Select(_ => 0.035f).ToList(), 5, Rope);
+                        }
                 });
-                Set("Rope corner", false, root =>
-                {
-                    Timber(root, "Coils", mb =>
-                    {
-                        foreach (var (at, turns) in new[] { (new Vector3(0f, 0f, 0f), 6), (new Vector3(0.75f, 0f, 0.3f), 4) })
-                            for (int k = 0; k < turns; k++)
-                            {
-                                var ring = new List<Vector3>();
-                                for (int i = 0; i <= 16; i++)
-                                {
-                                    float a = i / 16f * Mathf.PI * 2f;
-                                    ring.Add(at + new Vector3(Mathf.Cos(a) * (0.32f - k * 0.01f), 0.04f + k * 0.06f, Mathf.Sin(a) * (0.32f - k * 0.01f)));
-                                }
-                                mb.Tube(ring, ring.Select(_ => 0.035f).ToList(), 5, Rope);
-                            }
-                    });
-                    Prop(root, "wooden_crate_02", new Vector3(-0.2f, 0f, 0.9f), Quaternion.Euler(0f, 8f, 0f));
-                    Prop(root, "wooden_crate_01", new Vector3(-0.1f, 0.46f, 0.9f), Quaternion.Euler(0f, -12f, 0f));
-                    Prop(root, "wooden_bucket_01", new Vector3(1.2f, 0f, 1f), Quaternion.identity);
-                    Prop(root, "wicker_basket_02", new Vector3(-1f, 0f, 0.1f), Quaternion.Euler(0f, 30f, 0f));
-                });
-            }
-            finally { OrganicAssets.End(); }
+                Prop(root, "wooden_crate_02", new Vector3(-0.2f, 0f, 0.9f), Quaternion.Euler(0f, 8f, 0f));
+                Prop(root, "wooden_crate_01", new Vector3(-0.1f, 0.46f, 0.9f), Quaternion.Euler(0f, -12f, 0f));
+                Prop(root, "wooden_bucket_01", new Vector3(1.2f, 0f, 1f), Quaternion.identity);
+                Prop(root, "wicker_basket_02", new Vector3(-1f, 0f, 0.1f), Quaternion.Euler(0f, 30f, 0f));
+            });
         }
 
         /// <summary>One set; <paramref name="solid"/>: it is in the way (a box round it).</summary>
@@ -197,19 +191,22 @@ namespace HotPatata.Editor
                 var prop = root.AddComponent<PropSolid>();
                 build(root.transform);
                 if (solid) PropSolidEditor.SetSolid(prop, true, false);
+                TimberCatalog.Flush();
                 PrefabUtility.SaveAsPrefabAsset(root, SetFolder + name + ".prefab");
             }
             finally { Object.DestroyImmediate(root); }
         }
 
+        /// <summary>A set's timber, as elements an author can move one by one (ARCHITECTURE §27.1): a group of them under the set.</summary>
         static void Timber(Transform parent, string name, Action<MeshBuilder> build)
         {
-            var mb = new MeshBuilder(TimberKit.Slots);
-            build(mb);
-            var go = new GameObject(name);
-            go.transform.SetParent(parent, false);
-            go.AddComponent<MeshFilter>().sharedMesh = OrganicAssets.Save(mb.ToMesh("PropSet " + parent.name + " " + name, out var slots));
-            go.AddComponent<MeshRenderer>().sharedMaterials = TimberKit.Materials(slots);
+            var recorder = new ElementRecorder();
+            ElementRecorder.Active = recorder;
+            try { build(TimberKit.Visual()); }
+            finally { ElementRecorder.Active = null; }
+            var group = new GameObject(name).transform;
+            group.SetParent(parent, false);
+            TimberFreezer.MakeAll(recorder, group);
         }
 
         /// <summary>A library prop nested in a set (a prefab instance: the set follows the prop's own prefab).</summary>

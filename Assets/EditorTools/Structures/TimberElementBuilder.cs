@@ -20,7 +20,7 @@ namespace HotPatata.Editor
             if (element == null) return false;
             if (element is TimberPath path && path.FollowAnchors()) EditorUtility.SetDirty(path);
             string key = element.ShapeKey();
-            string built = key + "|" + element.Wood + "|" + element.Solid;
+            string built = key + "|" + element.Wood + "|" + element.Solid + (element is TimberPaint p ? "|" + p.Paint : "");
             var filter = element.GetComponent<MeshFilter>();
             if (!force && element.BuiltFrom == built && filter != null && filter.sharedMesh != null) return false;
             var mesh = TimberCatalog.Get(key, () => Mesh(element));
@@ -28,7 +28,8 @@ namespace HotPatata.Editor
             filter.sharedMesh = mesh;
             var renderer = element.GetComponent<MeshRenderer>();
             if (renderer == null) renderer = element.gameObject.AddComponent<MeshRenderer>();
-            renderer.sharedMaterial = NatureMaterialBuilder.Load(TimberKit.SlotMaterials[(int)element.Wood]);
+            renderer.sharedMaterial = NatureMaterialBuilder.Load(element is TimberPaint paint ? PaintMaterial(paint.Paint) : TimberKit.SlotMaterials[(int)element.Wood]);
+            renderer.shadowCastingMode = element is TimberPaint ? UnityEngine.Rendering.ShadowCastingMode.Off : UnityEngine.Rendering.ShadowCastingMode.On;
             Collide(element, mesh);
             GameObjectUtility.SetStaticEditorFlags(element.gameObject, StaticEditorFlags.BatchingStatic);
             element.BuiltFrom = built;
@@ -41,7 +42,7 @@ namespace HotPatata.Editor
             var go = element.gameObject;
             var box = go.GetComponent<BoxCollider>();
             var meshCollider = go.GetComponent<MeshCollider>();
-            if (!element.Solid)
+            if (!element.Solid || element is TimberPaint)
             {
                 if (box != null) Object.DestroyImmediate(box);
                 if (meshCollider != null) Object.DestroyImmediate(meshCollider);
@@ -98,11 +99,19 @@ namespace HotPatata.Editor
                 case TimberTurned turned:
                     if (turned.Profile.Count >= 2) mb.Lathe(Vector3.zero, Quaternion.identity, turned.Profile, turned.Sides, 0);
                     break;
+                case TimberPaint painted:
+                    // the outline (x right, y up the board) lies in the element's x and z: a prism out along its y
+                    if (painted.Outline.Count >= 3) mb.Prism(painted.Outline, 0f, TimberPaint.Thickness, 0, 0);
+                    break;
             }
             var mesh = mb.ToMesh(element.ShapeKey(), out _);
             if (cut) mesh.RecalculateNormals();
             return mesh;
         }
+
+        /// <summary>The material of a paint.</summary>
+        public static string PaintMaterial(TimberPaintColor paint) =>
+            paint == TimberPaintColor.Blue ? NatureMaterialBuilder.PaintBlue : paint == TimberPaintColor.Green ? NatureMaterialBuilder.PaintGreen : NatureMaterialBuilder.PaintAmber;
 
         /// <summary>The line a path is drawn along: its points, a two-point path hanging by its sag, a closed one back to its start.</summary>
         public static List<Vector3> PathPoints(TimberPath path)

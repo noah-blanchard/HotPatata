@@ -537,4 +537,42 @@ namespace HotPatata.Editor
             }
         }
     }
+
+    // ------------------------------------------------------------------ structures
+
+    /// <summary>The structures' inspectors: their settings, the piece's place and turn; no handles of their own (move and turn the piece).</summary>
+    public abstract class StructureShapeEditor : LevelPieceEditor
+    {
+        protected override void DrawScene()
+        {
+            var t = Piece.transform;
+            Handles.color = PieceHandles.Line;
+            Handles.ArrowHandleCap(0, t.position + Vector3.up * 0.05f, Quaternion.Euler(0f, t.eulerAngles.y, 0f), HandleUtility.GetHandleSize(t.position) * 0.6f, EventType.Repaint);
+        }
+    }
+
+    [CustomEditor(typeof(ShelterShape)), CanEditMultipleObjects]
+    public sealed class ShelterShapeEditor : StructureShapeEditor
+    {
+        protected override string Help => "A shelter: four posts on the piece, a roof, low walls and a winch drum if asked. Its back is the piece's forward. " +
+                                           "Freeze it to move its boards by hand, or Save to library once frozen.";
+    }
+
+    [CustomEditor(typeof(GantryShape)), CanEditMultipleObjects]
+    public sealed class GantryShapeEditor : StructureShapeEditor
+    {
+        protected override string Help => "A gantry: two pairs of braced legs Span apart along the piece's right, a head frame at its Height, a pulley over the middle.";
+    }
+
+    [CustomEditor(typeof(SignShape)), CanEditMultipleObjects]
+    public sealed class SignShapeEditor : StructureShapeEditor
+    {
+        protected override string Help => "A sign: its board faces the piece's forward (the arrow), its glyph painted on it.";
+    }
+
+    [CustomEditor(typeof(PulleyBeamShape)), CanEditMultipleObjects]
+    public sealed class PulleyBeamShapeEditor : StructureShapeEditor
+    {
+        protected override string Help => "A pulley beam: it reaches out along the piece's forward (the arrow). With no post, set the piece against a trunk or a wall.";
+    }
 }

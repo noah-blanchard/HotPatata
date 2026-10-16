@@ -19,7 +19,8 @@ namespace HotPatata.Editor
     {
         /// <summary>The pieces that freeze: timber (not trees, water or forests).</summary>
         public static bool CanFreeze(LevelPiece piece) =>
-            piece is TimberDeckShape || piece is TimberWalkShape || piece is RopeBridgeShape || piece is RailingShape || piece is HouseShape || piece is TrestleShape;
+            piece is TimberDeckShape || piece is TimberWalkShape || piece is RopeBridgeShape || piece is RailingShape || piece is HouseShape || piece is TrestleShape
+            || piece is ShelterShape || piece is GantryShape || piece is SignShape || piece is PulleyBeamShape;
 
         /// <summary>Freezes every piece that can be (one undo step); returns the structures made.</summary>
         public static List<FrozenStructure> Freeze(IEnumerable<LevelPiece> pieces)
@@ -145,7 +146,38 @@ namespace HotPatata.Editor
             Physics.SyncTransforms();
         }
 
-        static void Make(ElementRecorder.Record r, Transform parent, string name, Quaternion rootRotation)
+        /// <summary>Makes every element <paramref name="recorder"/> heard under <paramref name="parent"/> (named by kind and count), drawn.</summary>
+        public static List<TimberElement> MakeAll(ElementRecorder recorder, Transform parent)
+        {
+            var counts = new Dictionary<(Transform, TimberElementKind), int>();
+            var groups = new Dictionary<string, Transform>();
+            bool single = recorder.Records.Select(r => r.tags.group).Distinct().Count() <= 1;
+            var made = new List<TimberElement>();
+            foreach (var record in recorder.Records)
+            {
+                // sorted in groups by what the kit said they are (one group only: straight under the parent)
+                string name = string.IsNullOrEmpty(record.tags.group) ? "Timber" : record.tags.group;
+                if (name.StartsWith(parent.name + " ")) name = name.Substring(parent.name.Length + 1);
+                if (!groups.TryGetValue(name, out var group))
+                {
+                    group = parent;
+                    if (!single)
+                    {
+                        group = new GameObject(name).transform;
+                        group.SetParent(parent, false);
+                    }
+                    groups[name] = group;
+                }
+                var kind = ElementRecorder.KindOf(record);
+                counts.TryGetValue((group, kind), out int n);
+                counts[(group, kind)] = ++n;
+                made.Add(Make(record, group, kind + " " + n, parent.rotation));
+            }
+            foreach (var element in made) TimberElementBuilder.Refresh(element, true);
+            return made;
+        }
+
+        static TimberElement Make(ElementRecorder.Record r, Transform parent, string name, Quaternion rootRotation)
         {
             var go = new GameObject(name);
             go.transform.SetParent(parent, false);
@@ -158,6 +190,16 @@ namespace HotPatata.Editor
                     var board = go.AddComponent<TimberBoard>();
                     board.Size = r.size;
                     element = board;
+                    break;
+                }
+                case ElementRecorder.Shape.Paint:
+                {
+                    go.transform.SetPositionAndRotation(r.center, r.rotation);
+                    var paint = go.AddComponent<TimberPaint>();
+                    paint.Outline.Clear();
+                    paint.Outline.AddRange(r.profile);
+                    paint.Paint = r.paint;
+                    element = paint;
                     break;
                 }
                 case ElementRecorder.Shape.Lathe:
@@ -196,10 +238,11 @@ namespace HotPatata.Editor
             element.Kind = ElementRecorder.KindOf(r);
             element.Wood = (TimberWood)r.slot;
             element.Grain = r.grain;
-            element.Solid = r.tags.solid;
+            element.Solid = r.tags.solid && r.shape != ElementRecorder.Shape.Paint;
             element.Walk = r.shape == ElementRecorder.Shape.Box ? r.tags.walk : TimberWalk.None;
             element.Run = r.tags.run;
             element.Order = r.tags.order;
+            return element;
         }
 
         /// <summary>

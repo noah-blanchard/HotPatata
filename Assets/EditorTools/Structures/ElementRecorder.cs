@@ -16,7 +16,19 @@ namespace HotPatata.Editor
         /// <summary>The recorder the kit reports to (null: nothing records, the kit only draws).</summary>
         public static ElementRecorder Active { get; set; }
 
-        public enum Shape { Box, Sweep, Tube, Lathe }
+        /// <summary>
+        /// Every piece of timber the kit draws comes out frozen, in place: elements under the piece's own root (a structure of its own),
+        /// its walls as <see cref="TimberWall"/>s, the boxes they stand for not made. A course drawn once this way is handed over to be
+        /// edited by hand (PatataRanger, M18.4c).
+        /// </summary>
+        public static bool FreezeInPlace { get; set; }
+
+        /// <summary>The recorder of the last timber the kit began drawing while freezing in place.</summary>
+        public static ElementRecorder LastInPlace { get; set; }
+
+        static bool Listening => Active != null || FreezeInPlace;
+
+        public enum Shape { Box, Sweep, Tube, Lathe, Paint }
 
         /// <summary>What the kit says the next parts are.</summary>
         public struct Tags
@@ -48,6 +60,8 @@ namespace HotPatata.Editor
             // a lathe
             public List<Vector2> profile;
             public int sides;
+            // a painted shape (its outline in profile)
+            public TimberPaintColor paint;
         }
 
         public sealed class Wall
@@ -61,50 +75,49 @@ namespace HotPatata.Editor
         public readonly List<Wall> Walls = new List<Wall>();
         public readonly List<FrozenStructure.RunSurface> Runs = new List<FrozenStructure.RunSurface>();
         readonly HashSet<GameObject> replaced = new HashSet<GameObject>();
-        Tags current = new Tags { group = "Timber" };
+        static Tags current = new Tags { group = "Timber" };
 
         // ------------------------------------------------------------------ tags
 
         /// <summary>Tags the parts drawn until the scope ends (null fields keep the outer scope's); a no-op when nothing records.</summary>
         public static TagScope Tag(string group = null, TimberElementKind? kind = null, TimberWalk? walk = null, int? run = null, bool? solid = null)
         {
-            var r = Active;
-            if (r == null) return default;
-            var saved = r.current;
-            if (group != null) r.current.group = group;
-            if (kind != null) r.current.kind = kind;
-            if (walk != null) r.current.walk = walk.Value;
-            if (run != null) r.current.run = run.Value;
-            if (solid != null) r.current.solid = solid.Value;
-            return new TagScope(r, saved);
+            if (!Listening) return default;
+            var saved = current;
+            if (group != null) current.group = group;
+            if (kind != null) current.kind = kind;
+            if (walk != null) current.walk = walk.Value;
+            if (run != null) current.run = run.Value;
+            if (solid != null) current.solid = solid.Value;
+            return new TagScope(true, saved);
         }
 
         /// <summary>Where along its run the next parts lie (parts of one order make one point of the walking surface).</summary>
         public static void Order(int order)
         {
-            if (Active != null) Active.current.order = order;
+            if (Listening) current.order = order;
         }
 
         /// <summary>A run's walking surface: as wide as <paramref name="width"/>, <paramref name="depth"/> deep.</summary>
         public static void RunSurface(int run, float width, float depth)
         {
-            Active?.Runs.Add(new FrozenStructure.RunSurface { run = run, width = width, depth = depth });
+            (Active ?? (FreezeInPlace ? LastInPlace : null))?.Runs.Add(new FrozenStructure.RunSurface { run = run, width = width, depth = depth });
         }
 
         public readonly struct TagScope : IDisposable
         {
-            readonly ElementRecorder recorder;
+            readonly bool live;
             readonly Tags saved;
 
-            public TagScope(ElementRecorder recorder, Tags saved)
+            public TagScope(bool live, Tags saved)
             {
-                this.recorder = recorder;
+                this.live = live;
                 this.saved = saved;
             }
 
             public void Dispose()
             {
-                if (recorder != null) recorder.current = saved;
+                if (live) current = saved;
             }
         }
 
@@ -134,17 +147,43 @@ namespace HotPatata.Editor
         public void Lathe(Vector3 origin, Quaternion rotation, IList<Vector2> profile, int sides, int slot) =>
             Records.Add(new Record { shape = Shape.Lathe, tags = current, slot = slot, center = origin, rotation = rotation, profile = new List<Vector2>(profile), sides = sides });
 
-        /// <summary>An invisible wall the kit raised (a rail's, a bridge side's): it becomes a <see cref="TimberWall"/>.</summary>
-        public static void RecordWall(GameObject made, IList<Vector3> line, float height)
+        /// <summary>A painted shape: its outline in the plane of <paramref name="rotation"/>'s x and z, proud along its y.</summary>
+        public static void Paint(Vector3 center, Quaternion rotation, IList<Vector2> outline, TimberPaintColor paint)
         {
             var r = Active;
             if (r == null) return;
-            r.replaced.Add(made);
-            r.Walls.Add(new Wall { group = r.current.group, line = new List<Vector3>(line), height = height });
+            r.Records.Add(new Record { shape = Shape.Paint, tags = current, center = center, rotation = rotation, profile = new List<Vector2>(outline), paint = paint });
         }
 
-        /// <summary>A collider the frozen elements stand for (a wall's box, now each board's own): it is not kept.</summary>
-        public static void Replaced(GameObject made) => Active?.replaced.Add(made);
+        /// <summary>
+        /// An invisible wall the kit raised (a rail's, a bridge side's): it becomes a <see cref="TimberWall"/>. True when the wall is
+        /// already made (freezing in place: <paramref name="made"/> is the wall), so the kit lays no boxes of its own.
+        /// </summary>
+        public static bool RecordWall(GameObject made, IList<Vector3> line, float height)
+        {
+            var r = Active;
+            if (r != null)
+            {
+                r.replaced.Add(made);
+                r.Walls.Add(new Wall { group = current.group, line = new List<Vector3>(line), height = height });
+                return false;
+            }
+            if (!FreezeInPlace) return false;
+            made.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+            var wall = made.AddComponent<TimberWall>();
+            wall.Height = height;
+            wall.Points.Clear();
+            foreach (var p in line) wall.Points.Add(made.transform.InverseTransformPoint(p));
+            TimberElementBuilder.Refresh(wall, true);
+            return true;
+        }
+
+        /// <summary>A collider the frozen elements stand for (a wall's box, now each board's own): not kept (freezing in place: not made).</summary>
+        public static void Replaced(GameObject made)
+        {
+            if (Active != null) Active.replaced.Add(made);
+            else if (FreezeInPlace && made != null) UnityEngine.Object.DestroyImmediate(made);
+        }
 
         /// <summary>True if <paramref name="t"/> or a parent of it was replaced by elements.</summary>
         public bool IsReplaced(Transform t)
@@ -157,7 +196,8 @@ namespace HotPatata.Editor
         /// <summary>The kind a part is when the kit did not say: by its material and shape.</summary>
         public static TimberElementKind KindOf(Record r)
         {
-            if (r.tags.kind != null) return r.tags.kind.Value;
+            if (r.tags.kind != null && r.shape != Shape.Paint) return r.tags.kind.Value;
+            if (r.shape == Shape.Paint) return TimberElementKind.Trim;
             switch (r.slot)
             {
                 case TimberKit.Plank:

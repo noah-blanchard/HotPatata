@@ -82,7 +82,12 @@ namespace HotPatata.Editor
         public static Material[] Materials(int[] slots) => slots.Select(s => NatureMaterialBuilder.Load(SlotMaterials[s])).ToArray();
 
         /// <summary>A mesh for drawn timber, every material slot, telling the <see cref="ElementRecorder"/> what it lays when one listens.</summary>
-        public static MeshBuilder Visual() => new MeshBuilder(Slots) { Recorder = ElementRecorder.Active };
+        public static MeshBuilder Visual()
+        {
+            var recorder = ElementRecorder.Active;
+            if (recorder == null && ElementRecorder.FreezeInPlace) recorder = ElementRecorder.LastInPlace = new ElementRecorder();
+            return new MeshBuilder(Slots) { Recorder = recorder };
+        }
 
         // ------------------------------------------------------------------ deck
 
@@ -787,7 +792,7 @@ namespace HotPatata.Editor
         {
             var go = new GameObject(name) { layer = CourseKit.Layer("Environment") };
             go.transform.SetParent(parent, true);
-            ElementRecorder.RecordWall(go, line, height);
+            if (ElementRecorder.RecordWall(go, line, height)) return;
             var pts = Curves.Resample(line, 1.2f);
             for (int i = 0; i < pts.Count - 1; i++)
             {
@@ -821,6 +826,18 @@ namespace HotPatata.Editor
         public static void AddVisual(GameObject root, string name, MeshBuilder vis)
         {
             if (vis.Triangles == 0) return;
+            if (vis.Recorder != null && vis.Recorder != ElementRecorder.Active)
+            {
+                // freezing in place: the timber is its elements, under a structure of its own (or the one it is part of)
+                var structure = root.GetComponentInParent<FrozenStructure>();
+                if (structure == null)
+                {
+                    structure = root.AddComponent<FrozenStructure>();
+                    structure.Runs.AddRange(vis.Recorder.Runs);
+                }
+                TimberFreezer.MakeAll(vis.Recorder, root.transform);
+                return;
+            }
             var mesh = OrganicAssets.Save(vis.ToMesh(name + " timber", out var slots));
             var go = new GameObject("Visual");
             go.transform.SetParent(root.transform, false);
@@ -834,6 +851,15 @@ namespace HotPatata.Editor
 
         public static void AddProxy(GameObject root, string name, MeshBuilder proxy, WalkableProxy.Kind kind, float tolerance)
         {
+            var frozen = ElementRecorder.FreezeInPlace ? root.GetComponent<FrozenStructure>() : null;
+            if (frozen != null)
+            {
+                // frozen in place: the structure lays its walking surface from its boards
+                frozen.SurfaceKind = kind;
+                frozen.Tolerance = tolerance;
+                WalkSurfaceBuilder.Refresh(frozen, true);
+                return;
+            }
             var mesh = OrganicAssets.Save(proxy.ToSingleMesh(name + " ground"));
             var go = new GameObject("Ground") { layer = CourseKit.Layer("Environment") };
             go.transform.SetParent(root.transform, false);

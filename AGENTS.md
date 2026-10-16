@@ -48,7 +48,8 @@ its playtest with three is open. M16 (audio: a drop-in sound library, `Assets/Au
 open. M18 (authored levels: the owner builds levels by hand in the Editor) has its steps 1 (the level and its timber) and 2 (the nature)
 built and tried by the owner, its step 3a (the game: kit handles, wiring, contracts, Verify Level, route runner) built and
 merged, and its step 3b (the kit's forest looks, props, the example level `OldOak`, checkpoints whose campfire finds its place)
-built; the owner's try of 3a and 3b is open. M14 (contracts for PatataWilds) is next.
+built; the owner's try of 3a and 3b is open. Its step 4 (timber by hand: freezing pieces into elements, the structure
+library; then PatataRanger as an authored level) is in progress. M14 (contracts for PatataWilds) is next.
 The live table is at the top of `docs/MVP_TASKS.md`.
 
 ## Docs (read before implementing)

@@ -10,6 +10,7 @@ The tools come in three steps (M18). This guide covers what is built:
 | 2. The nature | the terrain in the nature look, valley walls, water, giant trees, forests (planted or painted), mist, sound | built |
 | 3a. The game | checkpoints numbered along the course, size handles, wiring, contracts, Verify Level, the route runner, Play from here | built |
 | 3b. The look | forest looks for the kit, props, the example level (`OldOak`) | built |
+| 4. Timber by hand | structures (shelter, gantry, sign, pulley beam), freezing into elements, the structure library | built |
 
 A good order: make the level (§1), shape the land (§2), plant the giant trees (§3), hang the timber on them (§4 to §7),
 plant the forest round it (§8), the mist and the sound (§9), then the game (§10), checked and played (§11), and dress it
@@ -312,6 +313,16 @@ With several elements selected, the Inspector's buttons work on all of them:
 Verify Level warns about a rope that hangs on nothing and a post that stands on nothing.
 
 ## 19. The structure library
+
+`GameObject > HotPatata Level > Structure` adds a **Shelter** (four posts, a roof with two slopes or one, low walls, a winch
+drum), a **Gantry** (braced legs, a head, a pulley and its rope, a little roof), a **Sign** (a board on one or two posts, an owl,
+a leaf or an axe painted on it) or a **Pulley Beam** (on its own post, or bolted to the trunk or wall the piece is set against).
+Set them in the Inspector, move and turn the piece; freeze them to move their boards by hand.
+
+`HotPatata/Level/Build Structure Library` makes the library's first prefabs (Shelters: Winch Booth, Woodshed, Lean-to;
+Gantries: Gate Tower, Lift Gantry; Signs: three clue boards and a signpost; Pulleys: Pulley Beam, Pulley Post). It only
+makes the missing ones: once a prefab exists it is yours. To start one over, right click it in the Project window,
+**HotPatata > Regenerate Library Structure** (your changes to it are lost).
 
 Select a frozen structure and click **Save to library...** (its Inspector): it becomes a prefab in
 `Assets/Prefabs/Structures/` (pick the folder for its kind: Shelters, Gantries, Signs, Pulleys...). Drag it from the Project

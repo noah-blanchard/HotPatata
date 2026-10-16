@@ -187,6 +187,55 @@ namespace HotPatata.Tests
                           "a wall's old box was kept beside its boards");
         }
 
+        [Test]
+        public void Structures_BuildAndFreezeIntoSolidPostsAndPaint()
+        {
+            var shelter = Piece<ShelterShape>("Shelter", new Vector3(-20f, 0f, 0f));
+            shelter.Drum = true;
+            shelter.LowWalls = 1f;
+            var gantry = Piece<GantryShape>("Gantry", new Vector3(-8f, 0f, 0f));
+            var sign = Piece<SignShape>("Sign", new Vector3(4f, 0f, 0f));
+            var beam = Piece<PulleyBeamShape>("Pulley beam", new Vector3(12f, 0f, 0f));
+            var pieces = new LevelPiece[] { shelter, gantry, sign, beam };
+            LevelPieceBuilder.Rebuild(pieces);
+            foreach (var piece in pieces)
+            {
+                Assert.Greater(piece.Output.GetComponentsInChildren<MeshRenderer>().Length, 0, $"{piece.name} is not drawn");
+                Assert.Greater(piece.Output.GetComponentsInChildren<BoxCollider>().Length, 0, $"{piece.name}'s posts do not collide");
+            }
+            var frozen = TimberFreezer.Freeze(pieces).ToDictionary(f => f.name);
+            Assert.AreEqual(4, frozen.Count, "a structure did not freeze");
+            Assert.GreaterOrEqual(frozen["Shelter"].GetComponentsInChildren<TimberBoard>().Count(b => b.Kind == TimberElementKind.Post && b.Solid), 4, "the shelter's posts are not solid");
+            Assert.Greater(frozen["Shelter"].GetComponentsInChildren<TimberPath>().Count(p => p.Kind == TimberElementKind.Rope), 3, "the winch drum lost its rope");
+            Assert.Greater(frozen["Sign"].GetComponentsInChildren<TimberPaint>().Length, 0, "the sign lost its glyph");
+            Assert.AreEqual(1, frozen["Pulley beam"].GetComponentsInChildren<TimberTurned>().Length, "the pulley beam lost its wheel");
+            foreach (var f in frozen.Values)
+                Assert.IsNull(f.GetComponentsInChildren<BoxCollider>().FirstOrDefault(c => c.GetComponent<TimberElement>() == null && c.GetComponentInParent<TimberWall>() == null),
+                              $"{f.name} kept a post's old box beside the post");
+        }
+
+        [Test]
+        public void FreezingInPlace_DrawsTheKitsTimberAsElements()
+        {
+            var parent = new GameObject("Course").transform;
+            var outline = new[] { new Vector2(-3f, -2f), new Vector2(3f, -2f), new Vector2(3f, 2f), new Vector2(-3f, 2f) }
+                .Select(p => p + new Vector2(Origin.x, Origin.z)).ToList();
+            var site = new TimberKit.Site { ground = _ => Origin.y, maxPost = 4f };
+            ElementRecorder.FreezeInPlace = true;
+            GameObject deck;
+            try { deck = TimberKit.Deck(parent, "Deck", outline, _ => Origin.y + 3f, new TimberKit.DeckSpec { rails = true }, site); }
+            finally { ElementRecorder.FreezeInPlace = false; }
+            Physics.SyncTransforms();
+
+            var frozen = deck.GetComponent<FrozenStructure>();
+            Assert.IsNotNull(frozen, "the deck is not a structure");
+            Assert.IsTrue(deck.GetComponentsInChildren<MeshRenderer>().All(r => r.GetComponent<TimberElement>() != null), "a merged mesh was drawn");
+            Assert.Greater(deck.GetComponentsInChildren<TimberBoard>().Count(b => b.Walk == TimberWalk.Slab), 20, "the boards are not elements");
+            Assert.Greater(deck.GetComponentsInChildren<TimberWall>().Length, 0, "the rail's wall is not a TimberWall");
+            Assert.AreEqual(1, deck.GetComponentsInChildren<WalkableProxy>().Length, "the deck has more than its walking surface");
+            Assert.IsTrue(SurfaceAt(Origin + new Vector3(0.3f, 3f, 0.4f), out float y) && Mathf.Abs(y - (Origin.y + 3f)) < 0.02f, "no walking surface at the boards' tops");
+        }
+
         // ------------------------------------------------------------------ elements
 
         [Test]

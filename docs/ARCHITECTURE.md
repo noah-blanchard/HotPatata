@@ -2280,7 +2280,7 @@ Tests: `LevelAuthoringTests`, `LevelNatureTests`, `LevelGameTests`; `AuthoredLev
 - **Props.** `PropLibraryBuilder` (menu `HotPatata/Level/Build Prop Library`) makes a prefab per CC0 model of
   `Assets/Art/Models/Nature/` at its real size (scans brought to a unit height are set to their real height), on its base,
   drawn with the nature library's material (`MaterialFor`), in `Assets/Prefabs/Props/<kind>/`, plus three sets of timber and
-  props (`Sets/`; their meshes in `Assets/Art/Generated/PropSets/`). `PropSolid` (runtime, read by no gameplay code) holds a
+  props (`Sets/`; their timber is made of elements, §27.1). `PropSolid` (runtime, read by no gameplay code) holds a
   prop's choice: decoration, or a box on Environment round what it draws (`PropSolidEditor.SetSolid`). `PropBrushWindow`
   paints small props from the library on the ground and the decks, off the level's paths, into `Level/Props`; its eraser takes
   only the brushes' prefabs.
@@ -2322,9 +2322,15 @@ it into its elements, one GameObject each, moved by hand from then on (one way: 
   changed, a rope whose anchor moved, a surface whose boards moved).
 - **Checks.** Verify Level reports ropes that hang on nothing and posts that stand on nothing, and counts the elements'
   triangles in the budget.
+- **Structures.** `TimberStructures` draws a shelter, a gantry, a sign (its glyph painted: `TimberPaint`) and a pulley beam
+  from a place, a turn and settings only (no level or course constant), with the timber kit; what a body must not pass (posts,
+  legs, low walls) collides as boxes the frozen elements replace. The level pieces `ShelterShape`, `GantryShape`, `SignShape`
+  and `PulleyBeamShape` hold those settings, like the other pieces.
 - **The library.** A frozen structure saved with *Save to library* is a prefab in `Assets/Prefabs/Structures/<kind>/`: it
-  belongs to the author (edit it in Prefab Mode, make variants), nothing regenerates it. It is scenery and level geometry
+  belongs to the author (edit it in Prefab Mode, make variants), nothing regenerates it. `StructureLibraryBuilder` (menu
+  `HotPatata/Level/Build Structure Library`) makes the first ones from the structure pieces, only those missing; one is drawn
+  again only when asked (Assets > HotPatata > Regenerate Library Structure). The prop library's sets are made of elements too. It is scenery and level geometry
   only: a gameplay prefab of the kit is placed beside or in it in the level, never built into it.
 
 Tests: `TimberElementTests` (a frozen deck, stair, bridge and house look and walk like their pieces, holes, attached ends,
-ropes on anchors, the catalogue, solid elements).
+ropes on anchors, the catalogue, solid elements, the four structures built and frozen with solid posts and painted glyphs).
