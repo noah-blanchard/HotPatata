@@ -125,7 +125,7 @@ namespace HotPatata.Editor
     public sealed class NewLevelWindow : EditorWindow
     {
         string levelName = "MyLevel", displayName = "", problem;
-        int minPlayers = 2;
+        int minPlayers = 2, maxPlayers = 4;
         LevelDay day = LevelDay.Ranger;
 
         public static void Open()
@@ -141,13 +141,14 @@ namespace HotPatata.Editor
             levelName = EditorGUILayout.TextField("Scene name", levelName);
             displayName = EditorGUILayout.TextField("Name in the menu", displayName);
             minPlayers = EditorGUILayout.IntSlider("Players needed", minPlayers, 1, 4);
+            maxPlayers = EditorGUILayout.IntSlider("Players at most", Mathf.Max(minPlayers, maxPlayers), minPlayers, 4);
             day = (LevelDay)EditorGUILayout.EnumPopup("Day", day);
             problem = LevelScenes.NameProblem(levelName);
             if (problem != null) EditorGUILayout.HelpBox(problem, MessageType.Warning);
             using (new EditorGUI.DisabledScope(problem != null))
                 if (GUILayout.Button("Create Level") && EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
                 {
-                    LevelScenes.Create(levelName, displayName, minPlayers, day);
+                    LevelScenes.Create(levelName, displayName, minPlayers, day, maxPlayers);
                     Close();
                 }
         }

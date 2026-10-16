@@ -314,6 +314,37 @@ namespace HotPatata.Tests
         }
 
         [Test]
+        public void Menu_KeepsEachLevelsMaxPlayers_AndALevelForTwoTakesNoThird()
+        {
+            var go = new GameObject("Bootstrap");
+            try
+            {
+                var bootstrap = go.AddComponent<NetworkBootstrap>();
+                var so = new SerializedObject(bootstrap);
+                CourseKit.WriteMenu(so, new[]
+                {
+                    new CourseKit.MenuEntry { scene = "Duo", checkpoints = 7, minPlayers = 2, maxPlayers = 2, displayName = "The Duo" },
+                    new CourseKit.MenuEntry { scene = "PassSandbox", checkpoints = 1, minPlayers = 2 },
+                    new CourseKit.MenuEntry { scene = "TrioLevel", checkpoints = 6, minPlayers = 3 },
+                });
+                CourseKit.RegisterInMenu(so, "NewOne", 2, CourseKit.MenuSlot.First);
+                so.ApplyModifiedPropertiesWithoutUndo();
+
+                var menu = CourseKit.ReadMenu(new SerializedObject(bootstrap));
+                CollectionAssert.AreEqual(new[] { 4, 2, 4, 4 }, menu.Select(CourseKit.MaxOf).ToArray(), "unset = four, and the list moves together");
+                Assert.AreEqual(2, bootstrap.MaxPlayersOf(1));
+                Assert.AreEqual(4, bootstrap.MaxPlayersOf(9), "not listed: four");
+
+                Assert.IsTrue(NetworkBootstrap.LobbyFits(2, 2, 2));
+                Assert.IsFalse(NetworkBootstrap.LobbyFits(3, 2, 2), "a level for two takes no third");
+                Assert.IsFalse(NetworkBootstrap.LobbyFits(2, 3, 4));
+                Assert.IsTrue(NetworkBootstrap.LobbyFits(3, 3, 1), "a max under the min counts as the min");
+                Assert.IsFalse(NetworkBootstrap.LobbyFits(4, 3, 1));
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
+        [Test]
         public void LevelNames_AreSceneNamesNotTaken()
         {
             Assert.IsNull(LevelScenes.NameProblem("MyNewLevel42"));

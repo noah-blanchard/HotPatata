@@ -73,14 +73,17 @@ namespace HotPatata.Editor
         {
             public string scene, displayName;
             public int checkpoints, minPlayers;
+            /// <summary>Players the level allows, at most (0 = unset: four).</summary>
+            public int maxPlayers;
         }
 
-        /// <summary>The menu's level list as a NetworkBootstrap holds it (its four arrays read together).</summary>
+        /// <summary>The menu's level list as a NetworkBootstrap holds it (its five arrays read together).</summary>
         public static List<MenuEntry> ReadMenu(SerializedObject bootstrap)
         {
             var names = bootstrap.FindProperty("gameplayScenes");
             var counts = bootstrap.FindProperty("sceneCheckpoints");
             var mins = bootstrap.FindProperty("sceneMinPlayers");
+            var maxs = bootstrap.FindProperty("sceneMaxPlayers");
             var shown = bootstrap.FindProperty("sceneDisplayNames");
             var list = new List<MenuEntry>();
             for (int i = 0; i < names.arraySize; i++)
@@ -89,24 +92,30 @@ namespace HotPatata.Editor
                     scene = names.GetArrayElementAtIndex(i).stringValue,
                     checkpoints = i < counts.arraySize ? counts.GetArrayElementAtIndex(i).intValue : 0,
                     minPlayers = i < mins.arraySize ? mins.GetArrayElementAtIndex(i).intValue : 2,
+                    maxPlayers = i < maxs.arraySize ? maxs.GetArrayElementAtIndex(i).intValue : 4,
                     displayName = i < shown.arraySize ? shown.GetArrayElementAtIndex(i).stringValue : "",
                 });
             return list;
         }
 
-        /// <summary>Writes the whole level list in this order (the four arrays together, the same length).</summary>
+        /// <summary>The players an entry allows, at most: four when unset, never under its minimum.</summary>
+        public static int MaxOf(MenuEntry e) => Mathf.Max(Mathf.Max(1, e.minPlayers), e.maxPlayers <= 0 ? 4 : Mathf.Min(4, e.maxPlayers));
+
+        /// <summary>Writes the whole level list in this order (the five arrays together, the same length).</summary>
         public static void WriteMenu(SerializedObject bootstrap, IList<MenuEntry> entries)
         {
             var names = bootstrap.FindProperty("gameplayScenes");
             var counts = bootstrap.FindProperty("sceneCheckpoints");
             var mins = bootstrap.FindProperty("sceneMinPlayers");
+            var maxs = bootstrap.FindProperty("sceneMaxPlayers");
             var shown = bootstrap.FindProperty("sceneDisplayNames");
-            foreach (var array in new[] { names, counts, mins, shown }) array.arraySize = entries.Count;
+            foreach (var array in new[] { names, counts, mins, maxs, shown }) array.arraySize = entries.Count;
             for (int i = 0; i < entries.Count; i++)
             {
                 names.GetArrayElementAtIndex(i).stringValue = entries[i].scene;
                 counts.GetArrayElementAtIndex(i).intValue = Mathf.Max(0, entries[i].checkpoints);
                 mins.GetArrayElementAtIndex(i).intValue = Mathf.Max(1, entries[i].minPlayers);
+                maxs.GetArrayElementAtIndex(i).intValue = MaxOf(entries[i]);
                 shown.GetArrayElementAtIndex(i).stringValue = entries[i].displayName ?? "";
             }
         }
@@ -118,6 +127,7 @@ namespace HotPatata.Editor
                 var names = so.FindProperty("gameplayScenes");
                 var counts = so.FindProperty("sceneCheckpoints");
                 var mins = so.FindProperty("sceneMinPlayers");
+                var maxs = so.FindProperty("sceneMaxPlayers");
                 var shown = so.FindProperty("sceneDisplayNames");
                 counts.arraySize = Mathf.Max(counts.arraySize, names.arraySize);
                 for (int i = mins.arraySize; i < names.arraySize; i++)
@@ -125,6 +135,12 @@ namespace HotPatata.Editor
                     mins.InsertArrayElementAtIndex(i);
                     mins.GetArrayElementAtIndex(i).intValue = 2;
                 }
+                for (int i = maxs.arraySize; i < names.arraySize; i++)
+                {
+                    maxs.InsertArrayElementAtIndex(i);
+                    maxs.GetArrayElementAtIndex(i).intValue = 4;
+                }
+                maxs.arraySize = names.arraySize;
                 for (int i = shown.arraySize; i < names.arraySize; i++)
                 {
                     shown.InsertArrayElementAtIndex(i);
@@ -147,6 +163,8 @@ namespace HotPatata.Editor
                     names.InsertArrayElementAtIndex(at);
                     counts.InsertArrayElementAtIndex(Mathf.Min(target, counts.arraySize));
                     mins.InsertArrayElementAtIndex(Mathf.Min(target, mins.arraySize));
+                    maxs.InsertArrayElementAtIndex(Mathf.Min(target, maxs.arraySize));
+                    maxs.GetArrayElementAtIndex(at).intValue = 4;
                     shown.InsertArrayElementAtIndex(Mathf.Min(target, shown.arraySize));
                     shown.GetArrayElementAtIndex(at).stringValue = "";
                     index = at;
@@ -156,6 +174,7 @@ namespace HotPatata.Editor
                     names.MoveArrayElement(index, target);
                     counts.MoveArrayElement(index, target);
                     mins.MoveArrayElement(index, target);
+                    maxs.MoveArrayElement(index, target);
                     shown.MoveArrayElement(index, target);
                     index = target;
                 }

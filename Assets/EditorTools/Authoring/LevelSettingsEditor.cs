@@ -22,6 +22,7 @@ namespace HotPatata.Editor
             serializedObject.Update();
             EditorGUILayout.PropertyField(serializedObject.FindProperty("displayName"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("minPlayers"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("maxPlayers"), new GUIContent("Max Players"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("day"));
             if (GUILayout.Button("Apply the day (Apply Look)")) LookBuilder.ApplyToScene(Settings.gameObject.scene);
             serializedObject.ApplyModifiedProperties();

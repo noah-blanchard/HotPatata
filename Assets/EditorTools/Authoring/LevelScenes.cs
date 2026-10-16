@@ -38,7 +38,7 @@ namespace HotPatata.Editor
             return null;
         }
 
-        public static Scene Create(string name, string displayName, int minPlayers, LevelDay day)
+        public static Scene Create(string name, string displayName, int minPlayers, LevelDay day, int maxPlayers = 4)
         {
             string problem = NameProblem(name);
             if (problem != null) throw new ArgumentException(problem);
@@ -54,6 +54,7 @@ namespace HotPatata.Editor
             var settings = level.gameObject.AddComponent<LevelSettings>();
             settings.DisplayName = string.IsNullOrWhiteSpace(displayName) ? name : displayName.Trim();
             settings.MinPlayers = minPlayers;
+            settings.MaxPlayers = maxPlayers;
             settings.Day = day;
             Transform Group(string groupName)
             {
