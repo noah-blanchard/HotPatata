@@ -9,13 +9,13 @@ The tools come in three steps (M18). This guide covers what is built:
 | 1. The level and its timber | a new level scene, decks, walkways and stairs, rope bridges, railings, houses, trestle towers; the menu; the day | built |
 | 2. The nature | the terrain in the nature look, valley walls, water, giant trees, forests (planted or painted), mist, sound | built |
 | 3a. The game | checkpoints numbered along the course, size handles, wiring, contracts, Verify Level, the route runner, Play from here | built |
-| 3b. The look | forest looks for the kit, props, the example level (`OldOak`) | built |
+| 3b. The look | forest looks for the kit, props, the example level (`OldOak`, archived since) | built |
 | 4. Timber by hand | structures (shelter, gantry, sign, pulley beam), freezing into elements, the structure library | built |
 
 A good order: make the level (§1), shape the land (§2), plant the giant trees (§3), hang the timber on them (§4 to §7),
 plant the forest round it (§8), the mist and the sound (§9), then the game (§10), checked and played (§11), and dress it
-(§14, §15). The example level, `Assets/Scenes/Levels/OldOak.unity` ("The Old Oak", §16), is made this way: open it to see
-each tool's result.
+(§14, §15). The example level, "The Old Oak" (§16), was made this way; it is archived with the other maps since the fresh start
+(`docs/MAP_ARCHIVE.md`, branch `archive/maps-v1`).
 
 ---
 
@@ -26,9 +26,11 @@ each tool's result.
    - **Scene name**: letters and digits, no spaces (`TreetopRun`). The menu loads the level by this name.
    - **Name in the menu**: what players see (`Treetop Run`). Empty = the scene name.
    - **Players needed**: 2 for most levels; 3 if a puzzle needs three (PROJECT_SPEC §15e).
-   - **Day**: the light the level borrows: Wilds, Canopy, Temple or Ranger. It moves from dawn at the start to its last
+   - **Day**: the light the level borrows: Wilds, Canopy, Temple or Ranger (named after the archived courses they were made
+     for: a misty dawn to dusk, a cooler forest day, a jungle day ending in a storm, a morning climbing out of the mist). It moves from dawn at the start to its last
      moment at the last checkpoint.
-3. **Create Level**. The scene opens: `Assets/Scenes/Levels/<name>.unity`.
+3. **Create Level**. The scene opens: `Assets/Scenes/Levels/<name>.unity`, copied from `Assets/Scenes/Templates/CourseTemplate.unity`
+   (a run, spawns, a bomb, a camera and networking, no geometry).
 
 You can press Play at once: the players start on a flat forest floor (a 256 m terrain) with a safety net far under it.
 Everything you add goes under `SectionRoot/Level` (its groups: `Timber`, `Trees`, `Kit`, `Props`).
@@ -54,7 +56,7 @@ After reshaping the ground under timber: `HotPatata/Level/Rebuild All Pieces` (t
 
 ## 3. Giant trees
 
-`GameObject > HotPatata Level > Giant Tree` grows a hero tree (the kind PatataRanger's post is built round), 40 to 70 m.
+`GameObject > HotPatata Level > Giant Tree` grows a hero tree (the kind the archived PatataRanger's post was built round), 40 to 70 m.
 
 - **Start from** an old oak, a tall fir, a pine or a snag (Inspector), then adjust its height, girth, crown and seed.
 - **The white handle at the top of the trunk** leans the tree and sets its height.
@@ -121,7 +123,7 @@ appears there with those settings.
 Two ways, together:
 
 - **Forest Area** (`GameObject > HotPatata Level > Forest Area`): draw its outline like a deck's (dots, +, Ctrl+click, or
-  the pencil). Inside it the forest is planted by itself, like PatataRanger's: giants in groves with clearings, an
+  the pencil). Inside it the forest is planted by itself, like the archived PatataRanger's: giants in groves with clearings, an
   understory, ferns, grass, bushes, rocks, logs and moss. Set how dense each layer is, how open the clearings are, and how
   far it keeps from the paths. Nothing grows on a walkway, a bridge, a deck, a pass arc, on water, on rock too steep, or
   too near a giant tree, and it replants by itself when a piece near it changes (**Replant now** forces it). Nothing in it
@@ -218,6 +220,7 @@ built as drawn (a hanger with nothing above, a scaled piece...).
 - the list of the menu's levels: **drag yours** where it goes (the others keep their order);
 - **Save to the menu**. The level is added to the build and shows in Bootstrap's level list, with a spawn choice per
   checkpoint. **Remove from the menu** takes it out.
+- `PassSandbox` stays in the list as the test map: the Editor and development builds show it, a release build never does.
 
 A level is official (shipped in the menu) only once Verify Level reports no error.
 
@@ -259,8 +262,8 @@ brush painted (nothing else); Escape stops.
 
 ## 16. The example level
 
-`Assets/Scenes/Levels/OldOak.unity`, "The Old Oak" in the menu (before the sandbox): three checkpoints, about three minutes
-for two players, made with these tools only.
+"The Old Oak" (`Assets/Scenes/Levels/OldOak.unity` on the branch `archive/maps-v1`, archived at the fresh start): three
+checkpoints, about three minutes for two players, made with these tools only. Check it out from the archive to open it.
 
 | Section | What it forces | Tools |
 |---|---|---|
@@ -333,9 +336,8 @@ place the kit's gameplay prefab (a winch plate, a gate) in it in the level, neve
 Meshes no scene or prefab uses any more leave the catalogue by themselves when you save (`HotPatata/Level/Clean Mesh Catalog`
 does it at once).
 
-**PatataRanger** (`Assets/Scenes/PatataRanger.unity`) is a level made of frozen timber: every deck, stair, bridge, hut, booth
-and tower is a structure of elements. Open it to move its boards, ropes and posts, or save its booths and towers to the
-library. Its land, giant trees and forest were baked by its old builder: move them as objects, they are not pieces.
+**PatataRanger** (archived, `docs/MAP_ARCHIVE.md` §6.5) was a level made of frozen timber: every deck, stair, bridge, hut, booth
+and tower a structure of elements. The library's booths, gantries, pulleys and signs come from it.
 
 ## Rules
 

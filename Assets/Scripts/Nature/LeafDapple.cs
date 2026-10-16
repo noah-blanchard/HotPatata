@@ -6,7 +6,7 @@ namespace HotPatata
     /// <summary>
     /// Presentation only (ARCHITECTURE §25.3, PatataCanopy): the sun's leaf cookie (soft dappled light on the decks) sways a
     /// little with the plants' wind (the global _HP_Wind set by <see cref="TimeOfDayBlender"/>). It moves the cookie's offset
-    /// only, a few centimetres a second: it never flashes and never touches a rule. Set up by PatataCanopyBuilder.ApplyDapple.
+    /// only, a few centimetres a second: it never flashes and never touches a rule. Set up by PatataCanopyLook.ApplyDapple.
     /// </summary>
     [RequireComponent(typeof(Light))]
     public class LeafDapple : MonoBehaviour

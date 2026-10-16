@@ -8,9 +8,9 @@ Windows PC (Linux and macOS builds best effort), friend-hosted online sessions (
 
 ## Status
 
-MVP prototype. The local pass loop, networking, the online lobby and one ~680 m greybox course (3 acts, 7 checkpoints)
-are done, together with a fluid-movement and cartoon-look pass. Next come UX/readability (M6), hardening (M7) and an
-external playtest. See the status table in [`docs/MVP_TASKS.md`](docs/MVP_TASKS.md).
+MVP prototype. The local pass loop, networking, the online lobby, the obstacle kit and the level tools are done. Every map
+built so far was archived for a fresh start (2026-10-16): they are described in [`docs/MAP_ARCHIVE.md`](docs/MAP_ARCHIVE.md)
+and kept on the branch `archive/maps-v1`. The project holds only `PassSandbox` (dev builds) until the next maps are made. See the status table in [`docs/MVP_TASKS.md`](docs/MVP_TASKS.md).
 
 ## Getting started
 

@@ -9,7 +9,7 @@ using Object = UnityEngine.Object;
 namespace HotPatata.Editor
 {
     /// <summary>
-    /// Course pieces of the nature look (ARCHITECTURE §25.3), for <see cref="PatataWildsBuilder"/>: water (a surface with a
+    /// Course pieces of the nature look (ARCHITECTURE §25.3), for the level tools and the menu: water (a surface with a
     /// <see cref="KillZone"/> just under it: every water surface is lethal), the campfire that stands for a checkpoint, mossy
     /// rocks, Poly Haven props, torches and ambient sound sources. Decoration is collider-free and marked
     /// <see cref="CourseDecoration"/>; nothing here carries a rule.

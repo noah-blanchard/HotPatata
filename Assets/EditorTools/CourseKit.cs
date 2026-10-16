@@ -13,7 +13,7 @@ namespace HotPatata.Editor
 
     /// <summary>
     /// Shared editor helpers for the course and kit builders (<see cref="KitPrefabBuilder"/>,
-    /// <c>BombObstacleKitBuilder</c>, <c>IndustrialPlantBuilder</c>, <c>PatataWildsBuilder</c>): placing kit prefabs, sizing movers,
+    /// <c>BombObstacleKitBuilder</c>, the level tools): placing kit prefabs, sizing movers,
     /// writing serialized fields, materials, primitives and the collider-free backdrop.
     /// </summary>
     public static class CourseKit
@@ -260,8 +260,8 @@ namespace HotPatata.Editor
 
         // ------------------------------------------------------------------ course scenes
 
-        /// <summary>The course a missing course scene is copied from (its run, spawns, bomb, camera and networking).</summary>
-        public const string CourseTemplatePath = "Assets/Scenes/IndustrialPlant.unity";
+        /// <summary>The scene a new level is copied from: a run, spawns, a bomb, a camera and networking, no geometry (the plant's, emptied).</summary>
+        public const string CourseTemplatePath = "Assets/Scenes/Templates/CourseTemplate.unity";
 
         /// <summary>
         /// Opens <paramref name="scenePath"/> (copied from <see cref="CourseTemplatePath"/> when missing) and clears its generated

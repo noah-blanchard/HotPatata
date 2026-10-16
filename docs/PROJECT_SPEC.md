@@ -850,8 +850,8 @@ Avoid in the first level:
 ## 15. First level blueprint
 
 > **Removed course.** `PrototypeCourse` was removed in the project cleanup; this blueprint stays as the design record and
-> its built layout is archived in [`OBSTACLES.md`](OBSTACLES.md) §3.2. The kept courses are PatataWilds (§15c), PatataCanopy
-> (§15d) and the industrial plant.
+> its built layout is archived in [`MAP_ARCHIVE.md`](MAP_ARCHIVE.md) §7. Since the fresh start (2026-10-16) every course is
+> archived there; the project keeps only the sandbox.
 
 Working level:
 
@@ -1006,6 +1006,9 @@ readable victory lap.
 
 ## 15c. Third level blueprint — PatataWilds (M12)
 
+> **Archived course.** Archived at the fresh start (2026-10-16) with every other map: this blueprint stays as the design record;
+> its sections, obstacle by obstacle, are in [`MAP_ARCHIVE.md`](MAP_ARCHIVE.md) and the scene on the branch `archive/maps-v1`.
+
 Added at the owner's request after `PatataWorks`: a **realistic outdoor course**, a climb through a forest, along a river
 and up granite cliffs to a summit, from dawn to dusk. It is first in the Bootstrap level list. Built by
 `PatataWildsBuilder` (ARCHITECTURE §4); its look is ARCHITECTURE §25.3.
@@ -1078,6 +1081,9 @@ fuse and ends with a short, readable climb to the summit beacon.
 
 ## 15d. Fourth level blueprint — PatataCanopy (M13)
 
+> **Archived course.** Archived at the fresh start (2026-10-16) with every other map: this blueprint stays as the design record;
+> its sections, obstacle by obstacle, are in [`MAP_ARCHIVE.md`](MAP_ARCHIVE.md) and the scene on the branch `archive/maps-v1`.
+
 Asked for by the owner after a review of PatataWilds, whose puzzles had the intent but not the constraint. A course in
 the **tree tops**, in PatataWilds' nature look, where every section keeps a contract (§13.20). Second in the Bootstrap
 level list. Built by `PatataCanopyBuilder` (ARCHITECTURE §4).
@@ -1121,6 +1127,9 @@ The shorter hold fuse: 5.0 s from checkpoint 15, 4.5 s from checkpoint 20 (§20)
 ---
 
 ## 15e. Fifth level blueprint — PatataTemple (M15)
+
+> **Archived course.** Archived at the fresh start (2026-10-16) with every other map: this blueprint stays as the design record;
+> its sections, obstacle by obstacle, are in [`MAP_ARCHIVE.md`](MAP_ARCHIVE.md) and the scene on the branch `archive/maps-v1`.
 
 Asked for by the owner: in the vein of PatataCanopy (built for two), a course whose every section **needs three players**,
 with real challenges that take three to think through. A temple in ruins over a jungle valley, in the nature look (stone instead

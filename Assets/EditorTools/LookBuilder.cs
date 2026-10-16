@@ -57,12 +57,7 @@ namespace HotPatata.Editor
         static readonly (string scene, float yaw)[] Scenes =
         {
             ("Assets/Scenes/Bootstrap.unity", 55f),
-            ("Assets/Scenes/PassSandbox.unity", 35f),
-            ("Assets/Scenes/IndustrialPlant.unity", 55f),
-            ("Assets/Scenes/PatataWilds.unity", 75f),  // its sun then moves with the day (PatataWildsLook, ARCHITECTURE §25.3)
-            ("Assets/Scenes/PatataCanopy.unity", 75f),  // its own, cooler day (PatataCanopyLook)
-            ("Assets/Scenes/PatataTemple.unity", 80f),  // a jungle day ending in a storm (PatataTempleLook)
-            ("Assets/Scenes/PatataRanger.unity", 70f)   // a morning that climbs out of the mist (PatataRangerLook)
+            ("Assets/Scenes/PassSandbox.unity", 35f)
         };
 
         public static Quaternion SunRotation(float yaw) => Quaternion.Euler(SunElevation, yaw, 0f);
@@ -128,14 +123,9 @@ namespace HotPatata.Editor
                 RenderSettings.fogEndDistance = 180f;
                 PlantExposure(scene);
             }
-            // the nature courses: a day from dawn to dusk, HDRI skies, one preset per act (sun, fill, haze, mist, grade), blended at
-            // run time; each course has its own day (NatureDayLook)
-            if (scene.name == PatataWildsLook.SceneName) PatataWildsLook.Apply(scene);
-            if (scene.name == PatataCanopyBuilder.SceneName) PatataCanopyLook.Apply(scene);
-            if (scene.name == PatataTempleBuilder.SceneName) PatataTempleLook.Apply(scene);
-            if (scene.name == PatataRangerLook.SceneName) PatataRangerLook.Apply(scene);
             if (scene.name == MenuForestLook.SceneName) MenuForestLook.Apply(scene);
-            // an authored level borrows a nature course's day (ARCHITECTURE §27): the same presets and sky, its own rig
+            // an authored level borrows one of the nature days (ARCHITECTURE §27): a day from dawn to dusk, HDRI skies, one preset
+            // per act (sun, fill, haze, mist, grade), blended at run time (NatureDayLook); its own rig
             if (level != null) ApplyDay(scene, level.Day);
 
             var volume = scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<Volume>(true)).FirstOrDefault(v => v.isGlobal && v.priority <= 0f);
