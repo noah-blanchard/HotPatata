@@ -243,6 +243,11 @@ zone's colour, an hourglass's sand, a curtain's field), drawn for the forest.
 | Net | body screen | a rope net between two log posts |
 | Embers | hot zone | charred logs and coals on its floor, sparks rising; its colour stays |
 | Sparks | laser curtain | a timber frame with an iron rail, sparks streaming down; its field stays |
+| Palisade gate | door | sharpened logs side by side, two cross beams and iron straps; its lethal lower edge stays |
+| Gangway | bridge (slides out) | planks on two stringers with iron straps |
+| Log raft | moving platform | logs lashed side by side under two cross poles |
+| Rotten planks | falling platform | grey planks with gaps and a broken one, on two stringers |
+| Swinging log | sweeper | a trunk with iron bands on an iron hub; its lethal reach stays the bar's |
 
 Size them with the same handles (§10). `HotPatata/Kit/Build Forest Looks` rebuilds them from their builder; never edit
 them by hand.
@@ -356,6 +361,7 @@ and tower a structure of elements. The library's booths, gantries, pulleys and s
   it), and a pass drawn under it is reported.
 - A tunnel's mouth can open inside a cavern's wall: their rocks overlap, the way is clear.
 - Dress it with the props (§15): the rock formations, roots, mushrooms, the calcite druse, lanterns.
+- No height mist fills a cave from the ground above it: under its footprint, the mist lies on the cave's own floor.
 
 ## 21. Cliffs
 

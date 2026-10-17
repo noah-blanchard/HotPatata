@@ -2236,6 +2236,8 @@ The pieces The Long Climb needed (PROJECT_SPEC §15g), reusable by any level; dr
   top and the shelves are walked on (the same mesh, Solid). Its rock is granite (`Nature_Granite`), sandstone (`Nature_Cliff`) or
   mossy. Its inspector lists its faces and says which a jump and a mantle climb (under `CliffShape.LockedFace`, 3.4 m); the
   section's contract still declares the Climb lock.
+- **No mist in a cave.** The height mist is baked from the terrain (`LevelTerrain.BakeMist`); inside a cave's footprint
+  (`LevelRock.Footprint`) the mist floor is the cave's own floor, so a cave under the ground is not filled with mist.
 - **Timber stands on rock.** `SceneSite.GroundAt` skips timber outputs but not rock ones (`SceneSite.IsRock`): a post finds a
   cliff's top or a cave's floor.
 - **Mine timber.** `MineFrameShape` (frames every few metres along a line: two posts on the ground, a cap beam, lagging boards,
