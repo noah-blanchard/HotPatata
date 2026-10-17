@@ -1,0 +1,37 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <Style src="LevelPalette.uss" />
+    <ui:VisualElement name="palette-root" class="pal-root">
+        <uie:Toolbar class="pal-toolbar">
+            <uie:ToolbarSearchField name="search" class="pal-search" />
+            <uie:ToolbarToggle name="list-view" text="List" tooltip="Rows instead of tiles." />
+            <uie:ToolbarMenu name="window-menu" text="More" />
+        </uie:Toolbar>
+        <ui:VisualElement name="tabs" class="pal-tabs" />
+        <ui:ScrollView name="grid" class="pal-grid" />
+        <ui:VisualElement name="strip" class="pal-strip">
+            <ui:VisualElement class="pal-strip-head">
+                <ui:Label name="armed-label" class="pal-armed" text="Click a tile to arm it, double-click to place it where the view looks." />
+                <ui:Button name="disarm" text="Disarm (Esc)" class="pal-small" />
+            </ui:VisualElement>
+            <ui:VisualElement name="looks" class="pal-chips" />
+            <ui:DropdownField name="preset" label="Preset" />
+            <ui:VisualElement name="burst" class="pal-burst">
+                <ui:SliderInt name="burst-count" label="Per click" low-value="1" high-value="30" show-input-field="true" />
+                <ui:Slider name="burst-radius" label="Radius (m)" low-value="0" high-value="12" show-input-field="true" />
+                <ui:MinMaxSlider name="burst-scale" label="Size" low-limit="0.2" high-limit="8" />
+                <ui:VisualElement class="pal-row">
+                    <ui:Toggle name="burst-yaw" label="Random turn" />
+                    <ui:Toggle name="burst-normal" label="Align to the surface" />
+                </ui:VisualElement>
+                <ui:Label class="pal-hint" text="Click or drag to scatter, Shift+click erases what this burst placed. Never on a walk, a bridge, a pass arc or water." />
+            </ui:VisualElement>
+            <ui:VisualElement class="pal-row pal-snaps">
+                <ui:Label text="Snap" class="pal-snap-title" tooltip="R or Ctrl+wheel turns the ghost, Alt held places without snapping, Esc or a right click disarms." />
+                <ui:Toggle name="snap-ground" label="Ground" />
+                <ui:Toggle name="snap-deck" label="Deck edge" />
+                <ui:Toggle name="snap-wall" label="Wall end" />
+                <ui:Toggle name="snap-opening" label="Wall opening" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

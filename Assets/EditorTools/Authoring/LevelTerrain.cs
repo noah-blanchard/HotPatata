@@ -159,6 +159,13 @@ namespace HotPatata.Editor
             finally { Object.DestroyImmediate(go); }
         }
 
+        [MenuItem("HotPatata/Ground/Clear Painted Paths", priority = 40)]
+        static void ClearPathsMenu()
+        {
+            var (trees, cells) = ClearPaths(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
+            Debug.Log($"[Level] {trees} painted tree(s) and {cells} detail cell(s) taken off the paths, the solids and the pass arcs.");
+        }
+
         /// <summary>
         /// Takes off the terrains of <paramref name="scene"/> what was painted on a path: trees within <paramref name="clearance"/>
         /// of a walkway, a bridge or a deck, inside the level's solids or on a pass arc, and details on a path. Returns (trees, detail cells).

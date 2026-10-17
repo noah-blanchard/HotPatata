@@ -229,10 +229,10 @@ namespace HotPatata.Editor
 
         public static string Path(string name) => Dir + name + ".mat";
 
-        [MenuItem("HotPatata/Nature/Build Nature Materials")]
+        [MenuItem("HotPatata/Look/Build Nature Materials", priority = 20)]
         public static void BuildAll() => Ensure(false);
 
-        [MenuItem("HotPatata/Nature/Assign Nature Textures")]
+        [MenuItem("HotPatata/Look/Assign Nature Textures", priority = 21)]
         public static void AssignAll() => Ensure(true);
 
         /// <summary>Creates what is missing and fills it; refills every material when <paramref name="refill"/>.</summary>

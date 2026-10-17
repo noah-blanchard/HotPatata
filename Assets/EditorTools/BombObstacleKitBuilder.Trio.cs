@@ -29,7 +29,7 @@ namespace HotPatata.Editor
         const int SandLamps = 12;
 
         /// <summary>Builds only the three-player systems (icon, materials, prefabs), leaving the rest of the kit untouched.</summary>
-        [MenuItem("HotPatata/Course/Build Trio Kit Prefabs")]
+        [MenuItem("HotPatata/Libraries/Build Trio Kit Prefabs", priority = 22)]
         public static void BuildTrioKitOnly()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode) return;
@@ -276,7 +276,7 @@ namespace HotPatata.Editor
         /// rotating bar): a heavy plate raising a lift, a sun beam turning a pivot while a body cuts it, an hourglass plate
         /// raising a lift for five seconds after release.
         /// </summary>
-        [MenuItem("HotPatata/Course/Build Sandbox Trio Obstacles")]
+        [MenuItem("HotPatata/Kit/Build Sandbox Trio Obstacles", priority = 42)]
         public static void BuildSandboxTrioDemo()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode) return;

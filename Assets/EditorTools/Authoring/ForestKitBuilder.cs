@@ -63,7 +63,7 @@ namespace HotPatata.Editor
             (SwingingLog, CourseKit.ObstaclesDir + "Obstacle_Sweeper.prefab", DressSwingingLog),
         };
 
-        [MenuItem("HotPatata/Kit/Build Forest Looks")]
+        [MenuItem("HotPatata/Libraries/Build Forest Looks", priority = 2)]
         public static void BuildAll()
         {
             NatureMaterialBuilder.Ensure(false);

@@ -1,7 +1,7 @@
 # Industrial textures: sources and licences
 
 Every texture set dropped in this folder tree (one sub-folder per material, see `docs/ARCHITECTURE.md` §25.2) must be listed here with its
-source, licence and date before it is committed (issue #87). Then run **HotPatata/Course/Assign Industrial Textures**.
+source, licence and date before it is committed (issue #87). Then run **HotPatata/Legacy/Assign Industrial Textures**.
 
 The sets come from [ambientCG](https://ambientcg.com) and [Poly Haven](https://polyhaven.com), both released under the
 [Creative Commons CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/) licence (no attribution required; credit is welcome).

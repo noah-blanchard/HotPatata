@@ -148,7 +148,7 @@ namespace HotPatata.Editor
             return string.Join("/", names);
         }
 
-        [MenuItem("HotPatata/Course/Check Section Contracts")]
+        [MenuItem("HotPatata/Kit/Check Section Contracts", priority = 20)]
         static void CheckOpenScenes()
         {
             var tuning = Tuning;

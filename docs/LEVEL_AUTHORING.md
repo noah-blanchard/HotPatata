@@ -13,6 +13,7 @@ The tools come in three steps (M18). This guide covers what is built:
 | 4. Timber by hand | structures (shelter, gantry, sign, pulley beam), freezing into elements, the structure library | built |
 | 5. Rock and mine | caves (tunnels and caverns), cliffs, mine timber, lane markers (M20) | built |
 | 6. Natural ground | caves opening into each other and into the hills, ragged cliff crests, forests on the way (M20) | built |
+| 7. The palette | one window for everything a level places (tabs, pictures, search, favourites, burst, snapping), the menus sorted the same way (M21) | built |
 
 A good order: make the level (§1), shape the land (§2), plant the giant trees (§3), hang the timber on them (§4 to §7),
 plant the forest round it (§8), the mist and the sound (§9), then the game (§10), checked and played (§11), and dress it
@@ -49,8 +50,8 @@ courses by itself: leaf litter where it is flat, rock where it is steep, in the 
 used.)
 
 - **Valley walls**: on the `Level` object, **Raise valley walls round the edge** lifts the terrain's border into rock walls
-  (choose their width and height). Ctrl+Z undoes it.
-- **Water**: `GameObject > HotPatata Level > Water`. A surface at the piece's height (drag the yellow squares to size it,
+  (choose their width and height; the palette's Ground > Valley Walls raises them 30 m wide and 35 m high). Ctrl+Z undoes it.
+- **Water**: `GameObject > HotPatata Level > Ground > Water` (or the palette's Ground tab, §25). A surface at the piece's height (drag the yellow squares to size it,
   turn the piece to turn its flow) with a kill zone under it down to its depth: falling in, or throwing the bomb into it,
   fails the section. Dig the ground under it first.
 - The safety net follows the terrain on every save (always under its lowest point).
@@ -62,7 +63,7 @@ After reshaping the ground under timber: `HotPatata/Level/Rebuild All Pieces` (t
 
 ## 3. Giant trees
 
-`GameObject > HotPatata Level > Giant Tree` grows a hero tree (the kind the archived PatataRanger's post was built round), 40 to 70 m.
+`GameObject > HotPatata Level > Nature > Giant Tree` grows a hero tree (the kind the archived PatataRanger's post was built round), 40 to 70 m.
 
 - **Start from** an old oak, a tall fir, a pine or a snag (Inspector), then adjust its height, girth, crown and seed.
 - **The white handle at the top of the trunk** leans the tree and sets its height.
@@ -73,7 +74,8 @@ After reshaping the ground under timber: `HotPatata/Level/Rebuild All Pieces` (t
 
 ## 4. Add timber
 
-`GameObject > HotPatata Level` (or right click in the Hierarchy) adds a piece where the Scene view looks, built at once:
+The Level Palette (§25), or `GameObject > HotPatata Level > Timber` (or right click in the Hierarchy), adds a piece where you click
+in the Scene view (the menu: where the Scene view looks), built at once:
 
 | Piece | What it is |
 |---|---|
@@ -122,13 +124,14 @@ to start from and then pull into shape.
 
 **Save As Preset** in a piece's Inspector saves its settings (width, rails, supports, wear...), never its shape. Use it
 again with **Apply Preset**, or drag the preset from the Project window into the Scene view: a new piece of that kind
-appears there with those settings.
+appears there with those settings. The palette lists every preset beside its piece (a **Presets** section of its tab), and an
+armed piece's strip offers its presets.
 
 ## 8. Forest
 
 Two ways, together:
 
-- **Forest Area** (`GameObject > HotPatata Level > Forest Area`): draw its outline like a deck's (dots, +, Ctrl+click, or
+- **Forest Area** (`GameObject > HotPatata Level > Nature > Forest Area`; **Forest Area (Walked)** is one already walked): draw its outline like a deck's (dots, +, Ctrl+click, or
   the pencil). Inside it the forest is planted by itself, like the archived PatataRanger's: giants in groves with clearings, an
   understory, ferns, grass, bushes, rocks, logs and moss. Set how dense each layer is, how open the clearings are, and how
   far it keeps from the paths. Nothing grows on a walkway, a bridge, a deck, a pass arc, on water, on rock too steep, or
@@ -144,18 +147,18 @@ Two ways, together:
 
 - **Mist**: it lies a little under the ground everywhere (the team walks in its veil), thick at dawn, as the day says.
   On the `Level` object: **Mist density** (thinner or thicker than the day) and **Mist depth**. A **Mist Zone**
-  (`GameObject > HotPatata Level > Mist Zone`) fills its box with mist up to its top: a ravine, a hollow, a clearing at
+  (`GameObject > HotPatata Level > Nature > Mist Zone`) fills its box with mist up to its top: a ravine, a hollow, a clearing at
   dawn. The mist is baked again on every save (or **Bake the mist now**).
 - **Ambience**: on the `Level` object, each section's ambience (Forest, River, Canopy, Cave...): from the start, then from
   each checkpoint. Written on save.
-- **Sound Source**: a river, a waterfall, a fire, wind... at a spot (pick its sound and how far it is heard). The sounds
+- **Sound Source** (`GameObject > HotPatata Level > Air > Sound Source`): a river, a waterfall, a fire, wind... at a spot (pick its sound and how far it is heard). The sounds
   are the folders of `Assets/Audio/Ambience/Emitters`; drop files there (`Assets/Audio/README.md`).
-- **Ambience Zone**: a box where the ambience is another one (a cave in the forest).
+- **Ambience Zone** (`Air > Ambience Zone`): a box where the ambience is another one (a cave in the forest).
 
 ## 10. The game: checkpoints, kit, wiring, contracts
 
 **Checkpoints and the finish.** Look at the floor where it goes (a deck, a walkway, the ground: the middle of the Scene view)
-and `GameObject > HotPatata Level > Checkpoint (campfire)`: the checkpoint stands there, its four spawns round it, and its
+and `GameObject > HotPatata Level > Course > Checkpoint (campfire)` (or click it there from the palette's Course tab): the checkpoint stands there, its four spawns round it, and its
 campfire (its child) 3.4 m beside them, on the first side with floor and room (its right, left, ahead, behind, then the
 diagonals): never off the deck, in a rail or on a plate. `Finish` places the end the same way. Place them in any order, then
 **Number checkpoints along the course** (on the `Level` object): they are numbered 1, 2, 3... in the order a team reaches
@@ -167,12 +170,13 @@ A checkpoint needs room: its spawns stand 1.2 m round it and its fire 3.4 m away
 away, on the same floor); the zone follows it. **Place the campfire beside it** puts it back; the zone is also fitted round the
 fire on every save. Verify Level says when a spawn stands in a rail or in the air, or a fire is too near or too far.
 
-**The kit.** `GameObject > HotPatata Level > Kit` (or right click in the Hierarchy) places any kit element on the floor the Scene
-view looks at (a deck, a walkway or the ground; raised where it hangs: a bridge, a hoop), in `Level/Kit`, selected: doors (one that rises, one
+**The kit.** The palette's Kit tab, or `GameObject > HotPatata Level > Kit` (or right click in the Hierarchy), places any kit element
+on the floor you click (the menu: the floor the Scene view looks at) (a deck, a walkway or the ground; raised where it hangs: a bridge, a hoop), in `Level/Kit`, selected: doors (one that rises, one
 that slides aside), bridges, drawbridge, pivot, lift, moving, falling and plain platforms, conveyor; plates (plain,
 hands-free, heavy, hourglass), hoop, arch, sun beam, switch; hot, cold and forbidden zones, laser curtain, body screen, tube,
-cannon, rotating bar, sweeper, piston, crusher, windmill, launch pad, kill zone (what each does: docs/OBSTACLES.md), in the
-kit's own look or, under `Kit/Forest`, in the forest's (§14). Select one in the Scene view:
+cannon, rotating bar, sweeper, piston, crusher, windmill, launch pad (and, under Course, the kill zone; what each does:
+docs/OBSTACLES.md), in the kit's own look or another of its looks: the palette's look chips, or the menu's submenu of a system
+that has several (`Kit > Door (rises) > Palisade Gate`, §14). Select one in the Scene view:
 
 - a **door, bridge or lift**: drag its yellow box to size it; its open position is the blue ghost box: drag the blue ball to
   move where it opens to (and how far): up for a door that rises, aside for one that slides;
@@ -234,7 +238,8 @@ A level is official (shipped in the menu) only once Verify Level reports no erro
 
 ## 14. The kit in the forest look
 
-`GameObject > HotPatata Level > Kit > Forest` places the kit in timber, rope and stone (Prefab Variants of the kit in
+A kit system's **Forest** look (the palette's look chips, or its submenu: `GameObject > HotPatata Level > Kit > Lift > Cage`) places
+the kit in timber, rope and stone (Prefab Variants of the kit in
 `Assets/Prefabs/Variants/Forest/`, docs/OBSTACLES.md §4.1): the same systems, colliders and gameplay cues (a plate's icon, a
 zone's colour, an hourglass's sand, a curtain's field), drawn for the forest.
 
@@ -256,22 +261,24 @@ zone's colour, an hourglass's sand, a curtain's field), drawn for the forest.
 | Rotten planks | falling platform | grey planks with gaps and a broken one, on two stringers |
 | Swinging log | sweeper | a trunk with iron bands on an iron hub; its lethal reach stays the bar's |
 
-Size them with the same handles (§10). `HotPatata/Kit/Build Forest Looks` rebuilds them from their builder; never edit
+Size them with the same handles (§10). `HotPatata/Libraries/Build Forest Looks` rebuilds them from their builder; never edit
 them by hand.
 
 ## 15. Props
 
 **The library.** `Assets/Prefabs/Props/` holds the CC0 models at their real size, sorted by kind (Rocks, Wood, Plants,
 Containers, Household, Lanterns, Ruins, Wildlife), drawn in the nature look, plus ready sets in `Sets/` (a workbench, a
-woodpile, a rope corner). Drag one from the Project window into the Scene view, under `Level/Props`. A prop is decoration
+woodpile, a rope corner). Place one from the palette's Props tab (by folder; the sets under Sets), or drag it from the Project
+window into the Scene view, under `Level/Props`. A prop is decoration
 (walked through) until its **Solid** box is ticked (inspector): tick it for anything that looks walkable or in the way (the
 workbench and the woodpile are solid already). Mind a prop's size: some are groups (`wooden_barrels_01` is three barrels and
-their staves, 4 m wide). Keep props out of walkways, passes and checkpoint clearings. `HotPatata/Level/Build Prop Library`
+their staves, 4 m wide). Keep props out of walkways, passes and checkpoint clearings. `HotPatata/Libraries/Build Prop Library`
 rebuilds the library.
 
-**The brush.** `HotPatata/Level/Props Brush`: choose pebbles, twigs, roots, moss or ferns, its radius and density, press
-**Paint**, then click and drag on the ground or a deck. It never paints on a walkway or a bridge's line. Shift erases what the
-brush painted (nothing else); Escape stops.
+**Bursts.** The palette's Props tab opens on its burst presets (the old Props Brush): Pebbles, Twigs, Roots, Moss, Ferns. Arm one,
+set how many per click, the radius and the size range in the strip, then click or drag on the ground or a deck: it never places on
+a walkway or a bridge's line, on water or near a pass arc. Shift+click erases what this burst placed (nothing else); Escape stops
+(§25).
 
 ## 16. The example level
 
@@ -317,7 +324,7 @@ same.
 
 ## 18. Elements by hand
 
-`GameObject > HotPatata Level > Element` adds one **Plank**, **Post**, **Beam**, **Rope** or **Iron Strap** where the Scene
+`GameObject > HotPatata Level > Elements` (or the palette's Elements tab) adds one **Plank**, **Post**, **Beam**, **Rope** or **Iron Strap** where the Scene
 view looks. With an element selected it goes beside it, in its structure (a plank there is part of the walking surface).
 
 With several elements selected, the Inspector's buttons work on all of them:
@@ -334,15 +341,16 @@ Verify Level warns about a rope that hangs on nothing and a post that stands on 
 
 ## 19. The structure library
 
-`GameObject > HotPatata Level > Structure` adds a **Shelter** (four posts, a roof with two slopes or one, low walls, a winch
+`GameObject > HotPatata Level > Structures` (or the palette's Structures tab) adds a **Shelter** (four posts, a roof with two slopes or one, low walls, a winch
 drum), a **Gantry** (braced legs, a head, a pulley and its rope, a little roof), a **Sign** (a board on one or two posts, an owl,
 a leaf or an axe painted on it) or a **Pulley Beam** (on its own post, or bolted to the trunk or wall the piece is set against).
 Set them in the Inspector, move and turn the piece; freeze them to move their boards by hand.
 
-`HotPatata/Level/Build Structure Library` makes the library's first prefabs (Shelters: Winch Booth, Woodshed, Lean-to;
+`HotPatata/Libraries/Build Structure Library` makes the library's first prefabs (Shelters: Winch Booth, Woodshed, Lean-to;
 Gantries: Gate Tower, Lift Gantry; Signs: three clue boards and a signpost; Pulleys: Pulley Beam, Pulley Post). It only
 makes the missing ones: once a prefab exists it is yours. To start one over, right click it in the Project window,
-**HotPatata > Regenerate Library Structure** (your changes to it are lost).
+**HotPatata > Regenerate Library Structure** (your changes to it are lost). The palette's Structures tab lists the library by
+folder (`Library: Shelters`, `Library: Mine`...): click a tile, then click where it goes.
 
 Select a frozen structure and click **Save to library...** (its Inspector): it becomes a prefab in
 `Assets/Prefabs/Structures/` (pick the folder for its kind: Shelters, Gantries, Signs, Pulleys...). Drag it from the Project
@@ -390,16 +398,16 @@ walks on. Its top is walked on too; timber stands on it (a deck's posts find it)
 
 ## 22. Mine timber
 
-- **Mine Frames** (`GameObject > HotPatata Level > Mine > Mine Frames`): frames along its line every **Spacing**, two posts on the
+- **Mine Frames** (`GameObject > HotPatata Level > Timber > Mine Frames`): frames along its line every **Spacing**, two posts on the
   ground (or rock) under each, a cap beam **Height** up, **Lagging** boards over the caps, a lantern under every few caps. Its
   posts stop players and the bomb. Put it inside a cave tunnel, its line along the tunnel's.
-- **Mine Track** (`Mine > Mine Track`): sleepers and two rails on the ground along its line, some rotted (**Decay**). Decoration.
+- **Mine Track** (`Timber > Mine Track`): sleepers and two rails on the ground along its line, some rotted (**Decay**). Decoration.
 - Both freeze into elements (§17); the lanterns go with them.
 - The library's `Structures/Mine/` holds an entrance, a 9 m gallery and an 8 m track.
 
 ## 23. Lane markers
 
-Where a team splits onto two lanes (PROJECT_SPEC §15g), name each lane: `GameObject > HotPatata Level > Structure > Lane Marker`.
+Where a team splits onto two lanes (PROJECT_SPEC §15g), name each lane: `GameObject > HotPatata Level > Structures > Lane Marker`.
 **Lane** Sun (gold) or Moon (blue), **Form** a post beside the path or an arch over it (**Span**), a **Lantern**. Its face is the
 piece's forward (the arrow): turn it toward the team coming. The library's `Structures/Lanes/` holds the four of them.
 
@@ -423,6 +431,41 @@ make the other kind (The Long Climb is made this way):
 - **Still locked.** A natural slope is not a lock: a player may climb a steep one by jumping. What keeps a team on the way is
   what always did: faces of 5 m (cliffs), the void, water, roofs (§10). Run Verify Level and the contracts after reshaping.
 - **Mist.** A forest in a thick mist reads as grey: thin the level's **Mist density** (§9) when the shapes matter.
+
+## 25. The palette
+
+`HotPatata/Level/Palette` opens the **Level Palette**: everything a level places, in one window (dock it beside the Scene view).
+The `GameObject > HotPatata Level` menus hold the same entries in the same order (written from the same catalogue).
+
+- **Tabs**: Ground, Rock, Nature, Timber, Masonry, Structures, Elements, Course, Kit, Props, Air, plus **★** (your favourites)
+  and **Recent** (the last 12 placed). Each tab is cut into sections you can fold. **List** shows rows instead of tiles.
+- **Search** looks through every tab: names, sections, tags and looks (`door`, `rope`, `cave`, `forest`...).
+- **Place**:
+  - click a tile to arm it, then click in the Scene view: it goes on the surface under the mouse (a ghost follows the mouse;
+    **R** turns it by 45°, Shift+R back, **Ctrl+wheel** by 15°). It stays armed: click again for another. **Esc** or a right
+    click disarms it;
+  - double-click a tile: it goes where the Scene view looks (as the menus place it);
+  - drag a tile into the Scene view: it goes where you drop it.
+- **Looks**: a kit system with several looks (the KayKit look, the forest look, later the stone looks) has one tile; its looks
+  are chips in the strip at the bottom once it is armed.
+- **Presets**: an armed piece's strip lists its presets (§7); pick one and the next pieces are placed with it.
+- **Bursts** (props, scanned rocks, the burst presets): each click scatters copies, turned and sized at random (the strip: how
+  many per click, radius, size range, random turn, aligned to the surface). Drag to keep scattering. A burst never places on a
+  walkway, a bridge's line, a deck's or a house's outline, water or near a pass arc. **Shift+click** erases what this burst placed.
+- **Snapping** (the strip's toggles, all on; **Alt** held places freely): on the ground and floors; a walkway, rope bridge or
+  railing armed near a deck's edge or a walkway's end starts there, runs off it and is attached (as dragging its end there does,
+  §6); later tools add a wall's end and a wall's opening.
+- **Pictures**: kit, props and the library show their prefab; pieces are pictured once (saved in `Library/`, made again when a
+  piece's script changes: the window's **More > Refresh thumbnails**, or `HotPatata/Libraries/Refresh Palette Thumbnails`).
+  Save the open scene first: an unsaved scene shows icons.
+- **The tools' menu.** `HotPatata/` is sorted by job: `Level` (new level, register, palette, look, rebuild, verify, play,
+  wiring, the mesh catalogue), `Ground`, `Libraries` (props, structures, the kit's looks and prefabs, thumbnails), `Look`, `Kit`
+  (validation, contracts, the sandbox), `Audio`, `Menu`, `Player`, and `Legacy` (builders only the archived courses used).
+- **A new piece in code** gets a `[PaletteItem]` (ARCHITECTURE §27.3), then `HotPatata/Level/Write Palette Menus` writes the
+  menus again; a test fails until it is done.
+
+The showcase (`Assets/Scenes/Dev/LevelToolsShowcase.unity`, `HotPatata/Level/Showcase`) shows every entry once, labelled: a dev
+scene, never in the menu.
 
 ## Rules
 

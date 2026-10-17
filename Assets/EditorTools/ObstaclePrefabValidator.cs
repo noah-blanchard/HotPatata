@@ -173,10 +173,10 @@ namespace HotPatata.Editor
             AssetDatabase.FindAssets("t:Prefab", new[] { "Assets" }).Select(AssetDatabase.GUIDToAssetPath)
                 .Where(p => { var go = AssetDatabase.LoadAssetAtPath<GameObject>(p); return go != null && IsObstacle(go); });
 
-        [MenuItem("HotPatata/Kit/Validate Selected Prefabs")]
+        [MenuItem("HotPatata/Kit/Validate Selected Prefabs", priority = 1)]
         static void ValidateSelected() => Report(Selection.gameObjects.Select(g => AssetDatabase.GetAssetPath(g)).Where(p => p.EndsWith(".prefab")));
 
-        [MenuItem("HotPatata/Kit/Validate All Obstacle Prefabs")]
+        [MenuItem("HotPatata/Kit/Validate All Obstacle Prefabs", priority = 0)]
         static void ValidateAll() => Report(ObstaclePrefabPaths());
 
         static void Report(IEnumerable<string> paths)

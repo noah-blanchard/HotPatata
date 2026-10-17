@@ -12,7 +12,7 @@ namespace HotPatata.Editor
     /// </summary>
     public static class KitPrefabBuilder
     {
-        [MenuItem("HotPatata/Kit/Build Generated Obstacle Prefabs")]
+        [MenuItem("HotPatata/Libraries/Build Generated Obstacle Prefabs", priority = 23)]
         public static void BuildPrefabs() => BuildPrefabs(overwrite: true);
 
         // ------------------------------------------------------------------ materials

@@ -125,7 +125,11 @@ same PR. Code comments cite doc sections (e.g. `PROJECT_SPEC §8.3`), so never r
   a `LevelPieceOutput`), they are made with `HotPatata/Level/New Level` and listed with `Register In Menu`, and they follow
   every other rule here. A piece frozen into its elements (`TimberFreezer`, ARCHITECTURE §27.1) and the structure library's
   prefabs (`Assets/Prefabs/Structures/`) are edited by hand, element by element; never their generated `Walk surface`, nor
-  the mesh catalogue (`Assets/Art/Generated/Catalog/`: every mesh the level tools make, cleaned on save). A new section declares a `SectionContract` (spec §13.20, how-to
+  the mesh catalogue (`Assets/Art/Generated/Catalog/`: every mesh the level tools make, cleaned on save). Everything a level
+  places is one entry of the palette's catalogue (`[PaletteItem]`, ARCHITECTURE §27.3): the Level Palette and the
+  `GameObject/HotPatata Level` menus are both made from it; never edit `LevelMenus.g.cs` (write it with
+  `HotPatata/Level/Write Palette Menus`). The showcase (`Assets/Scenes/Dev/LevelToolsShowcase.unity`) is a dev scene, never
+  registered in the menu. A new section declares a `SectionContract` (spec §13.20, how-to
   in docs/OBSTACLES.md §5): what it forces, and each shortcut with the geometry that locks it (14 m gaps, faces of 3.4 m or
   more, walls up to a roof; a window a player fits through is not bomb-only). `CourseContractCheck` must report nothing. The level list's order lives in one place,
   `CourseKit` (`WriteMenu` for the Register In Menu window; each level's minimum players and display name); `PassSandbox`
@@ -153,7 +157,7 @@ same PR. Code comments cite doc sections (e.g. `PROJECT_SPEC §8.3`), so never r
   greybox material. The nature look draws the same roles (`LookSet.Nature`, ARCHITECTURE §25.3:
   generated rock, log and plank shapes, `HotPatata/Nature`, Poly Haven assets fetched by `tools/Fetch-PolyHaven.ps1`,
   CC0 Sketchfab scans fetched and reduced by `tools/Fetch-Sketchfab.ps1` (CC0 only, token in `SKETCHFAB_API_TOKEN`,
-  Blender headless), all credited in `CREDITS.md`). Rebuild with `HotPatata/Course/Build KayKit Kit`, then `HotPatata/Course/Rebuild All Courses` (the sandbox and the menu).
+  Blender headless), all credited in `CREDITS.md`). Rebuild with `HotPatata/Libraries/Build KayKit Kit`, then `HotPatata/Kit/Rebuild Sandbox And Menu` (the sandbox and the menu).
 - **Prefabs.**
   - Kit prefabs go in `Assets/Prefabs/{Platforms,Obstacles,Gameplay}`; variants (same logic, another visual or motion) in
     `Assets/Prefabs/Variants`, made as Prefab Variants (docs/OBSTACLES.md §4).

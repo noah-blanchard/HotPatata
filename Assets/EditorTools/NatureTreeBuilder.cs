@@ -28,7 +28,7 @@ namespace HotPatata.Editor
         public static string MeshPath(string kind, int variant, int lod) => $"{MeshDir}{kind}_{variant}_LOD{lod}.asset";
         public static string PrefabPath(Species s, int variant) => $"{PrefabDir}Tree_{s}_{variant}.prefab";
 
-        [MenuItem("HotPatata/Nature/Build Vegetation")]
+        [MenuItem("HotPatata/Look/Build Vegetation", priority = 22)]
         public static void BuildAll()
         {
             Directory.CreateDirectory(MeshDir.TrimEnd('/'));
@@ -71,7 +71,7 @@ namespace HotPatata.Editor
             g == Giant.Oak ? ("Nature_BarkBrown", "Nature_Leaves_Broad") : ("Nature_PineBark", "Nature_Leaves_Fir");
 
         /// <summary>The giants' and the deck trunks' meshes (three levels each; the deck trunks two).</summary>
-        [MenuItem("HotPatata/Nature/Build Canopy Giants")]
+        [MenuItem("HotPatata/Look/Build Giant Trees", priority = 23)]
         public static void BuildGiants()
         {
             Directory.CreateDirectory(MeshDir.TrimEnd('/'));
