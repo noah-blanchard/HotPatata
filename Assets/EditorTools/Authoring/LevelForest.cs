@@ -215,7 +215,7 @@ namespace HotPatata.Editor
 
             // ---- giants: in groves, kept off the paths' air and the giant trees
             var boles = new List<Vector3>();
-            float giantRate = area.Giants * 2f;
+            float giantRate = area.Walked ? 0f : area.Giants * 2f;
             for (float x = bounds.xMin + 6f; x < bounds.xMax - 2f; x += 12f)
                 for (float z = bounds.yMin + 6f; z < bounds.yMax - 2f; z += 12f)
                 {
@@ -236,7 +236,7 @@ namespace HotPatata.Editor
                 }
 
             // ---- understory: younger trees, more of them in the groves
-            float underRate = area.Understory / 0.6f;
+            float underRate = area.Walked ? 0f : area.Understory / 0.6f;
             for (float x = bounds.xMin + 2f; x < bounds.xMax; x += 5f)
                 for (float z = bounds.yMin + 2f; z < bounds.yMax; z += 5f)
                 {
@@ -264,7 +264,16 @@ namespace HotPatata.Editor
                     FoliageSet.Batch batch;
                     float scale;
                     var at = new Vector3(px, Ground(px, pz), pz);
-                    if (slope > 0.75f)
+                    if (area.Walked)
+                    {
+                        // the way: only what a player walks through, kept low
+                        if (slope > 0.75f || roll >= 0.58) continue;
+                        if (roll < 0.3) { batch = Pick(ferns); scale = R(1.3f, 2.6f); }
+                        else if (roll < 0.42) { batch = Pick(grass); scale = R(1.2f, 2.2f); }
+                        else if (roll < 0.47) { batch = Pick(bushes); scale = R(0.7f, 1.2f); }
+                        else { batch = Pick(moss); scale = R(3f, 7f); }
+                    }
+                    else if (slope > 0.75f)
                     {
                         if (roll > 0.12) continue;
                         batch = Pick(boulders);

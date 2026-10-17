@@ -6,7 +6,8 @@ namespace HotPatata
     /// <summary>
     /// A forest of an authored level (ARCHITECTURE §27): inside its outline the editor plants giants in groves with clearings between
     /// them, an understory and ground cover (ferns, grass, bushes, rocks, logs, moss), drawn instanced and never colliding (like
-    /// PatataRanger's). Nothing grows on a walkway, a deck, a pass arc, rock too steep to hold it or too near a giant tree.
+    /// PatataRanger's). Nothing grows on a walkway, a deck, a pass arc, rock too steep to hold it or too near a giant tree. A walked area (the
+    /// team's way on the ground) grows only what a player walks through.
     /// Data only: the editor plants it.
     /// </summary>
     [SelectionBase]
@@ -22,6 +23,8 @@ namespace HotPatata
         [SerializeField, Range(0f, 1f), Tooltip("Ferns, grass, rocks, logs and moss.")] float groundCover = 0.7f;
         [SerializeField, Range(0f, 1f), Tooltip("How much of the area is open clearings between the groves.")] float clearings = 0.3f;
         [SerializeField, Min(1f), Tooltip("Nothing taller than ground cover grows closer than this to a walkway, a bridge or a deck (m).")] float pathClearance = 3.5f;
+        [SerializeField, Tooltip("On the way: the team walks here, so only what a player walks through grows (ferns, grass, moss, low bushes); no " +
+                                 "tree, rock or log.")] bool walked;
 
         public List<Vector3> Outline => outline;
         public float Giants { get => giants; set => giants = Mathf.Clamp01(value); }
@@ -29,6 +32,7 @@ namespace HotPatata
         public float GroundCover { get => groundCover; set => groundCover = Mathf.Clamp01(value); }
         public float Clearings { get => clearings; set => clearings = Mathf.Clamp01(value); }
         public float PathClearance { get => pathClearance; set => pathClearance = Mathf.Max(1f, value); }
+        public bool Walked { get => walked; set => walked = value; }
 
         public List<Vector2> WorldOutline()
         {

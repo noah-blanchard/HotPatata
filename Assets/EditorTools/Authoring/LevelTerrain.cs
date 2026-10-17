@@ -268,6 +268,57 @@ namespace HotPatata.Editor
             return created;
         }
 
+        /// <summary>
+        /// Opens the ground where it would stand in a cave (ARCHITECTURE §27.2): the terrain's holes are cut wherever its surface lies in the
+        /// clear space of a cave that has its own floor (a tunnel's mouth in a hillside, a gallery under a hill), and filled everywhere else.
+        /// A cave on the terrain's floor keeps its ground. Returns the cells opened.
+        /// </summary>
+        public static int CutCaves(Scene scene)
+        {
+            var caves = scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<RockShellShape>(true))
+                .Where(s => s.Floor && s.gameObject.activeInHierarchy).Select(LevelRock.Clear).ToList();
+            int opened = 0;
+            foreach (var terrain in Terrains(scene))
+            {
+                var data = terrain.terrainData;
+                int res = data.holesResolution;
+                var holes = new bool[res, res];
+                for (int z = 0; z < res; z++)
+                    for (int x = 0; x < res; x++) holes[z, x] = true;
+                var o = terrain.transform.position;
+                float cx = data.size.x / res, cz = data.size.z / res;
+                Vector3 Ground(float wx, float wz) => new Vector3(wx, terrain.SampleHeight(new Vector3(wx, 0f, wz)) + o.y, wz);
+                foreach (var cave in caves)
+                {
+                    var b = cave.bounds;
+                    int x0 = Mathf.Clamp(Mathf.FloorToInt((b.min.x - o.x) / cx), 0, res - 1), x1 = Mathf.Clamp(Mathf.CeilToInt((b.max.x - o.x) / cx), 0, res - 1);
+                    int z0 = Mathf.Clamp(Mathf.FloorToInt((b.min.z - o.z) / cz), 0, res - 1), z1 = Mathf.Clamp(Mathf.CeilToInt((b.max.z - o.z) / cz), 0, res - 1);
+                    for (int z = z0; z <= z1; z++)
+                        for (int x = x0; x <= x1; x++)
+                        {
+                            if (!holes[z, x]) continue;
+                            float wx = o.x + x * cx, wz = o.z + z * cz;
+                            if (cave.Contains(Ground(wx, wz)) || cave.Contains(Ground(wx + cx, wz)) || cave.Contains(Ground(wx, wz + cz)) ||
+                                cave.Contains(Ground(wx + cx, wz + cz)) || cave.Contains(Ground(wx + cx * 0.5f, wz + cz * 0.5f)))
+                            {
+                                holes[z, x] = false;
+                                opened++;
+                            }
+                        }
+                }
+                var before = data.GetHoles(0, 0, res, res);
+                bool same = true;
+                for (int z = 0; z < res && same; z++)
+                    for (int x = 0; x < res; x++)
+                        if (before[z, x] != holes[z, x]) { same = false; break; }
+                if (same) continue;
+                Undo.RegisterCompleteObjectUndo(data, "Cut caves");
+                data.SetHoles(0, 0, holes);
+                EditorUtility.SetDirty(data);
+            }
+            return opened;
+        }
+
         /// <summary>The level's audio map: each section's ambience (LevelSettings), on its section root's <see cref="CourseAudio"/>.</summary>
         public static void WriteAudio(Scene scene, LevelSettings settings)
         {
@@ -301,6 +352,8 @@ namespace HotPatata.Editor
             if (zones > 0) parts.Add($"{zones} checkpoint zone(s) fitted round their campfire");
             if (Terrains(scene).Any())
             {
+                int opened = CutCaves(scene);
+                if (opened > 0) parts.Add($"ground opened over {opened} cell(s) of cave");
                 if (BakeMist(scene, settings)) LookBuilder.ApplyToScene(scene);   // a new mist field takes the day's still mist
                 parts.Add("mist baked");
             }

@@ -2238,6 +2238,16 @@ The pieces The Long Climb needed (PROJECT_SPEC §15g), reusable by any level; dr
   section's contract still declares the Climb lock.
 - **No mist in a cave.** The height mist is baked from the terrain (`LevelTerrain.BakeMist`); inside a cave's footprint
   (`LevelRock.Footprint`) the mist floor is the cave's own floor, so a cave under the ground is not filled with mist.
+- **Caves open into each other.** `LevelRock.Clear` is a cave's clear space (over its floor, under its section or dome). A shell's
+  quads, a dead end's wall (rings, not a fan) and a cliff's faces are left out wherever they reach into another cave's clear space
+  (corners, side middles or middle), their rims closing the cut: a tunnel opens through a cavern's wall, a gallery's end or a cliff.
+- **The ground opens over a cave.** `LevelTerrain.CutCaves` (on save) cuts the terrain's holes where its surface lies in the clear
+  space of a cave with its own floor, fills them everywhere else; the ground material (`Nature_ValleyGround`) clips them
+  (`_TERRAIN_HOLES` in `HotPatata/Nature`, the terrain's `_TerrainHolesTexture`, white when it has none).
+- **Crest.** A cliff's top edge rises by up to `Crest` metres of noise along its outline (never lower), a ragged skyline over its
+  locked height.
+- **Walked forests.** A `ForestArea` marked `Walked` (the team's way on the ground) grows only ground cover a player walks through
+  (ferns, grass, moss, low bushes).
 - **Timber stands on rock.** `SceneSite.GroundAt` skips timber outputs but not rock ones (`SceneSite.IsRock`): a post finds a
   cliff's top or a cave's floor.
 - **Mine timber.** `MineFrameShape` (frames every few metres along a line: two posts on the ground, a cap beam, lagging boards,

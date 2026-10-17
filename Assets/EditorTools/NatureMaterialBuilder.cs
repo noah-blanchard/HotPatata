@@ -38,6 +38,7 @@ namespace HotPatata.Editor
             public bool foliage;                // cut-out, both faces, wind, light through
             public float wind;
             public bool underground;            // a cave's rock: no sky reflected in it, no rim light
+            public bool terrain;                // the level ground: the terrain's holes are cut out of it
         }
 
         static Surface Ground(string name, string folder, float tile, float brightness = 1f, Color? tint = null) =>
@@ -53,6 +54,13 @@ namespace HotPatata.Editor
         {
             s.underground = true;
             s.smoothMax = 0.2f;
+            return s;
+        }
+
+        /// <summary>The level ground (a terrain's material): its holes are cut out (a cave's mouth in a hillside).</summary>
+        static Surface TerrainGround(Surface s)
+        {
+            s.terrain = true;
             return s;
         }
 
@@ -98,7 +106,7 @@ namespace HotPatata.Editor
             Rock("Nature_RocksGround", "RocksGround", 2.5f, null, 0f),
             Rock("Nature_StoneWall", "StoneWall", 2.5f, null, 0f),
             // PatataRanger's valley (ARCHITECTURE §25.5): rock wherever the ground is too steep to walk, leaf litter on all the rest
-            Rock("Nature_ValleyGround", "RockFace", 4f, "LeafLitter", 0.42f),
+            TerrainGround(Rock("Nature_ValleyGround", "RockFace", 4f, "LeafLitter", 0.42f)),
             // PatataTemple's masonry (ARCHITECTURE §25.4): moss and grass on the faces that look up
             Ground("Nature_TempleFloor", "TempleFloor", 3f),
             Rock("Nature_TempleWall", "TempleWall", 3f, "Grass", 0.22f),
@@ -368,6 +376,7 @@ namespace HotPatata.Editor
             mat.SetFloat("_MacroStrength", surface.macro);
             Keyword(mat, "_Triplanar", "_MAPPING_TRIPLANAR", surface.mapping == Mapping.Triplanar);
             Keyword(mat, "_AntiTile", "_ANTITILE", surface.antiTile);
+            Keyword(mat, "_TerrainHoles", "_TERRAIN_HOLES", surface.terrain);
             if (surface.underground)
             {
                 mat.SetFloat("_EnvReflection", 0.15f);
