@@ -38,7 +38,8 @@ the courses that used them (M11, M12, M13, M15, M17) are archived. M18 (authored
 Editor: timber, nature, the game, forest looks, props, frozen timber and the structure library) is built. **The fresh start**
 (M19): no map but the sandbox; the next maps are built with the level tools. **M20** (in progress): The Long Climb, the v1.0
 level for exactly two (spec §15g: split Sun / Moon lanes), with the rock, mine and lane pieces (ARCHITECTURE §27.2) and a level's
-maximum players. M6 (UX) and M7 (hardening, external playtest) follow.
+maximum players; made natural (the route turns, caves open into the hills, the forest on the way: LEVEL_AUTHORING §24) and its
+timber frozen into elements. M6 (UX) and M7 (hardening, external playtest) follow.
 The live table is at the top of `docs/MVP_TASKS.md`.
 
 ## Docs (read before implementing)

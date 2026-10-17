@@ -1229,6 +1229,9 @@ Target:
   markers**.
 - The locks are the void, water, faces of 5 m and real roofs (a cave's roof, a house's ceiling): §13.20.
 - The cave is lantern-lit and readable: lanterns, sun shafts through cracks (some are sun beams of the puzzles).
+- **Natural, not built of blocks** (owner, 2026-10-16): the route turns at each act's junction (the hall, the mine's exit, the
+  shore, the cliff top), the land and the rock are shaped in curves, and the forest grows on the way where a forest would
+  (walked ground cover), the woods up to it (LEVEL_AUTHORING §24).
 
 ### Route
 

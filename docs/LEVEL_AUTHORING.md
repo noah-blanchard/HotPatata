@@ -12,11 +12,13 @@ The tools come in three steps (M18). This guide covers what is built:
 | 3b. The look | forest looks for the kit, props, the example level (`OldOak`, archived since) | built |
 | 4. Timber by hand | structures (shelter, gantry, sign, pulley beam), freezing into elements, the structure library | built |
 | 5. Rock and mine | caves (tunnels and caverns), cliffs, mine timber, lane markers (M20) | built |
+| 6. Natural ground | caves opening into each other and into the hills, ragged cliff crests, forests on the way (M20) | built |
 
 A good order: make the level (§1), shape the land (§2), plant the giant trees (§3), hang the timber on them (§4 to §7),
 plant the forest round it (§8), the mist and the sound (§9), then the game (§10), checked and played (§11), and dress it
 (§14, §15). The example level, "The Old Oak" (§16), was made this way; it is archived with the other maps since the fresh start
-(`docs/MAP_ARCHIVE.md`, branch `archive/maps-v1`).
+(`docs/MAP_ARCHIVE.md`, branch `archive/maps-v1`). For a level that feels natural rather than built of blocks, read §24; The Long
+Climb (`Assets/Scenes/Levels/LongClimb.unity`) is made that way.
 
 ---
 
@@ -309,6 +311,9 @@ same.
 - **Boards.** Drag a board's yellow end dots to make it longer or shorter (the other end stays). Change its size, its cuts or
   its wood in the Inspector.
 - A walkway or bridge attached to a deck you freeze stays where it is, its end now a free point.
+- **Freeze a level in one go** (select every piece, then Freeze into elements), then run **Verify Level**: where a walkway met a
+  deck, the deck's railing can come back across the joint ("a wall is in the way"). Cut its rails there (drag their points) and
+  its **Wall**'s points the same, and move the posts to the sides of the gap.
 
 ## 18. Elements by hand
 
@@ -397,6 +402,27 @@ walks on. Its top is walked on too; timber stands on it (a deck's posts find it)
 Where a team splits onto two lanes (PROJECT_SPEC §15g), name each lane: `GameObject > HotPatata Level > Structure > Lane Marker`.
 **Lane** Sun (gold) or Moon (blue), **Form** a post beside the path or an arch over it (**Span**), a **Lantern**. Its face is the
 piece's forward (the arrow): turn it toward the team coming. The library's `Structures/Lanes/` holds the four of them.
+
+## 24. A natural level
+
+Blocks read as blocks: straight walls, rectangular pits and forests set beside the way make a level feel built. The tools
+make the other kind (The Long Climb is made this way):
+
+- **Turn the route.** Do not lay the whole course along one line: each place (an act) turns from the last at a junction
+  (a round cavern, a landing, a beach, a clearing), so the next place is found round a bend, never seen from the start.
+- **Shape the ground in curves.** Sculpt the terrain (§2) in irregular outlines: a valley floor that widens into a clearing,
+  forest rising round it, walls of rock beyond, a basin with ragged banks rather than a pit. Hide a water surface's straight
+  edges under banks of terrain a little higher than it: the ground draws the shore.
+- **Rock out of the hills.** A cliff's outline has many dots, its free sides bulge, its top is ragged (**Crest**) and its back
+  is buried in a hill; two or three cliffs of different rocks overlap rather than one long block. Keep straight and plumb only
+  the faces the game reads (a lock's face, a cage's berth, a lane's edge), and keep a walked top flat (Crest 0).
+- **Caves in the hills.** Raise the hill over a cave with its own floor: the ground opens where it would stand inside it (§2),
+  and tunnels open into caverns, galleries and cliffs (§20). Lay a cliff over a mouth as its lintel, where the slope crosses it.
+- **The forest on the way.** Woods come up to the way on both sides (their outlines drawn off it); on the way itself a
+  **Walked** Forest Area (§8) grows ferns, grass and moss; under a canopy the forest fills the ground below the walks.
+- **Still locked.** A natural slope is not a lock: a player may climb a steep one by jumping. What keeps a team on the way is
+  what always did: faces of 5 m (cliffs), the void, water, roofs (§10). Run Verify Level and the contracts after reshaping.
+- **Mist.** A forest in a thick mist reads as grey: thin the level's **Mist density** (§9) when the shapes matter.
 
 ## Rules
 
