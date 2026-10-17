@@ -20,8 +20,12 @@ namespace HotPatata
     public static class SimulationClock
     {
         static GameTuning tuning;
+        const double HardResetSeconds = 0.15;   // a raw jump this large in one frame is NGO resetting its estimate (diagnostics)
+
         static int sampledFrame = -1;
         static double now;
+        static double lastRaw;
+        static double lastRealtime;
         static bool online;
 
         /// <summary>Gives the clock its slew limits (RunManager does it). Without them a client follows the raw time.</summary>
@@ -45,8 +49,17 @@ namespace HotPatata
         /// <summary>Server time at which the current section attempt began (replicated by the host).</summary>
         public static double SectionStart => RunManager.Instance != null ? RunManager.Instance.SectionStart : 0.0;
 
-        /// <summary>Seconds since the current section attempt began; the time base for level motion.</summary>
-        public static float SectionTime => (float)(ServerNow - SectionStart);   // the subtraction stays in double
+        /// <summary>
+        /// Seconds since the current section attempt began; the time base for level motion. 0 until it begins: online a
+        /// reset starts the section a moment ahead (<see cref="RunManager"/>, #117 P4), and the level waits at its start.
+        /// </summary>
+        public static float SectionTime => (float)Math.Max(0.0, ServerNow - SectionStart);   // the subtraction stays in double
+
+        /// <summary>
+        /// Client: how much further behind the server this machine draws the level than NGO's own buffer, from the jitter
+        /// it measures (<see cref="LagBudget.ViewDelay"/>, at most <see cref="GameTuning.viewDelayMax"/>). 0 on the host and offline.
+        /// </summary>
+        public static float ViewDelay { get; private set; }
 
         /// <summary>Ticks per second: NGO's network tick rate online, the physics rate offline.</summary>
         public static int TickRate =>
@@ -74,10 +87,33 @@ namespace HotPatata
         {
             if (Time.frameCount == sampledFrame && online) return;
             double raw = NetMode.ServerTime;
+            // Client: draw a little further back when the jitter is larger than NGO's buffer, so that replicated event times
+            // (an actuator, a reset) still arrive before they are drawn. The change is slewed in like any correction.
+            ViewDelay = !NetMode.IsAuthority && tuning != null ? LagBudget.ViewDelay(NetQuality.WorstJitterSeconds, tuning.viewDelayMax) : 0f;
+            double target = raw - ViewDelay;
             if (!online || NetMode.IsAuthority || tuning == null)
-                now = raw;   // first sample, the host (its time is the server time) or unconfigured: no smoothing
+                now = target;   // first sample, the host (its time is the server time) or unconfigured: no smoothing
             else
-                now = Step(now, raw, Time.unscaledDeltaTime, tuning.clockMaxSlew, tuning.clockSnapSeconds);
+            {
+                // The real time since the last sample. Never Time.unscaledDeltaTime: the first sample of a frame may come from
+                // a FixedUpdate, where it is the physics step, and the clock would run ahead of the server (#117).
+                double dt = Math.Max(0.0, Time.realtimeSinceStartupAsDouble - lastRealtime);
+                double jump = raw - lastRaw - dt;
+                if (Math.Abs(jump) > HardResetSeconds)
+                {
+                    SyncStats.ClockJumps++;
+                    PatataLog.Sync($"clock: NGO server time jumped {jump * 1000.0:F0} ms (rtt {NetMode.RttMs} ms)");
+                }
+                double predicted = now + dt;
+                now = Step(now, target, dt, tuning.clockMaxSlew, tuning.clockSnapSeconds);
+                if (Math.Abs(target - predicted) > tuning.clockSnapSeconds)
+                {
+                    SyncStats.ClockSnaps++;
+                    PatataLog.Sync($"clock: level clock snapped {(target - predicted) * 1000.0:F0} ms (rtt {NetMode.RttMs} ms)");
+                }
+            }
+            lastRaw = raw;
+            lastRealtime = Time.realtimeSinceStartupAsDouble;
             online = true;
             sampledFrame = Time.frameCount;
         }

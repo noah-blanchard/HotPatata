@@ -11,9 +11,10 @@ namespace HotPatata
     ///   client --RequestThrow/RequestCatch/ClaimCatch--> host validates and applies
     ///   host --Locked / TeleportOwner--> owning client
     ///   owner --SubmitName--> host sanitises it --displayName--> everyone (late joiners included)
-    ///   owner --stamp (time, position, carrier id + offset), once per tick--> everyone: a rider on a moving carrier is
-    ///   rebuilt against the carrier as each machine draws it (<see cref="RiderReconstruction"/>,
-    ///   docs/netcode-deterministic-plan.md §2.3), and the host judges moving hazards at the time the owner saw them (§2.4)
+    ///   owner --stamp (time, feet, velocity, aim, posture, carrier id + offset), once per tick, UNRELIABLE with the two
+    ///   before it (#117 P1)--> everyone: a rider on a moving carrier is rebuilt against the carrier as each machine draws it
+    ///   (<see cref="RiderReconstruction"/>, docs/netcode-deterministic-plan.md §2.3), and the host judges moving hazards
+    ///   at the time the owner saw them (§2.4) and time-stamped claims against the owner's own history (<see cref="History"/>)
     /// Offline (not spawned) this component does nothing and Player behaves exactly as before.
     /// </summary>
     [RequireComponent(typeof(Player))]
@@ -21,17 +22,22 @@ namespace HotPatata
     {
         const float ThrowSpeedTolerance = 1.05f;   // never trust a client for more than the design maximum
         const float MaxReleaseDistance = 3f;       // metres between the claimed release point and the thrower's eyes
-        const float PitchSendThreshold = 0.25f;    // degrees
 
         /// <summary>
-        /// The owner's state at one instant, sent once per network tick: the <see cref="SimulationClock.ServerNow"/> at which
-        /// it was produced (the time the owner saw the level at), its feet, and the moving carrier it stands on
-        /// (<see cref="IPlatformCarrier.CarrierId"/>, 0 = none) with its offset from the carrier's anchor.
+        /// The owner's state at one instant, sent once per network tick (#117 P1: one snapshot holds everything, so posture,
+        /// aim and position never arrive a tick apart): its sequence, the <see cref="SimulationClock.ServerNow"/> at which it
+        /// was produced (the time the owner saw the level at), its feet and velocity, its aim, its posture
+        /// (<see cref="PlayerMotor.PackedState"/>), and the moving carrier it stands on (<see cref="IPlatformCarrier.CarrierId"/>,
+        /// 0 = none) with its offset from the carrier's anchor.
         /// </summary>
         public struct PlayerStamp : INetworkSerializable, System.IEquatable<PlayerStamp>
         {
+            public int Sequence;
             public double Time;
             public Vector3 Position;
+            public Vector3 Velocity;
+            public float Pitch;
+            public byte State;
             public int CarrierId;
             public Vector3 Offset;
             /// <summary>Bumped by every teleport: viewers snap on a new epoch, never on a distance (#97).</summary>
@@ -41,27 +47,55 @@ namespace HotPatata
 
             public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
             {
+                serializer.SerializeValue(ref Sequence);
                 serializer.SerializeValue(ref Time);
                 serializer.SerializeValue(ref Position);
+                serializer.SerializeValue(ref Velocity);
+                serializer.SerializeValue(ref Pitch);
+                serializer.SerializeValue(ref State);
                 serializer.SerializeValue(ref CarrierId);
                 serializer.SerializeValue(ref Offset);
                 serializer.SerializeValue(ref Epoch);
             }
 
             public bool Equals(PlayerStamp o) =>
-                Time == o.Time && Position == o.Position && CarrierId == o.CarrierId && Offset == o.Offset && Epoch == o.Epoch;
+                Sequence == o.Sequence && Time == o.Time && Position == o.Position && CarrierId == o.CarrierId && Offset == o.Offset && Epoch == o.Epoch;
         }
+
+        /// <summary>
+        /// The last <see cref="Redundancy"/> stamps, oldest first, sent unreliably every tick (#117 P1): a lost packet is
+        /// simply skipped, never waited for, and the next one carries the stamps it lost (two losses in a row cost nothing).
+        /// </summary>
+        public struct StampPacket : INetworkSerializable
+        {
+            public byte Count;
+            public PlayerStamp A, B, C;
+
+            public PlayerStamp this[int i] => i == 0 ? A : i == 1 ? B : C;
+
+            public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+            {
+                serializer.SerializeValue(ref Count);
+                if (Count > 0) serializer.SerializeValue(ref A);
+                if (Count > 1) serializer.SerializeValue(ref B);
+                if (Count > 2) serializer.SerializeValue(ref C);
+            }
+        }
+
+        public const int Redundancy = 3;
 
         readonly NetworkVariable<int> slot = new NetworkVariable<int>(-1);   // server-written
         readonly NetworkVariable<bool> locked = new NetworkVariable<bool>(false);   // server-written
         readonly NetworkVariable<FixedString64Bytes> displayName = new NetworkVariable<FixedString64Bytes>();   // server-written, sanitised
-        readonly NetworkVariable<float> pitch = new NetworkVariable<float>(0f,
-            NetworkVariableBase.DefaultReadPerm, NetworkVariableWritePermission.Owner);   // owner-written
-        readonly NetworkVariable<byte> moveState = new NetworkVariable<byte>((byte)MoveState.Ground,
-            NetworkVariableBase.DefaultReadPerm, NetworkVariableWritePermission.Owner);   // owner-written: PlayerMotor.PackedState
-        readonly NetworkVariable<PlayerStamp> stamp = new NetworkVariable<PlayerStamp>(default,
-            NetworkVariableBase.DefaultReadPerm, NetworkVariableWritePermission.Owner);   // owner-written, once per tick
         int lastStampTick = int.MinValue;
+
+        // owner: the stamps in flight (oldest first), and the next sequence
+        readonly PlayerStamp[] sent = new PlayerStamp[Redundancy];
+        int sentCount;
+        int sequence;
+        // viewer: the newest stamp received and a short history of them (the host validates time-stamped claims against it)
+        PlayerStamp latest;
+        readonly StampHistory history = new StampHistory();
 
         readonly RiderReconstruction rider = new RiderReconstruction();
         Vector3 lastWritten, lastReplicated;
@@ -76,18 +110,25 @@ namespace HotPatata
         /// <summary>Set by the spawner on the server before the object is spawned.</summary>
         public int InitialSlot { get; set; } = -1;
 
-        public bool Locked => locked.Value;
-        public float RemotePitch => pitch.Value;
+        double lockedUntil;   // a reset: locked until this server time, the same instant on every machine (#117 P4)
+
+        public bool Locked => locked.Value || (lockedUntil > 0.0 && SimulationClock.ServerNow < lockedUntil);
+
+        /// <summary>A reset (<see cref="NetworkRunState.ResetEvent"/>): this player is locked until server time <paramref name="serverTime"/>.</summary>
+        public void LockUntil(double serverTime) => lockedUntil = serverTime;
+        public float RemotePitch => latest.Pitch;
         /// <summary>The owner's <see cref="PlayerMotor.PackedState"/> (slide/crouch/sprint), so every copy has the same posture.</summary>
-        public byte RemoteMoveState => moveState.Value;
-        /// <summary>The owner's latest state: time, feet, carrier and offset (replicated).</summary>
-        public PlayerStamp Stamp => stamp.Value;
+        public byte RemoteMoveState => latest.State;
+        /// <summary>The owner's latest state: time, feet, velocity, aim, posture, carrier and offset (replicated).</summary>
+        public PlayerStamp Stamp => IsOwner && sentCount > 0 ? sent[sentCount - 1] : latest;
+        /// <summary>Remote copy: the owner's recent stamps, oldest first.</summary>
+        public StampHistory History => history;
         /// <summary>This copy is drawn (partly) relative to a moving carrier.</summary>
         public bool RebuiltOnCarrier => rider.Active;
         /// <summary>The carrier this copy is rebuilt on (0 = none), also while blending out (diagnostics).</summary>
         public int RebuiltCarrierId => rider.CarrierId;
         /// <summary>Remote copy: the moving carrier its owner stands on, as this machine has it (null when none).</summary>
-        public IPlatformCarrier RemoteCarrier => CarrierRegistry.Get(stamp.Value.CarrierId);
+        public IPlatformCarrier RemoteCarrier => CarrierRegistry.Get(latest.CarrierId);
         /// <summary>Remote copy: the world position NGO replicated this frame, before any rebuilding on a carrier (diagnostics).</summary>
         public Vector3 ReplicatedPosition => lastReplicated;
 
@@ -102,7 +143,12 @@ namespace HotPatata
             displayName.OnValueChanged += (_, n) => player.SetDisplayName(n.ToString());
             ApplySlot(slot.Value);
 
-            if (IsServer && !IsOwner) stamp.OnValueChanged += OnStampOnHost;   // moving hazards are judged at the owner's time
+            if (!IsOwner)
+            {
+                latest = default;
+                history.Clear();
+                if (slot.Value >= 0) NetQuality.RestartStream(slot.Value);
+            }
 
             if (IsOwner)
             {
@@ -114,11 +160,8 @@ namespace HotPatata
 
         public override void OnNetworkDespawn()
         {
-            stamp.OnValueChanged -= OnStampOnHost;
             PatataLog.Run($"Player despawned slot={slot.Value}");
         }
-
-        void OnStampOnHost(PlayerStamp previous, PlayerStamp current) => HazardRewind.Judge(player, previous, current);
 
         void ApplySlot(int s)
         {
@@ -158,9 +201,6 @@ namespace HotPatata
                 PlaceRemoteRider();
                 return;
             }
-            if (Mathf.Abs(pitch.Value - player.Look.Pitch) > PitchSendThreshold) pitch.Value = player.Look.Pitch;
-            byte state = player.Motor.PackedState;
-            if (moveState.Value != state) moveState.Value = state;
             PublishStamp();
         }
 
@@ -174,18 +214,59 @@ namespace HotPatata
             bool onCarrier = carrier != null && carrier.Moves && carrier.CarrierId != 0;
             int carrierId = onCarrier ? carrier.CarrierId : 0;
             int tick = SimulationClock.ServerTick;
-            if (tick == lastStampTick && carrierId == stamp.Value.CarrierId) return;
+            if (tick == lastStampTick && carrierId == Stamp.CarrierId) return;
 
             lastStampTick = tick;
-            stamp.Value = new PlayerStamp
+            Send(new PlayerStamp
             {
                 Time = SimulationClock.ServerNow,
                 Position = transform.position,
+                Velocity = player.Motor.Velocity,
+                Pitch = player.Look.Pitch,
+                State = player.Motor.PackedState,
                 CarrierId = carrierId,
                 // In the carrier's frame, so a rider on a turning pivot stays where it stands (identity for the others).
                 Offset = onCarrier ? Quaternion.Inverse(carrier.AnchorRotation) * (transform.position - carrier.AnchorPosition) : Vector3.zero,
                 Epoch = epoch
-            };
+            });
+        }
+
+        /// <summary>Owner: numbers the stamp and sends it with the ones before it (<see cref="Redundancy"/>).</summary>
+        void Send(PlayerStamp stamp)
+        {
+            stamp.Sequence = ++sequence;
+            if (sentCount == sent.Length)
+            {
+                for (int i = 1; i < sent.Length; i++) sent[i - 1] = sent[i];
+                sentCount--;
+            }
+            sent[sentCount++] = stamp;
+            var packet = new StampPacket { Count = (byte)sentCount, A = sent[0] };
+            if (sentCount > 1) packet.B = sent[1];
+            if (sentCount > 2) packet.C = sent[2];
+            StampRpc(packet);
+        }
+
+        [Rpc(SendTo.NotMe, Delivery = RpcDelivery.Unreliable, InvokePermission = RpcInvokePermission.Owner)]
+        void StampRpc(StampPacket packet)
+        {
+            if (IsOwner || player == null) return;
+            int s = slot.Value;
+            PlayerStamp newest = default;
+            for (int i = 0; i < packet.Count && i < Redundancy; i++)
+            {
+                var stamp = packet[i];
+                bool redundant = i < packet.Count - 1;
+                NetQuality.NoteSnapshot(s, stamp.Sequence, redundant);
+                if (stamp.Sequence <= latest.Sequence) continue;   // already seen (or older): a copy riding with a newer one
+                var previous = latest;
+                latest = stamp;
+                history.Add(stamp);
+                // Moving hazards are judged at the time the owner saw them, once per stamp, in order (docs/netcode-deterministic-plan.md §2.4).
+                if (IsServer) HazardRewind.Judge(player, previous, stamp);
+                newest = stamp;
+            }
+            if (newest.Valid) NetQuality.NotePacket(s, newest.Time);
         }
 
         /// <summary>
@@ -202,7 +283,7 @@ namespace HotPatata
             lastReplicated = world;
             wroteLast = false;
 
-            var state = stamp.Value;
+            var state = latest;
             var t = player.Tuning;
             float dt = Time.deltaTime;
             if (state.Epoch != seenEpoch)
@@ -242,16 +323,39 @@ namespace HotPatata
         {
             if (!IsOwner) return;
             epoch++;
-            stamp.Value = new PlayerStamp { Time = SimulationClock.ServerNow, Position = position, Epoch = epoch };   // a teleport always leaves the carrier (plan rule 7)
+            // A teleport always leaves the carrier (plan rule 7); sent at once, its epoch rides in every later stamp too.
+            Send(new PlayerStamp { Time = SimulationClock.ServerNow, Position = position, Pitch = player.Look.Pitch, State = player.Motor.PackedState, Epoch = epoch });
             lastStampTick = SimulationClock.ServerTick;
             if (netTransform != null) netTransform.Teleport(position, rotation, transform.localScale);
         }
 
-        /// <summary>Host only: tell this player why their catch failed.</summary>
-        public void SendHint(string text) => HintRpc(text);
+        /// <summary>Host only: this player's catch claim was refused; their screen puts the bomb back on its arc at once.</summary>
+        public void SendClaimRefused()
+        {
+            if (IsServer) ClaimRefusedRpc();
+        }
 
         [Rpc(SendTo.Owner)]
-        void HintRpc(string text) => player.Catcher.ReceiveHint(text);
+        void ClaimRefusedRpc()
+        {
+            var bomb = BombController.Instance;
+            if (bomb != null && bomb.PredictedCatch == player) bomb.RetractPredictedCatch();
+        }
+
+        /// <summary>
+        /// Host: this player's catch window opened at server time <paramref name="pressedAt"/>; every other screen may show
+        /// their catch as it happens (presentation, #117 P3).
+        /// </summary>
+        public void BroadcastWindowOpened(double pressedAt)
+        {
+            if (IsServer) WindowOpenedRpc(pressedAt);
+        }
+
+        [Rpc(SendTo.NotServer)]
+        void WindowOpenedRpc(double pressedAt)
+        {
+            if (!IsOwner) player.Catcher.MirrorWindow(pressedAt);
+        }
 
         /// <summary>Host only: lock or unlock this player's controls.</summary>
         public void SetLocked(bool value)
@@ -268,11 +372,13 @@ namespace HotPatata
         // ------------------------------------------------------------------ players -> host
 
         /// <summary>
-        /// Owner: ask the host to throw. On a moving carrier, <paramref name="carrierId"/> and <paramref name="offset"/> (the
-        /// release point in the carrier's frame) let the host replay the release on its own copy of the carrier, at its own
-        /// time, and <paramref name="velocity"/> is the throw's own part: the host adds the carrier's velocity (#97).
+        /// Owner: ask the host to throw, released at server time <paramref name="releasedAt"/> (#117 P2: the host starts the
+        /// flight then, within <see cref="GameTuning.throwBackdateCap"/>). On a moving carrier, <paramref name="carrierId"/> and
+        /// <paramref name="offset"/> (the release point in the carrier's frame) let the host release it from the carrier as
+        /// it was at that time, and <paramref name="velocity"/> is the throw's own part: the host adds the carrier's (#97).
         /// </summary>
-        public void RequestThrow(Vector3 origin, Vector3 velocity, int carrierId, Vector3 offset) => RequestThrowRpc(origin, velocity, carrierId, offset);
+        public void RequestThrow(double releasedAt, Vector3 origin, Vector3 velocity, int carrierId, Vector3 offset) =>
+            RequestThrowRpc(releasedAt, origin, velocity, carrierId, offset);
 
         public void RequestThrowCharge() => RequestThrowChargeRpc();
 
@@ -294,10 +400,15 @@ namespace HotPatata
         [Rpc(SendTo.NotServer)]
         void ThrowReleaseRpc() => player.Animator?.ReleaseThrow();
 
-        public void RequestCatch() => RequestCatchRpc();
+        /// <summary>Owner: I pressed catch at server time <paramref name="pressedAt"/>.</summary>
+        public void RequestCatch(double pressedAt) => RequestCatchRpc(pressedAt);
 
-        /// <summary>Owner only: "on my screen the bomb reached my catch sphere while my window was open". The host decides.</summary>
-        public void ClaimCatch() => ClaimCatchRpc();
+        /// <summary>
+        /// Owner only: "on my screen, flight <paramref name="flightId"/> reached my catch sphere (centre
+        /// <paramref name="center"/>, feet <paramref name="feet"/>) at server time <paramref name="seenAt"/>, while my window
+        /// was open". The host decides (<see cref="CatchResolver.TryResolveClaim"/>).
+        /// </summary>
+        public void ClaimCatch(int flightId, double seenAt, Vector3 center, Vector3 feet) => ClaimCatchRpc(flightId, seenAt, center, feet);
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         void RequestThrowChargeRpc()
@@ -311,29 +422,55 @@ namespace HotPatata
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
-        void RequestThrowRpc(Vector3 origin, Vector3 velocity, int carrierId, Vector3 offset)
+        void RequestThrowRpc(double releasedAt, Vector3 origin, Vector3 velocity, int carrierId, Vector3 offset)
         {
             var bomb = BombController.Instance;
             if (bomb == null || bomb.State != BombState.Held || bomb.Carrier != player) return;
-            if (!IsFinite(origin) || !IsFinite(velocity) || !IsFinite(offset)) return;   // NaN/Infinity would poison the host's physics
+            if (!IsFinite(origin) || !IsFinite(velocity) || !IsFinite(offset) || double.IsNaN(releasedAt)) return;   // NaN/Infinity would poison the flight
 
             var t = player.Tuning;
             float max = (t.throwSpeedMax + t.throwInheritForward * t.throwInheritMaxSpeed) * ThrowSpeedTolerance;   // charge + kept run speed
             if (velocity.magnitude > max) velocity = velocity.normalized * max;
 
-            // Thrown from a moving carrier: released from that carrier as THIS machine has it now, with its velocity here
-            // (the client's lift was drawn a latency earlier; a rising deck would be under, or above, its world point).
+            // The flight starts when the thrower released it, at most throwBackdateCap ago, never in the future.
+            double now = SimulationClock.ServerNow;
+            double t0 = HazardRewind.ClampClaim(releasedAt, now, t.throwBackdateCap);
+            if (t0 != releasedAt && releasedAt < now) SyncStats.ThrowsClamped++;
+
+            // Thrown from a moving carrier: released from that carrier as it was at t0 (every carrier that moves is a pure
+            // function of time), with its velocity then; a carrier that cannot say falls back to its pose now (#97).
             var carrier = CarrierRegistry.Get(carrierId);
             if (carrier != null && carrier.Moves)
             {
-                origin = carrier.AnchorPosition + carrier.AnchorRotation * offset;
-                velocity += CarrierMotion.VelocityAt(carrier, origin);
+                if (carrier is ITimePosed posed && CarrierAt(posed, t0, offset, out Vector3 releasePoint, out Vector3 carried))
+                {
+                    origin = releasePoint;
+                    velocity += carried;
+                }
+                else
+                {
+                    origin = carrier.AnchorPosition + carrier.AnchorRotation * offset;
+                    velocity += CarrierMotion.VelocityAt(carrier, origin);
+                }
             }
 
+            // The release point must be near the thrower, as their own stamps put them at t0 (their copy here is drawn late).
             Vector3 eye = player.CameraTarget.position;
-            if ((origin - eye).sqrMagnitude > MaxReleaseDistance * MaxReleaseDistance) return;   // the release point must be near the thrower
+            if (history.TryFeetAt(t0, 0.1f, out Vector3 feet)) eye += feet - transform.position;
+            if ((origin - eye).sqrMagnitude > MaxReleaseDistance * MaxReleaseDistance) return;
 
-            player.Thrower.ThrowFromRequest(origin, velocity);
+            player.Thrower.ThrowFromRequest(origin, velocity, t0);
+        }
+
+        /// <summary>A point at <paramref name="offset"/> in a time-posed carrier's frame at server time <paramref name="time"/>, and its velocity then.</summary>
+        static bool CarrierAt(ITimePosed carrier, double time, Vector3 offset, out Vector3 point, out Vector3 velocity)
+        {
+            const double Step = 0.01;   // seconds: the finite difference for the carrier's velocity
+            point = velocity = default;
+            if (!carrier.TryPoseAt(time, out Vector3 p0, out Quaternion r0) || !carrier.TryPoseAt(time + Step, out Vector3 p1, out Quaternion r1)) return false;
+            point = p0 + r0 * offset;
+            velocity = (p1 + r1 * offset - point) / (float)Step;
+            return true;
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
@@ -345,13 +482,18 @@ namespace HotPatata
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
-        void RequestCatchRpc() => player.Catcher.TryOpenWindow();
+        void RequestCatchRpc(double pressedAt)
+        {
+            if (double.IsNaN(pressedAt) || !player.Catcher.OpenRemoteWindow(pressedAt)) return;
+            BroadcastWindowOpened(pressedAt);
+        }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
-        void ClaimCatchRpc()
+        void ClaimCatchRpc(int flightId, double seenAt, Vector3 center, Vector3 feet)
         {
             var bomb = BombController.Instance;
-            if (bomb != null) bomb.Resolver.TryResolveCompensatedCatch(player);
+            if (bomb == null || double.IsNaN(seenAt) || !IsFinite(center) || !IsFinite(feet)) return;
+            bomb.Resolver.TryResolveClaim(player, flightId, seenAt, center, feet);
         }
 
         static bool IsFinite(Vector3 v) => float.IsFinite(v.x) && float.IsFinite(v.y) && float.IsFinite(v.z);

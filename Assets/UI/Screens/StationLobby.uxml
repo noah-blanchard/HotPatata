@@ -14,6 +14,7 @@
                     <ui:Label text="COPY CODE" class="hp-button__label" />
                 </ui:Button>
                 <ui:Label text="Friends enter this code under Join on their Play board." class="hp-hint" />
+                <ui:Label text="Smoothest games: the host plays on the strongest PC, on a wired connection." class="hp-hint" />
                 <ui:VisualElement class="hp-spacer" />
                 <ui:Button name="leave" class="hp-button hp-button--neutral hp-button--small hp-self-start">
                     <ui:VisualElement class="hp-icon hp-icon--door" />

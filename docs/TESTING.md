@@ -12,7 +12,7 @@
 | `ConfigurationTests` | EditMode | M0 baseline: tuning defaults, layers, collision matrix, player colours/shapes and their indicator meshes and flat ring glyphs; every slot's character is Humanoid on the shared controller with a right-hand socket; the throw hold point is where the hand is back |
 | `BombFuseTests` | EditMode | fuse maths: refresh, expiry, warning phase, stage bands |
 | `AimAssistTests` | EditMode | release-time aim assist and arc maths (spec §8.3) |
-| `FlightHistoryTests` | EditMode | the host's flight record used for lag-compensated catches |
+| `NetcodeFlightTests` | EditMode | #117 flight segments (the same arc at the same server time everywhere), the back-date clamp, a past chord carried into a mover's present frame, the stamp history the host checks claims against (interpolation, never across a teleport), rolling percentiles, the view delay, lost and recovered stamps, the simulator presets |
 | `MovingPlatformTests` | EditMode | `MovingPlatform.Evaluate`, the pure clock-to-position maths |
 | `SimulationClockTests` | EditMode | #92 the client clock: in step it follows the frame, NGO corrections are slewed (never backwards, at most `clockMaxSlew`), a real desync snaps; offline it is the local clock |
 | `CarrierRegistryTests` | EditMode | #92 carrier ids: stable FNV-1a hash, follows the sibling path not the name, unique in PassSandbox (add a level's scene to its list) |
@@ -170,7 +170,10 @@ not exercise the asset serialization step that rejects `DontSave` font dependenc
 | `-patataBot` | the local player is a bot (`PlayerBot`) |
 | `-patataBotMove <pattern>` | the bot's movement: `Stand`, `Strafe`, `Jump`, `RunAcross`, `Ride` (hops onto the nearest moving platform that is not a crusher, after each reset, and stays on it) or `RideFast` (the same onto the fastest-rising carrier of the scene, #97) |
 | `-patataCheats` | start invincible with no explosions (map testing; the F8 panel, §2), any build |
-| `-patataLatency <ms>` | Network Simulator latency (Editor / dev builds only) |
+| `-patataLatency <ms>` | Network Simulator delay on every packet this side sends (Editor / dev builds only); jitter defaults to delay / 5 |
+| `-patataJitter <ms>` / `-patataLoss <%>` / `-patataLossInterval <n>` | jitter (± ms), random loss, and one packet dropped in every n (#117 P0) |
+| `-patataSpike <every s>:<ms>` | a lag spike of ms every so many seconds (e.g. `20:500`) |
+| `-patataNet <preset>` | `lan`, `good`, `wifi`, `relay`, `bad`, `awful`, `spiky` (`NetSimSettings.TryPreset`); the flags above refine it |
 | `-patataQuit <s>` / `-patataLeaveAfter <s>` | quit / leave the session after s seconds |
 
 From the Editor: `_ = HotPatata.NetworkBootstrap.Instance.HostOnlineAsync();`, then read `.SessionCode`, call
@@ -203,10 +206,39 @@ Bots pass to the next slot (round robin), so 3+ players exercise client→client
 "31/31 catches at 100 ms" run was not actually under latency.
 
 Real simulation uses Unity's Network Simulator (`LatencySimulator`, `HotPatata.DebugTools`, Editor and dev builds
-only). Set it with `-patataLatency <ms>` or `NetworkBootstrap.Instance.SimulateLatency(ms)` BEFORE hosting or
-joining, on **both** sides. Always confirm it with `UnityTransport.GetCurrentRtt`.
+only). Set it with the flags of the table above (`-patataLatency`, `-patataJitter`, `-patataLoss`, `-patataSpike`,
+`-patataNet`) or `NetworkBootstrap.Instance.SimulateNetwork(settings)` BEFORE hosting or joining, on **every** side.
+Always confirm it with the measured round trip: the delay applies to what each side sends, and with both sides
+simulating, `-patataLatency 38 -patataJitter 8 -patataLoss 1` measures about 150 ms RTT, and `-patataNet bad` about 400.
 
-Measured with bots:
+**`[NetReport]`** (#117 P0). Every session ends with one block in the log (leave, disconnect or quit), and the F7 panel
+shows the same numbers live:
+
+| Line | What it says | Look for |
+|---|---|---|
+| `rtt to N` | round trip to each connection, p50 / p95 / max | p95 far above p50: jitter or resends |
+| `snapshots from slot N` | that player's stamps here: jitter (p95 − median of transit), packet gaps, freezes (gaps over 100 ms), stamps lost for good and recovered from the redundant copies | freezes and lost > 0: their copy stalled |
+| `frames` | this machine's frame times; on the host, everyone feels its spikes | spikes on the host |
+| `clock` | NGO hard resets of its server-time estimate, and level clock snaps (the level jumping) | any snap |
+| `caps hit (host)` | stamps, catch claims and throws older than their cap: judged later than the player saw them | rising with the round trip |
+| `catches` | claims accepted / refused (host); catches shown at once then confirmed / refused (client) | refusals, and their reason in the `[Bomb]` lines |
+| `throws (client)` | the thrower's prediction against the host's verdict, and how far its arc was corrected when the host's arrived | arc pops above a few cm: the release was clamped |
+| `fuse (host)` | fuse expiries held for a throw on its way, and the ones it saved | |
+
+Bot runs on `PassSandbox` (host + 2 clients unless noted, 135 s, #117):
+
+| Condition (per side) | Measured RTT | Catches / explosions | Claims accepted | Throw prediction agrees | Level clock snaps |
+|---|---|---|---|---|---|
+| none | 2 ms | 79 / 1 | 53 / 53 | 52 / 52 | 0 |
+| `-patataLatency 38 -patataJitter 8 -patataLoss 1` | ~150 ms | 72 / 1 | 48 / 50 (the 2 refused: claims older than the 0.35 s cap) | 46 / 46 | 0 host, 0 and 1 on clients |
+| `-patataNet bad` (host + 1 client, before the clock fix) | ~400 ms | 20 / 15 | 10 / 10 | 8 / 8 | 126 |
+
+Found while measuring (fixed in #117): the client's level clock advanced by `Time.unscaledDeltaTime`, which is the
+physics step when the first sample of a frame comes from a `FixedUpdate` (actuators, falling platforms and plates read
+server time there): it ran ahead of the server and snapped back by about 0.5 s every second or so (180 snaps in two
+minutes). It now measures real time between samples.
+
+Before #117 (M3.5 lag compensation), for reference:
 
 | RTT | Before lag compensation | With lag compensation (M3.5) |
 |---|---|---|
@@ -216,7 +248,11 @@ Measured with bots:
 | ~390 ms | 1/20 | |
 | ~450 ms | | 0/14: beyond the `catchLagCompensation` cap (0.35 s) |
 
-How the compensation works: [`ARCHITECTURE.md`](ARCHITECTURE.md) §13.2.
+How the compensation works: [`ARCHITECTURE.md`](ARCHITECTURE.md) §13.2; the flight segments and the transport §13.3–13.4.
+
+Still to measure on real networks (M3.7): two PCs on a LAN with Clumsy (Windows) adding loss and jitter, and one
+internet session over Relay with Wi-Fi on one side. Keep both `[NetReport]` blocks; the targets are those of #117 §7
+(throw prediction ≥ 99 %, predicted catches confirmed ≥ 98 %, no remote player frozen over 100 ms at 2 % loss).
 
 ### Remote players vs moving level objects (#92)
 

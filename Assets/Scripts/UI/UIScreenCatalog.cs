@@ -24,5 +24,9 @@ namespace HotPatata
         public VisualTreeAsset confirm;
         public VisualTreeAsset results;
         public VisualTreeAsset uiSample;
+
+        [Header("HUD")]
+        [Tooltip("The online connection indicator (ConnectionIndicator, #117 P6).")]
+        public VisualTreeAsset netIndicator;
     }
 }

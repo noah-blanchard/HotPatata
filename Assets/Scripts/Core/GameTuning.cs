@@ -239,6 +239,40 @@ namespace HotPatata
         [Range(0.01f, 0.5f)] public float clockMaxSlew = 0.1f;
         [Tooltip("Client only. A clock error larger than this (seconds) is a real desync: snap instead of slewing.")]
         [Range(0.1f, 2f)] public float clockSnapSeconds = 0.5f;
+        [Tooltip("Client only (#117 P4). The level is drawn this much further behind the server at most, when the measured " +
+                 "jitter is larger than NGO's own 50 ms buffer, so replicated events (an actuator, a falling platform, a reset) " +
+                 "still arrive before the time they are drawn at. Seconds; 0 = never.")]
+        [Range(0f, 0.3f)] public float viewDelayMax = 0.15f;
+
+        [Header("Network - bomb flight (#117 P2, ARCHITECTURE §13.3)")]
+        [Tooltip("Online, host only. A remote throw starts at the time its thrower released it, at most this many seconds " +
+                 "ago: the host fast-forwards the flight over the gap, so the thrower's own drawing is the real flight.")]
+        [Range(0f, 0.5f)] public float throwBackdateCap = 0.3f;
+        [Tooltip("Presentation. Seconds over which a spectator's bomb eases from the thrower's drawn hand onto its arc.")]
+        [Range(0f, 0.5f)] public float flightCatchUpSeconds = 0.15f;
+        [Tooltip("Presentation. ...or this share of the flight, whichever is shorter.")]
+        [Range(0f, 1f)] public float flightCatchUpFraction = 0.3f;
+        [Tooltip("Online, host only. When a remote carrier's fuse runs out, the explosion waits at most this long for a throw " +
+                 "they made before it ran out on their screen (it is still on its way).")]
+        [Range(0f, 0.5f)] public float fuseExpiryHoldCap = 0.3f;
+        [Tooltip("Online, host only. Added to every wait for a late message (round trip + timeline buffer + jitter), seconds.")]
+        [Range(0f, 0.2f)] public float netHoldMargin = 0.05f;
+
+        [Header("Network - time-stamped catches (#117 P3, ARCHITECTURE §13.2)")]
+        [Tooltip("Online, host only. Metres beyond the receiver's reach a claimed catch may be (float rounding, the clock slew).")]
+        [Range(0f, 0.5f)] public float catchClaimSlack = 0.15f;
+        [Tooltip("Online, host only. Metres between the catch centre a receiver claims and the one their own stamps put at that " +
+                 "time, beyond which the claim is refused.")]
+        [Range(0.1f, 2f)] public float catchClaimCentreTolerance = 0.75f;
+        [Tooltip("Online, receiver. A catch shown at once waits this long past the round trip for the host's confirmation " +
+                 "before the bomb goes back onto its arc.")]
+        [Range(0.05f, 1f)] public float catchConfirmGrace = 0.25f;
+
+        [Header("Network - reset (#117 P4)")]
+        [Tooltip("Online, host only. A reset unlocks everyone at the same server time, this far ahead at least (seconds)...")]
+        [Range(0f, 0.5f)] public float resetLeadMin = 0.1f;
+        [Tooltip("...and at most: enough for the reset to reach the farthest client before it is due.")]
+        [Range(0f, 1f)] public float resetLeadMax = 0.35f;
 
         [Header("Bomb - feedback")]
         [Tooltip("Seconds between beeps for the four fuse stages: calm, medium, urgent, critical.")]
