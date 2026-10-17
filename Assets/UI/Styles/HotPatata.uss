@@ -1201,3 +1201,38 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+/* Online HUD: the connection indicator (#117 P6), top-right, never in the way. NetIndicator.uxml. */
+.hp-net {
+    position: absolute;
+    top: 14px;
+    right: 18px;
+    align-items: flex-end;
+}
+
+.hp-net__stats {
+    -unity-font-definition: url("../Fonts/Nunito-Bold-SDF.asset");
+    font-size: 15px;
+    color: var(--hp-cream);
+    padding: 3px 10px;
+    margin: 0;
+    border-radius: 10px;
+    background-color: rgba(36, 48, 94, 0.55);
+}
+
+.hp-net__warning {
+    -unity-font-definition: url("../Fonts/Nunito-Black-SDF.asset");
+    font-size: 17px;
+    color: var(--hp-cream);
+    padding: 4px 12px;
+    margin: 6px 0 0 0;
+    border-radius: 10px;
+    border-bottom-width: 3px;
+    border-color: var(--hp-red-lip);
+    background-color: var(--hp-red);
+}
+
+.hp-net--hidden,
+.hp-net__warning--hidden {
+    display: none;
+}

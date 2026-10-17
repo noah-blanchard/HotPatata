@@ -25,6 +25,7 @@ namespace HotPatata
         static int sampledFrame = -1;
         static double now;
         static double lastRaw;
+        static double lastRealtime;
         static bool online;
 
         /// <summary>Gives the clock its slew limits (RunManager does it). Without them a client follows the raw time.</summary>
@@ -94,13 +95,25 @@ namespace HotPatata
                 now = target;   // first sample, the host (its time is the server time) or unconfigured: no smoothing
             else
             {
-                double dt = Time.unscaledDeltaTime;
-                if (Math.Abs(raw - lastRaw - dt) > HardResetSeconds) SyncStats.ClockJumps++;
+                // The real time since the last sample. Never Time.unscaledDeltaTime: the first sample of a frame may come from
+                // a FixedUpdate, where it is the physics step, and the clock would run ahead of the server (#117).
+                double dt = Math.Max(0.0, Time.realtimeSinceStartupAsDouble - lastRealtime);
+                double jump = raw - lastRaw - dt;
+                if (Math.Abs(jump) > HardResetSeconds)
+                {
+                    SyncStats.ClockJumps++;
+                    PatataLog.Sync($"clock: NGO server time jumped {jump * 1000.0:F0} ms (rtt {NetMode.RttMs} ms)");
+                }
                 double predicted = now + dt;
                 now = Step(now, target, dt, tuning.clockMaxSlew, tuning.clockSnapSeconds);
-                if (Math.Abs(target - predicted) > tuning.clockSnapSeconds) SyncStats.ClockSnaps++;
+                if (Math.Abs(target - predicted) > tuning.clockSnapSeconds)
+                {
+                    SyncStats.ClockSnaps++;
+                    PatataLog.Sync($"clock: level clock snapped {(target - predicted) * 1000.0:F0} ms (rtt {NetMode.RttMs} ms)");
+                }
             }
             lastRaw = raw;
+            lastRealtime = Time.realtimeSinceStartupAsDouble;
             online = true;
             sampledFrame = Time.frameCount;
         }

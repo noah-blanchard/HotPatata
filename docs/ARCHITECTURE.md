@@ -277,8 +277,8 @@ Assets/
 │   ├── Player/           Player, PlayerMotor, RiderReconstruction, PlayerLook, PlayerThrower, PlayerCatcher, PlayerCatchVolume,
 │   │                     FirstPersonCamera, PlayerViewFeel, SpeedEffects, PlayerPresentation, PlayerAnimator,
 │   │                     PlayerCharacter, PlayerShapeMesh, PlayerPause, ...
-│   ├── Bomb/             BombController, BombFuse, BombPhysics, CatchResolver, FlightHistory, AimAssist,
-│   │                     ThrowBallistics, BombAudio, BombPresentation, ExplosionFx, ProceduralSfx
+│   ├── Bomb/             BombController, BombFuse, BombPhysics, CatchResolver, FlightSegment, BombFlightSweep,
+│   │                     CatchPreview, AimAssist, ThrowBallistics, BombAudio, BombPresentation, ExplosionFx, ProceduralSfx
 │   ├── Audio/            SoundBank, CueSettings, CueKeys, AudioDirector (+ Sfx, LoopHandle), MusicDirector, MusicContext,
 │   │                     AmbienceDirector, AmbienceZone, CourseAudio, CourseSounds, ObstacleSounds, UiSounds, PlayerSounds,
 │   │                     AudioSurface (§26)
@@ -335,7 +335,8 @@ Bomb - fuse              holdFuseDuration, warningDuration, caughtGraceDuration
 Bomb - throw             throwSpeedMin/Max, throwChargeTime, throwUpAngle, bombGravityScale, run-speed inheritance
 Bomb - aim assist        strength, cone, range, max correction/elevation, lead
 Catch                    catchRadius, facing bonus, vertical scale, late grace, window, cooldown
-Network                  catchLagCompensation
+Network                  catchLagCompensation, rider blend, hazardRewindCap, clock slew, viewDelayMax,
+                         throwBackdateCap, flight catch-up, fuseExpiryHoldCap, netHoldMargin, claim checks, reset lead
 Bomb - feedback          beepIntervals, stageThresholds, beepVolume
 Bomb - motion / VFX      tumble, hand sway, trail, fuse spark rates, flight puffs
 Run                      resetDelay
@@ -613,7 +614,7 @@ Explicit state (`MoveState`): `Ground`, `Air`, `Slide`, `Mantle`, plus a `Crouch
 - **Slide**: starts on a crouch press (or a landing with crouch held) at `slideMinEntrySpeed`+. It has a cooldown-limited boost capped at sprint speed + boost, friction, slope gravity along the ground normal (downward ray), and light steering. It ends on release or below `slideExitSpeed`.
 - **Mantle**: while airborne with forward input, a forward ray finds a ledge face, a downward ray finds its flat top (not Hazard) 0.1–1.4 m above the feet, and two capsule checks confirm room. A scripted rise-then-over via `CharacterController.Move` follows, and the forward speed is kept.
 - **Posture**: the capsule height changes at the feet pivot. Standing up waits for headroom (`CheckCapsule`). `HeightScale` (smoothed) lowers the eye pivot (`PlayerLook`) and the catch sphere (`PlayerCatchVolume`).
-- **Replication**: `PackedState` (state + crouch + sprint, one byte) is owner-written on `NetworkPlayer`. Remote copies apply it to their capsule, eye and catch height, so the host's catch sweeps and `FlightHistory` use the sliding player's real catch centre. `PlayerAnimator` uses it for the remote sprint blend (Speed 2 = run clip at 1.35×) and the procedural slide / crouch-walk pose.
+- **Replication**: `PackedState` (state + crouch + sprint, one byte) is owner-written on `NetworkPlayer`. Remote copies apply it to their capsule, eye and catch height, so the host's catch sweeps and claim checks use the sliding player's real catch centre. `PlayerAnimator` uses it for the remote sprint blend (Speed 2 = run clip at 1.35×) and the procedural slide / crouch-walk pose.
 - `PlayerMotor.MotionFraction` (run = 1, sprint = 2, slides above) is the single speed scale for presentation.
 
 Should **not** know bomb game rules.
@@ -753,19 +754,21 @@ Presentation may read replicated normalized fuse data or warning stage.
 
 Responsibilities:
 
-- Rigidbody configuration;
-- thrown movement: plain ballistic flight under the bomb's own gravity, nothing steers it after release
-  (the arc maths is shared in `ThrowBallistics`);
-- environment collision reporting;
-- transition between attached and thrown physics modes.
+- Rigidbody configuration (always kinematic, collider off: PhysX never moves or decides the bomb);
+- thrown movement: a `FlightSegment` (t0, origin, velocity), a plain ballistic arc under the bomb's own gravity that
+  nothing steers after release (the arc maths is shared in `ThrowBallistics`, §13.3);
+- on the authority, the flight's sweep (`AdvanceTo`): each physics step, the arc since the last step, a short chord at
+  a time, against zones (`BombZoneSweep`), catches (`CatchResolver.SweepChord`), kill zones and the world
+  (`BombFlightSweep`), and the contact reports that follow;
+- transition between attached and thrown modes.
 
 While held:
 
-- Rigidbody should not produce accidental lethal collisions.
+- the bomb cannot produce accidental lethal contacts (no collider, parented to the hand).
 
 While thrown:
 
-- collision is gameplay-critical.
+- every contact is gameplay-critical and found by the sweep, never by a collision or trigger event.
 
 ### 8.4 `CatchResolver`
 
@@ -781,8 +784,10 @@ Responsibilities:
 
 Do not duplicate catch decisions inside player scripts.
 
-`BombController.IntendedReceiver` (replicated) only drives the "CATCH!" marker. `PlayerCatcher.Hint` explains failed
-catches ("Too late by N ms" / "Too early"). Online, remote receivers are covered by lag compensation (§13.2).
+`BombController.IntendedReceiver` only drives the "CATCH!" marker; every machine computes it from the flight segment
+against the players as it draws them. `PlayerCatcher.Hint` explains failed catches ("Too late by N ms" / "Too early"),
+on the receiver's own machine. Online, the host's sweep only decides the host's own players; remote receivers catch
+through time-stamped claims (§13.2).
 
 ### 8.5 `BombAudio`
 
@@ -1231,10 +1236,11 @@ and on the host):
 | Concern | Who decides | How it reaches others |
 |---|---|---|
 | Player movement, aim | owning client (owner-authoritative `NetworkTransform`) | world transform + replicated pitch; on a moving carrier, the owner's per-tick `PlayerStamp` (carrier id + offset) and every other machine rebuilds the rider on the carrier as it draws it (`RiderReconstruction`) |
-| Throw | host | owner sends `RequestThrow(origin, velocity)`; host clamps speed, checks the release point, then `TryThrow` |
-| Catch | host | owner sends `RequestCatch`; host opens that player's catch window; `CatchResolver` decides once |
-| Bomb state, carrier, fuse, explosion | host only | `NetworkBomb` snapshot (one atomic `NetworkVariable`) + fuse fraction; clients mirror it via `BombController.ApplyMirror` and raise the same events |
-| Bomb position | host physics | server-authoritative `NetworkTransform`; while held, each client attaches it to the carrier's hand locally |
+| Throw | host | owner sends `RequestThrow(releasedAt, origin, velocity)`; host clamps speed and the release time (`throwBackdateCap`), checks the release point against the thrower's stamps, then `TryThrow` with that start time (§13.3) |
+| Catch | host | owner sends `RequestCatch(pressedAt)`; the host knows when that window opened. The owner's `ClaimCatch(flight, time, centre, feet)` is checked exactly by `CatchResolver.TryResolveClaim`, which decides once (§13.2) |
+| Bomb state, carrier, fuse, explosion | host only | `NetworkBomb` snapshot (one atomic `NetworkVariable`, the flight segment inside) + the fuse as a function of server time (`FuseClock`); clients mirror it via `BombController.ApplyMirror` and raise the same events |
+| Bomb position | nobody streams it | while thrown, every machine draws the flight segment at its own `ServerNow` (§13.3); while held, each client attaches it to the carrier's hand locally; other states carry their position in the snapshot |
+| Section (re)start | host | one reliable `NetworkRunState.ResetEvent`: section start, remote respawns, unlock time; everyone unlocks at that server time (§13.4) |
 | Run state, checkpoint, section clock | host | `NetworkRunState`; the section clock start is a server time, so platforms match everywhere |
 | Lock / teleport on reset | host | `NetworkPlayer.locked` variable; `TeleportOwner` RPC (owners move themselves) |
 | Player name | host sanitises (`PlayerNames.Sanitize`) | owner sends its menu name on spawn (`SubmitName`); `NetworkPlayer.displayName` variable, so late joiners get it too. In the lobby, before players spawn, the name travels as the session player property `name` |
@@ -1254,11 +1260,13 @@ Remote players against time-driven level objects (the analysis and the staged pl
   backwards. On the host and offline it is the raw time. Every pose and readout of a time-driven object uses it:
   `SectionClock`, actuators, falling platforms, gates and transit.
 - **Player stamps.** Once per network tick, the owner sends a `NetworkPlayer.PlayerStamp`:
-  - the `ServerNow` it drew the level at;
-  - its feet;
+  - a sequence number and the `ServerNow` it drew the level at;
+  - its feet and velocity, its aim pitch and its posture (`PackedState`), so posture, aim and position never arrive a
+    tick apart;
   - the moving carrier it stands on, if any (`CarrierId`), and its offset from the carrier's `AnchorPosition`.
 
-  A teleport sends a fresh stamp with no carrier and a new `Epoch`.
+  Stamps are sent **unreliably**, each packet carrying the two before it (§13.4). A teleport sends a fresh stamp at once,
+  with no carrier and a new `Epoch`. Viewers keep the last second of them (`NetworkPlayer.History`, a `StampHistory`).
 
   The carrier comes from `PlayerMotor.RidingCarrier`, which is stable: a frame where the deck is not under the feet
   does not count as leaving (`carrierLeaveGraceSeconds`), a jump, a launch or a teleport does (#97).
@@ -1281,35 +1289,105 @@ Remote players against time-driven level objects (the analysis and the staged pl
   posed at the stamp's time, plus the midpoint from the previous stamp. The host's own player, static zones (water,
   void) and offline play keep the trigger.
 
-### 13.2 Catch lag compensation (M3.5)
+### 13.2 Catch lag compensation (M3.5, time-stamped since #117 P3)
 
-Problem: the host measures the catch window from when the request ARRIVES, while the receiver presses when they SEE the
-bomb (delayed by network + interpolation). Without compensation the timed catch broke between ~110 and ~240 ms RTT.
+Problem: a remote receiver presses when they SEE the bomb, a moment after the host's present; anything the host decides
+from its own present (when a request arrives, its late copy of the receiver) is unfair to them.
 
-Fix, as built:
+As built (#117 P3):
 
-- A remote client that sees its (late-rendered) bomb reach its catch sphere while its own window is open sends
-  `NetworkPlayer.ClaimCatch`.
-- `CatchResolver.TryResolveCompensatedCatch` accepts it if the host's `FlightHistory` (bomb + every catch centre,
-  recorded each FixedUpdate while Thrown, online only) had the bomb within `catchRadius + 0.4 m` of that player in the
-  last `GameTuning.catchLagCompensation` seconds (0.35 s, also the abuse cap).
-- A lethal contact right after the bomb passed a remote eligible receiver is held (`BombController.ExplosionPending`:
-  still Thrown, frozen) for `min(cap, rtt + 0.15 s)` so the late catch can win.
-- Host "Too late/early" hints for remote players are deferred by the same cap and dropped if the catch lands.
+- Every machine draws the same flight at its own `ServerNow` (§13.3), so what the receiver sees is the host's flight at
+  the receiver's time, exactly.
+- The press travels with its server time (`RequestCatch(pressedAt)`): the host knows when the window really opened
+  (`PlayerCatcher.RemoteWindowCovers`, the late grace included). The host relays it (`WindowOpenedRpc`) so other
+  screens can show the catch as it happens (`CatchPreview`, presentation).
+- When the drawn arc reaches the receiver's catch sphere while their window is open, their machine sends
+  `ClaimCatch(flight id, time, catch centre, feet)` once per window and shows the catch at once (snap to the hands, the
+  catch sound and brackets: `BombController.ShowPredictedCatch`, spec §9.3).
+- `CatchResolver.TryResolveClaim`, on the host, decides once. The claim's time is clamped to
+  `[now − catchLagCompensation, now]` (0.35 s, also the abuse cap); the flight must be the current one, started before
+  that time and not ended before it; the window must have been open then; the bomb's position at that time must be
+  within the receiver's reach of the claimed centre (+ `catchClaimSlack`); and the claimed feet must be where the
+  receiver's own stamps put them then (`StampHistory`, within `catchClaimCentreTolerance`).
+- A refused claim is sent back (`ClaimRefusedRpc`); a confirmation that does not come within the round trip +
+  `catchConfirmGrace` also puts the bomb back on its arc. Both are counted (`SyncStats`).
+- The host's own sweep only decides the host's own players. Remote players catch through claims only.
+- A lethal contact right after the bomb passed near where a remote receiver's stamps put them is held
+  (`BombController.ExplosionPending`: still Thrown, stopped on the surface) for as long as their claim can still come:
+  `LagBudget.LateMessageWait` = rtt + NGO's 50 ms buffer + their view delay + their measured jitter + `netHoldMargin`,
+  capped by `catchLagCompensation`.
+- "Too late / too early" hints come from the receiver's own view, with no deferral.
 - Offline and for the host's own player nothing changes.
 
-Measured with bots (numbers and method in [`TESTING.md`](TESTING.md)): ~230 ms RTT 20/20 (1 client) and 22/22 incl.
-client→client; ~450 ms still 0/14, beyond the cap (raising `catchLagCompensation` toward 0.5 would cover it, at the
-cost of longer freezes before explosions).
+Measured with bots (numbers and method in [`TESTING.md`](TESTING.md) §3).
 
-Movement posture is replicated too: the owner writes `PackedState` on `NetworkPlayer` (§7.1), so the host's catch
-sweeps and `FlightHistory` use a crouching or sliding player's real catch centre. A receiver riding a moving platform is
-rebuilt on it (§13.1), so their catch centre is on the platform too. `FlightHistory` itself still records host-frame
-samples; making it tick-exact is deferred (netcode plan, stage 3 note).
+Movement posture is replicated too: the owner's stamp carries `PackedState` (§7.1), so a crouching or sliding player's
+copy has the real catch centre. A receiver riding a moving platform is rebuilt on it (§13.1), so their catch centre is
+on the platform too.
 
 Moving hazards use the same idea for deaths (`HazardRewind`, §13.1). The host poses a moving lethal zone at the time a
 remote player's stamp says they saw it. That time is clamped to `[now − GameTuning.hazardRewindCap, now]` (0.35 s), so a
 client can only make itself older, never claim a future time to slip past a hazard.
+
+### 13.3 Bomb flight segments (#117 P2)
+
+A thrown bomb is a pure function of one replicated segment: `x(t) = origin + v·(t − t0) + ½·g·(t − t0)²`, `t0` in server
+time (`FlightSegment`). It is the most predictable thing in the game, so it is sent once and never streamed.
+
+- **One message per flight.** The segment rides inside the `NetworkBomb` snapshot, so state and arc arrive together.
+  The bomb has no `NetworkTransform`; the states that are not flying carry their position in the snapshot (a tube's
+  hold point, the explosion), and a held bomb is in the carrier's hand on every machine.
+- **No machine integrates it.** The rigidbody is always kinematic and the collider off. On the host, each physics step
+  sweeps the arc from where the last step stopped to now, in chords of at most 20 ms (`BombPhysics.AdvanceTo`): zones
+  first (a transit mouth takes the bomb before the rim, a barrier explodes it), then catches, kill zones, then the
+  world (`BombFlightSweep.CastWorld`, against the Bomb layer's collision matrix). The state machine is unchanged:
+  while Thrown any environment contact explodes the bomb, found by the sweep instead of `OnCollisionEnter`.
+- **Back-dated remote throws.** A client sends its release time with the throw. The host starts the flight then,
+  `t0 = clamp(releasedAt, now − throwBackdateCap, now)` (0.3 s), and the next step fast-forwards it over `[t0, now]`. A
+  chord in the past is tested against every mover posed at that chord's time: the chord is carried into the mover's
+  present frame (`p' = M(now) · M(t)⁻¹ · p`, `BombFlightSweep.ToNow`) and cast against its colliders where they are now.
+  A throw from a moving carrier is released from the carrier as it was at `t0` (every carrier that moves is an
+  `ITimePosed`), with its velocity then. So the thrower's own drawing is the authority's path: no correction, no freeze.
+- **Drawing.** Every machine draws `x(ServerNow)`. The thrower draws its throw at once (`NetworkBomb.PredictLocalThrow`)
+  and keeps drawing when the host's identical segment arrives. A spectator draws the remote thrower a moment late, so
+  the arc's present point is ahead of their hand: the bomb eases from the drawn hand onto the arc over
+  `flightCatchUpSeconds` or the first `flightCatchUpFraction` of the flight, whichever is shorter (`FlightCatchUp`,
+  presentation; the host does the same for a remote throw). Each machine stops the bomb on the surface where its arc
+  meets the world as it draws it (predicted impact); the explosion plays on the host's verdict.
+- **Tubes and cannons.** The exit arc is a segment with `t0 = ReleaseAt`, already a server time.
+- **The fuse** is a function of server time too (`NetworkBomb.FuseClock`: seconds left at a time, and the burn rate),
+  resent only when it is refilled or its rate changes, plus a 1 s resync of the host's frame-ticked fuse. Beeps are timed,
+  not stepped.
+- **Fuse expiry against a late throw (F4).** When a remote carrier's fuse runs out on the host, the explosion waits for
+  `LagBudget.LateMessageWait` (capped by `fuseExpiryHoldCap`): a throw released before the fuse ran out still counts.
+  The section starts a moment ahead online (§13.4): a carrier's fuse does not burn while they are locked.
+- **The CATCH! marker** (`IntendedReceiver`) is computed on every machine from the segment; the host's value is logged.
+
+### 13.4 Transport and reliability (#117 P1, P4)
+
+Reliable delivery is for rare, discrete events; everything continuous is unreliable, so a lost packet is skipped, never
+waited for (one lost reliable packet stalls every later message on its pipeline until it is resent).
+
+- **Unreliable, with redundancy.** The player `NetworkTransform` uses unreliable deltas (NGO's own axis sync recovers a
+  lost one). The per-tick `PlayerStamp` is an unreliable RPC carrying the last three stamps (`StampPacket`): two losses in
+  a row cost nothing. Each stamp is a full state (no delta), so epoch and carrier changes need no reliable copy.
+- **Reliable, rare.** The bomb snapshot (one per state change), the fuse clock, throw / catch / claim requests, the
+  reset event, names and locks.
+- **UTP's reliable pipeline.** NGO 2.13 already sets a 64-packet window and a 750 ms maximum resend time on Relay
+  (500 ms direct): nothing to change.
+- **Measured waits.** Every host wait for a remote player's late message uses `LagBudget.LateMessageWait` (round trip
+  + NGO's 50 ms buffer + the view delay + measured jitter + `netHoldMargin`), capped. Every cap hit is counted
+  (`SyncStats`, the `[NetReport]`).
+- **View delay.** A client draws the level a little further behind the server when the jitter it measures is larger
+  than NGO's 50 ms buffer (`SimulationClock.ViewDelay`, at most `viewDelayMax`), so replicated event times still arrive
+  before they are drawn. Every judgement is time-stamped, so this changes no fairness.
+- **Atomic reset.** A section (re)start is one reliable `NetworkRunState.ResetEvent` (section start, the remote players'
+  spawns, the unlock time). Online the section starts a moment ahead (`resetLeadMin`..`resetLeadMax`, from the measured
+  jitter), everyone, the host included, unlocks at that server time (`NetworkPlayer.LockUntil`), and the level waits at
+  its start until then (`SectionTime` is never negative). Offline it starts at once, as before.
+- **Telemetry.** `NetQuality` (round trips, snapshot jitter, gaps and freezes, lost and recovered stamps, frame times,
+  the link), the end-of-session `[NetReport]` and the F7 panel (docs/TESTING.md §3). The HUD shows ping, jitter and loss
+  online, and "unstable connection" or "host frame drops" when they matter (`ConnectionIndicator`).
 
 ## 14. Session flow
 
@@ -1445,7 +1523,7 @@ The suites, how to run them, bot sessions, latency simulation and CI are documen
 ### 18.1 Edit Mode
 
 Pure logic: tuning/layer configuration, fuse maths, aim assist and arc maths, `MovingPlatform.Evaluate`,
-`FlightHistory`, session-code cleanup.
+flight segments, stamp histories and the netcode measurements (`NetcodeFlightTests`), session-code cleanup.
 
 ### 18.2 Play Mode
 

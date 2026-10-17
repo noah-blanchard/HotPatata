@@ -22,3 +22,4 @@ MonoBehaviour:
   confirm: {fileID: 9197481963319205126, guid: c29e598cfffd0084eb658dcf0a58f53f, type: 3}
   results: {fileID: 9197481963319205126, guid: be56e5c105527a44caeea59b1f636aba, type: 3}
   uiSample: {fileID: 9197481963319205126, guid: 739b9d9783d2ae541a173cff4436794f, type: 3}
+  netIndicator: {fileID: 9197481963319205126, guid: a50cffacd953b304b89b8edc672c63a8, type: 3}

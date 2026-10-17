@@ -190,7 +190,7 @@ namespace HotPatata
             LastThrower = thrower;
             IntendedReceiver = PickIntendedReceiver(thrower, origin, velocity);
             SetCarrier(null);
-            bombPhysics.EnterThrown(new FlightSegment(launchTime, origin, velocity, ++flightId), remote);   // before the state: the snapshot carries both
+            bombPhysics.EnterThrown(new FlightSegment(launchTime, origin, velocity, ++flightId, SimulationClock.ServerNow), remote);   // before the state: the snapshot carries both
             Transition(BombState.Thrown);
             PatataLog.Bomb($"Held -> Thrown carrier={thrower} speed={velocity.magnitude:F1}" +
                            (remote ? $" released {(SimulationClock.ServerNow - launchTime) * 1000.0:F0} ms ago" : ""));
@@ -252,7 +252,7 @@ namespace HotPatata
             Vector3 velocity = from.LaunchVelocity(exit);
             LastThrower = null;   // anyone may catch the exit arc, including whoever threw it in
             IntendedReceiver = PickIntendedReceiver(null, origin, velocity);
-            bombPhysics.EnterThrown(new FlightSegment(releaseAt, origin, velocity, ++flightId));
+            bombPhysics.EnterThrown(new FlightSegment(releaseAt, origin, velocity, ++flightId, SimulationClock.ServerNow));
             Transition(BombState.Thrown);
             PatataLog.Bomb($"InTransit -> Thrown {from.name} exit={exit} speed={velocity.magnitude:F1}");
             BombThrown?.Invoke(null);

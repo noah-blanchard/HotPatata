@@ -1,0 +1,6 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <ui:VisualElement name="net" class="hp-net">
+        <ui:Label name="net-stats" text="PING 84 ms · JITTER 12 ms · LOSS 0%" class="hp-net__stats" />
+        <ui:Label name="net-warning" text="UNSTABLE CONNECTION" class="hp-net__warning" />
+    </ui:VisualElement>
+</ui:UXML>

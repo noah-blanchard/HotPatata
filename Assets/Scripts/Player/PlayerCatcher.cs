@@ -25,6 +25,7 @@ namespace HotPatata
         const float LateMax = 0.8f;               // seconds since the bomb was in reach that still read as "too late"
         const float EarlyCheckDistance = 12f;     // metres: farther than this, a closed window is not "too early"
         const double Unset = double.NegativeInfinity;
+        const double ClaimChordSeconds = 0.02;    // the claim sweep's chord, as long as one host physics step
 
         Player player;
         BombController bomb;
@@ -113,29 +114,33 @@ namespace HotPatata
 
             double now = SimulationClock.ServerNow;
             if (netBomb != null && netBomb.DrawnImpactAt < now) now = netBomb.DrawnImpactAt;   // it stopped on the world here
-            double from = seenFlight == flight.Id ? seenUntil : System.Math.Max(flight.T0, now - Time.deltaTime);
+            // A new flight is swept from its start: a back-dated one may already have passed us before it reached this machine.
+            double from = seenFlight == flight.Id ? seenUntil : flight.T0;
             if (seenFlight != flight.Id)
             {
                 seenFlight = flight.Id;
                 seenInReachAt = -10f;
                 claimSent = claimSent && WindowOpen;   // a new flight: one claim per window still
             }
-            if (now > from)
+            // Short chords, like the host's sweep: one long chord would cut inside the arc.
+            float g = bomb.Body.Gravity;
+            Vector3 center = player.CatchVolume.CatchCenter;
+            while (now > from)
             {
-                float g = bomb.Body.Gravity;
-                Vector3 a = flight.PositionAt(from, g), b = flight.PositionAt(now, g);
-                Vector3 center = player.CatchVolume.CatchCenter;
+                double to = System.Math.Min(now, from + ClaimChordSeconds);
+                Vector3 a = flight.PositionAt(from, g), b = flight.PositionAt(to, g);
                 float d = CatchResolver.ReachDistance(player.Tuning, a, b, center, out _, out float along);
                 if (d <= CatchResolver.ReachFor(player, b - a))
                 {
                     seenInReachAt = Time.time;
                     lastReachTime = Time.time;
-                    seenAt = from + (now - from) * along;
+                    seenAt = from + (to - from) * along;
                     seenCenter = center;
                     seenFeet = transform.position;
                 }
-                seenUntil = now;
+                from = to;
             }
+            seenUntil = System.Math.Max(seenUntil, now);
 
             if (claimSent || !WindowOpen || Time.time - seenInReachAt > player.Tuning.catchLateGrace) return;
             claimSent = true;
@@ -177,11 +182,14 @@ namespace HotPatata
             return true;
         }
 
-        /// <summary>Host: was this remote player's window open at server time <paramref name="time"/> (late grace included)?</summary>
-        public bool RemoteWindowCovers(double time)
+        /// <summary>
+        /// Host: was this remote player's window open at server time <paramref name="time"/>? A press up to the late grace
+        /// (+ <paramref name="extraLate"/>, their measured jitter) after it still counts.
+        /// </summary>
+        public bool RemoteWindowCovers(double time, float extraLate = 0f)
         {
             var t = player.Tuning;
-            return remoteWindowStart != Unset && time >= remoteWindowStart - t.catchLateGrace && time <= remoteWindowStart + t.catchWindowDuration;
+            return remoteWindowStart != Unset && time >= remoteWindowStart - t.catchLateGrace - extraLate && time <= remoteWindowStart + t.catchWindowDuration;
         }
 
         /// <summary>Everyone: the host relayed that this player's window opened at server time <paramref name="pressedAt"/>.</summary>

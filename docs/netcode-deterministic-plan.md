@@ -1,6 +1,6 @@
 # Netcode plan: remote players vs. time-driven level objects (moving platforms and beyond)
 
-> Status: **stages 0–3 built** (#92); stages 4–6 open, stage 7 not planned. This file is the diagnosis and the staged
+> Status: **stages 0–5 built** (#92, then #117 P0–P4); stage 6 only if real-network data asks for it, stage 7 not planned. This file is the diagnosis and the staged
 > plan behind #92 ("Player / moving platform desync"). It changes no gameplay rule. What the built stages settled lives
 > in `ARCHITECTURE.md` §13.1–13.2, `OBSTACLES.md` §4.4 and `TESTING.md` §2–3.
 >
@@ -10,8 +10,9 @@
 > | 1 Relative riders | built | `IPlatformCarrier.CarrierId/Moves/AnchorPosition`, `CarrierRegistry`, `RiderReconstruction` driven by `NetworkPlayer` |
 > | 2 Clock and stamps | built | `SimulationClock` (one sample per frame, slewed and monotonic on clients); the owner's per-tick `NetworkPlayer.PlayerStamp` |
 > | 3 Hazard rewind | built | `ITimePosed` on movers, `HazardRewind` on the host, `hazardRewindCap` |
-> | 4–5 | open | throw prediction at host time; plate readouts and reset ordering. For throws from a moving carrier, #97 already releases on the host's own copy of the carrier |
-> | 6 | only if needed | custom snapshot, if board/leave transitions still show in playtests |
+> | 4 Throws at the thrower's time | built (#117 P2–P3) | the flight is a `FlightSegment` swept on the host; a remote throw starts at its release time (`throwBackdateCap`), released from the carrier as it was then; catches are time-stamped claims checked exactly (ARCHITECTURE §13.2–13.3). `FlightHistory` is gone |
+> | 5 Reset ordering | built (#117 P4) | one reliable `ResetEvent`, everyone unlocks at the same server time; the view delay (ARCHITECTURE §13.4). Plate readouts (case E) still light from the local guess |
+> | 6 | only if needed (#117 P5) | custom snapshot interpolation; P1 already made the stamps unreliable with redundancy and atomic (case H) |
 >
 > **Follow-up #97 (vertical carriers).** Stages 0–3 assumed the owner reports a stable carrier. On anything rising faster
 > than the motor's 2 m/s ground stick (every lift of the courses), it did not: the owner lost its footing every other
@@ -30,7 +31,8 @@
 >   network tick.
 > - **The offline tick** is the physics rate. There is no extra tuning field.
 > - **D (catches on carriers)** is covered by stage 1, which rebuilds the receiver's catch centre on the platform.
->   Making `FlightHistory` tick-exact is deferred, to keep the catch feel and `PassFeelTests` unchanged.
+>   Making `FlightHistory` tick-exact is deferred, to keep the catch feel and `PassFeelTests` unchanged (superseded by #117
+>   P3: claims are checked exactly against the flight segment and `FlightHistory` is gone).
 > - **Validation status:**
 >   - covered by EditMode and PlayMode tests: unit maths, carrier-id uniqueness, offline regressions;
 >   - still open: the online criteria of §4 (latency matrix, 95% verdict agreement). They are measured with the stage 0

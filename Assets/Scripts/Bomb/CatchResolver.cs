@@ -31,6 +31,7 @@ namespace HotPatata
         const float HoldScanStep = 0.02f;     // seconds between samples of the recent flight when looking for a remote receiver
         const float HoldScanExtra = 0.5f;     // metres beyond the reach: a near pass that the receiver may have caught on their screen
         const float StampExtrapolation = 0.1f;   // seconds a receiver's newest stamp may be carried forward
+        const float MaxRunSpeed = 12f;           // m/s: how far a receiver can get from their newest stamp, for the hold only
 
         readonly float[] lastInReach = new float[Player.MaxSlots];   // host: when the swept path last came within reach
         BombController bomb;
@@ -158,7 +159,10 @@ namespace HotPatata
             if (at != time && time < now) SyncStats.ClaimsClamped++;
             if (at < flight.T0) return Refuse(receiver, "before the throw");
             if (bomb.ExplosionPending ? at > bomb.Body.EndedAt : !bomb.Body.Flying) return Refuse(receiver, "after the flight ended");
-            if (!receiver.Catcher.RemoteWindowCovers(at)) return Refuse(receiver, "window closed then");
+            // A back-dated flight's first moments were seen late by everyone but the thrower: the window is judged from
+            // when the receiver could first see that point, with the same late grace (plus their jitter).
+            double seen = flight.SeenNoEarlierThan(at);
+            if (!receiver.Catcher.RemoteWindowCovers(seen, NetQuality.JitterSeconds(receiver.PlayerId))) return Refuse(receiver, "window closed then");
 
             float g = bomb.Body.Gravity;
             Vector3 x = flight.PositionAt(at, g);
@@ -230,14 +234,26 @@ namespace HotPatata
             Vector3 centerOffset = receiver.CatchVolume.CatchCenter - receiver.transform.position;
             float g = bomb.Body.Gravity;
             float near = t.catchRadius + t.catchFacingBonus + t.catchClaimSlack + HoldScanExtra;
+            // Their stamps trail the host by about a round trip: past the newest one, they are where it put them, give or
+            // take how far they can run meanwhile (this only decides how long to wait, never a catch).
+            var newest = history.Newest;
+            float speed = Mathf.Min(newest.Velocity.magnitude, MaxRunSpeed);
             double reached = -1.0;
             for (double at = start; at <= end; at += HoldScanStep)
             {
-                if (!history.TryFeetAt(at, StampExtrapolation, out Vector3 feet)) continue;
-                if (ReachDistance(t, flight.PositionAt(at, g), flight.PositionAt(at, g), feet + centerOffset, out _) <= near) reached = at;
+                float slack = 0f;
+                if (!history.TryFeetAt(at, StampExtrapolation, out Vector3 feet))
+                {
+                    if (history.Count == 0 || at < newest.Time) continue;
+                    feet = newest.Position;
+                    slack = speed * (float)(at - newest.Time);
+                }
+                Vector3 x = flight.PositionAt(at, g);
+                if (ReachDistance(t, x, x, feet + centerOffset, out _) <= near + slack) reached = at;
             }
             if (reached < 0.0) return 0f;
-            return Mathf.Max(0f, (float)(reached + wait - now));
+            // They may press up to the late grace after they could see it pass them, and their claim leaves with that press.
+            return Mathf.Max(0f, (float)(flight.SeenNoEarlierThan(reached) + t.catchLateGrace + wait - now));
         }
 
         bool IsEligible(Player receiver) =>

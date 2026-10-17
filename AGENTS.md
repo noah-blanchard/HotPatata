@@ -78,8 +78,17 @@ same PR. Code comments cite doc sections (e.g. `PROJECT_SPEC §8.3`), so never r
     collider is where it is drawn (docs/OBSTACLES.md §4.4, #97).
   - Moving hazards are judged for remote players on the host at the time they saw them (`HazardRewind`), never from the
     host's copy of them.
+  - Every client action carries its server time (throw release, catch press, catch claim); the host clamps it to
+    `[now − cap, now]`, judges it against the pure world and the sender's own stamps, and counts every cap hit
+    (ARCHITECTURE §13.2–13.4). A host wait for a late message uses `LagBudget`, never a constant.
+  - Continuous data is sent unreliably with redundancy (the per-tick `PlayerStamp`); reliable delivery is for rare,
+    discrete events (bomb snapshot, requests, the reset event). Never add a per-tick reliable `NetworkVariable`.
 - **Bomb state machine is explicit:** `Held → Thrown → CaughtGrace → Held`, plus `Thrown → InTransit → Thrown`
   (tubes and cannons), `Exploding` and `Resetting`.
+  - A thrown bomb is a pure function of one replicated `FlightSegment` (ARCHITECTURE §13.3): no machine integrates it,
+    nothing streams its position, PhysX never decides it. The host ends a flight only through its sweep
+    (`BombPhysics.AdvanceTo`). Clients draw it, and may show their own throw, catch or impact ahead of the host as
+    presentation only, rolled back on a refusal.
   - While Thrown, any environment contact explodes the bomb.
   - While Held, world contact never fails it.
   - While InTransit, no fuse burns and nothing can catch or explode it.

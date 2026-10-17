@@ -18,11 +18,11 @@ playtest and cannot be closed by code.
 | M0 Project baseline | done | |
 | M1 Local pass sandbox | done | M1.11 proof-of-fun gate: owner found it fun, external playtest pending (M7.4) |
 | M2 Greybox prefab kit | done | |
-| M3 Network proof | done (host authority, lag-compensated catch) | M3.7: test on two physical machines |
+| M3 Network proof | done (host authority, lag-compensated catch); the online-feel netcode of #117 built (P0 telemetry and simulator, P1 unreliable stamps, P2 flight segments, P3 time-stamped catches, P4 atomic reset, P6 connection HUD) and measured with bots under delay, jitter and loss (TESTING.md §3) | M3.7: test on two physical machines (LAN with Clumsy, and one internet session over Relay, keeping the `[NetReport]`s) |
 | M4 Session and lobby | done, verified with real Relay sessions | |
 | M5 First greybox course | done, then extended to Acts 2–3 (~680 m, 7 checkpoints); the course was removed in the cleanup (layout archived in OBSTACLES.md §3.2) | |
 | M6 UX and readability | partly covered by earlier work (see each task); UI Toolkit base (#14), main menu and lobby (#15), pause menu (#16), settings screen (#17) and results screen (#23) in place, their layouts in UXML editable in UI Builder (#76), the "Sunny toy box" look with a living 3D menu backdrop, the in-world menu (#79: stations with camera travel, the lobby on the island) | verify M6.1/M6.2 at range, player-facing progress UI, ping only if needed |
-| M7 Test and harden | not started (bot latency runs cover part of M7.3) | all |
+| M7 Test and harden | not started (bot runs under delay, jitter, loss and spikes cover part of M7.3, #117) | all |
 | M8 Post-validation polish | gated on M7.4; some pulled forward through M9 | |
 | M9 Movement and look pass | done (pulled forward by the owner) | |
 | M10 Bomb obstacles (#68) | done (pulled forward by the owner, M7.4 gate lifted for it); `PlaytestCourse` removed in the cleanup, the obstacles live on in the kept courses | group playtest of the obstacles (now in PatataWilds and the plant) |
