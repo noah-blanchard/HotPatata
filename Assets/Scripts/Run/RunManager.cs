@@ -44,13 +44,17 @@ namespace HotPatata
         double runStart;
         float runTime;
         float resetAtTime;
+        double appliedSectionStart = double.NegativeInfinity;   // client: the last reset event's section start (#117 P4)
+        NetworkRunState.ResetEvent pendingEvent;               // host: the respawns of remote players for this (re)start
 
         bool Mirror => NetMode.IsRemoteClient && netState != null && netState.IsSpawned;
+        bool Online => NetMode.IsNetworked && NetMode.IsAuthority && netState != null && netState.IsSpawned;
 
         public RunState State => Mirror ? netState.State : state;
         public int ResetCount => Mirror ? netState.ResetCount : resetCount;
         /// <summary>Server time at which the current section attempt began.</summary>
-        public double SectionStart => Mirror ? netState.SectionStart : sectionStart;
+        // A client takes the newer of the replicated start and the reset event's: whichever of the two arrives first.
+        public double SectionStart => Mirror ? System.Math.Max(netState.SectionStart, appliedSectionStart) : sectionStart;
         /// <summary>Seconds since the current section attempt began; the time base for level motion (<see cref="SimulationClock"/>).</summary>
         public float SectionTime => SimulationClock.SectionTime;
         /// <summary>Total run time; frozen at completion.</summary>
@@ -125,12 +129,12 @@ namespace HotPatata
         void StartSection()
         {
             runStart = NetMode.ServerTime;
-            sectionStart = runStart;
+            sectionStart = SectionStartAhead();
             ApplyStartCheckpoint();
             PlacePlayers();
             bomb.BeginReset();
             bomb.EndReset(CarrierForReset());
-            SetPlayersLocked(false);
+            UnlockAtSectionStart();
             Transition(RunState.Playing);
             PatataLog.Run($"Run started with {Players.Count} players"
                           + (checkpoint != null ? $" at checkpoint {checkpoint.Id}" : ""));
@@ -169,11 +173,11 @@ namespace HotPatata
             PatataLog.Run("Reset start");
 
             foreach (var r in resettables) r.ResetState();   // falling platforms etc.
-            sectionStart = NetMode.ServerTime;               // moving platforms / rotating bars restart their cycle
+            sectionStart = SectionStartAhead();              // moving platforms / rotating bars restart their cycle
             bomb.BeginReset();                               // inert, ownerless, velocity cleared, fuse restored
             PlacePlayers();                                  // teleport + clear player velocity
             bomb.EndReset(CarrierForReset());
-            SetPlayersLocked(false);
+            UnlockAtSectionStart();
 
             Transition(RunState.Playing);
             PatataLog.Run("Reset end");
@@ -255,13 +259,13 @@ namespace HotPatata
             bomb.Fuse.SetDurationOverride(0f);
             placed.Clear();
             runStart = NetMode.ServerTime;
-            sectionStart = runStart;
+            sectionStart = SectionStartAhead();
             runTime = 0f;
             ApplyStartCheckpoint();
             PlacePlayers();
             bomb.BeginReset();
             bomb.EndReset(CarrierForReset());
-            SetPlayersLocked(false);
+            UnlockAtSectionStart();
             Transition(RunState.Playing);
             PatataLog.Run("Run restarted");
         }
@@ -279,13 +283,73 @@ namespace HotPatata
         bool CarrierLeft() =>
             (bomb.State == BombState.Held || bomb.State == BombState.CaughtGrace) && bomb.Carrier == null;
 
+        /// <summary>
+        /// Every player to their spawn. Online, a remote player's respawn rides in the reset event
+        /// (<see cref="UnlockAtSectionStart"/>) instead of its own message.
+        /// </summary>
         void PlacePlayers()
         {
+            pendingEvent = new NetworkRunState.ResetEvent { Resets = resetCount, SectionStart = sectionStart, UnlockAt = sectionStart };
             foreach (var p in Players)
             {
-                PlaceOne(p);
+                var spawn = FindSpawn(p.PlayerId);
+                if (spawn != null && Online && !p.IsLocal)
+                    pendingEvent.Add(new NetworkRunState.Spawn { Slot = p.PlayerId, Position = spawn.transform.position, Yaw = spawn.transform.eulerAngles.y });
+                else if (spawn != null) p.TeleportTo(spawn.transform.position, spawn.transform.rotation);
                 placed.Add(p);
             }
+        }
+
+        /// <summary>
+        /// Online, the section starts a moment ahead (#117 P4): long enough for the reset event to reach every client before
+        /// it is due, given the jitter measured (<see cref="GameTuning.resetLeadMin"/>..<see cref="GameTuning.resetLeadMax"/>).
+        /// Offline and alone it starts now.
+        /// </summary>
+        double SectionStartAhead()
+        {
+            double now = NetMode.ServerTime;
+            if (!Online) return now;
+            float lead = Mathf.Clamp(NetQuality.WorstJitterSeconds + tuning.netHoldMargin, tuning.resetLeadMin, tuning.resetLeadMax);
+            return now + lead;
+        }
+
+        /// <summary>
+        /// Unlocks everyone at the section start: offline at once; online at that server time on every machine, the host
+        /// included, with the respawns and the start in one reliable event, so the platforms and the players start together.
+        /// </summary>
+        void UnlockAtSectionStart()
+        {
+            if (!Online)
+            {
+                SetPlayersLocked(false);
+                return;
+            }
+            foreach (var p in Players)
+            {
+                p.SetControlLocked(false);
+                if (p.Net != null) p.Net.LockUntil(sectionStart);
+            }
+            netState.SendReset(pendingEvent);
+            PatataLog.Run($"Section starts in {(sectionStart - NetMode.ServerTime) * 1000.0:F0} ms (reset event, {pendingEvent.Count} remote respawns)");
+        }
+
+        /// <summary>
+        /// Client: the host (re)started the section (<see cref="NetworkRunState.ResetEvent"/>). Applied in one block: the new
+        /// section start, everyone locked until it, and this machine's own players at their spawns.
+        /// </summary>
+        public void ApplyResetEvent(NetworkRunState.ResetEvent e)
+        {
+            appliedSectionStart = e.SectionStart;
+            foreach (var p in Players)
+                if (p.Net != null) p.Net.LockUntil(e.UnlockAt);
+            for (int i = 0; i < e.Count; i++)
+            {
+                var s = e[i];
+                foreach (var p in Players)
+                    if (p.IsLocal && p.PlayerId == s.Slot) p.TeleportLocal(s.Position, Quaternion.Euler(0f, s.Yaw, 0f));
+            }
+            double ahead = e.UnlockAt - SimulationClock.ServerNow;
+            PatataLog.Run($"(mirror) reset event: section starts in {ahead * 1000.0:F0} ms{(ahead < 0.0 ? " (arrived late)" : "")}");
         }
 
         /// <summary>A player who connects while the run is in progress starts at their slot's spawn.</summary>

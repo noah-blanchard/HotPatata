@@ -75,8 +75,15 @@ namespace HotPatata
             expiredRaised = false;
         }
 
-        /// <summary>Remote clients only: show the host's fuse (the host is the only one that ticks it).</summary>
-        public void MirrorConsumed(float consumed01) => remaining = Duration * (1f - Mathf.Clamp01(consumed01));
+        /// <summary>
+        /// Remote clients only: show the host's fuse (the host is the only one that ticks it): <paramref name="seconds"/> left
+        /// out of <paramref name="duration"/> (the host's hold time, a checkpoint override included).
+        /// </summary>
+        public void MirrorState(float seconds, float duration)
+        {
+            if (duration > 0f) durationOverride = duration;
+            remaining = Mathf.Max(0f, seconds);
+        }
 
         public void Tick(float deltaTime)
         {

@@ -64,10 +64,13 @@ namespace HotPatata.Tests
             Assert.IsNull(bomb.Carrier);
             Assert.AreSame(p1, bomb.LastThrower);
             Assert.IsNull(bomb.transform.parent);
-            var rb = bomb.GetComponent<Rigidbody>();
-            Assert.IsFalse(rb.isKinematic);
-            Assert.IsTrue(bomb.GetComponent<SphereCollider>().enabled);
-            Assert.AreEqual(10f, rb.linearVelocity.z, 0.01f);
+            // The flight is an analytic segment (#117 P2): PhysX never moves or decides it.
+            Assert.IsTrue(bomb.GetComponent<Rigidbody>().isKinematic);
+            Assert.IsFalse(bomb.GetComponent<SphereCollider>().enabled);
+            Assert.IsTrue(bomb.Body.Flying);
+            Assert.AreEqual(origin, bomb.Body.Flight.Origin);
+            Assert.AreEqual(10f, bomb.Body.Flight.Velocity.z, 0.01f);
+            Assert.AreEqual(10f, bomb.Body.Velocity.z, 0.01f);
             Assert.AreEqual(origin, bomb.transform.position);
         }
 

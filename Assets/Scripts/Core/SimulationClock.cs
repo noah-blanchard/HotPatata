@@ -48,8 +48,17 @@ namespace HotPatata
         /// <summary>Server time at which the current section attempt began (replicated by the host).</summary>
         public static double SectionStart => RunManager.Instance != null ? RunManager.Instance.SectionStart : 0.0;
 
-        /// <summary>Seconds since the current section attempt began; the time base for level motion.</summary>
-        public static float SectionTime => (float)(ServerNow - SectionStart);   // the subtraction stays in double
+        /// <summary>
+        /// Seconds since the current section attempt began; the time base for level motion. 0 until it begins: online a
+        /// reset starts the section a moment ahead (<see cref="RunManager"/>, #117 P4), and the level waits at its start.
+        /// </summary>
+        public static float SectionTime => (float)Math.Max(0.0, ServerNow - SectionStart);   // the subtraction stays in double
+
+        /// <summary>
+        /// Client: how much further behind the server this machine draws the level than NGO's own buffer, from the jitter
+        /// it measures (<see cref="LagBudget.ViewDelay"/>, at most <see cref="GameTuning.viewDelayMax"/>). 0 on the host and offline.
+        /// </summary>
+        public static float ViewDelay { get; private set; }
 
         /// <summary>Ticks per second: NGO's network tick rate online, the physics rate offline.</summary>
         public static int TickRate =>
@@ -77,15 +86,19 @@ namespace HotPatata
         {
             if (Time.frameCount == sampledFrame && online) return;
             double raw = NetMode.ServerTime;
+            // Client: draw a little further back when the jitter is larger than NGO's buffer, so that replicated event times
+            // (an actuator, a reset) still arrive before they are drawn. The change is slewed in like any correction.
+            ViewDelay = !NetMode.IsAuthority && tuning != null ? LagBudget.ViewDelay(NetQuality.WorstJitterSeconds, tuning.viewDelayMax) : 0f;
+            double target = raw - ViewDelay;
             if (!online || NetMode.IsAuthority || tuning == null)
-                now = raw;   // first sample, the host (its time is the server time) or unconfigured: no smoothing
+                now = target;   // first sample, the host (its time is the server time) or unconfigured: no smoothing
             else
             {
                 double dt = Time.unscaledDeltaTime;
                 if (Math.Abs(raw - lastRaw - dt) > HardResetSeconds) SyncStats.ClockJumps++;
                 double predicted = now + dt;
-                now = Step(now, raw, dt, tuning.clockMaxSlew, tuning.clockSnapSeconds);
-                if (Math.Abs(raw - predicted) > tuning.clockSnapSeconds) SyncStats.ClockSnaps++;
+                now = Step(now, target, dt, tuning.clockMaxSlew, tuning.clockSnapSeconds);
+                if (Math.Abs(target - predicted) > tuning.clockSnapSeconds) SyncStats.ClockSnaps++;
             }
             lastRaw = raw;
             online = true;

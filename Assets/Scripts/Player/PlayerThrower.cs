@@ -129,14 +129,15 @@ namespace HotPatata
             if (NetMode.IsRemoteClient)
             {
                 requestPendingUntil = Time.time + RequestTimeout;
-                // On a moving carrier the host replays the release on its own copy of it, at its own time (#97).
+                // The release time travels with the request: the host starts the flight then (#117 P2), from the carrier as it
+                // was then on a moving one (#97), so what this screen draws now IS the flight.
+                double releasedAt = SimulationClock.ServerNow;
                 var carrier = player.Motor.RidingCarrier;
                 bool relative = carrier != null && carrier.Moves && carrier.CarrierId != 0;
-                player.Net.RequestThrow(origin, relative ? shot.Velocity - shot.CarrierVelocity : shot.Velocity,
+                player.Net.RequestThrow(releasedAt, origin, relative ? shot.Velocity - shot.CarrierVelocity : shot.Velocity,
                     relative ? carrier.CarrierId : 0,
                     relative ? Quaternion.Inverse(carrier.AnchorRotation) * (origin - carrier.AnchorPosition) : Vector3.zero);
-                // Draw the throw now; the host's confirmation arrives a round trip later.
-                if (bomb.TryGetComponent(out NetworkBomb netBomb)) netBomb.PredictLocalThrow(player, origin, shot.Velocity);
+                if (bomb.TryGetComponent(out NetworkBomb netBomb)) netBomb.PredictLocalThrow(player, releasedAt, origin, shot.Velocity);
                 return true;
             }
 
@@ -145,13 +146,13 @@ namespace HotPatata
             return true;
         }
 
-        /// <summary>Host only: a remote owner's validated throw request, released immediately.</summary>
-        public bool ThrowFromRequest(Vector3 origin, Vector3 velocity)
+        /// <summary>Host only: a remote owner's validated throw request, released at server time <paramref name="releasedAt"/>.</summary>
+        public bool ThrowFromRequest(Vector3 origin, Vector3 velocity, double releasedAt)
         {
             if (bomb == null || bomb.State != BombState.Held || bomb.Carrier != player) return false;
 
             player.Animator?.ReleaseThrow();
-            if (!bomb.TryThrow(player, origin, velocity)) return false;
+            if (!bomb.TryThrow(player, origin, velocity, releasedAt, true)) return false;
             player.Net.BroadcastThrowRelease();
             return true;
         }

@@ -53,6 +53,10 @@ namespace HotPatata
         string pendingDetail;
         BombTransit transit;   // host: the tube or cannon carrying the bomb while InTransit
         int transitExit;
+        int flightId;
+        float fuseHoldUntil = -1f;   // host: a remote carrier's fuse ran out; a throw they made before it may still arrive (F4)
+        double fuseExpiredAt;
+        Player predictedCatch;       // remote client: a catch this screen already showed (P3), not yet confirmed
 
         public static BombController Instance { get; private set; }
 
@@ -69,6 +73,10 @@ namespace HotPatata
         public BombFailReason LastFailReason { get; private set; }
         /// <summary>Host only: the bomb has hit something lethal and will explode unless a late catch arrives first.</summary>
         public bool ExplosionPending => pendingExplosionAt >= 0f;
+        /// <summary>Host only: the carrier's fuse ran out and the explosion waits for a throw already on its way (#117 F4).</summary>
+        public bool FuseHoldPending => fuseHoldUntil >= 0f;
+        /// <summary>Remote client: the catch this screen showed ahead of the host's confirmation (presentation), or null.</summary>
+        public Player PredictedCatch => predictedCatch;
 
         public GameTuning Tuning => tuning;
         public BombFuse Fuse => fuse;
@@ -105,7 +113,13 @@ namespace HotPatata
             switch (State)
             {
                 case BombState.Held:
+                    if (FuseHoldPending)
+                    {
+                        if (Time.time >= fuseHoldUntil) Explode(BombFailReason.HoldFuseExpired, $"carrier={Carrier} (no throw before the fuse ran out)");
+                        break;
+                    }
                     if (InForbiddenZone()) break;
+                    if (Carrier != null && Carrier.ControlLocked) break;   // online the section starts a moment ahead: no burn before it
                     fuse.Tick(Time.deltaTime * fuse.Rate);
                     break;
                 case BombState.Thrown:
@@ -118,7 +132,7 @@ namespace HotPatata
                     break;
                 case BombState.InTransit:
                     fuse.SetRate(1f);
-                    if (transit != null && NetMode.ServerTime >= transit.ReleaseAt) LeaveTransit();
+                    if (transit != null && SimulationClock.ServerNow >= transit.ReleaseAt) LeaveTransit();
                     break;
                 default:
                     fuse.SetRate(1f);
@@ -144,20 +158,42 @@ namespace HotPatata
 
         // ------------------------------------------------------------------ throw / catch
 
-        public bool TryThrow(Player thrower, Vector3 origin, Vector3 velocity)
+        /// <summary>A throw released now (offline, the host's own player).</summary>
+        public bool TryThrow(Player thrower, Vector3 origin, Vector3 velocity) =>
+            TryThrow(thrower, origin, velocity, SimulationClock.ServerNow, false);
+
+        /// <summary>
+        /// A throw released at server time <paramref name="launchTime"/> (a remote thrower's release, back-dated by the host
+        /// within <see cref="GameTuning.throwBackdateCap"/>, #117 P2): the flight is that segment, swept from its start.
+        /// <paramref name="remote"/>: the thrower is drawn late here, so the drawing catches up (presentation).
+        /// </summary>
+        public bool TryThrow(Player thrower, Vector3 origin, Vector3 velocity, double launchTime, bool remote)
         {
             if (State != BombState.Held || Carrier != thrower)
             {
                 PatataLog.Bomb($"Throw rejected {thrower} (state={State}, carrier={Carrier})");
                 return false;
             }
+            if (FuseHoldPending)
+            {
+                // The fuse ran out on the host while this throw was on its way: it counts if it left before the fuse ran out.
+                if (launchTime > fuseExpiredAt)
+                {
+                    PatataLog.Bomb($"Throw rejected {thrower} (released {(launchTime - fuseExpiredAt) * 1000.0:F0} ms after the fuse ran out)");
+                    return false;
+                }
+                fuseHoldUntil = -1f;
+                SyncStats.FuseHoldSaves++;
+                PatataLog.Bomb($"Throw from {thrower} beat the fuse by {(fuseExpiredAt - launchTime) * 1000.0:F0} ms (held for it)");
+            }
 
             LastThrower = thrower;
             IntendedReceiver = PickIntendedReceiver(thrower, origin, velocity);
             SetCarrier(null);
+            bombPhysics.EnterThrown(new FlightSegment(launchTime, origin, velocity, ++flightId), remote);   // before the state: the snapshot carries both
             Transition(BombState.Thrown);
-            bombPhysics.EnterThrown(origin, velocity);
-            PatataLog.Bomb($"Held -> Thrown carrier={thrower} speed={velocity.magnitude:F1}");
+            PatataLog.Bomb($"Held -> Thrown carrier={thrower} speed={velocity.magnitude:F1}" +
+                           (remote ? $" released {(SimulationClock.ServerNow - launchTime) * 1000.0:F0} ms ago" : ""));
             BombThrown?.Invoke(thrower);
             return true;
         }
@@ -208,6 +244,7 @@ namespace HotPatata
         {
             var from = transit;
             int exit = transitExit;
+            double releaseAt = from.ReleaseAt;   // a server time: the exit arc starts exactly then on every machine
             transit = null;
             from.SetTransit(-1, -1.0);
 
@@ -215,8 +252,8 @@ namespace HotPatata
             Vector3 velocity = from.LaunchVelocity(exit);
             LastThrower = null;   // anyone may catch the exit arc, including whoever threw it in
             IntendedReceiver = PickIntendedReceiver(null, origin, velocity);
+            bombPhysics.EnterThrown(new FlightSegment(releaseAt, origin, velocity, ++flightId));
             Transition(BombState.Thrown);
-            bombPhysics.EnterThrown(origin, velocity);
             PatataLog.Bomb($"InTransit -> Thrown {from.name} exit={exit} speed={velocity.magnitude:F1}");
             BombThrown?.Invoke(null);
         }
@@ -227,11 +264,12 @@ namespace HotPatata
             transit = null;
         }
 
-        /// <summary>The player the (pure ballistic) arc passes closest to, within <see cref="IntendedReceiverReach"/>.</summary>
-        Player PickIntendedReceiver(Player thrower, Vector3 origin, Vector3 velocity)
+        /// <summary>
+        /// The player the (pure ballistic) arc passes closest to, within <see cref="IntendedReceiverReach"/>, as THIS machine
+        /// draws the players: every machine computes it from the flight segment (the CATCH! marker, #117 P2).
+        /// </summary>
+        public Player PickIntendedReceiver(Player thrower, Vector3 origin, Vector3 velocity)
         {
-            if (!NetMode.IsAuthority) return null;
-
             float g = ThrowBallistics.Gravity(tuning);
             Player best = null;
             float bestDistance = IntendedReceiverReach;
@@ -269,14 +307,13 @@ namespace HotPatata
         }
 
         /// <summary>
-        /// Trigger contact from <see cref="BombPhysics"/>: only kill zones matter. Catches are decided by
-        /// <see cref="CatchResolver"/>'s swept reach test, not by trigger events; every other trigger (catch volumes
-        /// included) is intentionally neutral and must never count as lethal world contact.
+        /// The flight's sweep (<see cref="BombPhysics.AdvanceTo"/>) entered a kill zone. Catches are decided by
+        /// <see cref="CatchResolver"/>'s swept reach test; every other trigger (catch volumes included) is neutral.
         /// </summary>
-        public void ReportTriggerContact(Collider other)
+        public void ReportKillZone(KillZone zone)
         {
             if (!NetMode.IsAuthority || State != BombState.Thrown) return;
-            if (other.TryGetComponent(out KillZone _)) LethalContact(BombFailReason.KillZone, $"object={other.name}");
+            LethalContact(BombFailReason.KillZone, $"object={zone.name}");
         }
 
         /// <summary>
@@ -288,8 +325,7 @@ namespace HotPatata
         {
             if (ExplosionPending) return;
 
-            float hold = resolver.ExplosionHoldFor();   // sweeps the last stretch of flight first: it may catch the bomb
-            if (State != BombState.Thrown) return;
+            float hold = resolver.ExplosionHoldFor();   // the flight's sweep has already tested this chord for catches
             if (hold <= 0f)
             {
                 Explode(reason, detail);
@@ -305,8 +341,18 @@ namespace HotPatata
 
         void OnFuseExpired()
         {
-            if (State == BombState.Held)
-                Explode(BombFailReason.HoldFuseExpired, $"carrier={Carrier}");
+            if (State != BombState.Held) return;
+            // A remote carrier saw their fuse a moment late, and their throw takes a moment to come: wait for it (F4).
+            float wait = NetMode.IsAuthority ? LagBudget.LateMessageWait(Carrier, tuning, tuning.fuseExpiryHoldCap) : 0f;
+            if (wait > 0f)
+            {
+                fuseHoldUntil = Time.time + wait;
+                fuseExpiredAt = SimulationClock.ServerNow;
+                SyncStats.FuseHolds++;
+                PatataLog.Bomb($"Fuse ran out for {Carrier}: explosion held {wait * 1000f:F0} ms for a throw on its way");
+                return;
+            }
+            Explode(BombFailReason.HoldFuseExpired, $"carrier={Carrier}");
         }
 
         public void Explode(BombFailReason reason, string detail)
@@ -384,10 +430,39 @@ namespace HotPatata
             if (newState == old) return;
 
             PatataLog.Bomb($"(mirror) {old} -> {newState} carrier={carrier} lastThrower={lastThrower}");
+            var shown = predictedCatch;
+            predictedCatch = null;
             Transition(newState);
             if (newState == BombState.Thrown) BombThrown?.Invoke(lastThrower);
-            else if (newState == BombState.CaughtGrace) BombCaught?.Invoke(carrier);
+            else if (newState == BombState.CaughtGrace)
+            {
+                if (shown == carrier) SyncStats.PredictedCatchesConfirmed++;   // already shown (sound, brackets): not twice
+                else BombCaught?.Invoke(carrier);
+            }
             else if (newState == BombState.Exploding) BombExploded?.Invoke(failReason, "remote");
+            if (shown != null && shown != carrier) SyncStats.PredictedCatchesRefused++;
+        }
+
+        /// <summary>
+        /// Remote client, presentation only (#117 P3, spec §9.3): this screen saw <paramref name="receiver"/> (the local player)
+        /// catch the bomb and claimed it; show the catch now (the catch event drives the sound and the brackets). The host
+        /// still decides: its confirmation is not shown twice, its refusal puts the bomb back on its arc.
+        /// </summary>
+        public void ShowPredictedCatch(Player receiver)
+        {
+            if (NetMode.IsAuthority || State != BombState.Thrown || predictedCatch != null) return;
+            predictedCatch = receiver;
+            PatataLog.Bomb($"(predicted) catch shown for {receiver}");
+            BombCaught?.Invoke(receiver);
+        }
+
+        /// <summary>Remote client: the host did not confirm the catch this screen showed; it is no longer shown.</summary>
+        public void RetractPredictedCatch()
+        {
+            if (predictedCatch == null) return;
+            PatataLog.Bomb($"(predicted) catch for {predictedCatch} not confirmed: back on the arc");
+            predictedCatch = null;
+            SyncStats.PredictedCatchesRefused++;
         }
 
         // ------------------------------------------------------------------ internals
@@ -406,6 +481,7 @@ namespace HotPatata
             var from = State;
             State = next;
             debugState = next;
+            fuseHoldUntil = -1f;
             StateChanged?.Invoke(from, next);
         }
     }

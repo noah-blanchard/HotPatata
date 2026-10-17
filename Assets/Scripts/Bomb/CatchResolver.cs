@@ -8,33 +8,32 @@ namespace HotPatata
     /// decide catches.
     ///
     /// Forgiveness lives here, on the receiver's side, never in the flight (PROJECT_SPEC §9):
-    ///  - the test is SWEPT: every physics step the bomb's path since the last step is checked against each
-    ///    receiver's reach, so a fast bomb never slips between two samples;
+    ///  - the test is SWEPT: every chord of the flight's sweep (<see cref="BombPhysics.AdvanceTo"/>) is checked against
+    ///    each receiver's reach, so a fast bomb never slips between two samples;
     ///  - the reach is <see cref="GameTuning.catchRadius"/>, plus <see cref="GameTuning.catchFacingBonus"/> when the
     ///    bomb comes from in front of where the receiver looks (<see cref="ReachFor"/>), and a little less
     ///    vertically than sideways (<see cref="GameTuning.catchVerticalScale"/>);
     ///  - a press up to <see cref="GameTuning.catchLateGrace"/> after the bomb was in reach still catches, as long as
     ///    it has not exploded (a lethal contact right after it passed a receiver waits out that grace).
     ///
-    /// Lag compensation (online): a remote player sees the bomb late, so by the time their catch reaches the
-    /// host the bomb has already flown past them. Their machine therefore claims the catch it saw
-    /// (<see cref="TryResolveCompensatedCatch"/>), and the host checks it against a short history of the flight,
-    /// bounded by <see cref="GameTuning.catchLagCompensation"/>. For the same reason a lethal contact right after
-    /// the bomb passed near a remote receiver is held for a moment (<see cref="ExplosionHoldFor"/>).
+    /// Online (#117 P3, ARCHITECTURE §13.2): the host's sweep only serves the players this machine owns. A remote receiver's
+    /// own machine draws the very same flight (a pure function of server time, <see cref="FlightSegment"/>), sees it reach
+    /// its catch sphere and claims the catch with the time it saw it (<see cref="TryResolveClaim"/>). The host checks the
+    /// claim exactly: the time within <see cref="GameTuning.catchLagCompensation"/>, the window open then, the bomb at that
+    /// time within reach of the claimed centre, and that centre where the receiver's own stamps put them. A lethal contact
+    /// right after the bomb passed near a remote receiver waits for their claim (<see cref="ExplosionHoldFor"/>), as long as
+    /// the measured lag says it can still come (<see cref="LagBudget"/>).
     /// </summary>
     [RequireComponent(typeof(BombController))]
     public class CatchResolver : MonoBehaviour
     {
-        const float ReachSlack = 0.4f;               // metres: the client's interpolated path is not the host's exact path
-        const float InterpolationAllowance = 0.1f;   // seconds a client renders the bomb behind the server
-        const float HoldMargin = 0.05f;
         const float Never = -999f;
+        const float HoldScanStep = 0.02f;     // seconds between samples of the recent flight when looking for a remote receiver
+        const float HoldScanExtra = 0.5f;     // metres beyond the reach: a near pass that the receiver may have caught on their screen
+        const float StampExtrapolation = 0.1f;   // seconds a receiver's newest stamp may be carried forward
 
-        readonly FlightHistory history = new FlightHistory();
         readonly float[] lastInReach = new float[Player.MaxSlots];   // host: when the swept path last came within reach
         BombController bomb;
-        Vector3 lastSweep;
-        bool sweeping;
 
         void Awake() => bomb = GetComponent<BombController>();
 
@@ -43,16 +42,11 @@ namespace HotPatata
 
         void OnThrown(Player thrower)
         {
-            history.Clear();
             for (int i = 0; i < lastInReach.Length; i++) lastInReach[i] = Never;
-            lastSweep = bomb.transform.position;
-            sweeping = true;
         }
 
-        bool Compensating => NetMode.IsNetworked && NetMode.IsAuthority && bomb.Tuning.catchLagCompensation > 0f;
-
-        /// <summary>Lag-compensation reach: the most a receiver could reach, plus slack for the client's interpolation.</summary>
-        float CompensatedReach => bomb.Tuning.catchRadius + bomb.Tuning.catchFacingBonus + ReachSlack;
+        bool Online => NetMode.IsNetworked && NetMode.IsAuthority;
+        bool Compensating => Online && bomb.Tuning.catchLagCompensation > 0f;
 
         /// <summary>
         /// How close (metres, in reach space, see <see cref="ReachDistance"/>) a bomb travelling along
@@ -72,55 +66,44 @@ namespace HotPatata
         /// Closest approach of the segment a→b to a receiver's catch centre, measured in "reach space" (vertical distances
         /// stretched by 1 / <see cref="GameTuning.catchVerticalScale"/>), so it compares directly with <see cref="ReachFor"/>.
         /// </summary>
-        public static float ReachDistance(GameTuning t, Vector3 a, Vector3 b, Vector3 center, out Vector3 closest)
+        public static float ReachDistance(GameTuning t, Vector3 a, Vector3 b, Vector3 center, out Vector3 closest) =>
+            ReachDistance(t, a, b, center, out closest, out _);
+
+        /// <summary>As above; <paramref name="along"/> is where the closest point is on a→b (0..1).</summary>
+        public static float ReachDistance(GameTuning t, Vector3 a, Vector3 b, Vector3 center, out Vector3 closest, out float along)
         {
             float stretch = 1f / Mathf.Max(0.05f, t.catchVerticalScale);
             Vector3 s = new Vector3(1f, stretch, 1f);
             Vector3 sa = Vector3.Scale(a - center, s), sb = Vector3.Scale(b - center, s);
             Vector3 ab = sb - sa;
-            float k = ab.sqrMagnitude > 1e-8f ? Mathf.Clamp01(-Vector3.Dot(sa, ab) / ab.sqrMagnitude) : 0f;
-            closest = Vector3.Lerp(a, b, k);
-            return (sa + ab * k).magnitude;
+            along = ab.sqrMagnitude > 1e-8f ? Mathf.Clamp01(-Vector3.Dot(sa, ab) / ab.sqrMagnitude) : 0f;
+            closest = Vector3.Lerp(a, b, along);
+            return (sa + ab * along).magnitude;
         }
+
+        /// <summary>The host decides this player's catches with its own sweep: offline everyone, online its own players only.</summary>
+        static bool SweptHere(Player p) => !NetMode.IsNetworked || p.IsLocal;
 
         void FixedUpdate()
         {
             if (!NetMode.IsAuthority || bomb.State != BombState.Thrown) return;
-
-            if (!bomb.Body.Frozen)
-            {
-                Sweep();
-                if (bomb.State != BombState.Thrown) return;   // caught during the sweep
-
-                if (Compensating)
-                {
-                    history.Begin(Time.time, bomb.transform.position);
-                    foreach (var p in Player.All)
-                        if (p != null && p.CatchVolume != null) history.AddCenter(p.PlayerId, p.CatchVolume.CatchCenter);
-                }
-            }
-
             TryLateCatch();
         }
 
         /// <summary>
-        /// Checks the bomb's path since the last sweep against every eligible receiver. A receiver whose window is open
-        /// catches it (the closest wins). Also called by the controller right before judging a lethal contact, so the
-        /// last stretch of flight is never skipped.
+        /// One chord a→b of the flight (<see cref="BombPhysics.AdvanceTo"/>), checked against every receiver this machine sweeps.
+        /// A receiver whose window is open catches it (the closest wins). True when it was caught.
         /// </summary>
-        public void Sweep()
+        public bool SweepChord(Vector3 from, Vector3 to)
         {
-            if (!sweeping || bomb.State != BombState.Thrown) return;
-
-            Vector3 from = lastSweep, to = bomb.transform.position;
-            lastSweep = to;
+            if (bomb.State != BombState.Thrown) return false;
 
             Player best = null;
             float bestDistance = float.MaxValue;
             foreach (var p in Player.All)
             {
-                if (!IsEligible(p)) continue;
-                float d = ReachDistance(p.Tuning, from, to, p.CatchVolume.CatchCenter, out Vector3 closest);
+                if (!IsEligible(p) || !SweptHere(p)) continue;
+                float d = ReachDistance(p.Tuning, from, to, p.CatchVolume.CatchCenter, out _);
                 if (d > ReachFor(p, to - from)) continue;
 
                 if (p.PlayerId >= 0 && p.PlayerId < lastInReach.Length) lastInReach[p.PlayerId] = Time.time;
@@ -132,11 +115,9 @@ namespace HotPatata
                 }
             }
 
-            if (best != null && !bomb.ExplosionPending)
-            {
-                PatataLog.Bomb($"Catch accepted {best} ({bestDistance:F2} m from the centre)");
-                bomb.AcceptCatch(best);
-            }
+            if (best == null || bomb.ExplosionPending) return false;
+            PatataLog.Bomb($"Catch accepted {best} ({bestDistance:F2} m from the centre)");
+            return bomb.AcceptCatch(best);
         }
 
         // A window opened just after the bomb went by: still a catch within the late grace (even over a held explosion).
@@ -147,7 +128,7 @@ namespace HotPatata
             float bestTime = since;
             foreach (var p in Player.All)
             {
-                if (!IsEligible(p) || !p.Catcher.WindowOpen || p.PlayerId < 0 || p.PlayerId >= lastInReach.Length) continue;
+                if (!IsEligible(p) || !SweptHere(p) || !p.Catcher.WindowOpen || p.PlayerId < 0 || p.PlayerId >= lastInReach.Length) continue;
                 if (lastInReach[p.PlayerId] >= bestTime)
                 {
                     best = p;
@@ -161,56 +142,102 @@ namespace HotPatata
         }
 
         /// <summary>
-        /// Host only: a remote receiver reports that, on their screen, the bomb reached their catch sphere while their
-        /// window was open. Accepted if the host's own record puts the bomb within reach of them recently enough.
+        /// Host only, the single decision for a remote receiver (#117 P3): "on my screen, flight <paramref name="flightId"/>
+        /// was within reach of my catch centre <paramref name="center"/> (feet <paramref name="feet"/>) at server time
+        /// <paramref name="time"/>, and my window was open". Every part of it is checked; refusing returns false.
         /// </summary>
-        public bool TryResolveCompensatedCatch(Player receiver)
+        public bool TryResolveClaim(Player receiver, int flightId, double time, Vector3 center, Vector3 feet)
         {
+            var t = bomb.Tuning;
             if (!Compensating || bomb.State != BombState.Thrown || !IsEligible(receiver)) return false;
+            var flight = bomb.Body.Flight;
+            if (flight.Id != flightId) return Refuse(receiver, $"another flight ({flightId}, now {flight.Id})");
 
-            float window = bomb.Tuning.catchLagCompensation;
-            float reached = history.LastReach(receiver.PlayerId, Time.time - window, CompensatedReach);
-            if (reached < 0f)
-            {
-                PatataLog.Bomb($"Catch claim rejected {receiver} (not in reach in the last {window * 1000f:F0} ms)");
-                return false;
-            }
+            double now = SimulationClock.ServerNow;
+            double at = HazardRewind.ClampClaim(time, now, t.catchLagCompensation);   // never in the future, never older than the cap
+            if (at != time && time < now) SyncStats.ClaimsClamped++;
+            if (at < flight.T0) return Refuse(receiver, "before the throw");
+            if (bomb.ExplosionPending ? at > bomb.Body.EndedAt : !bomb.Body.Flying) return Refuse(receiver, "after the flight ended");
+            if (!receiver.Catcher.RemoteWindowCovers(at)) return Refuse(receiver, "window closed then");
 
-            PatataLog.Bomb($"Catch accepted {receiver} (lag-compensated, in reach {(Time.time - reached) * 1000f:F0} ms ago, rtt {RttMs(receiver)} ms)");
+            float g = bomb.Body.Gravity;
+            Vector3 x = flight.PositionAt(at, g);
+            float d = ReachDistance(t, x, x, center, out _);
+            float reach = ReachFor(receiver, flight.VelocityAt(at, g)) + t.catchClaimSlack;
+            if (d > reach) return Refuse(receiver, $"{d:F2} m from the centre (reach {reach:F2})");
+
+            // The centre must be where the receiver's own stamps put them then (their copy here is drawn late).
+            var history = receiver.Net != null ? receiver.Net.History : null;
+            Vector3 expected = history != null && history.TryFeetAt(at, StampExtrapolation, out Vector3 stamped) ? stamped : receiver.transform.position;
+            float off = Vector3.Distance(feet, expected);
+            if (off > t.catchClaimCentreTolerance) return Refuse(receiver, $"claimed feet {off:F2} m from their stamps");
+            if ((center - feet).magnitude > t.catchCenterHeight + t.catchRadius + t.catchFacingBonus) return Refuse(receiver, "catch centre too far from the feet");
+
+            SyncStats.ClaimsAccepted++;
+            PatataLog.Bomb($"Catch accepted {receiver} (claimed, {(now - at) * 1000.0:F0} ms ago, {d:F2} m, rtt {RttMs(receiver)} ms)");
             return bomb.AcceptCatch(receiver);
+        }
+
+        bool Refuse(Player receiver, string why)
+        {
+            SyncStats.ClaimsRefused++;
+            PatataLog.Bomb($"Catch claim refused {receiver}: {why}");
+            if (receiver.Net != null && receiver.Net.IsSpawned) receiver.Net.SendClaimRefused();
+            return false;
         }
 
         /// <summary>
         /// Seconds the host should wait before a lethal contact becomes an explosion, because a receiver the bomb just
-        /// passed may still press catch (late grace) or, online, a remote receiver's catch may still be on its way.
+        /// passed may still press catch (late grace) or, online, a remote receiver's claim may still be on its way.
         /// 0 = explode now.
         /// </summary>
         public float ExplosionHoldFor()
         {
-            Sweep();   // register the last stretch of flight before deciding
             float until = 0f;
 
             float grace = bomb.Tuning.catchLateGrace;
             foreach (var p in Player.All)
             {
-                if (!IsEligible(p) || p.PlayerId < 0 || p.PlayerId >= lastInReach.Length) continue;
+                if (!IsEligible(p) || !SweptHere(p) || p.PlayerId < 0 || p.PlayerId >= lastInReach.Length) continue;
                 if (lastInReach[p.PlayerId] >= Time.time - grace) until = Mathf.Max(until, lastInReach[p.PlayerId] + grace);
             }
+            float hold = Mathf.Max(0f, until - Time.time);
 
             if (Compensating)
-            {
-                float cap = bomb.Tuning.catchLagCompensation;
                 foreach (var p in Player.All)
                 {
-                    if (!IsEligible(p) || p.IsLocal) continue;   // the host's own player has no lag to wait for
-                    float reached = history.LastReach(p.PlayerId, Time.time - cap, CompensatedReach);
-                    if (reached < 0f) continue;
-
-                    float delay = Mathf.Min(cap, RttMs(p) / 1000f + InterpolationAllowance + HoldMargin);
-                    until = Mathf.Max(until, reached + delay);
+                    if (!IsEligible(p) || SweptHere(p)) continue;
+                    hold = Mathf.Max(hold, RemoteHold(p));
                 }
+            return hold;
+        }
+
+        /// <summary>
+        /// Did the recent flight pass near where <paramref name="receiver"/>'s stamps put them? Then their claim may be on its
+        /// way: wait from that moment for as long as the measured lag allows (<see cref="LagBudget.LateMessageWait"/>).
+        /// </summary>
+        float RemoteHold(Player receiver)
+        {
+            var t = bomb.Tuning;
+            var flight = bomb.Body.Flight;
+            var history = receiver.Net != null ? receiver.Net.History : null;
+            if (!flight.Valid || history == null) return 0f;
+
+            float wait = LagBudget.LateMessageWait(receiver, t, t.catchLagCompensation);
+            double now = SimulationClock.ServerNow;
+            double end = bomb.Body.EndedAt;
+            double start = System.Math.Max(flight.T0, now - wait);
+            Vector3 centerOffset = receiver.CatchVolume.CatchCenter - receiver.transform.position;
+            float g = bomb.Body.Gravity;
+            float near = t.catchRadius + t.catchFacingBonus + t.catchClaimSlack + HoldScanExtra;
+            double reached = -1.0;
+            for (double at = start; at <= end; at += HoldScanStep)
+            {
+                if (!history.TryFeetAt(at, StampExtrapolation, out Vector3 feet)) continue;
+                if (ReachDistance(t, flight.PositionAt(at, g), flight.PositionAt(at, g), feet + centerOffset, out _) <= near) reached = at;
             }
-            return Mathf.Max(0f, until - Time.time);
+            if (reached < 0.0) return 0f;
+            return Mathf.Max(0f, (float)(reached + wait - now));
         }
 
         bool IsEligible(Player receiver) =>
