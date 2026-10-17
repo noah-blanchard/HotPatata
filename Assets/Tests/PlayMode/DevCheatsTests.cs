@@ -34,7 +34,6 @@ namespace HotPatata.Tests
         [UnityTest]
         public IEnumerator NoClip_FliesThroughTheFloor_AndLandsAgainWhenOff()
         {
-            Assert.IsTrue(DevCheats.Available);
             float start = p1.transform.position.y;
             DevCheats.NoClip = true;
             Drive.Crouch = true;   // crouch = down while flying

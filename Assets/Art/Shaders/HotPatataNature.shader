@@ -12,6 +12,7 @@
 //  - wind (_WIND): a trunk bend and a leaf flutter driven by the global _HP_Wind (TimeOfDayBlender), applied in every
 //    pass so shadows and SSAO follow the plants;
 //  - a dithered distance fade (_FadeEnd) for instanced foliage (FoliageInstancer);
+//  - the terrain's holes (_TERRAIN_HOLES, on the level ground: a cave's mouth in a hillside, ARCHITECTURE §27.2);
 //  - hazard stripes (_Stripe*) and emission (_EmissionColor), driven by the same code as the other kit shaders;
 //  - the height mist (HotPatataFog.hlsl) and the sun's leaf cookie (_LIGHT_COOKIES, PatataCanopy's dapple).
 // Repetition: hex tiling (_ANTITILE) on the floor projection or the UVs, a macro layer and a world-space variation.
@@ -63,6 +64,8 @@ Shader "HotPatata/Nature"
         [Toggle(_ALPHATEST_ON)] _AlphaClip ("Cut-out (foliage)", Float) = 0
         [NoScaleOffset] _AlphaMap ("Alpha Map (A, from greyscale)", 2D) = "white" {}
         _Cutoff ("Alpha Cutoff", Range(0, 1)) = 0.45
+        [Toggle(_TERRAIN_HOLES)] _TerrainHoles ("Terrain Holes (the level ground)", Float) = 0
+        [HideInInspector][NoScaleOffset] _TerrainHolesTexture ("Terrain Holes (bound by the terrain)", 2D) = "white" {}
         [Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull (Off for leaves)", Float) = 2
         _Translucency ("Translucency (light through leaves)", Range(0, 2)) = 0
         _TranslucencyColor ("Translucency Tint", Color) = (0.75, 0.9, 0.35, 1)
@@ -132,10 +135,17 @@ Shader "HotPatata/Nature"
             return positionWS;
         }
 
+        // The terrain binds its holes here (white where there is ground); its mesh UVs run 0..1 over it.
+        TEXTURE2D(_TerrainHolesTexture);
+        SAMPLER(sampler_TerrainHolesTexture);
+
         void NatureAlphaClip(float2 uv)
         {
             #if defined(_ALPHATEST_ON)
                 clip(SAMPLE_TEXTURE2D(_AlphaMap, sampler_AlphaMap, uv).a * _BaseColor.a - _Cutoff);
+            #endif
+            #if defined(_TERRAIN_HOLES)
+                clip(SAMPLE_TEXTURE2D(_TerrainHolesTexture, sampler_TerrainHolesTexture, uv).r - 0.5);
             #endif
         }
         ENDHLSL
@@ -154,6 +164,7 @@ Shader "HotPatata/Nature"
             #pragma shader_feature_local _ANTITILE
             #pragma shader_feature_local _TOPLAYER
             #pragma shader_feature_local _ALPHATEST_ON
+            #pragma shader_feature_local _TERRAIN_HOLES
             #pragma shader_feature_local _WIND
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
@@ -499,6 +510,7 @@ Shader "HotPatata/Nature"
             #pragma vertex NatureShadowVertex
             #pragma fragment NatureShadowFragment
             #pragma shader_feature_local _ALPHATEST_ON
+            #pragma shader_feature_local _TERRAIN_HOLES
             #pragma shader_feature_local _WIND
             #pragma multi_compile_instancing
             #pragma multi_compile_vertex _ _CASTING_PUNCTUAL_LIGHT_SHADOW
@@ -552,6 +564,7 @@ Shader "HotPatata/Nature"
             #pragma vertex NatureDepthVertex
             #pragma fragment NatureDepthFragment
             #pragma shader_feature_local _ALPHATEST_ON
+            #pragma shader_feature_local _TERRAIN_HOLES
             #pragma shader_feature_local _WIND
             #pragma multi_compile_instancing
 
@@ -599,6 +612,7 @@ Shader "HotPatata/Nature"
             #pragma vertex NatureDepthNormalsVertex
             #pragma fragment NatureDepthNormalsFragment
             #pragma shader_feature_local _ALPHATEST_ON
+            #pragma shader_feature_local _TERRAIN_HOLES
             #pragma shader_feature_local _WIND
             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/RenderingLayers.hlsl"
             #pragma multi_compile_instancing

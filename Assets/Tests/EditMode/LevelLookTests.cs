@@ -25,7 +25,7 @@ namespace HotPatata.Tests
         public void ForestLooks_AreVariantsOfTheKit_WithTheirOwnVisual()
         {
             var looks = ForestKitBuilder.Variants().ToList();
-            Assert.AreEqual(10, looks.Count);
+            Assert.AreEqual(15, looks.Count);
             foreach (var (variant, basePath) in looks)
             {
                 var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(variant);

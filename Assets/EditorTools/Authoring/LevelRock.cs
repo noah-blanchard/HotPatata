@@ -11,7 +11,8 @@ namespace HotPatata.Editor
     /// The rock pieces of an authored level (ARCHITECTURE §27.2): caves (<see cref="RockShellShape"/>, a tunnel along a line or a cavern
     /// over an outline) and cliffs (<see cref="CliffShape"/>). Each is one rough mesh drawn in the nature look's rock and, the same mesh, its
     /// collider on Environment (a <see cref="WalkableProxy"/> of kind Solid: the static organic ground's exception to the box-only rule).
-    /// A cave's roof is a <see cref="CourseCeiling"/>. The rock bulges outward only, so the clear space a piece is drawn with stays clear.
+    /// A cave's roof is a <see cref="CourseCeiling"/>. The rock bulges outward only, so the clear space a piece is drawn with stays clear, and no
+    /// rock is drawn in another cave's clear space (a tunnel's mouth opens in a cavern's wall, a gallery's end, a cliff's face).
     /// Called by <see cref="LevelPieceBuilder"/>.
     /// </summary>
     public static class LevelRock
@@ -120,6 +121,154 @@ namespace HotPatata.Editor
 
         // ------------------------------------------------------------------ caves
 
+        /// <summary>A point's floor inside a cave's footprint (its walls included), or false outside it: the mist's ground under the earth.</summary>
+        public delegate bool FloorUnder(Vector2 point, out float floor);
+
+        /// <summary>The footprint of <paramref name="shell"/> on the flat, and its floor there.</summary>
+        public static FloorUnder Footprint(RockShellShape shell)
+        {
+            var world = shell.WorldPoints();
+            if (world.Count < 2) return (Vector2 _, out float f) => { f = 0f; return false; };
+            if (shell.Kind == RockShellKind.Cavern)
+            {
+                var poly = world.Select(w => new Vector2(w.x, w.z)).ToList();
+                float y = shell.transform.position.y, margin = shell.Thickness + shell.Roughness;
+                return (Vector2 p, out float f) => { f = y; return Poly2.Contains(poly, p) || Poly2.DistanceToEdge(poly, p) < margin; };
+            }
+            var line = Curves.Resample(Curves.Spline(world, Step * 0.5f), Step);
+            float reach = shell.Width * 0.5f + shell.Thickness + shell.Roughness;
+            return (Vector2 p, out float f) =>
+            {
+                f = 0f;
+                float best = float.MaxValue;
+                for (int i = 0; i < line.Count - 1; i++)
+                {
+                    Vector2 a = new Vector2(line[i].x, line[i].z), b = new Vector2(line[i + 1].x, line[i + 1].z), ab = b - a;
+                    float t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / Mathf.Max(1e-6f, ab.sqrMagnitude));
+                    float d = Vector2.Distance(p, a + ab * t);
+                    if (d < best) { best = d; f = Mathf.Lerp(line[i].y, line[i + 1].y, t); }
+                }
+                return best < reach;
+            };
+        }
+
+        /// <summary>A cave's clear space: where a player stands inside it (the space it is drawn with, its rock bulging outward only).</summary>
+        public sealed class ClearSpace
+        {
+            public Bounds bounds;
+            public System.Func<Vector3, bool> inside;
+
+            public bool Contains(Vector3 p) => bounds.Contains(p) && inside(p);
+        }
+
+        /// <summary>The clear space of <paramref name="shell"/>: over its floor and under its roof (a tunnel's section, a cavern's dome).</summary>
+        public static ClearSpace Clear(RockShellShape shell)
+        {
+            var world = shell.WorldPoints();
+            if (shell.Kind == RockShellKind.Cavern)
+            {
+                if (world.Count < 3) return new ClearSpace { inside = _ => false };
+                var flat = Poly2.CounterClockwise(world.Select(p => new Vector2(p.x, p.z)).ToList());
+                var ring = ResampleClosed(flat, Step * 1.5f);
+                var c = new Vector2(ring.Average(p => p.x), ring.Average(p => p.y));
+                float y = shell.transform.position.y, h = shell.Height;
+                var box = new Bounds(new Vector3(c.x, y + h * 0.5f, c.y), Vector3.zero);
+                foreach (var p in flat) box.Encapsulate(new Vector3(p.x, y, p.y));
+                box.Encapsulate(new Vector3(c.x, y + h, c.y));
+                return new ClearSpace
+                {
+                    bounds = box,
+                    inside = p =>
+                    {
+                        var q = new Vector2(p.x, p.z);
+                        float up = p.y - y;
+                        if (up <= 0f || up >= h || !Poly2.Contains(flat, q)) return false;
+                        float reach = RayExit(flat, c, q - c);
+                        float share = reach <= 1e-4f ? 0f : Vector2.Distance(q, c) / reach;
+                        return up < h * Mathf.Pow(Mathf.Max(0f, 1f - Mathf.Pow(share, Squareness)), 1f / Squareness);
+                    },
+                };
+            }
+            if (world.Count < 2) return new ClearSpace { inside = _ => false };
+            var line = Curves.Resample(Curves.Spline(world, Step * 0.5f), Step);
+            float w = shell.Width * 0.5f, height = shell.Height;
+            var bounds = new Bounds(line[0], Vector3.zero);
+            foreach (var p in line)
+            {
+                bounds.Encapsulate(p + new Vector3(-w, 0f, -w));
+                bounds.Encapsulate(p + new Vector3(w, height, w));
+            }
+            return new ClearSpace
+            {
+                bounds = bounds,
+                inside = p =>
+                {
+                    var q = new Vector2(p.x, p.z);
+                    float best = float.MaxValue, floor = 0f;
+                    bool beyond = false;
+                    for (int i = 0; i < line.Count - 1; i++)
+                    {
+                        Vector2 a = new Vector2(line[i].x, line[i].z), b = new Vector2(line[i + 1].x, line[i + 1].z), ab = b - a;
+                        float raw = Vector2.Dot(q - a, ab) / Mathf.Max(1e-6f, ab.sqrMagnitude), t = Mathf.Clamp01(raw);
+                        float d = Vector2.Distance(q, a + ab * t);
+                        if (d >= best) continue;
+                        best = d;
+                        floor = Mathf.Lerp(line[i].y, line[i + 1].y, t);
+                        beyond = (i == 0 && raw < 0f) || (i == line.Count - 2 && raw > 1f);
+                    }
+                    if (beyond || best >= w) return false;
+                    float up = p.y - floor;
+                    return up > 0f && up < height * Mathf.Pow(Mathf.Max(0f, 1f - Mathf.Pow(best / w, Squareness)), 1f / Squareness);
+                },
+            };
+        }
+
+        /// <summary>How far from <paramref name="from"/> along <paramref name="dir"/> the ray leaves the closed outline.</summary>
+        static float RayExit(IList<Vector2> poly, Vector2 from, Vector2 dir)
+        {
+            if (dir.sqrMagnitude < 1e-8f) return 0f;
+            dir.Normalize();
+            float best = float.MaxValue;
+            for (int i = 0; i < poly.Count; i++)
+            {
+                Vector2 a = poly[i], e = poly[(i + 1) % poly.Count] - a;
+                float den = dir.x * e.y - dir.y * e.x;
+                if (Mathf.Abs(den) < 1e-8f) continue;
+                var ap = a - from;
+                float t = (ap.x * e.y - ap.y * e.x) / den, u = (ap.x * dir.y - ap.y * dir.x) / den;
+                if (t > 0f && u >= 0f && u <= 1f) best = Mathf.Min(best, t);
+            }
+            return best == float.MaxValue ? 0f : best;
+        }
+
+        /// <summary>
+        /// The clear spaces of the other caves in <paramref name="self"/>'s scene: no rock is drawn in them, so a tunnel's mouth opens in a
+        /// cavern's wall, a gallery's end or a cliff's face (ARCHITECTURE §27.2).
+        /// </summary>
+        public static List<ClearSpace> OtherCaves(Component self)
+        {
+            var scene = self.gameObject.scene;
+            if (!scene.IsValid()) return new List<ClearSpace>();
+            return scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<RockShellShape>(true))
+                .Where(s => s != self && s.gameObject.activeInHierarchy).Select(Clear).ToList();
+        }
+
+        /// <summary>
+        /// True when the quad a-b-c-d reaches into one of the caves' clear space: its corners, the middles of its sides or its middle (a
+        /// tall quad of a cavern's wall can stand across a tunnel with every corner outside it).
+        /// </summary>
+        static bool InCaves(List<ClearSpace> caves, Vector3 a, Vector3 b, Vector3 c, Vector3 d)
+        {
+            if (caves.Count == 0) return false;
+            var mid = (a + b + c + d) * 0.25f;
+            foreach (var cave in caves)
+                if (cave.Contains(a) || cave.Contains(b) || cave.Contains(c) || cave.Contains(d) || cave.Contains(mid) ||
+                    cave.Contains((a + b) * 0.5f) || cave.Contains((b + c) * 0.5f) || cave.Contains((c + d) * 0.5f) || cave.Contains((d + a) * 0.5f)) return true;
+            return false;
+        }
+
+        static bool InCaves(List<ClearSpace> caves, Vector3 a, Vector3 b, Vector3 c) => InCaves(caves, a, b, c, c);
+
         public static void BuildShell(RockShellShape shell, Transform root, string name)
         {
             if (shell.Kind == RockShellKind.Cavern) BuildCavern(shell, root, name);
@@ -186,12 +335,15 @@ namespace HotPatata.Editor
 
             // the surfaces, holes cut where they are asked (a hole's rim joins the inner face to the outer)
             var holed = new bool[n - 1, m - 1];
+            var cut = new bool[n - 1, m - 1];   // in another cave's clear space: open, and no rim toward a mouth
+            var others = OtherCaves(shell);
             for (int i = 0; i < n - 1; i++)
                 for (int j = 0; j < m - 1; j++)
                 {
                     var mid = (rock.V[inner[i, j]] + rock.V[inner[i + 1, j + 1]]) * 0.5f;
                     float above = (section[j].y + section[j + 1].y) * 0.5f;
-                    holed[i, j] = Holed(shell, mid, above, h);
+                    cut[i, j] = InCaves(others, rock.V[inner[i, j]], rock.V[inner[i + 1, j]], rock.V[inner[i, j + 1]], rock.V[inner[i + 1, j + 1]]);
+                    holed[i, j] = cut[i, j] || Holed(shell, mid, above, h);
                 }
             Vector3 Out(int i, int j) => (rights[i] * outward[j].x + Vector3.up * outward[j].y).normalized;
             for (int i = 0; i < n - 1; i++)
@@ -201,10 +353,11 @@ namespace HotPatata.Editor
                     if (holed[i, j])
                     {
                         // rims on the edges the hole shares with rock
-                        if (i == 0 || !holed[i - 1, j]) Rim(rock, inner[i, j], inner[i, j + 1], outer[i, j + 1], outer[i, j], path[i] - path[i + 1]);
-                        if (i == n - 2 || !holed[i + 1, j]) Rim(rock, inner[i + 1, j], inner[i + 1, j + 1], outer[i + 1, j + 1], outer[i + 1, j], path[i + 1] - path[i]);
-                        if (j == 0 || !holed[i, j - 1]) Rim(rock, inner[i, j], inner[i + 1, j], outer[i + 1, j], outer[i, j], rock.V[inner[i, j]] - rock.V[inner[i, j + 1]]);
-                        if (j == m - 2 || !holed[i, j + 1]) Rim(rock, inner[i, j + 1], inner[i + 1, j + 1], outer[i + 1, j + 1], outer[i, j + 1], rock.V[inner[i, j + 1]] - rock.V[inner[i, j]]);
+                        bool open = cut[i, j];
+                        if (i == 0 ? !open : !holed[i - 1, j]) Rim(rock, inner[i, j], inner[i, j + 1], outer[i, j + 1], outer[i, j], path[i] - path[i + 1]);
+                        if (i == n - 2 ? !open : !holed[i + 1, j]) Rim(rock, inner[i + 1, j], inner[i + 1, j + 1], outer[i + 1, j + 1], outer[i + 1, j], path[i + 1] - path[i]);
+                        if (j == 0 ? !open : !holed[i, j - 1]) Rim(rock, inner[i, j], inner[i + 1, j], outer[i + 1, j], outer[i, j], rock.V[inner[i, j]] - rock.V[inner[i, j + 1]]);
+                        if (j == m - 2 ? !open : !holed[i, j + 1]) Rim(rock, inner[i, j + 1], inner[i + 1, j + 1], outer[i + 1, j + 1], outer[i, j + 1], rock.V[inner[i, j + 1]] - rock.V[inner[i, j]]);
                         continue;
                     }
                     rock.Quad(inner[i, j], inner[i + 1, j], inner[i + 1, j + 1], inner[i, j + 1], -facing);
@@ -217,8 +370,9 @@ namespace HotPatata.Editor
             {
                 int i = start ? 0 : n - 1;
                 var along = (start ? path[0] - path[1] : path[n - 1] - path[n - 2]).normalized;
-                for (int j = 0; j < m - 1; j++) Rim(rock, inner[i, j], inner[i, j + 1], outer[i, j + 1], outer[i, j], along);
-                if (start ? shell.CloseStart : shell.CloseEnd) Cap(rock, path[i], inner, outer, i, m, along, thick);
+                for (int j = 0; j < m - 1; j++)
+                    if (!cut[start ? 0 : n - 2, j]) Rim(rock, inner[i, j], inner[i, j + 1], outer[i, j + 1], outer[i, j], along);
+                if (start ? shell.CloseStart : shell.CloseEnd) Cap(rock, path[i], inner, outer, i, m, along, thick, others);
             }
             Place(root, name + " shell", rock, true, CaveMaterial, CaveOutsideMaterial);
             if (shell.Floor) TunnelFloor(root, name, path, rights, w + rough * 0.5f);
@@ -228,15 +382,33 @@ namespace HotPatata.Editor
         static void Rim(Rock rock, int a, int b, int c, int d, Vector3 facing) => rock.Quad(a, b, c, d, facing);
 
         /// <summary>A dead end: the section's inner ring closed by a fan, the outer one a little beyond it.</summary>
-        static void Cap(Rock rock, Vector3 center, int[,] inner, int[,] outer, int i, int m, Vector3 along, float thick)
+        /// <summary>A dead end's wall: rings from the section in to its middle (inside and out), open where another cave passes through.</summary>
+        static void Cap(Rock rock, Vector3 center, int[,] inner, int[,] outer, int i, int m, Vector3 along, float thick, List<ClearSpace> others)
         {
+            const int Rings = 5;
             var mid = center + Vector3.up * 0.2f;
-            int ci = rock.Add(mid), co = rock.Add(mid + along * thick);
-            for (int j = 0; j < m - 1; j++)
+            // which of the inner wall's cells are open (another cave passes through): the outer wall opens with them
+            var innerRings = new Vector3[Rings + 1, m];
+            for (int j = 0; j < m; j++)
+                for (int r = 0; r <= Rings; r++) innerRings[r, j] = Vector3.Lerp(rock.V[inner[i, j]], mid, r / (float)Rings);
+            var open = new bool[Rings, m - 1];
+            for (int r = 0; r < Rings; r++)
+                for (int j = 0; j < m - 1; j++)
+                    open[r, j] = InCaves(others, innerRings[r, j], innerRings[r, j + 1], innerRings[r + 1, j + 1], innerRings[r + 1, j]);
+            foreach (bool inside in new[] { true, false })
             {
-                rock.Tri(ci, inner[i, j], inner[i, j + 1], -along);
-                rock.Slot = 1;
-                rock.Tri(co, outer[i, j], outer[i, j + 1], along);
+                var heart = inside ? mid : mid + along * thick;
+                var rings = new int[Rings + 1, m];
+                for (int j = 0; j < m; j++)
+                {
+                    rings[0, j] = inside ? inner[i, j] : outer[i, j];
+                    var edge = rock.V[rings[0, j]];
+                    for (int r = 1; r <= Rings; r++) rings[r, j] = rock.Add(Vector3.Lerp(edge, heart, r / (float)Rings));
+                }
+                rock.Slot = inside ? 0 : 1;
+                for (int r = 0; r < Rings; r++)
+                    for (int j = 0; j < m - 1; j++)
+                        if (!open[r, j]) rock.Quad(rings[r, j], rings[r, j + 1], rings[r + 1, j + 1], rings[r + 1, j], inside ? -along : along);
                 rock.Slot = 0;
             }
         }
@@ -311,12 +483,14 @@ namespace HotPatata.Editor
                     outer[col, row] = rock.Add(p + nrm * thick * (0.75f + 0.5f * Noise(p0 * 1.7f, seed + 11)));
                 }
             var holed = new bool[k, rc - 1];
+            var others = OtherCaves(shell);
             for (int col = 0; col < k; col++)
                 for (int row = 0; row < rc - 1; row++)
                 {
                     int next = (col + 1) % k;
                     var mid = (rock.V[inner[col, row]] + rock.V[inner[next, row + 1]]) * 0.5f;
-                    holed[col, row] = Holed(shell, mid, mid.y - y, h);
+                    holed[col, row] = Holed(shell, mid, mid.y - y, h) ||
+                                      InCaves(others, rock.V[inner[col, row]], rock.V[inner[next, row]], rock.V[inner[col, row + 1]], rock.V[inner[next, row + 1]]);
                 }
             for (int col = 0; col < k; col++)
             {
@@ -344,6 +518,7 @@ namespace HotPatata.Editor
             for (int col = 0; col < k; col++)
             {
                 int next = (col + 1) % k;
+                if (InCaves(others, rock.V[ci], rock.V[inner[col, rc - 1]], rock.V[inner[next, rc - 1]])) continue;
                 rock.Tri(ci, inner[col, rc - 1], inner[next, rc - 1], Vector3.down);
                 rock.Slot = 1;
                 rock.Tri(co, outer[col, rc - 1], outer[next, rc - 1], Vector3.up);
@@ -426,6 +601,11 @@ namespace HotPatata.Editor
 
             var rock = new Rock();
             float lean = cliff.Batter;
+            var caves = OtherCaves(cliff);
+            // the ragged top: each column's rise above the top, smooth along the outline (only ever higher)
+            var crest = new float[k];
+            for (int col = 0; col < k; col++)
+                crest[col] = cliff.Crest * Noise(new Vector3(ring[col].x * 1.6f, 17.3f, ring[col].y * 1.6f), seed + 23);
             Vector3 Point(int col, float up, float ins, bool rough0)
             {
                 var xz = ring[col] - outward[col] * (ins + lean * Mathf.Max(0f, up));
@@ -438,23 +618,29 @@ namespace HotPatata.Editor
             for (int b = 0; b < bands.Count; b++)
             {
                 var (y0, y1, ins) = bands[b];
-                int rows = Mathf.Max(1, Mathf.CeilToInt((y1 - y0) / CliffStep));
+                bool last = b == bands.Count - 1;
+                int rows = Mathf.Max(1, Mathf.CeilToInt((y1 + (last ? cliff.Crest * 0.5f : 0f) - y0) / CliffStep));
                 var grid = new int[k, rows + 1];
                 for (int col = 0; col < k; col++)
                     for (int r = 0; r <= rows; r++)
-                        grid[col, r] = rock.Add(Point(col, Mathf.Lerp(y0, y1, r / (float)rows), ins, false));
+                        grid[col, r] = rock.Add(Point(col, Mathf.Lerp(y0, y1 + (last ? crest[col] : 0f), r / (float)rows), ins, false));
                 for (int col = 0; col < k; col++)
                 {
                     int next = (col + 1) % k;
                     var e = ring[next] - ring[col];
                     var facing = new Vector3(e.y, 0f, -e.x);
-                    for (int r = 0; r < rows; r++) rock.Quad(grid[col, r], grid[next, r], grid[next, r + 1], grid[col, r + 1], facing);
+                    for (int r = 0; r < rows; r++)
+                    {
+                        if (InCaves(caves, rock.V[grid[col, r]], rock.V[grid[next, r]], rock.V[grid[next, r + 1]], rock.V[grid[col, r + 1]])) continue;
+                        rock.Quad(grid[col, r], grid[next, r], grid[next, r + 1], grid[col, r + 1], facing);
+                    }
                 }
                 // the shelf from the band below's top edge in to this band's foot
                 if (lastTop != null)
                     for (int col = 0; col < k; col++)
                     {
                         int next = (col + 1) % k;
+                        if (InCaves(caves, rock.V[lastTop[col]], rock.V[lastTop[next]], rock.V[grid[next, 0]], rock.V[grid[col, 0]])) continue;
                         rock.Quad(lastTop[col], lastTop[next], grid[next, 0], grid[col, 0], Vector3.up);
                     }
                 lastTop = Enumerable.Range(0, k).Select(col => grid[col, rows]).ToArray();
@@ -462,7 +648,12 @@ namespace HotPatata.Editor
             // the top: the last band's edge closed over
             var topRing = Enumerable.Range(0, k).Select(col => new Vector2(rock.V[lastTop[col]].x, rock.V[lastTop[col]].z)).ToList();
             var tris = Poly2.Triangulate(topRing);
-            for (int t = 0; t + 2 < tris.Count; t += 3) rock.Tri(lastTop[tris[t]], lastTop[tris[t + 1]], lastTop[tris[t + 2]], Vector3.up);
+            for (int t = 0; t + 2 < tris.Count; t += 3)
+            {
+                int a = lastTop[tris[t]], b = lastTop[tris[t + 1]], c = lastTop[tris[t + 2]];
+                if (InCaves(caves, rock.V[a], rock.V[b], rock.V[c])) continue;
+                rock.Tri(a, b, c, Vector3.up);
+            }
             Place(root, name + " rock", rock, false, CliffMaterial(cliff.Rock));
         }
     }

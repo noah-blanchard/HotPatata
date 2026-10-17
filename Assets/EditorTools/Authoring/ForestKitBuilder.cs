@@ -32,6 +32,11 @@ namespace HotPatata.Editor
         public const string Net = Folder + "Forest_Net.prefab";
         public const string Embers = Folder + "Forest_Embers.prefab";
         public const string Sparks = Folder + "Forest_Sparks.prefab";
+        public const string Gate = Folder + "Forest_Gate.prefab";
+        public const string Gangway = Folder + "Forest_Gangway.prefab";
+        public const string Raft = Folder + "Forest_Raft.prefab";
+        public const string RottenPlank = Folder + "Forest_RottenPlank.prefab";
+        public const string SwingingLog = Folder + "Forest_SwingingLog.prefab";
 
         const int Plank = TimberKit.Plank, Aged = TimberKit.PlankAged, Wood = TimberKit.Timber, Iron = TimberKit.Iron, Rope = TimberKit.Rope;
 
@@ -51,6 +56,11 @@ namespace HotPatata.Editor
             (Net, CourseKit.ObstaclesDir + "Obstacle_BodyScreen.prefab", DressNet),
             (Embers, CourseKit.GameplayDir + "Zone_Hot.prefab", DressEmbers),
             (Sparks, CourseKit.GameplayDir + "LaserCurtain.prefab", DressSparks),
+            (Gate, CourseKit.ObstaclesDir + "Actuator_Door.prefab", DressGate),
+            (Gangway, CourseKit.PlatformsDir + "Actuator_Bridge.prefab", DressGangway),
+            (Raft, CourseKit.PlatformsDir + "Platform_Moving.prefab", DressRaft),
+            (RottenPlank, CourseKit.PlatformsDir + "Platform_Falling.prefab", DressRottenPlank),
+            (SwingingLog, CourseKit.ObstaclesDir + "Obstacle_Sweeper.prefab", DressSwingingLog),
         };
 
         [MenuItem("HotPatata/Kit/Build Forest Looks")]
@@ -62,6 +72,16 @@ namespace HotPatata.Editor
             AssetDatabase.SaveAssets();
             MeshCatalog.CleanSoon();   // the looks' previous meshes, if they changed
             Debug.Log($"[ForestKit] {Looks().Count()} forest looks built in {Folder}");
+        }
+
+        /// <summary>Builds only the looks named (their variant paths): the others stay as they are.</summary>
+        public static void Build(IEnumerable<string> variants)
+        {
+            var wanted = new HashSet<string>(variants);
+            NatureMaterialBuilder.Ensure(false);
+            Directory.CreateDirectory(Folder.TrimEnd('/'));
+            foreach (var (variant, basePath, dress) in Looks().Where(l => wanted.Contains(l.variant))) MakeVariant(basePath, variant, dress);
+            AssetDatabase.SaveAssets();
         }
 
         static void MakeVariant(string basePath, string variantPath, Action<GameObject> dress)
@@ -327,6 +347,109 @@ namespace HotPatata.Editor
             shape.scale = new Vector3(w * 0.95f, 0.06f, 0.05f);
             var main = sparks.main;
             main.maxParticles = 400;
+        }
+
+        /// <summary>A palisade gate (the door that rises): sharpened logs side by side, two cross beams and iron straps; its lethal edge stays.</summary>
+        static void DressGate(GameObject root)
+        {
+            var door = root.GetComponent<SignalActuator>();
+            var visual = door.Platform.GetComponentsInChildren<KitSkin>(true).FirstOrDefault();
+            var box = door.Platform.GetComponentsInChildren<BoxCollider>(true).First(c => !c.isTrigger && c.GetComponent<KillZone>() == null);
+            if (visual != null) Hide(visual.transform);
+            var size = box.size;
+            Visual(door.Platform, "GateVisual", box.transform.localPosition, mb =>
+            {
+                int logs = Mathf.Max(2, Mathf.RoundToInt(size.x / 0.4f));
+                float r = size.x / logs * 0.5f;
+                for (int k = 0; k < logs; k++)
+                {
+                    float x = -size.x / 2f + r + k * 2f * r;
+                    float top = size.y / 2f - 0.25f + 0.12f * Mathf.Sin(k * 2.3f);
+                    mb.Tube(new[] { new Vector3(x, -size.y / 2f, 0f), new Vector3(x, top, 0f), new Vector3(x, top + 0.35f, 0f) }, new[] { r * 0.96f, r * 0.9f, 0.03f }, 9, Wood, true, k * 0.37f);
+                }
+                foreach (float y in new[] { -size.y * 0.28f, size.y * 0.22f })
+                {
+                    mb.Beam(new Vector3(-size.x / 2f, y, -r - 0.07f), new Vector3(size.x / 2f, y, -r - 0.07f), 0.18f, 0.14f, Wood);
+                    mb.Beam(new Vector3(-size.x / 2f, y, r + 0.07f), new Vector3(size.x / 2f, y, r + 0.07f), 0.18f, 0.14f, Wood);
+                    foreach (float x in new[] { -size.x * 0.32f, size.x * 0.32f })
+                        mb.Box(new Vector3(x, y, 0f), Quaternion.identity, new Vector3(0.08f, 0.24f, 2f * r + 0.36f), Iron);
+                }
+            });
+        }
+
+        /// <summary>A gangway (the bridge that slides out): planks on two stringers with iron straps, like the drawbridge.</summary>
+        static void DressGangway(GameObject root) => DressDrawbridge(root);
+
+        /// <summary>A log raft (the moving platform): logs lashed side by side, two cross poles on top, rope round the logs.</summary>
+        static void DressRaft(GameObject root)
+        {
+            var platform = root.transform.Find("Platform");
+            var box = platform.GetComponentsInChildren<BoxCollider>(true).First(c => !c.isTrigger);
+            Hide(platform.Find("Visual"));
+            var size = box.size;
+            Visual(platform, "RaftVisual", box.transform.localPosition, mb =>
+            {
+                int logs = Mathf.Max(3, Mathf.RoundToInt(size.x / 0.44f));
+                float r = size.x / logs * 0.5f, top = size.y / 2f;
+                for (int k = 0; k < logs; k++)
+                {
+                    float x = -size.x / 2f + r + k * 2f * r, dz = 0.12f * Mathf.Sin(k * 1.9f);
+                    Log(mb, new Vector3(x, top - r, -size.z / 2f + dz), new Vector3(x, top - r, size.z / 2f + dz), r * 0.97f, k);
+                }
+                foreach (float z in new[] { -size.z * 0.33f, size.z * 0.33f })
+                {
+                    Log(mb, new Vector3(-size.x / 2f - 0.15f, top - 0.04f, z), new Vector3(size.x / 2f + 0.15f, top - 0.04f, z), 0.07f, z);
+                    for (int k = 0; k < logs; k += 2)
+                    {
+                        float x = -size.x / 2f + r + k * 2f * r;
+                        var lash = Circle(new Vector3(x, top - r, z), r + 0.03f, 10, Vector3.up, Vector3.right);
+                        mb.Tube(lash, lash.Select(_ => 0.025f).ToList(), 5, Rope);
+                    }
+                }
+            });
+        }
+
+        /// <summary>Rotten planks (the falling platform: it gives way under the first who steps on it): grey planks with gaps, a broken one, two stringers.</summary>
+        static void DressRottenPlank(GameObject root)
+        {
+            var body = root.transform.Find("Body");
+            var box = body.GetComponentsInChildren<BoxCollider>(true).First(c => !c.isTrigger);
+            Hide(body.Find("Visual"));
+            var size = box.size;
+            Visual(body, "RottenVisual", box.transform.localPosition, mb =>
+            {
+                int planks = Mathf.Max(3, Mathf.CeilToInt(size.z / 0.3f));
+                float step = size.z / planks, top = size.y / 2f;
+                for (int k = 0; k < planks; k++)
+                {
+                    float z = -size.z / 2f + (k + 0.5f) * step;
+                    bool broken = k % 4 == 2;
+                    float length = broken ? size.x * 0.55f : size.x - 0.04f, x = broken ? -size.x * 0.2f : 0.02f * Mathf.Sin(k * 3.1f);
+                    mb.Box(new Vector3(x, top - 0.03f, z), Quaternion.Euler(1.5f * Mathf.Sin(k * 1.3f), 2f * Mathf.Sin(k * 2.1f), 0f), new Vector3(length, 0.05f, step - 0.06f), Aged,
+                           new Vector2(k * 0.31f, k * 0.17f));
+                }
+                foreach (float x in new[] { -size.x / 2f + 0.2f, size.x / 2f - 0.2f })
+                    mb.Box(new Vector3(x, top - 0.14f, 0f), Quaternion.identity, new Vector3(0.16f, 0.18f, size.z - 0.1f), Wood);
+            });
+        }
+
+        /// <summary>A swinging log (the sweeper): a trunk with iron bands on an iron hub; its lethal reach stays the bar's.</summary>
+        static void DressSwingingLog(GameObject root)
+        {
+            Hide(root.transform.Find("Visual"));
+            Hide(root.transform.Find("Hub"));
+            var box = root.transform.Find("Collision").GetComponent<BoxCollider>();
+            float length = box.size.x, r = box.size.y * 0.55f;
+            Visual(root.transform, "LogVisual", box.transform.localPosition, mb =>
+            {
+                mb.Tube(new[] { new Vector3(-length / 2f, 0f, 0f), new Vector3(0f, 0.02f, 0f), new Vector3(length / 2f, 0f, 0f) }, new[] { r * 0.9f, r, r * 0.85f }, 12, Wood, true);
+                foreach (float x in new[] { -length * 0.4f, -length * 0.15f, length * 0.15f, length * 0.4f })
+                {
+                    var band = Circle(new Vector3(x, 0f, 0f), r + 0.02f, 14, Vector3.up, Vector3.forward);
+                    mb.Tube(band, band.Select(_ => 0.035f).ToList(), 5, Iron);
+                }
+                mb.Tube(new[] { new Vector3(0f, -0.6f, 0f), new Vector3(0f, 0.6f, 0f) }, new[] { 0.16f, 0.16f }, 10, Iron, true);
+            });
         }
     }
 }

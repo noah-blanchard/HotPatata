@@ -18,7 +18,7 @@ namespace HotPatata
     /// <summary>
     /// A cliff of an authored level (ARCHITECTURE §27.2): a block of rock over a closed outline (piece space, x and z), from the piece's
     /// height (its foot, sunk a little into the ground) up <see cref="Height"/>, its top walkable, its faces rough, ledges stepping it back
-    /// on the way up. A rock spine between two lanes, a wall round a hollow, a face a team climbs by its ledges. A face of 3.4 m or more
+    /// on the way up, its top edge ragged (<see cref="Crest"/>). A rock spine between two lanes, a wall round a hollow, a face a team climbs by its ledges. A face of 3.4 m or more
     /// between two shelves is not climbed (spec §13.20): its contract still declares the Climb lock. Data only: the editor draws it.
     /// </summary>
     [SelectionBase]
@@ -35,6 +35,8 @@ namespace HotPatata
         [SerializeField, Range(0f, 2f), Tooltip("How rough its faces are (m): they bulge out up to this much.")] float roughness = 0.9f;
         [SerializeField, Range(0f, 0.3f), Tooltip("How far its faces lean back for each metre up (a face is never quite plumb).")] float batter = 0.08f;
         [SerializeField, Min(0f), Tooltip("How far it reaches under the piece (m): into the ground, so no gap shows at its foot.")] float sink = 2f;
+        [SerializeField, Range(0f, 12f), Tooltip("How much its top edge rises and falls above Height (m): a ragged skyline. Only ever higher, so a lock " +
+                                                   "holds; keep 0 for a top that is walked on.")] float crest;
 
         public List<Vector3> Outline => outline;
         public float Height { get => height; set => height = Mathf.Max(0.5f, value); }
@@ -43,6 +45,7 @@ namespace HotPatata
         public float Roughness { get => roughness; set => roughness = Mathf.Clamp(value, 0f, 2f); }
         public float Batter { get => batter; set => batter = Mathf.Clamp(value, 0f, 0.3f); }
         public float Sink { get => sink; set => sink = Mathf.Max(0f, value); }
+        public float Crest { get => crest; set => crest = Mathf.Clamp(value, 0f, 12f); }
 
         /// <summary>The outline in the world (x, z).</summary>
         public List<Vector2> WorldOutline()

@@ -3,9 +3,9 @@ using UnityEngine;
 namespace HotPatata
 {
     /// <summary>
-    /// Map-testing cheats (#97 follow-up), toggled by the dev panel (<c>DevPanel</c>, F8, <c>HotPatata.DebugTools</c>) or
-    /// <c>-patataCheats</c>. Editor and development builds only: in a release build every flag reads false and cannot be set,
-    /// so no cheat code path can run. Docs: docs/TESTING.md §2 (dev tools).
+    /// Map-testing cheats (#97 follow-up), toggled by the cheat panel (<see cref="DevPanel"/>, F8) or <c>-patataCheats</c>.
+    /// In every build, release included (owner decision, 2026-10-17): a yellow banner says when one is on. Docs: docs/TESTING.md
+    /// §2 (dev tools).
     ///  - <see cref="NoClip"/>: the local player flies through everything (<see cref="PlayerMotor"/>). Owner-side, anyone.
     ///  - <see cref="Invincible"/>: a lethal zone never fails the section: a static one (void, water) sends that player
     ///    back to their spawn, a moving one is ignored. A rule: it acts where the rules run (offline or on the host).
@@ -15,9 +15,6 @@ namespace HotPatata
     /// </summary>
     public static class DevCheats
     {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-        public const bool Available = true;
-
         public static bool NoClip { get; set; }
         public static bool Invincible { get; set; }
         public static bool NoExplosions { get; set; }
@@ -25,13 +22,6 @@ namespace HotPatata
         /// <summary>Nothing carries over from one play session to the next in the Editor (no domain reload).</summary>
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetAll() => NoClip = Invincible = NoExplosions = false;
-#else
-        public const bool Available = false;
-
-        public static bool NoClip { get => false; set { } }
-        public static bool Invincible { get => false; set { } }
-        public static bool NoExplosions { get => false; set { } }
-#endif
 
         /// <summary>Noclip flight speed (m/s); sprint multiplies it by <see cref="NoClipBoost"/>.</summary>
         public const float NoClipSpeed = 12f;
