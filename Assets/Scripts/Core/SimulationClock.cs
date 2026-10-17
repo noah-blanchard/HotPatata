@@ -20,8 +20,11 @@ namespace HotPatata
     public static class SimulationClock
     {
         static GameTuning tuning;
+        const double HardResetSeconds = 0.15;   // a raw jump this large in one frame is NGO resetting its estimate (diagnostics)
+
         static int sampledFrame = -1;
         static double now;
+        static double lastRaw;
         static bool online;
 
         /// <summary>Gives the clock its slew limits (RunManager does it). Without them a client follows the raw time.</summary>
@@ -77,7 +80,14 @@ namespace HotPatata
             if (!online || NetMode.IsAuthority || tuning == null)
                 now = raw;   // first sample, the host (its time is the server time) or unconfigured: no smoothing
             else
-                now = Step(now, raw, Time.unscaledDeltaTime, tuning.clockMaxSlew, tuning.clockSnapSeconds);
+            {
+                double dt = Time.unscaledDeltaTime;
+                if (Math.Abs(raw - lastRaw - dt) > HardResetSeconds) SyncStats.ClockJumps++;
+                double predicted = now + dt;
+                now = Step(now, raw, dt, tuning.clockMaxSlew, tuning.clockSnapSeconds);
+                if (Math.Abs(raw - predicted) > tuning.clockSnapSeconds) SyncStats.ClockSnaps++;
+            }
+            lastRaw = raw;
             online = true;
             sampledFrame = Time.frameCount;
         }

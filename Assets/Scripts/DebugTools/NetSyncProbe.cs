@@ -176,9 +176,17 @@ namespace HotPatata
                 if (riding[s]) text.Append($"slot {s} on carrier: gap {lastGap[s] * 100f:F1} cm{RebuiltTag(s)}\n");
             text.Append($"hazard hits (host): trigger {SyncStats.HazardTriggerHits}  rewound {SyncStats.HazardRewindHits}  static {SyncStats.StaticKills}\n");
             text.Append($"throw prediction: agree {SyncStats.ThrowAgreed}  disagree {SyncStats.ThrowDisagreed}   rtt {NetMode.RttMs} ms\n");
-            text.Append($"own ride: carrier changes {SyncStats.CarrierChanges}  ground flips {SyncStats.CarrierGroundFlips}   rider pops {SyncStats.RiderPops}");
+            text.Append($"own ride: carrier changes {SyncStats.CarrierChanges}  ground flips {SyncStats.CarrierGroundFlips}   rider pops {SyncStats.RiderPops}\n");
+            if (NetMode.IsNetworked)
+            {
+                text.Append($"link {NetQuality.Link}\n");
+                NetReport.AppendBody(text);
+            }
 
-            var rect = new Rect(Screen.width - 430, 10, 420, 114);
+            int lines = 1;
+            for (int i = 0; i < text.Length; i++)
+                if (text[i] == '\n') lines++;
+            var rect = new Rect(Screen.width - 730, 10, 720, 8 + lines * 17);
             GUI.Box(rect, GUIContent.none);
             GUI.Label(new Rect(rect.x + 8, rect.y + 4, rect.width - 16, rect.height - 8), text.ToString(), style);
         }

@@ -28,7 +28,9 @@ namespace HotPatata
     ///   -patataCheckpoint &lt;id&gt;                          start the run at that checkpoint (host / local)
     ///   -patataName &lt;name&gt;                             player name for this process (instead of the saved one)
     ///   -patataBot   -patataBotMove &lt;Stand|Strafe|Jump|RunAcross|Ride|RideFast&gt;
-    ///   -patataScene &lt;name&gt;   -patataQuit &lt;s&gt;   -patataLatency &lt;ms&gt;
+    ///   -patataScene &lt;name&gt;   -patataQuit &lt;s&gt;
+    ///   -patataLatency &lt;ms&gt; -patataJitter &lt;ms&gt; -patataLoss &lt;%&gt; -patataLossInterval &lt;n&gt; -patataSpike &lt;every s:ms&gt;
+    ///   -patataNet &lt;lan|good|wifi|relay|bad|awful|spiky&gt;   network simulator (dev builds; docs/TESTING.md §3)
     ///   -patataCheats                                  start invincible with no explosions (map testing, F8 panel)
     /// </summary>
     [DefaultExecutionOrder(-1000)]
@@ -150,7 +152,7 @@ namespace HotPatata
 
             nm.OnServerStarted += OnServerStarted;
             nm.OnClientDisconnectCallback += OnClientDisconnected;
-            nm.OnClientConnectedCallback += id => PatataLog.Run($"Client {id} connected (local={id == nm.LocalClientId})");
+            nm.OnClientConnectedCallback += OnClientConnected;
             sessions.Ended += reason => { if (!leaving) _ = LeaveAsync(reason); };
 
             ParseCommandLine();
@@ -161,11 +163,45 @@ namespace HotPatata
             if (Instance != this || nm == null) return;
             nm.OnServerStarted -= OnServerStarted;
             nm.OnClientDisconnectCallback -= OnClientDisconnected;
+            nm.OnClientConnectedCallback -= OnClientConnected;
+        }
+
+        void OnClientConnected(ulong id)
+        {
+            bool local = id == nm.LocalClientId;
+            PatataLog.Run($"Client {id} connected (local={local})");
+            if (local == nm.IsServer) return;   // the host's own connection, or another client seen by a client
+            if (!nm.IsServer) NetQuality.Clear();   // a client's session begins (the host clears in OnServerStarted)
+            // The link in use: protocol and the endpoint of the other side (a Relay server online). #117 F11.
+            ulong peer = nm.IsServer ? id : NetworkManager.ServerClientId;
+            NetQuality.Link = $"{transport.Protocol} via {transport.GetEndpoint(peer)}";
+            PatataLog.Run($"Link {NetQuality.Link}");
         }
 
         void ParseCommandLine()
         {
             string[] args = Environment.GetCommandLineArgs();
+            var sim = new NetSimSettings { JitterMs = -1 };
+            for (int i = 0; i < args.Length; i++)
+            {
+                switch (args[i])
+                {
+                    case "-patataNet" when i + 1 < args.Length:
+                        if (NetSimSettings.TryPreset(args[i + 1], out var preset)) sim = preset;
+                        else PatataLog.Run($"Unknown -patataNet preset '{args[i + 1]}' (lan, good, wifi, relay, bad, awful, spiky)");
+                        break;
+                    case "-patataLatency" when i + 1 < args.Length && int.TryParse(args[i + 1], out int ms): sim.DelayMs = ms; break;
+                    case "-patataJitter" when i + 1 < args.Length && int.TryParse(args[i + 1], out int jitter): sim.JitterMs = jitter; break;
+                    case "-patataLoss" when i + 1 < args.Length && int.TryParse(args[i + 1], out int loss): sim.LossPercent = loss; break;
+                    case "-patataLossInterval" when i + 1 < args.Length && int.TryParse(args[i + 1], out int every): sim.LossInterval = every; break;
+                    case "-patataSpike" when i + 1 < args.Length && TryParseSpike(args[i + 1], out float spikeEvery, out int spikeMs):
+                        sim.SpikeEverySeconds = spikeEvery;
+                        sim.SpikeMs = spikeMs;
+                        break;
+                }
+            }
+            if (sim.Any) SimulateNetwork(sim);
+
             for (int i = 0; i < args.Length; i++)
             {
                 switch (args[i])
@@ -176,7 +212,6 @@ namespace HotPatata
                         PlayerBot.Movement = pattern;
                         break;
                     case "-patataScene" when i + 1 < args.Length: sceneIndex = Mathf.Max(0, Array.IndexOf(gameplayScenes, args[i + 1])); break;
-                    case "-patataLatency" when i + 1 < args.Length && int.TryParse(args[i + 1], out int ms): SimulateLatency(ms); break;
                     case "-patataAutoStart" when i + 1 < args.Length && int.TryParse(args[i + 1], out int n): autoStartPlayers = n; break;
                     case "-patataName" when i + 1 < args.Length: PlayerNames.OverrideForThisProcess(args[i + 1]); break;
                     case "-patataCheckpoint" when i + 1 < args.Length && int.TryParse(args[i + 1], out int cp): RunOptions.StartCheckpoint = Mathf.Max(0, cp); break;
@@ -194,12 +229,24 @@ namespace HotPatata
             }
         }
 
+        /// <summary>"20:500" = a 500 ms lag spike every 20 s.</summary>
+        static bool TryParseSpike(string text, out float everySeconds, out int ms)
+        {
+            everySeconds = 0f;
+            ms = 0;
+            string[] parts = text.Split(':');
+            return parts.Length == 2 &&
+                   float.TryParse(parts[0], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out everySeconds) &&
+                   int.TryParse(parts[1], out ms) && everySeconds > 0f && ms > 0;
+        }
+
         void Quit() => Application.Quit();
 
         void AutoLeave() => _ = LeaveAsync("left on request");   // automation: the same path as pressing Leave
 
         void Update()
         {
+            NetQuality.SampleFrame();
             if (mode == Mode.InGame && Keys.LeavePressed) _ = LeaveAsync(null);
 
             // Lobby -> in game as soon as the level scene is the active one (host Start, or a client following the host).
@@ -280,6 +327,7 @@ namespace HotPatata
 
         void OnServerStarted()
         {
+            NetQuality.Clear();
             // Direct hosts load the level straight away. Online hosts wait in the lobby until they press Start.
             if (nm.IsServer && directMode) nm.SceneManager.LoadScene(GameplayScene, LoadSceneMode.Single);
         }
@@ -397,11 +445,14 @@ namespace HotPatata
             mode = Mode.Menu;
         }
 
-        /// <summary>Raised when latency simulation is requested; handled by HotPatata.DebugTools (Editor / development builds only).</summary>
-        public static event Action<GameObject, int> LatencyRequested;
+        /// <summary>Raised when network simulation is requested; handled by HotPatata.DebugTools (Editor / development builds only).</summary>
+        public static event Action<GameObject, NetSimSettings> SimulationRequested;
 
-        /// <summary>Debug only: delay every packet this side sends by <paramref name="milliseconds"/>.</summary>
-        public void SimulateLatency(int milliseconds) => LatencyRequested?.Invoke(gameObject, milliseconds);
+        /// <summary>Debug only: delay every packet this side sends by <paramref name="milliseconds"/> (± delay / 5 of jitter).</summary>
+        public void SimulateLatency(int milliseconds) => SimulateNetwork(new NetSimSettings { DelayMs = milliseconds, JitterMs = -1 });
+
+        /// <summary>Debug only: delay, jitter, loss and lag spikes on every packet this side sends (docs/TESTING.md §3).</summary>
+        public void SimulateNetwork(NetSimSettings settings) => SimulationRequested?.Invoke(gameObject, settings);
 
         // ------------------------------------------------------------------ state for the menu view (MenuView, ARCHITECTURE §6.2)
 
