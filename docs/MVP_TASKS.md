@@ -1802,7 +1802,9 @@ stacked PRs: the pieces, the blockout (then the owner's OK), the dressing.
   ragged crests, their game faces kept straight; the hall a round cavern; the beach of the shore; caves opening into each other and
   the ground opened over them (the mine's exit was shut by the gallery's end wall: fixed); forests on the way (walked: ferns, grass,
   moss) and the woods up to it; the height mist thinner;
-- [ ] the windows and fuse tuned in play; freezing the timber left to the owner (the pieces stay editable).
+- [x] every timber piece frozen into elements (owner's ask, 2026-10-17: 93 pieces, 13,786 elements); the exit landing's rail
+  reopened where catwalk 3 comes onto it;
+- [ ] the windows and fuse tuned in play.
 
 ## M20.7 — Playtests (human gates)
 
