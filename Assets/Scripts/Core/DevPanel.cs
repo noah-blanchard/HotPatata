@@ -6,12 +6,13 @@ using UnityEngine.Rendering;
 namespace HotPatata
 {
     /// <summary>
-    /// Development only: the map-testing tools (docs/TESTING.md §2). F8 opens the panel; while it is open, 1–7 use it:
+    /// The map-testing tools (docs/TESTING.md §2), in every build (owner decision, 2026-10-17). F8 opens the panel; while it is
+    /// open, 1–7 use it:
     ///   1 noclip (fly, also F9 at any time)   2 invincible   3 no explosions   4 show kill zones, checkpoints, carriers
     ///   5 previous checkpoint   6 next checkpoint   7 give me the bomb
     /// The cheats themselves live in <see cref="DevCheats"/>. Noclip is the local player's own; the others are rules, so
     /// they act offline or on the host (a client sees them as host-only). A banner says when any cheat is on, panel closed
-    /// or not, so a playtest is never run with one by mistake. Created automatically in the Editor and development builds.
+    /// or not, so a playtest is never run with one by mistake. Created automatically in every build.
     /// </summary>
     public class DevPanel : MonoBehaviour
     {

@@ -126,8 +126,8 @@ not exercise the asset serialization step that rejects `DontSave` font dependenc
 - **Offline only:** F4 turns the idle player into a catch/throw-back bot (`PassPartner`), and F5 cycles its movement.
   `PassSandbox` has a 4 / 8 / 12 / 16 m range lane on its east side.
 - The debug HUD (`DebugHud`) shows run state, resets, checkpoint, time and ping (`NetMode.RttMs`).
-- **F8** opens the map-testing tools (`DevPanel`, `HotPatata.DebugTools`; the flags live in `DevCheats`, which reads
-  false in release builds). While it is open, the number keys use it:
+- **F8** opens the map-testing tools (`DevPanel`, in the game's assembly; the flags live in `DevCheats`), in every build,
+  release included (owner decision, 2026-10-17). While it is open, the number keys use it:
   - **1** noclip (also **F9** at any time): fly where you look, through everything, Space up, Crouch down, Sprint ×3;
   - **2** invincible: a fall into a static kill zone (void, water) sends only that player back to their spawn, moving
     hazards never kill; no team reset;
@@ -138,8 +138,8 @@ not exercise the asset serialization step that rejects `DontSave` font dependenc
   - **7** give me the bomb.
 
   Noclip is the local player's own; the rest are rules, so they act offline or on the host (a client's panel says
-  "host only"). A yellow `DEV CHEATS` banner stays on screen while any cheat is on. `-patataCheats` starts a dev
-  build invincible with no explosions.
+  "host only"). A yellow `DEV CHEATS` banner stays on screen while any cheat is on. `-patataCheats` starts a build
+  invincible with no explosions.
 - **F7** toggles `NetSyncProbe` (netcode plan stage 0, online). It shows:
   - each remote rider's gap to the moving carrier under them, tagged when rebuilt on the carrier, also while they blend
     out after the owner stopped naming it;
@@ -169,7 +169,7 @@ not exercise the asset serialization step that rejects `DontSave` font dependenc
 | `-patataName <name>` | player name for this process instead of the saved one (two instances on one PC share `PlayerPrefs`); bots keep "Player N" without it |
 | `-patataBot` | the local player is a bot (`PlayerBot`) |
 | `-patataBotMove <pattern>` | the bot's movement: `Stand`, `Strafe`, `Jump`, `RunAcross`, `Ride` (hops onto the nearest moving platform that is not a crusher, after each reset, and stays on it) or `RideFast` (the same onto the fastest-rising carrier of the scene, #97) |
-| `-patataCheats` | dev builds: start invincible with no explosions (map testing; the F8 panel, §2) |
+| `-patataCheats` | start invincible with no explosions (map testing; the F8 panel, §2), any build |
 | `-patataLatency <ms>` | Network Simulator latency (Editor / dev builds only) |
 | `-patataQuit <s>` / `-patataLeaveAfter <s>` | quit / leave the session after s seconds |
 
