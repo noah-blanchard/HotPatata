@@ -83,6 +83,11 @@ namespace HotPatata.Editor
         [MenuItem(Forest + "Rope Net (body screen)", priority = Looks + 7)] static void Net() => Place(ForestKitBuilder.Net, "Rope net");
         [MenuItem(Forest + "Embers (hot zone)", priority = Looks + 8)] static void Embers() => Place(ForestKitBuilder.Embers, "Embers");
         [MenuItem(Forest + "Sparks (laser curtain)", priority = Looks + 9)] static void Sparks() => Place(ForestKitBuilder.Sparks, "Sparks");
+        [MenuItem(Forest + "Palisade Gate (door)", priority = Looks + 10)] static void ForestGate() => Place(ForestKitBuilder.Gate, "Palisade gate");
+        [MenuItem(Forest + "Gangway (bridge)", priority = Looks + 11)] static void ForestGangway() => Place(ForestKitBuilder.Gangway, "Gangway", 3f);
+        [MenuItem(Forest + "Log Raft (moving platform)", priority = Looks + 12)] static void ForestRaft() => Place(ForestKitBuilder.Raft, "Log raft", 1f);
+        [MenuItem(Forest + "Rotten Planks (falling platform)", priority = Looks + 13)] static void ForestRotten() => Place(ForestKitBuilder.RottenPlank, "Rotten planks", 1f);
+        [MenuItem(Forest + "Swinging Log (sweeper)", priority = Looks + 14)] static void ForestLog() => Place(ForestKitBuilder.SwingingLog, "Swinging log");
 
         // ------------------------------------------------------------------ placing
 

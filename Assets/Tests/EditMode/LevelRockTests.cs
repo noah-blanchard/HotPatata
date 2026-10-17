@@ -183,5 +183,88 @@ namespace HotPatata.Tests
             Assert.That(drawn.All(b => b.min.y > Origin.y - 0.05f && b.max.y < Origin.y + 0.4f), "the track does not lie on the ground");
             Assert.IsEmpty(track.Output.GetComponentsInChildren<Collider>(), "a track is decoration");
         }
+            [Test]
+        public void Caves_OpenIntoEachOther_EvenThroughADeadEnd()
+        {
+            var hall = Piece<RockShellShape>("Hall", Vector3.zero);
+            hall.Kind = RockShellKind.Cavern;
+            hall.Height = 7f;
+            hall.Floor = true;
+            hall.Points.Clear();
+            hall.Points.AddRange(DeckShapes.Oval(20f, 20f, 16));
+            // a tunnel from inside the hall out through its wall, on into a dead-end gallery it leaves through the end wall
+            var tunnel = Piece<RockShellShape>("Tunnel", new Vector3(0f, 0f, 5f));
+            tunnel.Points.Clear();
+            tunnel.Points.AddRange(new[] { Vector3.zero, new Vector3(0f, 0f, 45f) });
+            tunnel.Width = 5f;
+            tunnel.Height = 4f;
+            tunnel.Floor = true;
+            var gallery = Piece<RockShellShape>("Gallery", new Vector3(0f, 0f, 20f));
+            gallery.Points.Clear();
+            gallery.Points.AddRange(new[] { new Vector3(0f, 0f, 0f), new Vector3(0f, 0f, 15f) });
+            gallery.Width = 12f;
+            gallery.Height = 8f;
+            gallery.CloseEnd = true;
+            LevelPieceBuilder.Rebuild(new LevelPiece[] { hall, tunnel, gallery });
+            Physics.SyncTransforms();
+            Assert.IsFalse(Hit(Origin + new Vector3(0f, 1.5f, 0f), Vector3.forward, 49f, out var hit),
+                           $"the way from the hall through the tunnel is shut by {hit.collider?.name} at {hit.point - Origin}");
+            Assert.IsTrue(Hit(Origin + new Vector3(4f, 6f, 30f), Vector3.forward, 12f, out _), "the gallery's dead end is open beside the tunnel");
+        }
+
+        [Test]
+        public void Cliff_OpensWhereATunnelPassesThrough_AndItsCrestOnlyRises()
+        {
+            var cliff = Piece<CliffShape>("Cliff", Vector3.zero);
+            cliff.Outline.Clear();
+            cliff.Outline.AddRange(DeckShapes.Rectangle(16f, 10f));
+            cliff.Height = 8f;
+            cliff.Crest = 4f;
+            var tunnel = Piece<RockShellShape>("Tunnel", new Vector3(0f, 0f, -10f));
+            tunnel.Points.Clear();
+            tunnel.Points.AddRange(new[] { Vector3.zero, new Vector3(0f, 0f, 20f) });
+            tunnel.Width = 4f;
+            tunnel.Height = 4f;
+            tunnel.Floor = true;
+            LevelPieceBuilder.Rebuild(new LevelPiece[] { tunnel, cliff });
+            Physics.SyncTransforms();
+            Assert.IsFalse(Hit(Origin + new Vector3(0f, 1.5f, -12f), Vector3.forward, 24f, out var hit), $"the cliff shuts the tunnel at {hit.point - Origin}");
+            Assert.IsTrue(Hit(Origin + new Vector3(-5f, 1.5f, -12f), Vector3.forward, 24f, out _), "the cliff does not stand beside the tunnel");
+            foreach (var x in new[] { -7.5f, -4f, 4f, 7.5f })
+                Assert.IsTrue(Hit(Origin + new Vector3(x, 30f, 0f), Vector3.down, 40f, out var top) && top.point.y >= Origin.y + cliff.Height - 0.05f,
+                              $"the crest sinks under the cliff's height at x {x}");
+        }
+
+        [Test]
+        public void Ground_OpensOnlyInTheClearSpaceOfACaveWithItsOwnFloor()
+        {
+            var data = new TerrainData { heightmapResolution = 65, size = new Vector3(64f, 20f, 64f) };
+            var go = Terrain.CreateTerrainGameObject(data);
+            go.transform.position = Origin + new Vector3(-32f, 0f, -32f);
+            var terrain = go.GetComponent<Terrain>();
+            var heights = new float[65, 65];
+            for (int z = 0; z < 65; z++)
+                for (int x = 0; x < 65; x++) heights[z, x] = 3f / 20f;   // the ground 3 m up: inside a 6 m tunnel on the piece's floor
+            data.SetHeights(0, 0, heights);
+            var floored = Piece<RockShellShape>("Floored", new Vector3(-10f, 0f, -20f));
+            floored.Points.Clear();
+            floored.Points.AddRange(new[] { Vector3.zero, new Vector3(0f, 0f, 40f) });
+            floored.Height = 6f;
+            floored.Floor = true;
+            var onTheGround = Piece<RockShellShape>("On the ground", new Vector3(12f, 0f, -20f));
+            onTheGround.Points.Clear();
+            onTheGround.Points.AddRange(new[] { Vector3.zero, new Vector3(0f, 0f, 40f) });
+            onTheGround.Height = 6f;
+            Assert.Greater(LevelTerrain.CutCaves(scene), 0);
+            bool Solid(Vector3 offset)
+            {
+                var local = Origin + offset - go.transform.position;
+                int res = data.holesResolution;
+                return data.GetHoles(Mathf.FloorToInt(local.x / data.size.x * res), Mathf.FloorToInt(local.z / data.size.z * res), 1, 1)[0, 0];
+            }
+            Assert.IsFalse(Solid(new Vector3(-10f, 0f, 0f)), "the ground stands in the floored tunnel");
+            Assert.IsTrue(Solid(new Vector3(12f, 0f, 0f)), "a cave on the ground lost its floor");
+            Assert.IsTrue(Solid(new Vector3(0f, 0f, 0f)), "the ground opened outside the caves");
+        }
     }
 }

@@ -22,8 +22,9 @@ throwing a live bomb between them.
     older `PrototypeCourse`, `PlaytestCourse`, `PatataPark`, `PatataWorks`, `IndustrialLab`) is described obstacle by obstacle
     in `docs/MAP_ARCHIVE.md`; the scenes and their builders are kept on the branch `archive/maps-v1` (§9 there: bringing one back).
 - **Code:** all gameplay code is in `Assets/Scripts/HotPatata.asmdef` (namespace `HotPatata`).
-  - Dev-only code is in `HotPatata.DebugTools`. Map-testing cheats (noclip, invincible, no explosions: the F8 panel) read
-    `DevCheats`, which is always false in release builds (docs/TESTING.md §2); gameplay code only ever reads it.
+  - Dev-only code is in `HotPatata.DebugTools`. Map-testing cheats (noclip, invincible, no explosions: the F8 panel,
+    `DevPanel`) read `DevCheats` and ship in every build, release included (owner decision, 2026-10-17; docs/TESTING.md §2);
+    gameplay code only ever reads it.
   - Editor tools are in `Assets/EditorTools`.
 
 **Status:** M0–M5 and M9 are done. Open human gates:

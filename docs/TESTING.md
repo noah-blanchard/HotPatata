@@ -58,7 +58,7 @@
 | `LevelNatureTests` | EditMode | M18.2 authored levels' nature: a giant tree collides on Environment, is a trunk a deck leans on and is sawn round the deck that wraps it (raising the deck re-saws it); water has its kill zone under its surface, turned with it; a forest keeps off a walkway and a pond, replants when the path moves, and is written as Foliage.asset on save; valley walls rise at the terrain's edge only and the safety net stays under it; a mist zone raises the mist to its top and blends out |
 | `LevelGameTests` | EditMode | M18.3a authored levels' game tools: walking distances follow a stair to a deck rather than the straight line, a contract's section is its checkpoint's (the start's under the level; a level for three asks why two fail), the wiring says what drives and how long it holds, a resized door and plate read back their size, the walk probe finds a post in a walkway; a checkpoint's campfire stands 3 to 6 m beside it on its own deck (not off its edge),
 inside its zone, and the zone follows the fire when it is moved; Verify finds a spawn in a rail or in the air |
-| `LevelLookTests` | EditMode | M18.3b: the ten forest looks are Prefab Variants of their kit prefab that keep the obstacle contract and the kit's colliders, with a renderers-only `CustomVisual` (the chute: its pipe in wood); the props are decoration drawn in the nature look until made solid; a scanned ruin stands at its real height; Solid fits a box on Environment round a prop and takes it away; the workbench and the woodpile are solid |
+| `LevelLookTests` | EditMode | M18.3b: the fifteen forest looks are Prefab Variants of their kit prefab that keep the obstacle contract and the kit's colliders, with a renderers-only `CustomVisual` (the chute: its pipe in wood); the props are decoration drawn in the nature look until made solid; a scanned ruin stands at its real height; Solid fits a box on Environment round a prop and takes it away; the workbench and the woodpile are solid |
 | `LevelRockTests` | EditMode | M20 rock, mine and lane pieces (ARCHITECTURE §27.2): a tunnel is solid rock with a ceiling and its clear space, a skylight is a hole and a dead end is closed; a cavern domes over its outline over its floor; a cliff's top and shelves are walked on and its faces stop a body; mine frames stand on the rock under them, their posts solid, and freeze with their lanterns; lane markers paint their glyph; a track lies on the ground, no collider |
 | `LongClimbTests` | EditMode | M20 The Long Climb (PROJECT_SPEC §15g): Verify Level reports no error; every section's locks hold (seven contracts); six checkpoints in order with the fuse curve and one finish; exactly two players and first in the menu; every actuator worked by a source of its own; each split marked for both lanes; nothing it draws lost its mesh |
 | `AuthoredLevelTests` | PlayMode | every scene of `Assets/Scenes/Levels` (one fixture each, none until there is a level): a run, a bomb and one finish; the route runner (`RouteRunner`) walks every walkway, stair and bridge |
@@ -126,8 +126,8 @@ not exercise the asset serialization step that rejects `DontSave` font dependenc
 - **Offline only:** F4 turns the idle player into a catch/throw-back bot (`PassPartner`), and F5 cycles its movement.
   `PassSandbox` has a 4 / 8 / 12 / 16 m range lane on its east side.
 - The debug HUD (`DebugHud`) shows run state, resets, checkpoint, time and ping (`NetMode.RttMs`).
-- **F8** opens the map-testing tools (`DevPanel`, `HotPatata.DebugTools`; the flags live in `DevCheats`, which reads
-  false in release builds). While it is open, the number keys use it:
+- **F8** opens the map-testing tools (`DevPanel`, in the game's assembly; the flags live in `DevCheats`), in every build,
+  release included (owner decision, 2026-10-17). While it is open, the number keys use it:
   - **1** noclip (also **F9** at any time): fly where you look, through everything, Space up, Crouch down, Sprint ×3;
   - **2** invincible: a fall into a static kill zone (void, water) sends only that player back to their spawn, moving
     hazards never kill; no team reset;
@@ -138,8 +138,8 @@ not exercise the asset serialization step that rejects `DontSave` font dependenc
   - **7** give me the bomb.
 
   Noclip is the local player's own; the rest are rules, so they act offline or on the host (a client's panel says
-  "host only"). A yellow `DEV CHEATS` banner stays on screen while any cheat is on. `-patataCheats` starts a dev
-  build invincible with no explosions.
+  "host only"). A yellow `DEV CHEATS` banner stays on screen while any cheat is on. `-patataCheats` starts a build
+  invincible with no explosions.
 - **F7** toggles `NetSyncProbe` (netcode plan stage 0, online). It shows:
   - each remote rider's gap to the moving carrier under them, tagged when rebuilt on the carrier, also while they blend
     out after the owner stopped naming it;
@@ -169,7 +169,7 @@ not exercise the asset serialization step that rejects `DontSave` font dependenc
 | `-patataName <name>` | player name for this process instead of the saved one (two instances on one PC share `PlayerPrefs`); bots keep "Player N" without it |
 | `-patataBot` | the local player is a bot (`PlayerBot`) |
 | `-patataBotMove <pattern>` | the bot's movement: `Stand`, `Strafe`, `Jump`, `RunAcross`, `Ride` (hops onto the nearest moving platform that is not a crusher, after each reset, and stays on it) or `RideFast` (the same onto the fastest-rising carrier of the scene, #97) |
-| `-patataCheats` | dev builds: start invincible with no explosions (map testing; the F8 panel, §2) |
+| `-patataCheats` | start invincible with no explosions (map testing; the F8 panel, §2), any build |
 | `-patataLatency <ms>` | Network Simulator latency (Editor / dev builds only) |
 | `-patataQuit <s>` / `-patataLeaveAfter <s>` | quit / leave the session after s seconds |
 

@@ -52,6 +52,9 @@ used.)
   turn the piece to turn its flow) with a kill zone under it down to its depth: falling in, or throwing the bomb into it,
   fails the section. Dig the ground under it first.
 - The safety net follows the terrain on every save (always under its lowest point).
+- **The ground opens over a cave** on every save: where the terrain would stand in the clear space of a cave that has its own
+  **Floor** (a tunnel's mouth in a hillside, a gallery under a hill), it is cut out. Raise a hill over a cave freely; put rock over
+  its mouth (a cliff as a lintel) where the slope crosses it, the hole's edge is square.
 
 After reshaping the ground under timber: `HotPatata/Level/Rebuild All Pieces` (the posts find the new ground).
 
@@ -129,6 +132,8 @@ Two ways, together:
   far it keeps from the paths. Nothing grows on a walkway, a bridge, a deck, a pass arc, on water, on rock too steep, or
   too near a giant tree, and it replants by itself when a piece near it changes (**Replant now** forces it). Nothing in it
   collides: it is decoration.
+- **On the way**: tick **Walked** on a Forest Area the team walks across (a clearing, a trail, a gorge's floor): only what a player
+  walks through grows there (ferns, grass, moss, low bushes), never a tree, a rock or a log. Keep the woods' outlines off the way.
 - **Painted**, one by one: select the terrain, **Paint Trees** (pines, firs, broadleaves, snags, bushes) and **Paint
   Details** (ferns, grass). If the terrain has none, **Set up the forest brushes** on the `Level` object. Then **Clear
   painted paths** takes off what was painted on a path, in a solid, on water or on a pass arc.
@@ -243,6 +248,11 @@ zone's colour, an hourglass's sand, a curtain's field), drawn for the forest.
 | Net | body screen | a rope net between two log posts |
 | Embers | hot zone | charred logs and coals on its floor, sparks rising; its colour stays |
 | Sparks | laser curtain | a timber frame with an iron rail, sparks streaming down; its field stays |
+| Palisade gate | door | sharpened logs side by side, two cross beams and iron straps; its lethal lower edge stays |
+| Gangway | bridge (slides out) | planks on two stringers with iron straps |
+| Log raft | moving platform | logs lashed side by side under two cross poles |
+| Rotten planks | falling platform | grey planks with gaps and a broken one, on two stringers |
+| Swinging log | sweeper | a trunk with iron bands on an iron hub; its lethal reach stays the bar's |
 
 Size them with the same handles (§10). `HotPatata/Kit/Build Forest Looks` rebuilds them from their builder; never edit
 them by hand.
@@ -354,8 +364,10 @@ and tower a structure of elements. The library's booths, gantries, pulleys and s
   beam fits under one.
 - Its walls and roof stop players and the bomb, and **its roof is a ceiling**: nothing is lobbed over it (a Lob lock holds under
   it), and a pass drawn under it is reported.
-- A tunnel's mouth can open inside a cavern's wall: their rocks overlap, the way is clear.
+- No rock is drawn in another cave's clear space: a tunnel's mouth opens in a cavern's wall, through a gallery's dead end or a
+  cliff's face; overlap them and the way is clear. Moved one? **Rebuild All Pieces** (the others are cut again).
 - Dress it with the props (§15): the rock formations, roots, mushrooms, the calcite druse, lanterns.
+- No height mist fills a cave from the ground above it: under its footprint, the mist lies on the cave's own floor.
 
 ## 21. Cliffs
 
@@ -363,7 +375,10 @@ and tower a structure of elements. The library's booths, gantries, pulleys and s
 piece's height up **Height** (the white handle on top). Each **Ledge** steps its face back by its inset at its height: a shelf one
 walks on. Its top is walked on too; timber stands on it (a deck's posts find it).
 
-- **Rock**: granite (grey, lichen), sandstone (layered) or mossy. **Batter** leans its faces back; **Sink** buries its foot.
+- **Rock**: granite (grey, lichen), sandstone (layered) or mossy. **Batter** leans its faces back; **Sink** buries its foot;
+  **Crest** raises its top edge in a ragged skyline (only ever higher, so a lock holds; keep 0 for a top that is walked on).
+- For a natural face, draw an irregular outline (many dots), bury its back in a hill, and overlap two or three cliffs of different
+  rocks and crests rather than one long block.
 - The inspector lists its faces from the foot: a face under 3.4 m is climbed by a jump and a mantle. To stop a climb, keep it
   5 m and declare the Climb lock in the section's contract (§10).
 - A spine between two lanes is a long thin cliff; a wall round a hollow is a ring of them.
