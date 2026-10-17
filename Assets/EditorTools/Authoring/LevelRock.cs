@@ -120,6 +120,37 @@ namespace HotPatata.Editor
 
         // ------------------------------------------------------------------ caves
 
+        /// <summary>A point's floor inside a cave's footprint (its walls included), or false outside it: the mist's ground under the earth.</summary>
+        public delegate bool FloorUnder(Vector2 point, out float floor);
+
+        /// <summary>The footprint of <paramref name="shell"/> on the flat, and its floor there.</summary>
+        public static FloorUnder Footprint(RockShellShape shell)
+        {
+            var world = shell.WorldPoints();
+            if (world.Count < 2) return (Vector2 _, out float f) => { f = 0f; return false; };
+            if (shell.Kind == RockShellKind.Cavern)
+            {
+                var poly = world.Select(w => new Vector2(w.x, w.z)).ToList();
+                float y = shell.transform.position.y, margin = shell.Thickness + shell.Roughness;
+                return (Vector2 p, out float f) => { f = y; return Poly2.Contains(poly, p) || Poly2.DistanceToEdge(poly, p) < margin; };
+            }
+            var line = Curves.Resample(Curves.Spline(world, Step * 0.5f), Step);
+            float reach = shell.Width * 0.5f + shell.Thickness + shell.Roughness;
+            return (Vector2 p, out float f) =>
+            {
+                f = 0f;
+                float best = float.MaxValue;
+                for (int i = 0; i < line.Count - 1; i++)
+                {
+                    Vector2 a = new Vector2(line[i].x, line[i].z), b = new Vector2(line[i + 1].x, line[i + 1].z), ab = b - a;
+                    float t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / Mathf.Max(1e-6f, ab.sqrMagnitude));
+                    float d = Vector2.Distance(p, a + ab * t);
+                    if (d < best) { best = d; f = Mathf.Lerp(line[i].y, line[i + 1].y, t); }
+                }
+                return best < reach;
+            };
+        }
+
         public static void BuildShell(RockShellShape shell, Transform root, string name)
         {
             if (shell.Kind == RockShellKind.Cavern) BuildCavern(shell, root, name);

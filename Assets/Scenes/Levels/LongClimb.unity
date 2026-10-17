@@ -42933,7 +42933,7 @@ MonoBehaviour:
   minPlayers: 2
   maxPlayers: 2
   day: 3
-  mistDensity: 1.15
+  mistDensity: 0.85
   mistDepth: 2.5
   defaultAmbience: Forest
   sectionAmbience:
@@ -180267,7 +180267,7 @@ MonoBehaviour:
   floor: {fileID: 2800000, guid: 89a53342a9cb6a54598c911b652062ba, type: 2}
   rect: {x: -480, y: -60, z: 960, w: 960}
   maxOpacity: 0.93
-  densityScale: 1.15
+  densityScale: 0.85
   color: {r: 0.66, g: 0.72, b: 0.78, a: 1}
   density: 0.055
   falloff: 12
@@ -181183,6 +181183,12 @@ MonoBehaviour:
   - {fileID: 11400000, guid: dcb189c08e7f78147a9e4592bffe61e8, type: 2}
   checkpointTimes:
   - 0
+  - 0.6666667
+  - 1.3333334
+  - 2
+  - 2.6666667
+  - 3.3333333
+  - 4
   sun: {fileID: 1010645918}
   grades:
   - {fileID: 1229439881}

@@ -237,9 +237,13 @@ namespace HotPatata.Editor
             var terrain = Terrains(scene).FirstOrDefault();
             if (terrain == null || string.IsNullOrEmpty(scene.path)) return false;
             var zones = scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<MistZone>(true)).ToList();
+            var caves = scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<RockShellShape>(true)).Select(LevelRock.Footprint).ToList();
             float Floor(float x, float z)
             {
                 float h = terrain.SampleHeight(new Vector3(x, 0f, z)) + terrain.transform.position.y - settings.MistDepth;
+                // under the ground, a cave's own floor is its ground: no mist fills it from the terrain above
+                foreach (var cave in caves)
+                    if (cave(new Vector2(x, z), out float caveFloor)) h = Mathf.Min(h, caveFloor - settings.MistDepth);
                 foreach (var zone in zones)
                 {
                     float w = zone.Weight(x, z, out float top);
