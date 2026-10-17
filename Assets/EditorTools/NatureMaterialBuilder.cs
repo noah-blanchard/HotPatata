@@ -37,6 +37,7 @@ namespace HotPatata.Editor
             public float topCoverage;
             public bool foliage;                // cut-out, both faces, wind, light through
             public float wind;
+            public bool underground;            // a cave's rock: no sky reflected in it, no rim light
         }
 
         static Surface Ground(string name, string folder, float tile, float brightness = 1f, Color? tint = null) =>
@@ -46,6 +47,14 @@ namespace HotPatata.Editor
         static Surface Rock(string name, string folder, float tile, string top, float coverage, float brightness = 1f, Color? tint = null) =>
             new Surface { name = name, folder = folder, mapping = Mapping.Triplanar, tile = tile, smoothMax = 0.45f, brightness = brightness, saturation = 1f,
                           variation = 0.16f, macro = 0.4f, tint = tint ?? Color.white, antiTile = true, top = top, topCoverage = coverage };
+
+        /// <summary>A surface seen only underground: dull (it reflects no sky).</summary>
+        static Surface Underground(Surface s)
+        {
+            s.underground = true;
+            s.smoothMax = 0.2f;
+            return s;
+        }
 
         static Surface Wood(string name, string folder, float tile, float brightness = 1f, Color? tint = null, bool antiTile = false) =>
             new Surface { name = name, folder = folder, mapping = Mapping.UV, tile = tile, smoothMax = 0.4f, brightness = brightness, saturation = 1f,
@@ -84,7 +93,7 @@ namespace HotPatata.Editor
             Rock("Nature_RockFace", "RockFace", 4f, "ForestLeaves", 0.25f),
             Rock("Nature_Cliff", "Cliff", 6f, "Grass", 0.35f),
             Rock("Nature_RockWall", "RockWall", 3f, null, 0f),
-            Rock("Nature_CaveRock", "CaveRock", 4f, null, 0f, 0.85f),
+            Underground(Rock("Nature_CaveRock", "CaveRock", 4f, null, 0f, 0.85f)),
             Rock("Nature_Granite", "Granite", 5f, "Grass", 0.3f),
             Rock("Nature_RocksGround", "RocksGround", 2.5f, null, 0f),
             Rock("Nature_StoneWall", "StoneWall", 2.5f, null, 0f),
@@ -359,6 +368,11 @@ namespace HotPatata.Editor
             mat.SetFloat("_MacroStrength", surface.macro);
             Keyword(mat, "_Triplanar", "_MAPPING_TRIPLANAR", surface.mapping == Mapping.Triplanar);
             Keyword(mat, "_AntiTile", "_ANTITILE", surface.antiTile);
+            if (surface.underground)
+            {
+                mat.SetFloat("_EnvReflection", 0.15f);
+                mat.SetFloat("_RimStrength", 0f);
+            }
 
             Texture2D topColor = null, topNormal = null;
             bool top = surface.top != null && FindTop(surface.top, out topColor, out topNormal);

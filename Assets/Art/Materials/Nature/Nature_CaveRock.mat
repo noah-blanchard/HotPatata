@@ -65,15 +65,15 @@ Material:
     - _BumpScale: 1
     - _Cull: 2
     - _Cutoff: 0.45
-    - _EnvReflection: 1
+    - _EnvReflection: 0.15
     - _FadeEnd: 0
     - _FadeStart: 0
     - _MacroScale: 0.13
     - _MacroStrength: 0.4
     - _OcclusionStrength: 1
     - _RimPower: 3.5
-    - _RimStrength: 0.08
-    - _SmoothnessMax: 0.45
+    - _RimStrength: 0
+    - _SmoothnessMax: 0.2
     - _SmoothnessMin: 0.02
     - _StripeScale: 0.45
     - _StripeStrength: 0
