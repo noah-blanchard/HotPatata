@@ -204,9 +204,12 @@ namespace HotPatata.Editor
             };
             tile.Add(star);
 
+            // a press on this tile: a tool runs on its release here, a drag starts once the mouse has moved off it a little
+            Vector2? pressedAt = null;
             tile.RegisterCallback<MouseDownEvent>(e =>
             {
                 if (e.button != 0) return;
+                pressedAt = e.mousePosition;
                 if (entry.Kind == PaletteKind.Tool) return;
                 if (e.clickCount == 2)
                 {
@@ -217,15 +220,19 @@ namespace HotPatata.Editor
                 }
                 if (PalettePlacer.Armed == entry) PalettePlacer.Disarm();
                 else PalettePlacer.Arm(entry, LookOf(entry));
-                RefreshGrid();
+                foreach (var other in grid.Query(className: "pal-tile--armed").ToList()) other.RemoveFromClassList("pal-tile--armed");
+                if (PalettePlacer.Armed == entry) tile.AddToClassList("pal-tile--armed");
             });
             tile.RegisterCallback<MouseUpEvent>(e =>
             {
-                if (e.button == 0 && e.clickCount == 1 && entry.Kind == PaletteKind.Tool) entry.Look(null).Create(PlaceContext.FromView());
+                bool full = pressedAt.HasValue && e.button == 0;
+                pressedAt = null;
+                if (full && entry.Kind == PaletteKind.Tool) entry.Look(null).Create(PlaceContext.FromView());
             });
-            tile.RegisterCallback<MouseMoveEvent>(e =>
+            tile.RegisterCallback<MouseLeaveEvent>(_ =>
             {
-                if ((e.pressedButtons & 1) == 0 || entry.Kind == PaletteKind.Tool) return;
+                if (!pressedAt.HasValue || entry.Kind == PaletteKind.Tool) return;
+                pressedAt = null;
                 DragAndDrop.PrepareStartDrag();
                 DragAndDrop.SetGenericData(PalettePlacer.DragKey, entry.Id + "|" + LookOf(entry));
                 DragAndDrop.objectReferences = new Object[0];

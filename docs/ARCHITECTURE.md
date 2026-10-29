@@ -2388,3 +2388,45 @@ made from it (#125).
 
 Tests: `LevelPaletteTests` (the 80 old menu items are entries and create what they did in their group, at the same offsets; menus
 and catalogue one to one; burst off walks and water, Shift erase; favourites and recent; a walkway on a deck's edge attaches).
+
+### 27.4 Ground (M21, L1)
+
+The layered ground of an authored level: eight layers in the terrain's splat, baked from rules and painted by hand (#125).
+
+- **Layers.** `GroundLayerBuilder` (menu **HotPatata/Look/Build Ground Layers**) makes two `Texture2DArray`s from the Poly Haven
+  folders (`Assets/Art/Generated/Ground/`, LFS: albedo with the height map in A; normal XY, occlusion and roughness), 1024² BC7
+  with mips; the eight `TerrainLayer`s in their fixed order (`Assets/Art/Materials/Ground/Layer_*.terrainlayer`: the Paint
+  Texture brushes show their names and pictures; the shader ignores their textures); and the material `Nature_Ground`.
+- **The shader.** `HotPatata/NatureGround` (`HotPatataNatureGround.shader`) reads the two control maps that `GroundSplat` (runtime,
+  presentation: it reads the terrain and never writes it) binds through the terrain's splat property block (`_HP_Control0/1`),
+  takes the two strongest layers less the third's weight (so the switch to another pair is continuous), height-blends them
+  (`_BlendDepth`, `_HeightContrast`), maps the flat layers from above with a second turned sample for anti-tiling and the steep
+  ones (scree, rock) triplanar, in world metres per layer (`_LayerTile0/1`, `_LayerBright0/1`), adds moss on north faces, clips
+  the terrain's holes, and lights like `HotPatata/Nature` before `HP_MixFog`. Four passes: forward, shadow, depth, depth-normals.
+- **Which ground.** `LevelSettings.Ground`: `Valley` (the field's default: levels made before M21 keep `Nature_ValleyGround`)
+  or `Layered` (New Level's choice). `LevelTerrain.ApplyLook` draws the terrain in its level's ground; `MakeLayered` gives it the
+  eight layers in order (what it showed on the first), an alphamap as fine as its heightmap (at most 2048) and a `GroundSplat`.
+- **Rules.** `GroundRules` (`Assets/Settings/Look/GroundRules.asset`, art settings): per layer a base score plus bands of slope
+  and height, hollows and ridges (the ground under the mean of its neighbours within `curvatureRadius`), under water, near water,
+  near a walk line on the ground (`LevelPieceOutput.WalkLine` within `walkLineReach` of the ground), near rock (cliff outlines, cave
+  footprints at ground level), north faces and the layer's own noise; weights are the scores to the power `sharpness`,
+  normalised. Distances are a chamfer distance field over the alphamap grid (`GroundField`). Later pieces add to the measures
+  through `GroundBaker.Sources` (trails, rivers, cliffs' feet).
+- **Bake and paint.** `GroundBaker.Bake` writes the rules' weights into the alphamaps except on painted texels. It keeps the last
+  automatic weights (`GroundAuto.asset`, eight bytes a texel, deflated) and the painted mask (`GroundPainted.asset`) beside the
+  terrain data; a texel whose weights differ from the last bake's by more than `PaintedEpsilon` (or, before any bake, from the
+  first layer alone) is painted and kept. `ResetPainted` un-paints a disc and draws it with the last automatic weights; the
+  editor's overlay (`GroundSplat.ShowPainted`) tints painted texels. The bake runs from its button and menu, and on save when the
+  level opts in (`LevelSettings.BakeGroundOnSave`, off by default: owner decision).
+- **Size.** `TerrainResample.Resolution`: the size over 1 m (Normal) or 0.5 m (Fine), rounded up to 2^n+1 (at most 4097);
+  `MemoryMb` (heights, two splat maps, holes) is warned over 128 MB. New Level offers 256 / 512 / 1024 / 1536 m and the fineness.
+  `TerrainResample.Resample` keeps the centre, resamples the heights with Catmull-Rom (exact at the old samples), the splat
+  bilinearly then renormalised, the painted and automatic maps by nearest texel, keeps trees and detail cells at their world
+  positions, cuts the holes again (`CutCaves`) and bakes the mist; one undo group, and a backup copy of the old terrain data until
+  the next save. `LevelScenes.TerrainSize` and `TerrainResolution` are only New Level's defaults.
+- **Terrain Tools** (`com.unity.terrain-tools` 5.3.3, owner decision like Cinemachine's): its brushes sculpt and paint in the
+  Editor; no code calls into it, nothing ships from it.
+
+Tests: `LevelGroundTests` (the layers in order and the material; the shader's passes and fog; the bake: rock on a 60° bank,
+riverbed and mud at a pond, litter in a dry hollow, trail on a walk line; paint kept by a re-bake, Reset Painted; resample to Fine
+exact at the old samples, trees and details kept, Undo; the resolutions).

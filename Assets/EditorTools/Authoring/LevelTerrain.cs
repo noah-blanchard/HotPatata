@@ -42,17 +42,51 @@ namespace HotPatata.Editor
 
         // ------------------------------------------------------------------ look
 
-        /// <summary>Draws <paramref name="terrain"/> in the nature look (one shader path: no instancing, no base map).</summary>
+        /// <summary>
+        /// Draws <paramref name="terrain"/> in its level's ground (<see cref="LevelSettings.Ground"/>): the valley ground, or the layered ground
+        /// (<see cref="MakeLayered"/>). One shader path either way: no instancing, no base map.
+        /// </summary>
         public static void ApplyLook(Terrain terrain)
         {
+            var settings = LevelScenes.SettingsOf(terrain.gameObject.scene);
+            bool layered = settings != null && settings.Ground == GroundLook.Layered;
+            if (layered) MakeLayered(terrain);
             Undo.RecordObject(terrain, "Terrain look");
-            terrain.materialTemplate = NatureMaterialBuilder.Load(GroundMaterial);
+            terrain.materialTemplate = layered ? GroundLayerBuilder.Material() : NatureMaterialBuilder.Load(GroundMaterial);
+            var splat = terrain.GetComponent<GroundSplat>();
+            if (!layered && splat != null) Undo.DestroyObjectImmediate(splat);
             terrain.drawInstanced = false;
             terrain.basemapDistance = 20000f;
             terrain.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
             terrain.gameObject.layer = CourseKit.Layer("Environment");
             EditorUtility.SetDirty(terrain);
         }
+
+        /// <summary>
+        /// Gives <paramref name="terrain"/> the layered ground's eight layers in order (what it showed stays on the first, the leaf litter),
+        /// an alphamap as fine as its heightmap (at most 2048) and a <see cref="GroundSplat"/> to bind them.
+        /// </summary>
+        public static void MakeLayered(Terrain terrain)
+        {
+            var data = terrain.terrainData;
+            if (!GroundBaker.IsLayered(terrain))
+            {
+                Undo.RegisterCompleteObjectUndo(data, "Layered ground");
+                int res = AlphamapResolutionFor(data.heightmapResolution);
+                if (data.alphamapResolution != res) data.alphamapResolution = res;
+                data.terrainLayers = GroundLayerBuilder.TerrainLayers();
+                var maps = new float[res, res, GroundBaker.Layers];
+                for (int z = 0; z < res; z++)
+                    for (int x = 0; x < res; x++) maps[z, x, 0] = 1f;
+                data.SetAlphamaps(0, 0, maps);
+                EditorUtility.SetDirty(data);
+            }
+            var splat = terrain.GetComponent<GroundSplat>() ?? Undo.AddComponent<GroundSplat>(terrain.gameObject);
+            splat.Apply();
+        }
+
+        /// <summary>The alphamap of a heightmap of <paramref name="heightmap"/> samples: one texel per sample cell, at most 2048.</summary>
+        public static int AlphamapResolutionFor(int heightmap) => Mathf.Clamp(Mathf.ClosestPowerOfTwo(heightmap - 1), 16, 2048);
 
         // ------------------------------------------------------------------ valley walls
 
@@ -361,10 +395,16 @@ namespace HotPatata.Editor
             {
                 int opened = CutCaves(scene);
                 if (opened > 0) parts.Add($"ground opened over {opened} cell(s) of cave");
+                if (settings.Ground == GroundLook.Layered && settings.BakeGroundOnSave)
+                {
+                    foreach (var terrain in Terrains(scene).Where(GroundBaker.IsLayered)) GroundBaker.Bake(terrain);
+                    parts.Add("ground rules baked");
+                }
                 if (BakeMist(scene, settings)) LookBuilder.ApplyToScene(scene);   // a new mist field takes the day's still mist
                 parts.Add("mist baked");
             }
             WriteAudio(scene, settings);
+            TerrainResample.ForgetBackups(scene);
             return parts.Count == 0 ? "" : ", " + string.Join(", ", parts);
         }
     }

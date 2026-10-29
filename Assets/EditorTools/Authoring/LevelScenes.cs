@@ -62,6 +62,7 @@ namespace HotPatata.Editor
             settings.MinPlayers = minPlayers;
             settings.MaxPlayers = maxPlayers;
             settings.Day = day;
+            settings.Ground = GroundLook.Layered;
             Transform Group(string groupName)
             {
                 var g = new GameObject(groupName).transform;

@@ -128,7 +128,9 @@ same PR. Code comments cite doc sections (e.g. `PROJECT_SPEC §8.3`), so never r
   the mesh catalogue (`Assets/Art/Generated/Catalog/`: every mesh the level tools make, cleaned on save). Everything a level
   places is one entry of the palette's catalogue (`[PaletteItem]`, ARCHITECTURE §27.3): the Level Palette and the
   `GameObject/HotPatata Level` menus are both made from it; never edit `LevelMenus.g.cs` (write it with
-  `HotPatata/Level/Write Palette Menus`). The showcase (`Assets/Scenes/Dev/LevelToolsShowcase.unity`) is a dev scene, never
+  `HotPatata/Level/Write Palette Menus`). A level's ground has a hand layer: never write its splat or its heights from code
+  except through `GroundBaker` (the rules, keeping what was painted) and `TerrainStack` (the land shapes, keeping the sculpt).
+  The showcase (`Assets/Scenes/Dev/LevelToolsShowcase.unity`) is a dev scene, never
   registered in the menu. A new section declares a `SectionContract` (spec §13.20, how-to
   in docs/OBSTACLES.md §5): what it forces, and each shortcut with the geometry that locks it (14 m gaps, faces of 3.4 m or
   more, walls up to a roof; a window a player fits through is not bomb-only). `CourseContractCheck` must report nothing. The level list's order lives in one place,
@@ -178,7 +180,8 @@ same PR. Code comments cite doc sections (e.g. `PROJECT_SPEC §8.3`), so never r
   input through `PlayerInputReader` (read input there, never from devices directly). Online, a menu never pauses the
   game; offline the pause menu freezes it.
 - **Input System only** (never the legacy input manager). **No third-party packages** unless the built-in stack
-  clearly cannot do the job. Unity's own Cinemachine package is allowed (owner decision, #79: the menu camera).
+  clearly cannot do the job. Unity's own Cinemachine package is allowed (owner decision, #79: the menu camera), and Unity's Terrain Tools (owner decision,
+  #125: sculpting and painting in the Editor; no code calls into it).
 - "Beep" (`beepIntervals`, `BombAudio.Beeped`) is a gameplay term for the fuse sound, not the old project name. Keep it.
 
 ## Workflow

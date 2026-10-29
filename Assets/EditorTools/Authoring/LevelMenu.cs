@@ -56,13 +56,14 @@ namespace HotPatata.Editor
     public sealed class NewLevelWindow : EditorWindow
     {
         string levelName = "MyLevel", displayName = "", problem;
-        int minPlayers = 2, maxPlayers = 4;
+        int minPlayers = 2, maxPlayers = 4, size;
         LevelDay day = LevelDay.Ranger;
+        TerrainFineness fineness;
 
         public static void Open()
         {
             var w = GetWindow<NewLevelWindow>(true, "New Level");
-            w.minSize = new Vector2(420, 210);
+            w.minSize = new Vector2(440, 290);
         }
 
         void OnGUI()
@@ -74,12 +75,19 @@ namespace HotPatata.Editor
             minPlayers = EditorGUILayout.IntSlider("Players needed", minPlayers, 1, 4);
             maxPlayers = EditorGUILayout.IntSlider("Players at most", Mathf.Max(minPlayers, maxPlayers), minPlayers, 4);
             day = (LevelDay)EditorGUILayout.EnumPopup("Day", day);
+            size = EditorGUILayout.Popup(new GUIContent("Terrain size", "The terrain's side (m); Resample Terrain changes it later."), size,
+                                         TerrainResample.Sizes.Select(s => $"{s:F0} m").ToArray());
+            fineness = (TerrainFineness)EditorGUILayout.EnumPopup(new GUIContent("Fineness", "Normal: a height sample a metre. Fine: two (sharper banks, a heavier terrain)."), fineness);
+            int res = TerrainResample.Resolution(TerrainResample.Sizes[size], fineness);
+            float mb = TerrainResample.MemoryMb(res);
+            EditorGUILayout.LabelField(" ", $"{res}² heights, {TerrainResample.Sizes[size] / (res - 1):F2} m a sample, {mb:F0} MB", EditorStyles.miniLabel);
+            if (mb > TerrainResample.WarnMb) EditorGUILayout.HelpBox($"Over {TerrainResample.WarnMb:F0} MB of terrain data: heavy to load and to save.", MessageType.Warning);
             problem = LevelScenes.NameProblem(levelName);
             if (problem != null) EditorGUILayout.HelpBox(problem, MessageType.Warning);
             using (new EditorGUI.DisabledScope(problem != null))
                 if (GUILayout.Button("Create Level") && EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
                 {
-                    LevelScenes.Create(levelName, displayName, minPlayers, day, maxPlayers);
+                    LevelScenes.Create(levelName, displayName, minPlayers, day, maxPlayers, LevelScenes.LevelsFolder, TerrainResample.Sizes[size], res);
                     Close();
                 }
         }

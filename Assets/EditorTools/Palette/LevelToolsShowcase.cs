@@ -50,6 +50,9 @@ namespace HotPatata.Editor
         [MenuItem(Menu + "Build Palette Tour (L0)", priority = 10)]
         public static void BuildPaletteTour() => Build("L0 Palette tour", PaletteTour);
 
+        [MenuItem(Menu + "Build Ground Layers (L1)", priority = 11)]
+        public static void BuildGroundLayers() => Build("L1 Ground layers", GroundArea);
+
         /// <summary>Opens the showcase (made if missing), clears area <paramref name="area"/>'s groups and fills it again.</summary>
         public static void Build(string area, Action<Area> fill)
         {
@@ -160,6 +163,96 @@ namespace HotPatata.Editor
                               .Where(s => s.GetComponentInParent<Checkpoint>() == null).Select(s => s.transform.position).ToList();
             return starts.Count > 0 ? starts.Aggregate(Vector3.zero, (a, b) => a + b) / starts.Count : Vector3.zero;
         }
+
+        // ------------------------------------------------------------------ L1: the ground's layers
+
+        /// <summary>
+        /// A meadow rolling gently, a hill with a steep face (rock and scree), a pond with its shore (mud, riverbed), a walkway on the
+        /// ground (trail), and a path painted by hand that the rules' bake keeps.
+        /// </summary>
+        static void GroundArea(Area a)
+        {
+            var terrain = LevelTerrain.Terrains(a.Scene).First();
+            var data = terrain.terrainData;
+            Undo.RegisterCompleteObjectUndo(data, "Showcase ground");
+            int res = data.heightmapResolution;
+            var o = terrain.transform.position;
+            float span = data.size.y, cell = data.size.x / (res - 1);
+            int x0 = Mathf.Clamp(Mathf.FloorToInt((a.Rect.xMin - o.x) / cell), 0, res - 1), x1 = Mathf.Clamp(Mathf.CeilToInt((a.Rect.xMax - o.x) / cell), 0, res - 1);
+            int z0 = Mathf.Clamp(Mathf.FloorToInt((a.Rect.yMin - o.z) / cell), 0, res - 1), z1 = Mathf.Clamp(Mathf.CeilToInt((a.Rect.yMax - o.z) / cell), 0, res - 1);
+            var h = data.GetHeights(x0, z0, x1 - x0 + 1, z1 - z0 + 1);
+            float floor = (a.Start.y - o.y) / span;
+            Vector2 hill = Flat(a.At(0.72f, 0.7f)), pond = Flat(a.At(0.3f, 0.32f));
+            for (int z = z0; z <= z1; z++)
+                for (int x = x0; x <= x1; x++)
+                {
+                    var p = new Vector2(o.x + x * cell, o.z + z * cell);
+                    // fade the shapes out at the area's edge
+                    float edge = Mathf.Min(Mathf.Min(p.x - a.Rect.xMin, a.Rect.xMax - p.x), Mathf.Min(p.y - a.Rect.yMin, a.Rect.yMax - p.y));
+                    float keep = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(edge / 15f));
+                    float m = (Mathf.PerlinNoise(p.x * 0.03f, p.y * 0.03f) - 0.5f) * 2.2f;
+                    // the hill: a gentle back, a steep face to the south-west (rock over 45°, scree below)
+                    var dh = p - hill;
+                    float face = Vector2.Dot(dh.normalized, new Vector2(-0.7f, -0.7f));
+                    float radius = Mathf.Lerp(48f, 26f, Mathf.Clamp01(face));
+                    float t = Mathf.Clamp01(1f - dh.magnitude / radius);
+                    float hillH = 24f * (face > 0.3f ? Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t * 2.4f)) : Mathf.SmoothStep(0f, 1f, t));
+                    // the pond: a basin 3 m deep
+                    float pd = (p - pond).magnitude;
+                    float pondH = -3.2f * Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(1f - pd / 24f) * 1.6f);
+                    h[z - z0, x - x0] = floor + (m + hillH + pondH) * keep / span;
+                }
+            data.SetHeights(x0, z0, h);
+            Physics.SyncTransforms();
+
+            var water = PaletteCatalog.Find("ground.water");
+            var w = a.Place(water, null, new Vector3(pond.x, a.Start.y - 1.4f, pond.y), "Pond: riverbed under it, mud on its shore");
+            if (w != null)
+            {
+                var shape = w.GetComponent<WaterShape>();
+                shape.Size = new Vector2(30f, 30f);
+                shape.Depth = 3f;
+                w.transform.position = new Vector3(pond.x, a.Start.y - 1.4f - 0.5f, pond.y);
+                LevelPieceBuilder.Rebuild(shape);
+            }
+            var walkEntry = PaletteCatalog.Find("timber.walkway");
+            var start = a.At(0.08f, 0.85f);
+            var walkGo = a.Place(walkEntry, null, start, "Walkway on the ground: trail along it");
+            if (walkGo != null)
+            {
+                var walk = walkGo.GetComponent<TimberWalkShape>();
+                walk.OnGround = true;
+                walk.RailLeft = walk.RailRight = false;
+                walk.Points.Clear();
+                for (int i = 0; i <= 6; i++)
+                {
+                    var q = a.At(0.08f + i * 0.07f, 0.85f + Mathf.Sin(i * 0.9f) * 0.04f) - start;
+                    walk.Points.Add(new Vector3(q.x, LevelNature.GroundAt(a.Scene, Flat(start + q)) - start.y + 0.05f, q.z));
+                }
+                LevelPieceBuilder.Rebuild(walk);
+            }
+            LevelPieceBuilder.Refresh(TimberLinks.Pieces(a.Scene));
+
+            // the rules, then a path painted by hand (trail and gravel), then the rules again: the path stays
+            GroundBaker.Bake(terrain);
+            int ar = data.alphamapResolution;
+            var field = new GroundField(ar, LevelTerrain.Area(terrain));
+            var path = new List<Vector2>();
+            for (int i = 0; i <= 20; i++) path.Add(Flat(a.At(0.12f + i * 0.035f, 0.12f + Mathf.Sin(i * 0.45f) * 0.06f + i * 0.004f)));
+            var maps = data.GetAlphamaps(0, 0, ar, ar);
+            for (int i = 0; i + 1 < path.Count; i++)
+                field.Segment(path[i], path[i + 1], 1.6f, (x, z, _) =>
+                {
+                    float gravel = Mathf.PerlinNoise(x * 0.4f, z * 0.4f) > 0.6f ? 0.35f : 0f;
+                    for (int l = 0; l < GroundBaker.Layers; l++) maps[z, x, l] = l == GroundLayerBuilder.Trail ? 1f - gravel : l == GroundLayerBuilder.Gravel ? gravel : 0f;
+                });
+            data.SetAlphamaps(0, 0, maps);
+            GroundBaker.Bake(terrain);
+            var marker = a.Place(PaletteCatalog.Find("structure.sign"), null, new Vector3(path[0].x, LevelNature.GroundAt(a.Scene, path[0]), path[0].y), "Path painted by hand (kept by the bake)");
+            if (marker != null) marker.transform.position += new Vector3(-3f, 0f, 0f);
+        }
+
+        static Vector2 Flat(Vector3 p) => new Vector2(p.x, p.z);
 
         // ------------------------------------------------------------------ L0: every entry once
 

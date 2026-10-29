@@ -14,6 +14,7 @@ The tools come in three steps (M18). This guide covers what is built:
 | 5. Rock and mine | caves (tunnels and caverns), cliffs, mine timber, lane markers (M20) | built |
 | 6. Natural ground | caves opening into each other and into the hills, ragged cliff crests, forests on the way (M20) | built |
 | 7. The palette | one window for everything a level places (tabs, pictures, search, favourites, burst, snapping), the menus sorted the same way (M21) | built |
+| 8. The layered ground | eight layers baked from rules and painted by hand, Terrain Tools, the terrain's size and fineness, resample (M21) | built |
 
 A good order: make the level (§1), shape the land (§2), plant the giant trees (§3), hang the timber on them (§4 to §7),
 plant the forest round it (§8), the mist and the sound (§9), then the game (§10), checked and played (§11), and dress it
@@ -45,9 +46,12 @@ changing it), and the terrain, mist and sound tools below.
 ## 2. Shape the land
 
 The level's ground is a Unity **Terrain** (`Level/Terrain`). Select it and sculpt it with its own brushes (Raise or Lower,
-Set Height, Smooth, Stamp): dig a ravine, raise a hill, flatten a clearing. It is drawn as the forest floor of the nature
-courses by itself: leaf litter where it is flat, rock where it is steep, in the height mist. (Its Paint Texture tool is not
-used.)
+Set Height, Smooth, Stamp) and Terrain Tools' (noise, erosion, terrace, smudge...): dig a ravine, raise a hill, flatten a
+clearing. A level made since M21 has the **layered ground**: eight layers (leaf litter, grass, trail, gravel, mud, riverbed,
+scree, rock) baked from rules and painted by hand with Paint Texture (§26). A level made before draws the valley ground by
+itself: leaf litter where it is flat, rock where it is steep, in the height mist (the Level inspector's **Ground** switches it).
+New Level chooses the terrain's **size** (256 to 1536 m) and **fineness** (a height sample every metre, or every half metre);
+**Resample terrain** changes them later (§26).
 
 - **Valley walls**: on the `Level` object, **Raise valley walls round the edge** lifts the terrain's border into rock walls
   (choose their width and height; the palette's Ground > Valley Walls raises them 30 m wide and 35 m high). Ctrl+Z undoes it.
@@ -466,6 +470,40 @@ The `GameObject > HotPatata Level` menus hold the same entries in the same order
 
 The showcase (`Assets/Scenes/Dev/LevelToolsShowcase.unity`, `HotPatata/Level/Showcase`) shows every entry once, labelled: a dev
 scene, never in the menu.
+
+## 26. The ground: layers, rules and paint
+
+A level's terrain has eight layers, in this order (the Terrain's **Paint Texture** brush lists them so):
+
+| Layer | Where the rules put it |
+|---|---|
+| 0 Leaf litter | the forest's flat ground, dry hollows |
+| 1 Grass | patches on the open ground and the knolls |
+| 2 Trail | along the walk lines on the ground (a walkway on the ground, a trail) |
+| 3 Gravel | ridges, beside rock and trails |
+| 4 Mud | shores |
+| 5 Riverbed | under water |
+| 6 Scree | slopes of 35 to 50°, the foot of rock |
+| 7 Rock | slopes over about 45° |
+
+- **Bake ground rules** (the Level inspector, the palette's Ground tab, or `HotPatata/Ground/Bake Ground Rules`) paints the whole
+  ground from the rules. Bake after shaping the ground, adding water, walkways or rock. **Bake rules on save** does it on every
+  save (off by default).
+- **Paint by hand** with the Terrain's Paint Texture brush (or Terrain Tools'): a path, a patch of mud, scree under a cliff.
+  A bake keeps what you painted: every texel you changed since the last bake is remembered as painted. **Show painted** tints it
+  red; the **Reset painted** brush (the inspector or the palette: click and drag, Shift+wheel sizes it, Esc stops) gives a region
+  back to the rules.
+- **The rules** themselves are `Assets/Settings/Look/GroundRules.asset` (**Edit the rules**): per layer a score from the slope,
+  the height over the level's floor, hollows and ridges, water, walk lines, rock, north faces and a noise; the best scores win.
+  They are art settings shared by every level: change them with care, and bake again.
+- **Sculpt** with Terrain Tools (installed): noise, hydraulic, thermal and wind erosion, terrace, sharpen peaks, smudge, bridge,
+  clone, twist, stamp. It works on the terrain only; nothing in the game depends on it.
+- **Size and fineness.** `HotPatata/Ground/Resample Terrain...` (or the inspector's button): 256, 512, 1024 or 1536 m, a sample
+  every metre (Normal) or every half metre (Fine). The relief is kept (exactly at the old samples), the centre stays, trees and
+  details stay where they stand, the holes are cut again and the mist baked. Ctrl+Z undoes it; the old data is kept beside the
+  terrain (`..._Backup.asset`) until the next save. The window shows the terrain data's memory and warns over 128 MB.
+- **Valley ground.** A level made before M21 keeps its valley ground (one material). Switch it in the inspector (**Ground**):
+  the layered ground starts as leaf litter everywhere; bake the rules.
 
 ## Rules
 

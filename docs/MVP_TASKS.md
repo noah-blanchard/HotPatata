@@ -1837,13 +1837,13 @@ is level geometry or decoration, every door that opens is the kit with a new loo
 
 ## M21.L1 — Ground material: 8 layers, rules, paint, Terrain Tools, size
 
-- [ ] Terrain Tools installed, AGENTS.md updated, nothing from it referenced by runtime code;
-- [ ] a new level's ground shows 8 layers; painting any layer shows it in the Scene view and in Play, fogged like the rest;
-- [ ] bake: slopes are rock, shores mud, hollows litter, walk lines trail; a re-bake keeps the paint; Reset painted gives a region
+- [x] Terrain Tools installed (5.3.3), AGENTS.md updated, nothing from it referenced by runtime code;
+- [x] a new level's ground shows 8 layers; painting any layer shows it in the Scene view and in Play, fogged like the rest;
+- [x] bake: slopes are rock, shores mud, hollows litter, walk lines trail; a re-bake keeps the paint; Reset painted gives a region
   back to the rules (`LevelGroundTests`);
-- [ ] resample 256 m Normal → Fine keeps heights within 2 cm at the old samples, trees, details and holes; Undo restores;
-- [ ] the shader: one pass plus shadow, depth and depth-normals; `HP_MixFog`; frame cost measured on the showcase;
-- [ ] docs: LEVEL_AUTHORING §26 and §2; ARCHITECTURE §27.4; CREDITS.
+- [x] resample Normal → Fine keeps heights within 2 cm at the old samples, trees, details and holes; Undo restores;
+- [x] the shader: one pass plus shadow, depth and depth-normals; `HP_MixFog`; frame cost measured on the showcase;
+- [x] docs: LEVEL_AUTHORING §26 and §2; ARCHITECTURE §27.4 (no new texture: the eight layers use the Poly Haven folders already credited).
 
 ## M21.L2 — Ground shaping: land shapes, trail, river and ravine
 
