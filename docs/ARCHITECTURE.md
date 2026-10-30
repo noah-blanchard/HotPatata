@@ -2493,3 +2493,41 @@ along; a ravine has neither).
 Tests: `LevelRockTests` (a detailed cliff collides exactly as its plain build, collider ≤ 1.2×, drawn finer, same faces; every rock
 has its material, basalt is detailed; scans stick out 40 cm at most, never in a tunnel, no collider), `LevelGroundTests` (a cliff's
 talus raises the ground to its foot and goes when its fuse is 0), `LongClimbTests` (its pieces rebuild exactly as before).
+
+### 27.6 Caves v2 (M21, L4)
+
+- **Sections.** `RockShellShape` gains `sections` (`CaveSection`: width, height, `CaveProfile`, lean, floor offset), one per point.
+  `LevelRock.Rings` blends them along the path (the section of the nearest control segment's ends, smoothstep), widens the ends by
+  `flare` (to 1.4×), and `Frames` turns each ring's up with the line's pitch (at most `MaxPitch` 35°, its right kept level).
+  `Profile` and `InsideProfile` are the profile's curve and its inside (Round is the M20 superellipse; Arch is straight walls under a
+  half ellipse). A tunnel is built by `BuildTunnelV2` only when it has sections, a flare or an attached end (`TunnelV2`); otherwise
+  by the M20 code, so the Long Climb's caves sign and build as before (`LongClimbTests.Pieces_RebuildExactlyAsBefore`).
+- **Shaped caverns.** `apexHeight` (the crown; `height` becomes the walls'), `apex` (the crown's offset) and `alcoves` (bulges of the
+  outline, `CavernOutline`) make `ShapedCavern`, built by `BuildCavernV2`: wall rows, then the dome from the walls to the crown.
+  `pillars` (solid, waisted) and `floors` (slabs, walked: `WalkableProxy`) are built by `CavernParts` for any chamber.
+- **Shafts.** `RockShellKind.Shaft` (appended): straight walls `height` up from the outline, the top open or closed (a ceiling),
+  `openBottom`, `ledges` (slabs round part of the wall). `MineFrameShape.stair` lays a walkway along the frames' line (held by them;
+  its walk line gathered like any walkway's).
+- **Clear space.** `Clear` = `WithoutParts(ClearV2 ?? ClearM20)`: a v2 tunnel's inside is its nearest ring's profile in that ring's
+  frame; a shaped cavern's is under `DomeHeight`; a shaft's is its outline up its height; pillars and shelves are taken out.
+- **Junctions.** Every push is outward; no rock is drawn in another cave's clear space (as M20). Near a junction (within
+  `JunctionRings`) a v2 shell's outer skin and its rims are drawn from inside too, so where a chamber's hole is wider than the
+  tunnel's section the rock shows, never the sky through the back of a face.
+- **Networks.** `CaveNetwork : LevelPiece` (draws nothing) holds chambers and tunnels as children. A tunnel's end with a `CaveAttach`
+  (`node`, `angle`, `height`) is at the chamber's wall in that direction from its middle, a metre inside (`RockShellShape.AttachPoint`,
+  in `WorldPoints`); an attached tunnel signs its world points, so moving a chamber rebuilds it. `CaveNetworks` (editor) adds,
+  links (rebuilding the chambers and the tunnels already meeting them), detaches and removes.
+- **Mouths.** `CaveMouth` (a component, data only) remembers the parts `CaveMouths.Make` made as its children: the tunnel (floored,
+  so `LevelTerrain.CutCaves` opens the ground on save), the lintel (a `CliffShape` round the mouth: fracture, crest, scree and
+  fuse, so its scree and talus come from §27.5), an `AmbienceZone` "Cave" and two lanterns.
+- **Dressing.** `CaveDressing` (densities and lantern spacing) is built with the shell (`LevelRock.Dress`, seeded by the piece):
+  dripstone cones and columns generated, drawn in the cave's rock (stalactites and small stalagmites drawn only; large ones and
+  columns solid on Environment), puddles as mud decals (`DecalScatter.Lay`), cave mushrooms from the prop library (colliders
+  removed), lanterns (`TimberMine.Lantern`). The corridor is `CorridorOf`.
+- **Verify.** A tunnel's floor steeper than `WalkableSlope` with no stair or walkway over it (warning); more than `MaxCaveLights` (24)
+  lights in one cave (warning).
+
+Tests: `LevelCaveTests` (a tunnel's clear space exact at each of its sections and its floor walked; a shaped chamber's crown, a
+pillar that collides and a shelf that is walked, both out of the clear space; a shaft open at its top and a Mine Stair walked up;
+a network's tunnels follow a moved chamber, flare, leave no rock deep in another clear space and open the way between chambers;
+a mouth makes its parts on a 30° slope and they go with it; dressing never in the walk, large stalagmites solid).

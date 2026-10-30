@@ -59,6 +59,9 @@ namespace HotPatata.Editor
         [MenuItem(Menu + "Build Rock (L3)", priority = 13)]
         public static void BuildRock() => Build("L3 Rock", RockArea);
 
+        [MenuItem(Menu + "Build Caves (L4)", priority = 14)]
+        public static void BuildCaves() => Build("L4 Caves", CavesArea);
+
         /// <summary>Opens the showcase (made if missing), clears area <paramref name="area"/>'s groups and fills it again.</summary>
         public static void Build(string area, Action<Area> fill)
         {
@@ -332,6 +335,68 @@ namespace HotPatata.Editor
             }
             made.Add(a.Place(PaletteCatalog.Find("rock.outcrop"), null, a.At(0.5f, 0.95f), "Rock outcrop").GetComponent<CliffShape>());
             LevelPieceBuilder.Rebuild(made);
+            GroundBaker.Bake(terrain);
+        }
+
+        // ------------------------------------------------------------------ L4: caves
+
+        /// <summary>
+        /// A tunnel that changes along its way (round, rift, gallery, arch; dressed), a shaped chamber (an offset crown, alcoves, a pillar, a
+        /// shelf), a shaft open to the sky with a Mine Frames stair spiralling up it, a network of three chambers and three tunnels, and a
+        /// cave mouth in a hillside.
+        /// </summary>
+        static void CavesArea(Area a)
+        {
+            var terrain = LevelTerrain.Terrains(a.Scene).First();
+            var tunnel = a.Place(PaletteCatalog.Find("rock.tunnel"), "varied", a.At(0.06f, 0.2f), "Tunnel: round, rift, gallery, arch").GetComponent<RockShellShape>();
+            tunnel.Points.Clear();
+            tunnel.Points.AddRange(new[] { Vector3.zero, new Vector3(3f, 0f, 22f), new Vector3(-2f, 0.5f, 44f), new Vector3(2f, 0.5f, 64f) });
+            CaveEntries.Varied(tunnel);
+
+            a.Place(PaletteCatalog.Find("rock.cavern"), "shaped", a.At(0.26f, 0.45f), "Chamber: crown, alcoves, pillar, shelf");
+
+            var shaft = a.Place(PaletteCatalog.Find("rock.shaft"), null, a.At(0.45f, 0.45f), "Shaft (open top) and its Mine Stair").GetComponent<RockShellShape>();
+            shaft.Points.Clear();
+            shaft.Points.AddRange(DeckShapes.Oval(16f, 16f, 16));
+            var stair = a.Place(PaletteCatalog.Find("timber.mine-stair"), null, shaft.transform.position, null).GetComponent<MineFrameShape>();
+            stair.Points.Clear();
+            // two turns round the shaft, rising its height
+            for (int k = 0; k <= 16; k++)
+            {
+                float ang = k * Mathf.PI / 4f;
+                stair.Points.Add(new Vector3(Mathf.Cos(ang) * 4.6f, shaft.Height * 0.9f * k / 16f, Mathf.Sin(ang) * 4.6f));
+            }
+            stair.LanternEvery = 4;
+
+            var network = a.Place(PaletteCatalog.Find("rock.cave-network"), null, a.At(0.62f, 0.25f), "Cave network: three chambers").GetComponent<CaveNetwork>();
+            var nodes = network.Nodes.ToList();
+            var third = CaveNetworks.AddNode(network, a.At(0.72f, 0.62f));
+            CaveNetworks.Link(network, nodes[1], third);
+            CaveNetworks.Link(network, third, nodes[0]);
+            foreach (var node in network.Nodes) node.Dressing = new CaveDressing { stalactites = 0.5f, stalagmites = 0.4f, columns = 0.4f, puddles = 0.3f, props = 0.3f, lanternSpacing = 12f };
+            foreach (var link in network.Links) link.Dressing = new CaveDressing { stalactites = 0.4f, puddles = 0.3f, lanternSpacing = 12f };
+
+            // a hill, and the mouth on its steepest flank toward the south
+            var hill = a.Place(PaletteCatalog.Find("ground.round-hill"), null, a.At(0.88f, 0.55f), "Hill").GetComponent<LandShape>();
+            LevelPieceBuilder.Rebuild(hill);
+            var top = Flat(hill.transform.position);
+            Vector3 best = hill.transform.position, normal = Vector3.up;
+            float steepest = 0f;
+            for (float d = 4f; d < 60f; d += 1f)
+            {
+                var q = top + new Vector2(0f, -d);
+                var n = terrain.terrainData.GetInterpolatedNormal((q.x - terrain.transform.position.x) / terrain.terrainData.size.x, (q.y - terrain.transform.position.z) / terrain.terrainData.size.z);
+                float slope = Vector3.Angle(n, Vector3.up);
+                if (slope <= steepest || slope > 35f) continue;
+                steepest = slope;
+                best = new Vector3(q.x, terrain.SampleHeight(new Vector3(q.x, 0f, q.y)) + terrain.transform.position.y, q.y);
+                normal = n;
+            }
+            var mouth = CaveMouths.Make(a.Group(LevelGroup.Props), best, -normal);
+            Area.Label(mouth.gameObject, $"Cave mouth on a {steepest:F0}° slope");
+
+            LevelPieceBuilder.Rebuild(TimberLinks.Pieces(a.Scene).Where(piece => piece.transform.IsChildOf(a.Group(LevelGroup.Props)) || piece.transform.IsChildOf(a.Group(LevelGroup.Timber))).ToList());
+            LevelTerrain.CutCaves(a.Scene);
             GroundBaker.Bake(terrain);
         }
 

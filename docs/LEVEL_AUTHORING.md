@@ -15,8 +15,9 @@ The tools come in three steps (M18). This guide covers what is built:
 | 6. Natural ground | caves opening into each other and into the hills, ragged cliff crests, forests on the way (M20) | built |
 | 7. The palette | one window for everything a level places (tabs, pictures, search, favourites, burst, snapping), the menus sorted the same way (M21) | built |
 | 8. The layered ground | eight layers baked from rules and painted by hand, Terrain Tools, the terrain's size and fineness, resample (M21) | built |
-| 10. Rock out of the ground | six rocks, detailed faces, scanned rocks set in them, scree, talus, a foot band and decals (M21) | built |
 | 9. Shaping the ground | hills, hollows, ridges and plateaus that move without losing the sculpt, trails held to a grade, river beds and ravines (M21) | built |
+| 10. Rock out of the ground | six rocks, detailed faces, scanned rocks set in them, scree, talus, a foot band and decals (M21) | built |
+| 11. Caves v2 | tunnels whose section changes, shaped chambers (crown, alcoves, pillars, shelves), shafts, networks, mouths in a hillside, dressing (M21) | built |
 
 A good order: make the level (§1), shape the land (§2), plant the giant trees (§3), hang the timber on them (§4 to §7),
 plant the forest round it (§8), the mist and the sound (§9), then the game (§10), checked and played (§11), and dress it
@@ -385,8 +386,14 @@ and tower a structure of elements. The library's booths, gantries, pulleys and s
   it), and a pass drawn under it is reported.
 - No rock is drawn in another cave's clear space: a tunnel's mouth opens in a cavern's wall, through a gallery's dead end or a
   cliff's face; overlap them and the way is clear. Moved one? **Rebuild All Pieces** (the others are cut again).
-- Dress it with the props (§15): the rock formations, roots, mushrooms, the calcite druse, lanterns.
+- Dress it with the props (§15): the rock formations, roots, mushrooms, the calcite druse, lanterns; or with its own **Dressing**
+  (§29).
 - No height mist fills a cave from the ground above it: under its footprint, the mist lies on the cave's own floor.
+- **Since M21** (§29): a tunnel takes a **section** at each dot (its width, height, profile, lean and a step in its floor, blended
+  between dots; `Sections at every dot` in the inspector, then the cyan and white arrows), a **Flare** (its ends widen where they
+  open into a chamber), and follows its line's pitch up to 35°. A cavern takes an **Apex Height** (its crown; Height becomes its
+  walls'), an **Apex** offset (the white dot), **Alcoves**, **Pillars** (solid) and **Floors** (shelves, walked). A cave without any
+  of it is built exactly as before.
 
 ## 21. Cliffs
 
@@ -557,6 +564,37 @@ A cliff's **Detail** (every value at 0 draws it as in M20; the palette's cliffs 
   and Wet Patch): each lies on what is under it, a rock face as well as the ground.
 - **Rock Outcrop** (palette): a small, many-sided, fractured cliff half buried: the rock out of a hillside.
 - Verify Level warns of a Climb lock on an earth bank, and reports a scan in a cave's clear space.
+
+## 29. Cave networks, mouths and shafts
+
+The palette's Rock tab (`Rock/Caves`): **Cave Tunnel** (plain, or **Varied**: round, a tall rift, a low gallery, an arch, dressed),
+**Cavern** (plain, or **Shaped**), **Shaft**, **Cave Network** and **Cave Mouth**; the Timber tab has the **Mine Stair**.
+
+- **Sections.** Profiles: **Round** (as before), **Rift** (tall and narrow), **Gallery** (low, wide, a flat roof), **Arch** (straight
+  walls, a round roof), **Fissure** (one side flatter than the other). **Lean** tilts it; **Floor offset** raises its floor at that
+  dot (a step or a ramp). What you set is the clear space: the rock only bulges outward from it, and Verify, the mist and the
+  "no rock in another cave" rule read it. A floor climbing steeper than a player walks is reported ("add a Stone Stair or Mine
+  Frames' steps").
+- **A shaped chamber.** Its walls rise **Height** round its outline, then its vault to its crown at **Apex Height**, offset by the
+  white dot: an asymmetric hall. An **alcove** bulges its outline out (where round it, how wide, how deep). A **pillar** (the orange
+  disc) stands floor to roof and collides: an obstacle, never a lock. A **floor** is a shelf of rock (its outline, height and
+  thickness): walked on, its edge a ledge; join it with a stair, a walkway or a lift.
+- **A shaft**: straight walls up **Height** from its outline, **Open top** (the sky) or roofed (a ceiling: a pass under it is
+  checked), **Open bottom** (no floor), **Ledges** round part of its wall. The way up is yours: a **Mine Stair** (Mine Frames with
+  **Stair** ticked: treads along their line, held by the frames), a walkway spiralling on posts, or a lift. **Never a ladder**
+  (climbing is not a mechanic). A throw up a shaft is a pass like any other.
+- **A network**: chambers (caverns and shafts) and the tunnels linking them, all children of the Cave Network. **Shift+click** the
+  ground to add a chamber, drag a chamber's sphere to move it (its tunnels' ends follow: they are attached to its wall, facing the
+  other chamber), pick two chambers and **Link** them. Each child is an ordinary rock piece: select it to shape it, **Detach** it to
+  make it stand alone, or × to remove it (its tunnels let go of it where they are). New links flare by the network's **Flare**.
+- **A mouth**: click a hillside. It makes, together: a tunnel into the hill (floored, so the ground opens over it when you save,
+  closed at its far end, dressed), a **lintel** of fractured granite round its top with its scree and its talus, the cave's
+  **ambience** over its first 12 m and two lanterns inside. Each is a child to edit as usual; delete the mouth and they go with it.
+- **Dressing** (any cave): **Stalactites** (never lower than 2.4 m over the floor, never under a skylight), **Stalagmites** (small
+  ones off the walk's 1.5 m clearance, drawn only; large ones outside a 3 m corridor, solid), **Columns** (floor to roof, outside
+  the corridor, solid), **Puddles** (wet mud, never water: no kill zone), **Props** (cave mushrooms off the walk) and **Lantern
+  spacing** (lanterns on alternating walls along the walk). The walk is a tunnel's centre line, or in a chamber the lines from the
+  tunnels meeting it to its middle. Verify warns past 24 real-time lights in one cave.
 
 ## Rules
 

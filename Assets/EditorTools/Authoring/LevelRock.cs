@@ -15,7 +15,7 @@ namespace HotPatata.Editor
     /// rock is drawn in another cave's clear space (a tunnel's mouth opens in a cavern's wall, a gallery's end, a cliff's face).
     /// Called by <see cref="LevelPieceBuilder"/>.
     /// </summary>
-    public static class LevelRock
+    public static partial class LevelRock
     {
         /// <summary>A cave's inside, its outside (moss on what faces up), its floor.</summary>
         public const string CaveMaterial = "Nature_CaveRock", CaveOutsideMaterial = "Nature_MossyRock", CaveFloorMaterial = "Nature_RocksGround";
@@ -228,7 +228,9 @@ namespace HotPatata.Editor
         }
 
         /// <summary>The clear space of <paramref name="shell"/>: over its floor and under its roof (a tunnel's section, a cavern's dome).</summary>
-        public static ClearSpace Clear(RockShellShape shell)
+        public static ClearSpace Clear(RockShellShape shell) => WithoutParts(shell, ClearV2(shell) ?? ClearM20(shell));
+
+        static ClearSpace ClearM20(RockShellShape shell)
         {
             var world = shell.WorldPoints();
             if (shell.Kind == RockShellKind.Cavern)
@@ -337,8 +339,16 @@ namespace HotPatata.Editor
 
         public static void BuildShell(RockShellShape shell, Transform root, string name)
         {
-            if (shell.Kind == RockShellKind.Cavern) BuildCavern(shell, root, name);
+            if (shell.Kind == RockShellKind.Shaft) BuildShaft(shell, root, name);
+            else if (shell.Kind == RockShellKind.Cavern)
+            {
+                if (shell.ShapedCavern) BuildCavernV2(shell, root, name);
+                else BuildCavern(shell, root, name);
+            }
+            else if (TunnelV2(shell)) BuildTunnelV2(shell, root, name);
             else BuildTunnel(shell, root, name);
+            if (shell.Kind != RockShellKind.Tunnel) CavernParts(shell, root, name);
+            Dress(shell, root, name);
         }
 
         /// <summary>A hole is cut where a quad's middle (world) is in a skylight (high up) or a mouth.</summary>

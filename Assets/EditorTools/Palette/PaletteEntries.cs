@@ -49,10 +49,10 @@ namespace HotPatata.Editor
             return go;
         }
 
-        [PaletteItem("rock.tunnel", "Rock/Caves", "Cave Tunnel", Piece = typeof(RockShellShape), Tags = "cave tunnel rock")]
+        [PaletteItem("rock.tunnel", "Rock/Caves", "Cave Tunnel", Piece = typeof(RockShellShape), LookLabel = "Plain", Tags = "cave tunnel rock rift gallery")]
         static GameObject Tunnel(PlaceContext c) => Piece<RockShellShape>(c, "Cave tunnel", 0f, LevelGroup.Props);
 
-        [PaletteItem("rock.cavern", "Rock/Caves", "Cavern", Piece = typeof(RockShellShape), Tags = "cave dome chamber rock")]
+        [PaletteItem("rock.cavern", "Rock/Caves", "Cavern", Piece = typeof(RockShellShape), LookLabel = "Plain", Tags = "cave dome chamber rock alcove pillar")]
         static GameObject Cavern(PlaceContext c)
         {
             var piece = (RockShellShape)PaletteCatalog.NewPiece(c, typeof(RockShellShape), "Cavern", c.Ground(0f), LevelGroup.Props);

@@ -348,6 +348,40 @@ namespace HotPatata.Editor
             foreach (var scan in scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<ScanPlacement>(true)))
                 if (caves.Any(c => c.Contains(scan.transform.position)))
                     findings.Add(LevelFinding.Error($"{scan.name}: a scan set in a cave's clear space.", scan));
+            Caves(scene, findings);
+        }
+
+        /// <summary>The most real-time lights one cave should hold (M21): past it, emissive-only lanterns.</summary>
+        public const int MaxCaveLights = 24;
+
+        /// <summary>Caves v2 (M21, ARCHITECTURE §27.6): a tunnel's floor steeper than a player walks, and a cave's lights.</summary>
+        static void Caves(Scene scene, List<LevelFinding> findings)
+        {
+            var shells = scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<RockShellShape>(true)).ToList();
+            float walkable = WalkableSlope();
+            var helpers = TimberLinks.Pieces(scene).Where(p => p is MineFrameShape || p is TimberWalkShape)
+                .Select(p => p.Output != null ? p.Output.GetComponent<LevelPieceOutput>() : null).Where(o => o != null && o.WalkLine.Length > 1)
+                .SelectMany(o => o.WalkLine).ToList();
+            foreach (var tunnel in shells.Where(s => s.Kind == RockShellKind.Tunnel))
+            {
+                var path = Curves.Resample(Curves.Spline(tunnel.WorldPoints(), 0.5f), 1f);
+                for (int i = 0; i + 1 < path.Count; i++)
+                {
+                    var d = path[i + 1] - path[i];
+                    float slope = Mathf.Atan2(Mathf.Abs(d.y), new Vector2(d.x, d.z).magnitude) * Mathf.Rad2Deg;
+                    if (slope <= walkable) continue;
+                    var mid = (path[i] + path[i + 1]) * 0.5f;
+                    if (helpers.Any(h => (h - mid).sqrMagnitude < 4f)) continue;
+                    findings.Add(LevelFinding.Warning($"{tunnel.name}: its floor climbs at {slope:F0}° (a player walks up {walkable:F0}°): add a Stone Stair or Mine Frames' steps.", tunnel, mid));
+                    break;
+                }
+            }
+            foreach (var shell in shells.Where(s => s.Output != null))
+            {
+                int lights = shell.Output.GetComponentsInChildren<Light>(true).Count(l => l.enabled);
+                if (lights > MaxCaveLights)
+                    findings.Add(LevelFinding.Warning($"{shell.name}: {lights} real-time lights (at most {MaxCaveLights} a cave): space its lanterns out, or use emissive-only lanterns.", shell));
+            }
         }
 
         // ------------------------------------------------------------------ the rules

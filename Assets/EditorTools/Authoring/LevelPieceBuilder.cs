@@ -159,6 +159,7 @@ namespace HotPatata.Editor
                 case MineFrameShape frames:
                     TimberMine.Frames(root, name, frames.WorldPoints(), frames.Width, frames.Height, frames.Spacing, frames.Lagging, frames.LanternEvery,
                                       frames.Wear == TimberWear.Aged, p => SceneSite.GroundAt(p, frames.transform.position.y + 1f, 6f));
+                    if (frames.Stair) return MineStair(frames, root, name);
                     break;
                 case MineRailShape rails:
                     TimberMine.Track(root, name, Curves.Spline(rails.WorldPoints(), 0.5f), rails.Gauge, rails.Decay, p => SceneSite.GroundAt(p, rails.transform.position.y + 1f, 4f));
@@ -316,6 +317,16 @@ namespace HotPatata.Editor
             return TimberKit.LastWalkSurface.ToArray();
         }
 
+        /// <summary>A Mine Frames stair (M21): a walkway along its line, held by its frames (no supports of its own).</summary>
+        static Vector3[] MineStair(MineFrameShape frames, Transform root, string name)
+        {
+            var control = frames.WorldPoints();
+            if (control.Count < 2 || Curves.Length(control) < 0.5f) return null;
+            var spec = new TimberKit.WalkSpec { seed = frames.Seed, held = true, agedShare = frames.Wear == TimberWear.Aged ? AgedWalk : 0f };
+            TimberKit.Walkway(root, name + " stair", Curves.Spline(control, 0.4f), frames.Width - 0.3f, spec, default);
+            return TimberKit.LastWalkSurface.ToArray();
+        }
+
         static Vector3[] BuildBridge(RopeBridgeShape bridge, Transform root, string name)
         {
             var (a, b) = bridge.WorldEnds();
@@ -456,6 +467,7 @@ namespace HotPatata.Editor
                     foreach (var p in mf.Points) V(s, p);
                     V(s, new Vector3(mf.Width, mf.Height, mf.Spacing));
                     s.Append(mf.Lagging).Append(mf.LanternEvery).Append(mf.Wear).Append('|');
+                    if (mf.Stair) s.Append("stair|");
                     break;
                 case MineRailShape mr:
                     foreach (var p in mr.Points) V(s, p);
@@ -471,6 +483,21 @@ namespace HotPatata.Editor
                     V(s, new Vector3(rs.Width, rs.Height, rs.Thickness));
                     V(s, new Vector3(rs.Roughness, 0f, 0f));
                     foreach (var sky in rs.Skylights) V(s, new Vector3(sky.at.x, sky.radius, sky.at.y));
+                    // M21's caves, written only when used: a cave without them keeps the signature it had
+                    if (rs.Sections.Count > 0 || rs.Flare > 0f || rs.StartAttach.Attached || rs.EndAttach.Attached || rs.ShapedCavern ||
+                        rs.Pillars.Count > 0 || rs.Floors.Count > 0 || rs.Kind == RockShellKind.Shaft || rs.Dressing.Any)
+                    {
+                        foreach (var sec in rs.Sections) s.Append(JsonUtility.ToJson(sec)).Append(';');
+                        V(s, new Vector3(rs.Flare, rs.Apex.x, rs.Apex.y));
+                        V(s, new Vector3(rs.ApexHeight, rs.OpenTop ? 1f : 0f, rs.OpenBottom ? 1f : 0f));
+                        // an attached end follows its chamber: its world points are the input
+                        if (rs.StartAttach.Attached || rs.EndAttach.Attached) foreach (var p in rs.WorldPoints()) V(s, p);
+                        foreach (var al in rs.Alcoves) V(s, new Vector3(al.along, al.width, al.depth));
+                        foreach (var pi in rs.Pillars) V(s, new Vector3(pi.at.x, pi.radius, pi.at.y + pi.waist * 1000f));
+                        foreach (var f in rs.Floors) s.Append(JsonUtility.ToJson(f)).Append(';');
+                        foreach (var l in rs.Ledges) s.Append(JsonUtility.ToJson(l)).Append(';');
+                        s.Append(JsonUtility.ToJson(rs.Dressing)).Append('|');
+                    }
                     break;
                 case CliffShape cl:
                     foreach (var p in cl.Outline) V(s, p);
