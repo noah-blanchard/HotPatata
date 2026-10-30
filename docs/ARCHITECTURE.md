@@ -2311,8 +2311,9 @@ The pieces The Long Climb needed (PROJECT_SPEC §15g), reusable by any level; dr
   Level reports a pass under it.
 - **Cliffs.** `CliffShape` is a block of rock over a closed outline: bands from its foot (sunk into the ground) up to each ledge,
   stepping back by the ledge's inset, then to its top, every face leaning back a little (`batter`) and pushed out by the noise; the
-  top and the shelves are walked on (the same mesh, Solid). Its rock is granite (`Nature_Granite`), sandstone (`Nature_Cliff`) or
-  mossy. Its inspector lists its faces and says which a jump and a mantle climb (under `CliffShape.LockedFace`, 3.4 m); the
+  top and the shelves are walked on (the same mesh, Solid). Its rock is granite (`Nature_Granite`), sandstone (`Nature_Cliff`),
+  mossy, or since M21 limestone (`Nature_Limestone`), basalt (`Nature_Basalt`) or an earth bank (`Nature_EarthBank`); its detail and
+  transitions are §27.5. Its inspector lists its faces and says which a jump and a mantle climb (under `CliffShape.LockedFace`, 3.4 m); the
   section's contract still declares the Climb lock.
 - **No mist in a cave.** The height mist is baked from the terrain (`LevelTerrain.BakeMist`); inside a cave's footprint
   (`LevelRock.Footprint`) the mist floor is the cave's own floor, so a cave under the ground is not filled with mist.
@@ -2458,3 +2459,37 @@ exact at the old samples, trees and details kept, Undo; the resolutions).
 Tests: `LevelGroundTests` (L2: a sculpt beside a hill survives the hill moving and being deleted; a trail on a 40 % slope holds
 30 %, its banks meet the ground, its line is walked; a river carves its bed, its water lies under the banks over kill zones all
 along; a ravine has neither).
+
+### 27.5 Rock detail and transitions (M21, L3)
+
+- **Detail.** `CliffShape` gains `octaves` and `lacunarity` (`LevelRock.Fbm`; one octave is `LevelRock.Noise`), `strata` (bands
+  modulating the push), `fracture` (a jittered Voronoi in (distance round the outline, height), each cell its own plane), basalt's
+  columns (a depth per 1.1 m along the outline) and `overhang` (a lip in the top third). Every push is outward, so the clear outline
+  and the locked heights stay exact. A detailed cliff (`CliffShape.Detailed`) is drawn finer (`FineStep` 0.6 m where strata or
+  fracture are strong) by a renderer only, and collides as its plain M20 build (`PlaceCollider`): the locks read the same faces and
+  the collider costs no more. Every field at 0 builds and signs exactly as M20 (`LongClimbTests.Pieces_RebuildExactlyAsBefore`).
+- **Rocks.** `CliffRock` gains `Limestone`, `Basalt`, `Earth` (appended: the serialised values of the others hold). Materials from
+  Poly Haven CC0 (`marble_rock_01`, `dark_rock_02`, `excavated_soil_wall`; `clay_plaster` for L5's half-timbering) by
+  `NatureMaterialBuilder`. `RockEntries.Dress` gives each rock its detail and transitions (the palette's Cliff looks); an earth
+  bank stays under 3.4 m.
+- **Foot band.** `HotPatata/Nature`'s `_FOOTLAYER` draws the ground's scree (triplanar) over a rock's foot, masked by the mesh's
+  vertex alpha (`LevelRock.FootColors`: 1 at the ground under the vertex, 0 at `footBlend` up); a `<material>_Foot` variant per
+  rock, so no other mesh (without vertex colours) ever takes it.
+- **Dressing.** `RockDressing.DressCliff`: CC0 scans set into the faces (a ray onto the cliff's own collider, the scan turned to the
+  face's normal, its top `MaxProtrusion` 0.4 m out at most and at least 70 % of its depth inside, none of its box in a cave's clear
+  space; colliders removed; a `ScanPlacement` remembers the face point and normal), roots on an earth bank, scree (CC0 stones and
+  rocks batched in a `FoliageSet` like the forest's, off walks, pass arcs, water and checkpoint clearings), decals round the foot.
+- **Talus.** A cliff with `fuse` adds a contribution to the height stack (`GroundShapes.Extra`): the ground within `fuse` of its
+  outline raised toward its foot (only ever up, at most its `sink`). Building a cliff syncs the stack.
+- **Decals.** `DecalScatter`: patches cut from Poly Haven surfaces (`concrete_moss` keeping its greenest texels, `brown_mud_02`,
+  `dry_decay_leaves`; four a kind in a 2×2 atlas, alpha a noise blob times the surface's height), a shader-only wet patch;
+  materials `Nature_Decal_*` on `HotPatata/Nature` in its `_DECAL` mode (blend, depth write and offset from properties, so every
+  other material draws as before; alpha from the base map times the vertex alpha; queue AlphaTest+60; shadow, depth and
+  depth-normals passes off), fogged by `HP_MixFog`. A patch is a grid cast onto the Environment under it (a vertex that finds
+  nothing fades out). `DecalShape` is the hand-placed piece (the palette's Ground tab).
+- **Verify.** An overhang within 2 m over a walk line (warning), a Climb lock on an earth bank (warning), a scan in a cave's clear
+  space (error).
+
+Tests: `LevelRockTests` (a detailed cliff collides exactly as its plain build, collider ≤ 1.2×, drawn finer, same faces; every rock
+has its material, basalt is detailed; scans stick out 40 cm at most, never in a tunnel, no collider), `LevelGroundTests` (a cliff's
+talus raises the ground to its foot and goes when its fuse is 0), `LongClimbTests` (its pieces rebuild exactly as before).

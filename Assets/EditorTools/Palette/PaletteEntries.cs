@@ -38,8 +38,16 @@ namespace HotPatata.Editor
 
         // ------------------------------------------------------------------ rock
 
-        [PaletteItem("rock.cliff", "Rock/Cliffs", "Cliff", Piece = typeof(CliffShape), Tags = "rock face wall granite sandstone mossy lock")]
-        static GameObject Cliff(PlaceContext c) => Piece<CliffShape>(c, "Cliff", -0.5f, LevelGroup.Props);
+        [PaletteItem("rock.cliff", "Rock/Cliffs", "Cliff", Piece = typeof(CliffShape), LookLabel = "Granite", Tags = "rock face wall granite sandstone mossy limestone basalt earth lock")]
+        static GameObject Cliff(PlaceContext c)
+        {
+            var go = Piece<CliffShape>(c, "Cliff", -0.5f, LevelGroup.Props);
+            var cliff = go.GetComponent<CliffShape>();
+            Undo.RecordObject(cliff, "Cliff");
+            RockEntries.Dress(cliff, CliffRock.Granite);
+            LevelPieceBuilder.Rebuild(cliff);
+            return go;
+        }
 
         [PaletteItem("rock.tunnel", "Rock/Caves", "Cave Tunnel", Piece = typeof(RockShellShape), Tags = "cave tunnel rock")]
         static GameObject Tunnel(PlaceContext c) => Piece<RockShellShape>(c, "Cave tunnel", 0f, LevelGroup.Props);

@@ -14,7 +14,10 @@
 //  - a dithered distance fade (_FadeEnd) for instanced foliage (FoliageInstancer);
 //  - the terrain's holes (_TERRAIN_HOLES, on the level ground: a cave's mouth in a hillside, ARCHITECTURE §27.2);
 //  - hazard stripes (_Stripe*) and emission (_EmissionColor), driven by the same code as the other kit shaders;
-//  - the height mist (HotPatataFog.hlsl) and the sun's leaf cookie (_LIGHT_COOKIES, PatataCanopy's dapple).
+//  - the height mist (HotPatataFog.hlsl) and the sun's leaf cookie (_LIGHT_COOKIES, PatataCanopy's dapple);
+//  - a foot band (_FOOTLAYER, M21): the ground's scree drawn over a rock's foot, masked by the mesh's vertex alpha (1 at the ground);
+//  - a decal mode (_DECAL, M21): alpha blended (the base map's alpha times the vertex alpha), pulled toward the camera, no shadow
+//    (the blend, depth write and offset come from properties, so every other material draws as before).
 // Repetition: hex tiling (_ANTITILE) on the floor projection or the UVs, a macro layer and a world-space variation.
 Shader "HotPatata/Nature"
 {
@@ -59,6 +62,21 @@ Shader "HotPatata/Nature"
         _TopCoverage ("Top Coverage", Range(0, 1)) = 0.35
         _TopSharpness ("Top Edge Sharpness", Range(1, 30)) = 8
         _TopNoise ("Top Edge Noise", Range(0, 1)) = 0.5
+
+        [Header(Foot band)]
+        [Toggle(_FOOTLAYER)] _FootLayer ("Foot Band (the ground's scree at a rock's foot; vertex alpha)", Float) = 0
+        [NoScaleOffset] _FootMap ("Foot Base Color", 2D) = "white" {}
+        [NoScaleOffset][Normal] _FootBumpMap ("Foot Normal", 2D) = "bump" {}
+        _FootTileSize ("Foot Tile Size (m)", Float) = 2.5
+        _FootSharpness ("Foot Edge Sharpness", Range(1, 12)) = 3
+
+        [Header(Decal)]
+        [Toggle(_DECAL)] _Decal ("Decal (alpha blended over what is under it)", Float) = 0
+        [HideInInspector] _SrcBlend ("Src Blend", Float) = 1
+        [HideInInspector] _DstBlend ("Dst Blend", Float) = 0
+        [HideInInspector] _ZWrite ("Z Write", Float) = 1
+        [HideInInspector] _OffsetFactor ("Offset Factor", Float) = 0
+        [HideInInspector] _OffsetUnits ("Offset Units", Float) = 0
 
         [Header(Foliage)]
         [Toggle(_ALPHATEST_ON)] _AlphaClip ("Cut-out (foliage)", Float) = 0
@@ -154,11 +172,16 @@ Shader "HotPatata/Nature"
         {
             Name "ForwardLit"
             Tags { "LightMode" = "UniversalForward" }
+            Blend [_SrcBlend] [_DstBlend]
+            ZWrite [_ZWrite]
+            Offset [_OffsetFactor], [_OffsetUnits]
 
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex NatureVertex
             #pragma fragment NatureFragment
+            #pragma shader_feature_local _FOOTLAYER
+            #pragma shader_feature_local _DECAL
 
             #pragma shader_feature_local _MAPPING_TRIPLANAR
             #pragma shader_feature_local _ANTITILE
@@ -191,6 +214,7 @@ Shader "HotPatata/Nature"
                 float2 uv         : TEXCOORD5;   // mesh UVs in tiles (belt scroll applied)
                 float2 rawUV      : TEXCOORD6;   // mesh UVs as authored (the alpha map)
                 half fogFactor    : TEXCOORD7;
+                half4 color       : COLOR;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
                 UNITY_VERTEX_OUTPUT_STEREO
             };
@@ -217,6 +241,7 @@ Shader "HotPatata/Nature"
                 output.normalM = normalize(input.normalOS / max(scale, 1e-4));
                 output.uv = input.uv / max(0.01, _TileSize) - scrollM.xz / max(0.01, _TileSize);
                 output.rawUV = input.uv;
+                output.color = input.color;
                 output.fogFactor = ComputeFogFactor(output.positionCS.z);
                 return output;
             }
@@ -422,6 +447,24 @@ Shader "HotPatata/Nature"
                 }
                 #endif
 
+                #if defined(_FOOTLAYER)
+                {
+                    // the ground's scree over the rock's foot: the vertex alpha (1 at the ground) broken by the world noise
+                    half m = saturate((input.color.a + (noise - 0.5) * 0.7 - 0.25) * _FootSharpness);
+                    // triplanar in world metres: the foot is mostly a wall
+                    float3 fp = input.positionWS / max(0.01, _FootTileSize);
+                    half3 fw = pow(abs(geomNormalWS), 4.0);
+                    fw /= (fw.x + fw.y + fw.z);
+                    half3 footAlbedo = SAMPLE_TEXTURE2D(_FootMap, sampler_FootMap, fp.zy).rgb * fw.x
+                                     + SAMPLE_TEXTURE2D(_FootMap, sampler_FootMap, fp.xz).rgb * fw.y
+                                     + SAMPLE_TEXTURE2D(_FootMap, sampler_FootMap, fp.xy).rgb * fw.z;
+                    half3 footNormalWS = geomNormalWS;
+                    albedo = lerp(albedo, footAlbedo, m);
+                    normalWS = normalize(lerp(normalWS, footNormalWS, m * 0.8));
+                    roughness = lerp(roughness, 0.88, m);
+                }
+                #endif
+
                 if (_StripeStrength > 0.0)
                 {
                     // Diagonal charred bands in metres (spec section 19: a hazard never relies on colour alone).
@@ -492,7 +535,12 @@ Shader "HotPatata/Nature"
 
                 color += _EmissionColor.rgb;
                 color = HP_MixFog(color, input.fogFactor, input.positionWS);
-                return half4(color, 1.0);
+                #if defined(_DECAL)
+                    half decalAlpha = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.rawUV).a * _BaseColor.a * input.color.a;
+                    return half4(color, decalAlpha);
+                #else
+                    return half4(color, 1.0);
+                #endif
             }
             ENDHLSL
         }

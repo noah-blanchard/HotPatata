@@ -18,7 +18,7 @@ namespace HotPatata.Editor
     public static class LevelForest
     {
         /// <summary>Instances binned in FoliageSet cells per batch, then packed.</summary>
-        sealed class Bins
+        internal sealed class Bins
         {
             readonly Dictionary<FoliageSet.Batch, Dictionary<(int, int), List<(Vector3, float, float)>>> bins =
                 new Dictionary<FoliageSet.Batch, Dictionary<(int, int), List<(Vector3, float, float)>>>();

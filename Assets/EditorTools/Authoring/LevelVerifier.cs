@@ -318,6 +318,36 @@ namespace HotPatata.Editor
             foreach (var trail in TimberLinks.Pieces(scene).OfType<TrailShape>())
                 if (GroundShapes.Trails.TryGetValue(trail.PieceId ?? "", out var p) && p.worstCut > TrailShape.DeepCut)
                     findings.Add(LevelFinding.Warning($"{trail.name}: the slope is steeper than its {trail.MaxGrade:F0} % grade (a cut or fill of {p.worstCut:F1} m): add a Stone Stair, or lower its grade.", trail));
+            Rock(scene, findings);
+        }
+
+        /// <summary>The rock (M21, ARCHITECTURE §27.5): an overhang over a walk, a Climb lock on an earth bank, a scan in a cave's clear space.</summary>
+        static void Rock(Scene scene, List<LevelFinding> findings)
+        {
+            var cliffs = TimberLinks.Pieces(scene).OfType<CliffShape>().ToList();
+            var walks = TimberLinks.Pieces(scene).Select(p => p.Output != null ? p.Output.GetComponent<LevelPieceOutput>() : null)
+                .Where(o => o != null && o.WalkLine.Length > 1).SelectMany(o => o.WalkLine).ToList();
+            foreach (var cliff in cliffs.Where(c => c.Overhang > 0f))
+            {
+                var outline = cliff.WorldOutline();
+                float top = cliff.transform.position.y + cliff.Height;
+                var under = walks.FirstOrDefault(w => w.y < top && !Poly2.Contains(outline, new Vector2(w.x, w.z)) &&
+                                                      Poly2.DistanceToEdge(outline, new Vector2(w.x, w.z)) < 2f + cliff.Overhang);
+                if (under != default)
+                    findings.Add(LevelFinding.Warning($"{cliff.name}: its overhang leans over a walk line within 2 m (a player's head meets it).", cliff, under));
+            }
+            foreach (var contract in scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<SectionContract>(true)))
+                foreach (var s in contract.Shortcuts.Where(x => x.kind == SectionContract.ShortcutKind.Climb))
+                {
+                    var mid = (contract.From(s) + contract.To(s)) * 0.5f;
+                    var earth = cliffs.FirstOrDefault(c => c.Rock == CliffRock.Earth && Poly2.DistanceToEdge(c.WorldOutline(), new Vector2(mid.x, mid.z)) < 3f);
+                    if (earth != null)
+                        findings.Add(LevelFinding.Warning($"{contract.name}: a Climb lock on the earth bank {earth.name} (an earth bank is never a lock: soft, under 3.4 m).", contract, mid));
+                }
+            var caves = scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<RockShellShape>(true)).Select(LevelRock.Clear).ToList();
+            foreach (var scan in scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<ScanPlacement>(true)))
+                if (caves.Any(c => c.Contains(scan.transform.position)))
+                    findings.Add(LevelFinding.Error($"{scan.name}: a scan set in a cave's clear space.", scan));
         }
 
         // ------------------------------------------------------------------ the rules

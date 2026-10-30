@@ -56,6 +56,9 @@ namespace HotPatata.Editor
         [MenuItem(Menu + "Build Ground Shaping (L2)", priority = 12)]
         public static void BuildGroundShaping() => Build("L2 Ground shaping", ShapingArea);
 
+        [MenuItem(Menu + "Build Rock (L3)", priority = 13)]
+        public static void BuildRock() => Build("L3 Rock", RockArea);
+
         /// <summary>Opens the showcase (made if missing), clears area <paramref name="area"/>'s groups and fills it again.</summary>
         public static void Build(string area, Action<Area> fill)
         {
@@ -293,6 +296,42 @@ namespace HotPatata.Editor
 
             foreach (var piece in new LevelPiece[] { hill, ridge, trail, river, ravine }) EditorUtility.SetDirty(piece);
             LevelPieceBuilder.Rebuild(new LevelPiece[] { hill, ridge, river, ravine, trail });
+            GroundBaker.Bake(terrain);
+        }
+
+        // ------------------------------------------------------------------ L3: rock v2
+
+        /// <summary>A cliff of each of the six rocks, each with its detail, scree, talus, foot band and decals, and an outcrop; then the rules baked.</summary>
+        static void RockArea(Area a)
+        {
+            var terrain = LevelTerrain.Terrains(a.Scene).First();
+            var entry = PaletteCatalog.Find("rock.cliff");
+            var looks = new[] { ("default", "Granite"), ("sandstone", "Sandstone"), ("mossy", "Mossy"), ("limestone", "Limestone"), ("basalt", "Basalt"), ("earth", "Earth bank") };
+            var made = new List<LevelPiece>();
+            for (int i = 0; i < looks.Length; i++)
+            {
+                var (look, label) = looks[i];
+                float u = i % 2 == 0 ? 0.3f : 0.72f, v = 0.1f + (i / 2) * 0.3f;
+                var go = a.Place(entry, look == "default" ? null : look, a.At(u, v), label + " cliff");
+                var cliff = go.GetComponent<CliffShape>();
+                cliff.Outline.Clear();
+                float w = cliff.Rock == CliffRock.Earth ? 14f : 18f;
+                cliff.Outline.AddRange(Enumerable.Range(0, 12).Select(k =>
+                {
+                    float ang = k * Mathf.PI * 2f / 12f, r = 1f + 0.18f * Mathf.Sin(ang * 3f + i);
+                    return new Vector3(Mathf.Cos(ang) * w * 0.5f * r, 0f, Mathf.Sin(ang) * w * 0.32f * r);
+                }));
+                if (cliff.Rock != CliffRock.Earth)
+                {
+                    cliff.Height = 12f;
+                    cliff.Ledges.Clear();
+                    cliff.Ledges.Add(new CliffLedge { height = 5f, inset = 1.2f });
+                    cliff.Crest = 1.5f;
+                }
+                made.Add(cliff);
+            }
+            made.Add(a.Place(PaletteCatalog.Find("rock.outcrop"), null, a.At(0.5f, 0.95f), "Rock outcrop").GetComponent<CliffShape>());
+            LevelPieceBuilder.Rebuild(made);
             GroundBaker.Bake(terrain);
         }
 

@@ -15,6 +15,7 @@ The tools come in three steps (M18). This guide covers what is built:
 | 6. Natural ground | caves opening into each other and into the hills, ragged cliff crests, forests on the way (M20) | built |
 | 7. The palette | one window for everything a level places (tabs, pictures, search, favourites, burst, snapping), the menus sorted the same way (M21) | built |
 | 8. The layered ground | eight layers baked from rules and painted by hand, Terrain Tools, the terrain's size and fineness, resample (M21) | built |
+| 10. Rock out of the ground | six rocks, detailed faces, scanned rocks set in them, scree, talus, a foot band and decals (M21) | built |
 | 9. Shaping the ground | hills, hollows, ridges and plateaus that move without losing the sculpt, trails held to a grade, river beds and ravines (M21) | built |
 
 A good order: make the level (§1), shape the land (§2), plant the giant trees (§3), hang the timber on them (§4 to §7),
@@ -393,7 +394,9 @@ and tower a structure of elements. The library's booths, gantries, pulleys and s
 piece's height up **Height** (the white handle on top). Each **Ledge** steps its face back by its inset at its height: a shelf one
 walks on. Its top is walked on too; timber stands on it (a deck's posts find it).
 
-- **Rock**: granite (grey, lichen), sandstone (layered) or mossy. **Batter** leans its faces back; **Sink** buries its foot;
+- **Rock**: granite (grey, lichen), sandstone (layered), mossy, limestone (pale, karst), basalt (dark, in columns) or an earth
+  bank (soil and roots; kept under 3.4 m: never a lock). The palette's Cliff tile has the six as looks, each with its detail and its
+  transitions already set (§28). **Batter** leans its faces back; **Sink** buries its foot;
   **Crest** raises its top edge in a ragged skyline (only ever higher, so a lock holds; keep 0 for a top that is walked on).
 - For a natural face, draw an irregular outline (many dots), bury its back in a hill, and overlap two or three cliffs of different
   rocks and crests rather than one long block.
@@ -530,6 +533,30 @@ sculpt). `HotPatata/Ground/Rebuild Land Shapes` recomposes the whole terrain.
 - Bake the ground rules after shaping (§26): rock comes on the steep faces, riverbed under water, mud on the shores.
 - Verify Level warns of a walk line on the ground steeper than a player walks up (50°), of a trail cut too deep, and reports water
   with no kill zone under it, a river's anywhere along it.
+
+## 28. Rock that grows out of the ground
+
+A cliff's **Detail** (every value at 0 draws it as in M20; the palette's cliffs come with it set):
+
+- **Octaves** and **Lacunarity**: finer rock over the broad bulges. **Strata**: horizontal bands (sandstone, limestone).
+  **Fracture**: faces broken into planes like jointed rock. **Overhang**: an outward lip in its top third (never over a walk:
+  Verify warns within 2 m). Basalt is drawn in columns.
+- The detail is drawn only: the cliff still collides as its plain build, so its locked faces and heights stay exactly what the
+  contract reads (and the collider costs no more).
+
+**Into the ground** (decoration, nothing collides):
+
+- **Foot blend**: a band at the foot drawn in the ground's scree, up to that many metres.
+- **Rock scatter**: CC0 scanned rocks set into its faces, mostly inside the rock (they stick out 40 cm at most), never in a cave.
+  An earth bank gets roots instead.
+- **Scree** (and **Scree width**): stones and small rocks at its foot, denser near it, never on a walk, a pass arc, water or a
+  checkpoint's clearing.
+- **Fuse**: the ground rises to meet its foot over that many metres (a talus, through the height stack of §27): no cut shows.
+  Bake the ground rules after (§26): scree and gravel come round it.
+- **Decals**: moss, mud, leaf and wet patches round its foot. The palette's Ground tab places them by hand too (Moss, Mud, Leaf
+  and Wet Patch): each lies on what is under it, a rock face as well as the ground.
+- **Rock Outcrop** (palette): a small, many-sided, fractured cliff half buried: the rock out of a hillside.
+- Verify Level warns of a Climb lock on an earth bank, and reports a scan in a cave's clear space.
 
 ## Rules
 

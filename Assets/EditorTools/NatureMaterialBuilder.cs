@@ -49,6 +49,13 @@ namespace HotPatata.Editor
             new Surface { name = name, folder = folder, mapping = Mapping.Triplanar, tile = tile, smoothMax = 0.45f, brightness = brightness, saturation = 1f,
                           variation = 0.16f, macro = 0.4f, tint = tint ?? Color.white, antiTile = true, top = top, topCoverage = coverage };
 
+        /// <summary>An earth bank: soil and roots, never glossy.</summary>
+        static Surface EarthBank(Surface s)
+        {
+            s.smoothMax = 0.22f;
+            return s;
+        }
+
         /// <summary>A surface seen only underground: dull (it reflects no sky).</summary>
         static Surface Underground(Surface s)
         {
@@ -103,6 +110,11 @@ namespace HotPatata.Editor
             Rock("Nature_RockWall", "RockWall", 3f, null, 0f),
             Underground(Rock("Nature_CaveRock", "CaveRock", 4f, null, 0f, 0.85f)),
             Rock("Nature_Granite", "Granite", 5f, "Grass", 0.3f),
+            // M21's rocks (ARCHITECTURE §27.5): pale karst limestone, dark basalt, an earth bank; the half-timbered walls' plaster
+            Rock("Nature_Limestone", "Limestone", 5f, "Grass", 0.18f),
+            Rock("Nature_Basalt", "Basalt", 4f, "Grass", 0.14f),
+            EarthBank(Rock("Nature_EarthBank", "EarthBank", 4f, "ForestLeaves", 0.3f)),
+            Ground("Nature_Plaster", "Plaster", 2f),
             Rock("Nature_RocksGround", "RocksGround", 2.5f, null, 0f),
             Rock("Nature_StoneWall", "StoneWall", 2.5f, null, 0f),
             // PatataRanger's valley (ARCHITECTURE §25.5): rock wherever the ground is too steep to walk, leaf litter on all the rest

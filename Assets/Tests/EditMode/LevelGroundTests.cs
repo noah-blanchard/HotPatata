@@ -352,5 +352,23 @@ namespace HotPatata.Tests
             Assert.IsEmpty(ravine.Output.GetComponentsInChildren<KillZone>(), "a ravine has kill zones");
             Assert.Less(GroundAt(Origin.x + 100f, Origin.z + 50f), Origin.y + 10f - ravine.Depth + 0.3f, "the ravine is not carved");
         }
+
+        [Test]
+        public void CliffTalus_RaisesTheGroundToItsFoot()
+        {
+            var cliff = Piece<CliffShape>("Cliff", new Vector3(64f, 11.5f, 64f));
+            cliff.Outline.Clear();
+            cliff.Outline.AddRange(new[] { new Vector3(-6f, 0f, -3f), new Vector3(6f, 0f, -3f), new Vector3(6f, 0f, 3f), new Vector3(-6f, 0f, 3f) });
+            cliff.Sink = 2f;
+            float before = GroundAt(Origin.x + 64f, Origin.z + 64f - 4f);
+            cliff.Fuse = 3f;
+            LevelPieceBuilder.Rebuild(cliff);
+            float at = GroundAt(Origin.x + 64f, Origin.z + 64f - 3.5f);
+            Assert.Greater(at, before + 0.8f, "the ground did not rise toward the cliff's foot");
+            Assert.AreEqual(10f, GroundAt(Origin.x + 64f, Origin.z + 64f - 8f) - Origin.y, 0.05f, "the talus reached beyond its fuse");
+            cliff.Fuse = 0f;
+            LevelPieceBuilder.Rebuild(cliff);
+            Assert.AreEqual(before, GroundAt(Origin.x + 64f, Origin.z + 64f - 4f), 0.05f, "the talus stayed after the fuse went to 0");
+        }
     }
 }

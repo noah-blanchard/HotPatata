@@ -70,7 +70,7 @@ namespace HotPatata.Editor
         {
             var clock = Stopwatch.StartNew();
             // the land pieces shape the ground first: their outputs (a trail's line, a river's water) read what the stack made
-            foreach (var scene in pieces.Where(p => p != null && GroundShapes.IsLand(p)).Select(p => p.gameObject.scene).Distinct().ToList())
+            foreach (var scene in pieces.Where(p => p != null && (GroundShapes.IsLand(p) || p is CliffShape)).Select(p => p.gameObject.scene).Distinct().ToList())
                 TerrainStack.Sync(scene);
             EnsureMaterials();
             OrganicAssets.BeginInMemory();
@@ -173,6 +173,7 @@ namespace HotPatata.Editor
                 case ForestArea forest: LevelForest.Plant(forest, root); break;
                 case TrailShape trail: return GroundOutputs.BuildTrail(trail);
                 case RiverShape river: GroundOutputs.BuildRiver(river, root, name); break;
+                case DecalShape decal: DecalScatter.BuildDecal(decal, root, name); break;
             }
             return null;
         }
@@ -208,6 +209,7 @@ namespace HotPatata.Editor
                 LandShape land => land.WorldPoints().Select(p => new Vector3(p.x, 0f, p.y)).ToList(),
                 TrailShape trail => trail.WorldPoints().Select(p => new Vector3(p.x, 0f, p.y)).ToList(),
                 RiverShape river => river.WorldPoints().Select(p => new Vector3(p.x, 0f, p.y)).ToList(),
+                DecalShape decal => new[] { Vector3.zero, Vector3.one * decal.Size },
                 _ => Array.Empty<Vector3>(),
             };
             if (points.Count > MaxPoints) return $"{points.Count} points (at most {MaxPoints})";
@@ -475,6 +477,18 @@ namespace HotPatata.Editor
                     V(s, new Vector3(cl.Height, cl.Roughness, cl.Sink));
                     V(s, new Vector3(cl.Batter, (int)cl.Rock, 0f));
                     foreach (var l in cl.Ledges) V(s, new Vector3(l.height, l.inset, 0f));
+                    // M21's detail, written only when used: a cliff without it keeps the signature it had
+                    if (cl.Detailed || cl.FootBlend > 0f || cl.RockScatter > 0f || cl.Scree > 0f || cl.Fuse > 0f || cl.Decals > 0f)
+                    {
+                        V(s, new Vector3(cl.Octaves, cl.Lacunarity, cl.Strata));
+                        V(s, new Vector3(cl.Fracture, cl.Overhang, cl.FootBlend));
+                        V(s, new Vector3(cl.RockScatter, cl.Scree, cl.ScreeWidth));
+                        V(s, new Vector3(cl.Fuse, cl.Decals, 0f));
+                    }
+                    break;
+                case DecalShape decal:
+                    s.Append(decal.Kind).Append('|');
+                    V(s, new Vector3(decal.Size, decal.Variant, 0f));
                     break;
                 case HeroTreeShape tree:
                     s.Append(tree.TreeKind).Append('|');

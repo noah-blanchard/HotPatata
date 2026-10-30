@@ -266,5 +266,80 @@ namespace HotPatata.Tests
             Assert.IsTrue(Solid(new Vector3(12f, 0f, 0f)), "a cave on the ground lost its floor");
             Assert.IsTrue(Solid(new Vector3(0f, 0f, 0f)), "the ground opened outside the caves");
         }
+
+        // ------------------------------------------------------------------ M21 L3: rock v2
+
+        static Mesh ColliderMesh(LevelPiece piece) => piece.Output.GetComponentsInChildren<MeshCollider>(true).Single().sharedMesh;
+
+        CliffShape Cliff(string name, Vector3 offset)
+        {
+            var cliff = Piece<CliffShape>(name, offset);
+            cliff.Outline.Clear();
+            cliff.Outline.AddRange(DeckShapes.Oval(14f, 10f, 14));
+            cliff.Height = 9f;
+            cliff.Ledges.Add(new CliffLedge { height = 4f, inset = 1.5f });
+            return cliff;
+        }
+
+        [Test]
+        public void Cliff_DetailKeepsItsLockedFacesAndHeights()
+        {
+            var cliff = Cliff("Plain", new Vector3(-30f, 0f, 30f));
+            LevelPieceBuilder.Rebuild(cliff);
+            var plain = ColliderMesh(cliff);
+            var a = plain.vertices;
+            int tris = plain.triangles.Length;
+            var faces = cliff.Faces();
+            cliff.Fracture = 0.8f;
+            cliff.Strata = 0.3f;
+            cliff.Octaves = 4;
+            cliff.Overhang = 0.6f;
+            LevelPieceBuilder.Rebuild(cliff);
+            Assert.IsTrue(cliff.Detailed);
+            var b = ColliderMesh(cliff);
+            Assert.AreEqual(a.Length, b.vertexCount, "the collider changed with the detail");
+            Assert.IsTrue(a.Zip(b.vertices, (x, y) => (x - y).sqrMagnitude < 1e-6f).All(z => z), "the collider moved with the detail: the locks read it");
+            Assert.LessOrEqual(b.triangles.Length, tris * 1.2f, "the collider grew more than 1.2x");
+            var drawn = cliff.Output.GetComponentsInChildren<MeshFilter>(true).Select(f => f.sharedMesh).Single();
+            Assert.Greater(drawn.vertexCount, a.Length * 2, "the detail is not drawn finer");
+            CollectionAssert.AreEqual(faces, cliff.Faces(), "the faces a lock reads changed");
+        }
+
+        [Test]
+        public void EveryRock_HasItsMaterial_AndBasaltIsInColumns()
+        {
+            foreach (CliffRock rock in System.Enum.GetValues(typeof(CliffRock)))
+                Assert.IsNotNull(NatureMaterialBuilder.Load(LevelRock.CliffMaterial(rock)), $"{rock} has no material");
+            var basalt = Cliff("Basalt", new Vector3(30f, 0f, 30f));
+            basalt.Rock = CliffRock.Basalt;
+            Assert.IsTrue(basalt.Detailed, "basalt is drawn in columns (detail)");
+            LevelPieceBuilder.Rebuild(basalt);
+            var r = basalt.Output.GetComponentsInChildren<MeshRenderer>(true).First();
+            Assert.AreEqual("Nature_Basalt", r.sharedMaterial.name);
+        }
+
+        [Test]
+        public void Scans_SetIntoAFace_StickOutAtMost40cm_AndNeverInACave()
+        {
+            var cliff = Cliff("Scanned", new Vector3(0f, 0f, -40f));
+            cliff.RockScatter = 1f;
+            var tunnel = Piece<RockShellShape>("Tunnel", new Vector3(-20f, 0f, -40f));
+            tunnel.Points.Clear();
+            tunnel.Points.AddRange(new[] { Vector3.zero, new Vector3(30f, 0f, 0f) });
+            LevelPieceBuilder.Rebuild(tunnel);
+            LevelPieceBuilder.Rebuild(cliff);
+            var scans = cliff.Output.GetComponentsInChildren<ScanPlacement>(true);
+            Assert.Greater(scans.Length, 5, "no scans were set");
+            var clear = LevelRock.Clear(tunnel);
+            foreach (var scan in scans)
+            {
+                float out_ = scan.GetComponentsInChildren<MeshFilter>(true)
+                    .SelectMany(f => f.sharedMesh.vertices.Select(v => f.transform.TransformPoint(v)))
+                    .Max(v => Vector3.Dot(v - scan.FacePoint, scan.FaceNormal));
+                Assert.LessOrEqual(out_, RockDressing.MaxProtrusion + 0.02f, $"{scan.name} sticks out {out_:F2} m");
+                Assert.IsFalse(clear.Contains(scan.transform.position), $"{scan.name} sits in the tunnel's clear space");
+                Assert.IsEmpty(scan.GetComponentsInChildren<Collider>(true), "a scan collides");
+            }
+        }
     }
 }
