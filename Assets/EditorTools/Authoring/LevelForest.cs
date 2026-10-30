@@ -88,6 +88,7 @@ namespace HotPatata.Editor
                     case RopeBridgeShape bridge: var (a, b) = bridge.WorldEnds(); Line(new[] { a, b }, false); break;
                     case TimberDeckShape deck: Line(deck.WorldOutline().Select(p => new Vector3(p.x, 0f, p.y)).ToList(), true); break;
                     case RailingShape railing: Line(railing.WorldPoints(), false); break;
+                    case TrailShape trail: Line(GroundOutputs.TrailLine(trail), false); break;
                     case HouseShape house:
                         var t = house.transform;
                         var turn = Quaternion.Euler(0f, t.eulerAngles.y, 0f);
@@ -100,9 +101,23 @@ namespace HotPatata.Editor
         }
 
         /// <summary>The level's water surfaces in plan (each as its centre, half size and turn), with a metre of bank.</summary>
-        public static List<(Vector2 center, Vector2 half, float yaw)> Waters(Scene scene) =>
-            TimberLinks.Pieces(scene).OfType<WaterShape>()
+        public static List<(Vector2 center, Vector2 half, float yaw)> Waters(Scene scene)
+        {
+            var list = TimberLinks.Pieces(scene).OfType<WaterShape>()
                 .Select(w => (new Vector2(w.transform.position.x, w.transform.position.z), w.Size * 0.5f + Vector2.one, w.transform.eulerAngles.y)).ToList();
+            // a river's water: a box along each stretch of its bed (with a metre of bank)
+            foreach (var river in TimberLinks.Pieces(scene).OfType<RiverShape>().Where(r => r.Water))
+            {
+                if (!GroundShapes.Rivers.TryGetValue(river.PieceId ?? "", out var bed)) continue;
+                for (int i = 0; i + 4 < bed.bed.Length; i += 4)
+                {
+                    Vector2 a = new Vector2(bed.bed[i].x, bed.bed[i].z), b = new Vector2(bed.bed[i + 4].x, bed.bed[i + 4].z);
+                    var d = b - a;
+                    list.Add(((a + b) * 0.5f, new Vector2(bed.waterHalf + 1f, d.magnitude * 0.5f + 0.5f), Mathf.Atan2(d.x, d.y) * Mathf.Rad2Deg));
+                }
+            }
+            return list;
+        }
 
         /// <summary>True on water (or its bank).</summary>
         public static bool OnWater(List<(Vector2 center, Vector2 half, float yaw)> waters, Vector2 q)

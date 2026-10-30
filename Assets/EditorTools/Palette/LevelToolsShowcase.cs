@@ -53,6 +53,9 @@ namespace HotPatata.Editor
         [MenuItem(Menu + "Build Ground Layers (L1)", priority = 11)]
         public static void BuildGroundLayers() => Build("L1 Ground layers", GroundArea);
 
+        [MenuItem(Menu + "Build Ground Shaping (L2)", priority = 12)]
+        public static void BuildGroundShaping() => Build("L2 Ground shaping", ShapingArea);
+
         /// <summary>Opens the showcase (made if missing), clears area <paramref name="area"/>'s groups and fills it again.</summary>
         public static void Build(string area, Action<Area> fill)
         {
@@ -253,6 +256,45 @@ namespace HotPatata.Editor
         }
 
         static Vector2 Flat(Vector3 p) => new Vector2(p.x, p.z);
+
+        // ------------------------------------------------------------------ L2: shaping the ground
+
+        /// <summary>A round hill with a trail climbing it, a long ridge, a river winding across and a dry ravine, then the rules baked.</summary>
+        static void ShapingArea(Area a)
+        {
+            var terrain = LevelTerrain.Terrains(a.Scene).First();
+            Vector3 Local(Vector3 world, Vector3 origin) => world - origin;
+            T Shape<T>(string id, float u, float v, string label) where T : LevelPiece => a.Place(PaletteCatalog.Find(id), null, a.At(u, v), label).GetComponent<T>();
+
+            var hill = Shape<LandShape>("ground.round-hill", 0.2f, 0.55f, "Round hill (a land shape)");
+            hill.SurfaceNoise = 0.8f;
+
+            var ridge = Shape<LandShape>("ground.long-ridge", 0.6f, 0.62f, "Long ridge");
+            ridge.Height = 16f;
+
+            var trail = Shape<TrailShape>("ground.trail", 0.03f, 0.12f, "Trail climbing the hill (held to 30 %)");
+            var origin = trail.transform.position;
+            trail.Points.Clear();
+            foreach (var (u, v) in new[] { (0.03f, 0.12f), (0.1f, 0.25f), (0.13f, 0.4f), (0.17f, 0.5f), (0.2f, 0.55f) })
+                trail.Points.Add(Local(a.At(u, v), origin));
+
+            var river = Shape<RiverShape>("ground.river", 0.32f, 0.02f, "River (water over kill zones)");
+            origin = river.transform.position;
+            river.Points.Clear();
+            foreach (var (u, v) in new[] { (0.32f, 0.02f), (0.45f, 0.12f), (0.6f, 0.08f), (0.75f, 0.2f), (0.98f, 0.18f) })
+                river.Points.Add(Local(a.At(u, v), origin));
+            river.Slope = 1.5f;
+
+            var ravine = Shape<RiverShape>("ground.ravine", 0.82f, 0.95f, "Ravine (dry, scree bed)");
+            origin = ravine.transform.position;
+            ravine.Points.Clear();
+            foreach (var (u, v) in new[] { (0.82f, 0.95f), (0.88f, 0.75f), (0.86f, 0.55f), (0.92f, 0.4f) })
+                ravine.Points.Add(Local(a.At(u, v), origin));
+
+            foreach (var piece in new LevelPiece[] { hill, ridge, trail, river, ravine }) EditorUtility.SetDirty(piece);
+            LevelPieceBuilder.Rebuild(new LevelPiece[] { hill, ridge, river, ravine, trail });
+            GroundBaker.Bake(terrain);
+        }
 
         // ------------------------------------------------------------------ L0: every entry once
 

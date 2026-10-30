@@ -36,7 +36,7 @@ playtest and cannot be closed by code.
 | M16 Audio (#46–#49) | built (code, mixer, settings, docs): a drop-in sound library, sounds are folders of `Assets/Audio`; music by place and act, ambience in layers, movement sounds back (spec §11), bomb, run, obstacle and menu sounds; automated checks pass (M16.6) | the owner's sounds and music; the listening pass with two players (M16.6) |
 | **M20 The Long Climb** | in progress: the v1.0 level for two (PROJECT_SPEC §15g): exactly two players (a level's maximum), the rock, mine and lane pieces, the caves' and mine's CC0 props and library structures (M20.1–M20.4); the blockout of the seven acts laid, checked and walked (M20.5, approved by the owner); dressed, then the organic pass: the route
 turns, the land and rock organic, the forest on the way (M20.6) | window and fuse tuning in play, playtests (M20.7) |
-| **M21 Level tools v2** (#125) | in progress: L0 built (the Level Palette and one catalogue, the menus written from it and re-sorted, the Props Brush folded into bursts, the dev showcase) | L1 ground material, L2 ground shaping, L3 rock v2, L4 caves v2, L5 masonry and door looks, L6 showcase; the owner's try of each |
+| **M21 Level tools v2** (#125) | in progress: L0 built (the Level Palette and one catalogue, the menus written from it and re-sorted, the Props Brush folded into bursts, the dev showcase); L1 built (the layered ground: eight layers baked from rules and painted by hand, Terrain Tools, size and fineness, resample); L2 built (the height stack, land shapes, trails, rivers and ravines) | L3 rock v2, L4 caves v2, L5 masonry and door looks, L6 showcase; the owner's try of each |
 | **M19 Fresh start** | done: every map archived (`docs/MAP_ARCHIVE.md`, branch `archive/maps-v1`); only `Bootstrap` and `PassSandbox` remain, the sandbox dev-only (never listed in a release build); new levels copied from `Templates/CourseTemplate` | the first new map, by hand with the level tools |
 | Cleanup and generic obstacles | done: only `PatataWilds`, `IndustrialPlant` and `PassSandbox` (plus `Bootstrap`) remain; every obstacle system is generic (references, `IObstacleState`, `ObstacleVisualDriver`, `CustomVisual`, overridable poses, `ObstaclePrefabValidator`), with two example variants; the obstacle catalogue is `docs/OBSTACLES.md` | |
 
@@ -1847,11 +1847,11 @@ is level geometry or decoration, every door that opens is the kit with a new loo
 
 ## M21.L2 — Ground shaping: land shapes, trail, river and ravine
 
-- [ ] a sculpt near a hill survives moving the hill (`LevelGroundTests`);
-- [ ] a trail over a 40 % slope keeps ≤ 30 %, its banks meet the ground with no step over 0.3 m, its line is in `RouteWalks`;
-- [ ] a river carves its bed, its ribbon lies `waterDrop` under the banks, kill zones cover it; a ravine has neither;
-- [ ] Verify Level warns of a walk line on ground steeper than the movement climbs;
-- [ ] docs: LEVEL_AUTHORING §27 and §24.
+- [x] a sculpt near a hill survives moving the hill (`LevelGroundTests`);
+- [x] a trail over a 40 % slope keeps ≤ 30 %, its banks meet the ground with no step over 0.3 m, its line is in `RouteWalks`;
+- [x] a river carves its bed, its ribbon lies `waterDrop` under the banks, kill zones cover it; a ravine has neither;
+- [x] Verify Level warns of a walk line on ground steeper than the movement climbs;
+- [x] docs: LEVEL_AUTHORING §27 and §24.
 
 ## M21.L3 — Rock v2 and transitions
 

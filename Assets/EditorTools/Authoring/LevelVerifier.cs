@@ -66,6 +66,7 @@ namespace HotPatata.Editor
             Guard("The walks", () => Walks(scene, findings));
             Guard("The passes", () => Passes(findings));
             Guard("The falls", () => Falls(scene, findings));
+            Guard("The ground", () => Ground(scene, findings));
             Guard("The rules", () => Rules(scene, findings));
             Guard("The timber", () => Timber(scene, findings));
             Guard("The menu", () => Menu(scene, settings, findings));
@@ -249,10 +250,74 @@ namespace HotPatata.Editor
             var kills = roots.SelectMany(g => g.GetComponentsInChildren<KillZone>(true)).Select(k => k.GetComponent<Collider>()).Where(c => c != null).ToList();
             foreach (var water in roots.SelectMany(g => g.GetComponentsInChildren<NatureWater>(true)))
             {
-                var under = water.transform.position + Vector3.down * 0.6f;
-                if (!kills.Any(k => k.bounds.Contains(under)))
-                    findings.Add(LevelFinding.Error($"{water.name}: water with no kill zone under it.", water));
+                // a lake is a plane at its transform; a river's ribbon is checked along its length (every pair of its vertices)
+                var mesh = water.GetComponent<MeshFilter>() is MeshFilter mf ? mf.sharedMesh : null;
+                var points = new List<Vector3>();
+                if (mesh != null && mesh.vertexCount > 4 && water.transform.localScale == Vector3.one)
+                {
+                    var v = mesh.vertices;
+                    for (int i = 0; i + 1 < v.Length; i += 2) points.Add(water.transform.TransformPoint((v[i] + v[i + 1]) * 0.5f));
+                }
+                else points.Add(water.transform.position);
+                var bare = points.Where(p => !kills.Any(k => Covers(k, p + Vector3.down * 0.6f))).ToList();
+                if (bare.Count > 0)
+                    findings.Add(LevelFinding.Error($"{water.name}: water with no kill zone under it" + (points.Count > 1 ? " somewhere along it." : "."), water, bare[0]));
             }
+        }
+
+        /// <summary>True when <paramref name="p"/> is inside the kill zone's collider (a turned box, not its axis-aligned bounds).</summary>
+        static bool Covers(Collider k, Vector3 p) => k.bounds.Contains(p) && (k.ClosestPoint(p) - p).sqrMagnitude < 1e-4f;
+
+        // ------------------------------------------------------------------ the ground (M21)
+
+        /// <summary>The steepest slope a player walks up (the player's CharacterController), 45° if it cannot be read.</summary>
+        public static float WalkableSlope()
+        {
+            var player = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Player/Player.prefab");
+            var cc = player != null ? player.GetComponent<CharacterController>() : null;
+            return cc != null ? cc.slopeLimit : 45f;
+        }
+
+        static void Ground(Scene scene, List<LevelFinding> findings)
+        {
+            var settings = LevelScenes.SettingsOf(scene);
+            foreach (var terrain in LevelTerrain.Terrains(scene))
+            {
+                var d = terrain.terrainData;
+                if (settings != null && settings.Ground == GroundLook.Layered)
+                {
+                    if (!GroundBaker.IsLayered(terrain))
+                        findings.Add(LevelFinding.Error($"{terrain.name}: its layers are not the ground's eight in order (Level inspector: Use the layered ground).", terrain));
+                    if (terrain.materialTemplate == null || terrain.materialTemplate.shader.name != GroundLayerBuilder.ShaderName)
+                        findings.Add(LevelFinding.Error($"{terrain.name}: not drawn with the ground material {GroundLayerBuilder.MaterialName} (Apply Look).", terrain));
+                }
+                float mb = TerrainResample.MemoryMb(d.heightmapResolution);
+                if (d.heightmapResolution > 4097 || mb > 256f)
+                    findings.Add(LevelFinding.Warning($"{terrain.name}: {d.heightmapResolution}² heights, {mb:F0} MB of terrain data (heavy: resample it coarser).", terrain));
+            }
+            // a walk line on the ground steeper than a player walks up
+            float limit = Mathf.Tan(WalkableSlope() * Mathf.Deg2Rad);
+            foreach (var piece in TimberLinks.Pieces(scene))
+            {
+                var output = piece.Output != null ? piece.Output.GetComponent<LevelPieceOutput>() : null;
+                var line = output != null ? output.WalkLine : null;
+                if (line == null || line.Length < 2) continue;
+                for (int i = 1; i < line.Length; i++)
+                {
+                    float run = new Vector2(line[i].x - line[i - 1].x, line[i].z - line[i - 1].z).magnitude;
+                    if (run < 0.2f) continue;
+                    float ground = LevelNature.GroundAt(scene, new Vector2(line[i].x, line[i].z));
+                    bool onGround = !float.IsNaN(ground) && Mathf.Abs(line[i].y - ground) < 0.6f;
+                    if (onGround && Mathf.Abs(line[i].y - line[i - 1].y) / run > limit)
+                    {
+                        findings.Add(LevelFinding.Warning($"{piece.name}: its walk line climbs the ground steeper than {WalkableSlope():F0}° here (a player slides back).", piece, line[i]));
+                        break;
+                    }
+                }
+            }
+            foreach (var trail in TimberLinks.Pieces(scene).OfType<TrailShape>())
+                if (GroundShapes.Trails.TryGetValue(trail.PieceId ?? "", out var p) && p.worstCut > TrailShape.DeepCut)
+                    findings.Add(LevelFinding.Warning($"{trail.name}: the slope is steeper than its {trail.MaxGrade:F0} % grade (a cut or fill of {p.worstCut:F1} m): add a Stone Stair, or lower its grade.", trail));
         }
 
         // ------------------------------------------------------------------ the rules

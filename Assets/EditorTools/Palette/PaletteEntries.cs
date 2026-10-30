@@ -201,7 +201,7 @@ namespace HotPatata.Editor
                      Prefab = CourseKit.GameplayDir + "Campfire.prefab")]
         static GameObject Checkpoint(PlaceContext c) => LevelCourse.AddCheckpoint(c.Scene, c.Group(LevelGroup.Kit), c.Floor()).gameObject;
 
-        [PaletteItem("course.finish", "Course/Course", "Finish", Kind = PaletteKind.Course, Snap = PaletteSnap.Floor, Tags = "finish end goal", Icon = "d_winbtn_mac_max")]
+        [PaletteItem("course.finish", "Course/Course", "Finish", Kind = PaletteKind.Course, Snap = PaletteSnap.Floor, Tags = "finish end goal", Icon = "d_FilterSelectedOnly")]
         static GameObject Finish(PlaceContext c) => LevelCourse.AddFinish(c.Group(LevelGroup.Kit), c.Floor()).gameObject;
 
         [PaletteItem("course.kill-zone", "Course/Course", "Kill Zone", Kind = PaletteKind.Course, Snap = PaletteSnap.Floor, Tags = "kill zone fall death",

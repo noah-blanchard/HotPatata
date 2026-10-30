@@ -145,7 +145,19 @@ namespace HotPatata.Editor
         public Transform Group(LevelGroup group)
         {
             var settings = Settings;
-            return settings != null ? settings.Group(group) : null;
+            if (settings == null) return null;
+            // the land pieces' group is made with the level's first land piece (levels made before M21 have none)
+            if (group == LevelGroup.Ground && settings.Group(group) == settings.transform)
+            {
+                var ground = new GameObject("Ground").transform;
+                Undo.RegisterCreatedObjectUndo(ground.gameObject, "Ground group");
+                Undo.SetTransformParent(ground, settings.transform, "Ground group");
+                ground.localPosition = Vector3.zero;
+                Undo.RecordObject(settings, "Ground group");
+                settings.SetGroundGroup(ground);
+                EditorUtility.SetDirty(settings);
+            }
+            return settings.Group(group);
         }
 
         /// <summary>The ground <paramref name="above"/> under the point (or under the Scene view's pivot): where pieces have always gone.</summary>

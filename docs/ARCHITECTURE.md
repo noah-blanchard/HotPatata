@@ -2430,3 +2430,31 @@ The layered ground of an authored level: eight layers in the terrain's splat, ba
 Tests: `LevelGroundTests` (the layers in order and the material; the shader's passes and fog; the bake: rock on a 60° bank,
 riverbed and mud at a pond, litter in a dry hollow, trail on a walk line; paint kept by a re-bake, Reset Painted; resample to Fine
 exact at the old samples, trees and details kept, Undo; the resolutions).
+
+**Shaping (L2).**
+
+- **The height stack.** `TerrainStack`: a terrain's heights are its base (`GroundHeightBase`, `HeightBase.asset` beside the terrain
+  data: the author's sculpt, 16 bits a sample, deflated) plus the land contributions (`GroundShapes.Of`) applied in hierarchy order.
+  `TerrainCallbacks.heightmapChanged` sends every stroke to the base (the change since the last composition is added to it; a GPU
+  stroke is read back with `SyncHeightmap` once the mouse is released), so the shapes stay movable. `Sync` compares the shapes'
+  signatures and footprints with the ones the base remembers and recomposes the old and new footprints of what was added, changed,
+  moved or deleted; it runs before a land piece is built and on every watcher flush. Each recomposition is one undo step. A
+  resample resamples the base too (`Rebase`). The stack is made with the level's first land piece.
+- **Contributions.** `LandShape` (hill and hollow add, ridge adds along a line, plateau sets toward its top by a weight; profiles
+  Smooth, Steep, Terraced; outline and surface noise), `TrailShape` (sets the ground toward a profile: the ground along its line,
+  smoothed, held to `MaxGrade` by a forward and a backward pass, flat across its width, banked over `Bank`), `RiverShape` (takes the
+  minimum of the ground and its bed: falling by `Slope`, never rising, U or V across, banks fading out). Other tools add theirs
+  through `GroundShapes.Extra` (L3: a cliff's talus). Their last profile and bed (`GroundShapes.Trails`, `Rivers`) feed the outputs.
+- **Outputs.** `GroundOutputs`: a walked trail's walk line (its profile, joined to `RouteWalks`), a river's water ribbon (the
+  nature water, its V along the bed, `WaterDrop` under the banks) and its kill zones (turned boxes every `KillStep` metres, from
+  under the surface to a metre under the bed). The bake's bands: a trail forces its layer on its width, a river's water marks
+  water and under water (riverbed, mud on the shore), a ravine forces scree on its bed (`GroundBaker.Inputs.force`). Trails join
+  `LevelForest.Paths` (forests, bursts), rivers `LevelForest.Waters`.
+- **Group.** `LevelGroup.Ground`: the land pieces' group (made with the first one), its order the stack's.
+- **Verify.** The ground (`LevelVerifier.Ground`): a layered terrain without its eight layers or material (error), heights over
+  4097² or terrain data over 256 MB (warning), a walk line on the ground steeper than the player's `slopeLimit` (warning), a trail
+  cut deeper than `TrailShape.DeepCut` (warning); water is checked for a kill zone along its whole ribbon.
+
+Tests: `LevelGroundTests` (L2: a sculpt beside a hill survives the hill moving and being deleted; a trail on a 40 % slope holds
+30 %, its banks meet the ground, its line is walked; a river carves its bed, its water lies under the banks over kill zones all
+along; a ravine has neither).

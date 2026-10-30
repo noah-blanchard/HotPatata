@@ -53,6 +53,9 @@ namespace HotPatata.Editor
         public static int Flush(Scene scene)
         {
             var pieces = TimberLinks.Pieces(scene).ToList();
+            // a land piece moved, changed or deleted gives the ground back first; the trails and rivers in that ground follow it
+            if (TerrainStack.Sync(scene) > 0)
+                foreach (var land in pieces.Where(p => p is TrailShape || p is RiverShape)) LevelPieceBuilder.Clear(land);
             if (pieces.Count == 0) return 0;
             RenewDuplicates(pieces);
             int count = LevelPieceBuilder.Refresh(pieces);

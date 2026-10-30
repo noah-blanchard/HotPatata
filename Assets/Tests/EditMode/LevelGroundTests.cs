@@ -232,5 +232,125 @@ namespace HotPatata.Tests
             Assert.AreEqual(4097, TerrainResample.Resolution(1536f, TerrainFineness.Fine));
             Assert.Greater(TerrainResample.MemoryMb(4097), TerrainResample.WarnMb / 2f);
         }
+
+        // ------------------------------------------------------------------ L2: the height stack, trails, rivers
+
+        float GroundAt(float wx, float wz) => terrain.SampleHeight(new Vector3(wx, 0f, wz)) + Origin.y;
+
+        T Piece<T>(string name, Vector3 offset) where T : LevelPiece
+        {
+            var go = new GameObject(name);
+            go.transform.position = Origin + offset;
+            var piece = go.AddComponent<T>();
+            piece.EnsureId();
+            return piece;
+        }
+
+        [Test]
+        public void SculptSurvivesShapeMove()
+        {
+            var hill = Piece<LandShape>("Hill", new Vector3(40f, 10f, 40f));
+            hill.Points.Clear();
+            hill.Points.AddRange(new[] { new Vector3(-8f, 0f, -8f), new Vector3(8f, 0f, -8f), new Vector3(8f, 0f, 8f), new Vector3(-8f, 0f, 8f) });
+            hill.Height = 8f;
+            hill.Falloff = 6f;
+            hill.OutlineNoise = 0f;
+            hill.SurfaceNoise = 0f;
+            LevelPieceBuilder.Rebuild(hill);
+            Assert.IsTrue(TerrainStack.Has(terrain), "the first land piece made no stack");
+            Assert.Greater(GroundAt(Origin.x + 40f, Origin.z + 40f), Origin.y + 16f, "the hill did not rise");
+
+            // the author sculpts a bump 3 m high beside the hill (a brush stroke reaches the stack through the terrain's callback)
+            var d = terrain.terrainData;
+            int res = d.heightmapResolution;
+            int bx = Mathf.RoundToInt(70f / Size * (res - 1)), bz = Mathf.RoundToInt(40f / Size * (res - 1));
+            var patch = d.GetHeights(bx - 3, bz - 3, 7, 7);
+            for (int z = 0; z < 7; z++)
+                for (int x = 0; x < 7; x++) patch[z, x] += 3f / Height;
+            d.SetHeights(bx - 3, bz - 3, patch);
+            float bump = GroundAt(Origin.x + 70f, Origin.z + 40f);
+            Assert.AreEqual(13f, bump - Origin.y, 0.1f, "the sculpt did not take");
+
+            // the hill moves away: its old ground comes back, the sculpt stays
+            Undo.RecordObject(hill.transform, "move");
+            hill.transform.position = Origin + new Vector3(40f, 10f, 100f);
+            LevelPieceBuilder.Rebuild(hill);
+            Assert.AreEqual(10f, GroundAt(Origin.x + 40f, Origin.z + 40f) - Origin.y, 0.1f, "the hill's old ground did not come back");
+            Assert.Greater(GroundAt(Origin.x + 40f, Origin.z + 100f), Origin.y + 16f, "the hill did not rise where it went");
+            Assert.AreEqual(bump, GroundAt(Origin.x + 70f, Origin.z + 40f), 0.05f, "the sculpt was lost when the hill moved");
+
+            // deleted: its ground comes back
+            Object.DestroyImmediate(hill.gameObject);
+            TerrainStack.Sync(scene);
+            Assert.AreEqual(10f, GroundAt(Origin.x + 40f, Origin.z + 100f) - Origin.y, 0.1f, "a deleted hill left its ground");
+            Assert.AreEqual(bump, GroundAt(Origin.x + 70f, Origin.z + 40f), 0.05f, "the sculpt was lost when the hill was deleted");
+        }
+
+        [Test]
+        public void Trail_HoldsItsGrade_BanksMeetTheGround_AndIsWalked()
+        {
+            // a 40 % slope rising to the north
+            Shape((x, z) => 5f + (z - Origin.z) * 0.4f);
+            var trail = Piece<TrailShape>("Trail", new Vector3(64f, 0f, 10f));
+            trail.Points.Clear();
+            trail.Points.AddRange(new[] { Vector3.zero, new Vector3(0f, 0f, 40f), new Vector3(0f, 0f, 80f), new Vector3(0f, 0f, 100f) });
+            trail.MaxGrade = 30f;
+            trail.Bank = 4f;
+            trail.EdgeNoise = 0f;
+            LevelPieceBuilder.Rebuild(trail);
+            var line = GroundShapes.Trails[trail.PieceId].line;
+            float worst = 0f;
+            for (int i = 1; i < line.Length; i++)
+            {
+                float run = Vector2.Distance(new Vector2(line[i].x, line[i].z), new Vector2(line[i - 1].x, line[i - 1].z));
+                if (run > 0.05f) worst = Mathf.Max(worst, Mathf.Abs(line[i].y - line[i - 1].y) / run);
+            }
+            Assert.LessOrEqual(worst, 0.305f, "the trail is steeper than its grade");
+            // the banks meet the ground: at their outer edge the ground is the slope's own, within 0.3 m
+            float outer = trail.Width * 0.5f + trail.Bank + 0.5f;
+            for (float z = 20f; z < 90f; z += 7f)
+                foreach (float side in new[] { -outer, outer })
+                    Assert.AreEqual(5f + z * 0.4f, GroundAt(Origin.x + 64f + side, Origin.z + z) - Origin.y, 0.3f, $"a step where the bank meets the ground at z {z:F0}");
+            var walk = trail.Output.GetComponent<LevelPieceOutput>().WalkLine;
+            Assert.Greater(walk.Length, 10, "the trail has no walk line");
+            Assert.AreEqual(GroundAt(walk[walk.Length / 2].x, walk[walk.Length / 2].z), walk[walk.Length / 2].y - 0.05f, 0.25f, "the walk line is not on the trail");
+            Assert.IsTrue(LevelForest.Paths(scene).Count > 0, "forests and bursts do not keep off the trail");
+        }
+
+        [Test]
+        public void River_CarvesItsBed_WaterUnderTheBanks_KillZonesUnderIt()
+        {
+            var river = Piece<RiverShape>("River", new Vector3(30f, 10f, 10f));
+            river.Points.Clear();
+            river.Points.AddRange(new[] { Vector3.zero, new Vector3(10f, 0f, 40f), new Vector3(30f, 0f, 90f) });
+            river.Width = 8f;
+            river.Depth = 3f;
+            river.WaterDrop = 1.2f;
+            river.Slope = 0f;
+            river.BankNoise = 0f;
+            LevelPieceBuilder.Rebuild(river);
+            Physics.SyncTransforms();
+            var bed = GroundShapes.Rivers[river.PieceId];
+            var mid = bed.bed[bed.bed.Length / 2];
+            Assert.AreEqual(Origin.y + 10f - 3f, GroundAt(mid.x, mid.z), 0.3f, "the bed is not carved to its depth");
+            var water = river.Output.GetComponentsInChildren<NatureWater>().Single();
+            var surface = water.GetComponent<MeshFilter>().sharedMesh.vertices.Average(v => v.y);
+            Assert.AreEqual(Origin.y + 10f - 1.2f, surface, 0.15f, "the water is not Water Drop under the banks");
+            for (int i = 0; i < bed.bed.Length; i += 6)
+            {
+                var p = new Vector3(bed.bed[i].x, bed.surface[i] - 0.6f, bed.bed[i].z);
+                Assert.IsTrue(Physics.OverlapSphere(p, 0.05f, ~0, QueryTriggerInteraction.Collide).Any(k => k.GetComponentInParent<KillZone>() != null),
+                              $"no kill zone under the water at {i}");
+            }
+
+            var ravine = Piece<RiverShape>("Ravine", new Vector3(100f, 10f, 10f));
+            ravine.Kind = RiverKind.Ravine;
+            ravine.Points.Clear();
+            ravine.Points.AddRange(new[] { Vector3.zero, new Vector3(0f, 0f, 80f) });
+            LevelPieceBuilder.Rebuild(ravine);
+            Assert.IsEmpty(ravine.Output.GetComponentsInChildren<NatureWater>(), "a ravine has water");
+            Assert.IsEmpty(ravine.Output.GetComponentsInChildren<KillZone>(), "a ravine has kill zones");
+            Assert.Less(GroundAt(Origin.x + 100f, Origin.z + 50f), Origin.y + 10f - ravine.Depth + 0.3f, "the ravine is not carved");
+        }
     }
 }

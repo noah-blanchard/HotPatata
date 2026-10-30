@@ -63,6 +63,7 @@ namespace HotPatata.Editor
             var oldOrigin = terrain.transform.position;
             int oldRes = data.heightmapResolution;
             var oldHeights = data.GetHeights(0, 0, oldRes, oldRes);
+            var oldBase = TerrainStack.Base(terrain);
             int oldAlpha = data.alphamapResolution, layers = data.alphamapLayers;
             var oldMaps = layers > 0 ? data.GetAlphamaps(0, 0, oldAlpha, oldAlpha) : null;
             var trees = data.treeInstances.Select(t => (world: oldOrigin + Vector3.Scale(t.position, oldSize), tree: t)).ToArray();
@@ -90,6 +91,21 @@ namespace HotPatata.Editor
                     heights[z, x] = Mathf.Clamp01(Bicubic(oldHeights, oldRes, fx, fz));
                 }
             data.SetHeights(0, 0, heights);
+            if (oldBase != null)
+            {
+                // the author's sculpt under the land shapes, resampled the same way
+                var grid = new float[oldRes, oldRes];
+                for (int z = 0; z < oldRes; z++)
+                    for (int x = 0; x < oldRes; x++) grid[z, x] = oldBase[z * oldRes + x];
+                var newBase = new float[resolution * resolution];
+                for (int z = 0; z < resolution; z++)
+                    for (int x = 0; x < resolution; x++)
+                    {
+                        float wx = origin.x + x / (float)(resolution - 1) * size, wz = origin.z + z / (float)(resolution - 1) * size;
+                        newBase[z * resolution + x] = Mathf.Clamp01(Bicubic(grid, oldRes, (wx - oldOrigin.x) / oldSize.x * (oldRes - 1), (wz - oldOrigin.z) / oldSize.z * (oldRes - 1)));
+                    }
+                TerrainStack.Rebase(terrain, newBase);
+            }
 
             if (oldMaps != null)
             {

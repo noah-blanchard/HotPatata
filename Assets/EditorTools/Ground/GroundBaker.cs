@@ -36,6 +36,8 @@ namespace HotPatata.Editor
         public sealed class Inputs
         {
             public GroundField heights, water, underWater, walk, rock;
+            /// <summary>Layers forced over the rules (a trail's paint, a ravine's scree): the weight it takes (0..1) per texel.</summary>
+            public readonly List<(GroundField weight, int layer)> force = new List<(GroundField, int)>();
         }
 
         /// <summary>True when <paramref name="terrain"/> is drawn with the layered ground (eight layers in order).</summary>
@@ -259,6 +261,12 @@ namespace HotPatata.Editor
                     };
                     for (int l = 0; l < Layers; l++) noise[l] = Mathf.PerlinNoise(world.x / rules.noiseScale + l * 17.31f + 101.7f, world.y / rules.noiseScale - l * 11.73f + 37.1f);
                     rules.Weigh(t, weights, noise);
+                    foreach (var (weight, layer) in inputs.force)
+                    {
+                        float f = weight[x, z];
+                        if (f <= 0f) continue;
+                        for (int l = 0; l < Layers; l++) weights[l] = Mathf.Lerp(weights[l], l == layer ? 1f : 0f, f);
+                    }
                     for (int l = 0; l < Layers; l++) result[z, x, l] = weights[l];
                 }
             return result;

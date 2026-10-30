@@ -69,6 +69,9 @@ namespace HotPatata.Editor
         public static void Rebuild(IList<LevelPiece> pieces)
         {
             var clock = Stopwatch.StartNew();
+            // the land pieces shape the ground first: their outputs (a trail's line, a river's water) read what the stack made
+            foreach (var scene in pieces.Where(p => p != null && GroundShapes.IsLand(p)).Select(p => p.gameObject.scene).Distinct().ToList())
+                TerrainStack.Sync(scene);
             EnsureMaterials();
             OrganicAssets.BeginInMemory();
             try
@@ -168,6 +171,8 @@ namespace HotPatata.Editor
                 case HeroTreeShape tree: LevelNature.BuildTree(tree, root, name); break;
                 case WaterShape water: LevelNature.BuildWater(water, root, name); break;
                 case ForestArea forest: LevelForest.Plant(forest, root); break;
+                case TrailShape trail: return GroundOutputs.BuildTrail(trail);
+                case RiverShape river: GroundOutputs.BuildRiver(river, root, name); break;
             }
             return null;
         }
@@ -200,6 +205,9 @@ namespace HotPatata.Editor
                 HeroTreeShape tree => new[] { Vector3.zero, new Vector3(tree.Lean.x, tree.Height, tree.Lean.y) },
                 WaterShape water => new[] { Vector3.zero, new Vector3(water.Size.x, water.Depth, water.Size.y) },
                 ForestArea forest => forest.WorldOutline().Select(p => new Vector3(p.x, 0f, p.y)).ToList(),
+                LandShape land => land.WorldPoints().Select(p => new Vector3(p.x, 0f, p.y)).ToList(),
+                TrailShape trail => trail.WorldPoints().Select(p => new Vector3(p.x, 0f, p.y)).ToList(),
+                RiverShape river => river.WorldPoints().Select(p => new Vector3(p.x, 0f, p.y)).ToList(),
                 _ => Array.Empty<Vector3>(),
             };
             if (points.Count > MaxPoints) return $"{points.Count} points (at most {MaxPoints})";
@@ -209,9 +217,9 @@ namespace HotPatata.Editor
             foreach (var p in points) bounds.Encapsulate(p);
             float span = Mathf.Max(bounds.size.x, bounds.size.y, bounds.size.z);
             if (piece is TimberWalkShape || piece is RailingShape || piece is MineFrameShape || piece is MineRailShape
-                || piece is RockShellShape rock && rock.Kind == RockShellKind.Tunnel)
+                || piece is RockShellShape rock && rock.Kind == RockShellKind.Tunnel || piece is TrailShape || piece is RiverShape)
                 span = Mathf.Max(span, Curves.Length(points));
-            float max = piece is ForestArea ? MaxForestSpan : MaxSpan;
+            float max = piece is ForestArea || GroundShapes.IsLand(piece) ? MaxForestSpan : MaxSpan;
             return span > max ? $"it spans {span:F0} m (at most {max:F0} m)" : null;
         }
 
@@ -478,6 +486,24 @@ namespace HotPatata.Editor
                     break;
                 case WaterShape water:
                     V(s, new Vector3(water.Size.x, water.Depth, water.Size.y));
+                    break;
+                case LandShape land:
+                    s.Append(land.Kind).Append(land.Profile).Append('|');
+                    foreach (var p in land.Points) V(s, p);
+                    V(s, new Vector3(land.Height, land.Falloff, land.NoiseScale));
+                    V(s, new Vector3(land.OutlineNoise, land.SurfaceNoise, 0f));
+                    break;
+                case TrailShape trail:
+                    s.Append(trail.Paint).Append(trail.Walked).Append('|');
+                    foreach (var p in trail.Points) V(s, p);
+                    V(s, new Vector3(trail.Width, trail.Bank, trail.MaxGrade));
+                    V(s, new Vector3(trail.Flatten, trail.EdgeNoise, 0f));
+                    break;
+                case RiverShape river:
+                    s.Append(river.Kind).Append(river.Profile).Append('|');
+                    foreach (var p in river.Points) V(s, p);
+                    V(s, new Vector3(river.Width, river.Depth, river.Bank));
+                    V(s, new Vector3(river.BankNoise, river.WaterDrop, river.Slope));
                     break;
                 case ForestArea forest:
                     foreach (var p in forest.Outline) V(s, p);

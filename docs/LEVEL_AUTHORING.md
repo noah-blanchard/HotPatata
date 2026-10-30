@@ -15,6 +15,7 @@ The tools come in three steps (M18). This guide covers what is built:
 | 6. Natural ground | caves opening into each other and into the hills, ragged cliff crests, forests on the way (M20) | built |
 | 7. The palette | one window for everything a level places (tabs, pictures, search, favourites, burst, snapping), the menus sorted the same way (M21) | built |
 | 8. The layered ground | eight layers baked from rules and painted by hand, Terrain Tools, the terrain's size and fineness, resample (M21) | built |
+| 9. Shaping the ground | hills, hollows, ridges and plateaus that move without losing the sculpt, trails held to a grade, river beds and ravines (M21) | built |
 
 A good order: make the level (§1), shape the land (§2), plant the giant trees (§3), hang the timber on them (§4 to §7),
 plant the forest round it (§8), the mist and the sound (§9), then the game (§10), checked and played (§11), and dress it
@@ -422,7 +423,7 @@ make the other kind (The Long Climb is made this way):
 
 - **Turn the route.** Do not lay the whole course along one line: each place (an act) turns from the last at a junction
   (a round cavern, a landing, a beach, a clearing), so the next place is found round a bend, never seen from the start.
-- **Shape the ground in curves.** Sculpt the terrain (§2) in irregular outlines: a valley floor that widens into a clearing,
+- **Shape the ground in curves.** Lay hills, ridges, hollows and plateaus (§27) and sculpt the terrain (§2) in irregular outlines: a valley floor that widens into a clearing,
   forest rising round it, walls of rock beyond, a basin with ragged banks rather than a pit. Hide a water surface's straight
   edges under banks of terrain a little higher than it: the ground draws the shore.
 - **Rock out of the hills.** A cliff's outline has many dots, its free sides bulge, its top is ragged (**Crest**) and its back
@@ -432,6 +433,8 @@ make the other kind (The Long Climb is made this way):
   and tunnels open into caverns, galleries and cliffs (§20). Lay a cliff over a mouth as its lintel, where the slope crosses it.
 - **The forest on the way.** Woods come up to the way on both sides (their outlines drawn off it); on the way itself a
   **Walked** Forest Area (§8) grows ferns, grass and moss; under a canopy the forest fills the ground below the walks.
+- **Ways on the ground.** A trail (§27) holds its grade up a hillside, banked into it and painted; a river bed or a ravine carves its
+  way across (a river's water over its kill zones).
 - **Still locked.** A natural slope is not a lock: a player may climb a steep one by jumping. What keeps a team on the way is
   what always did: faces of 5 m (cliffs), the void, water, roofs (§10). Run Verify Level and the contracts after reshaping.
 - **Mist.** A forest in a thick mist reads as grey: thin the level's **Mist density** (§9) when the shapes matter.
@@ -504,6 +507,29 @@ A level's terrain has eight layers, in this order (the Terrain's **Paint Texture
   terrain (`..._Backup.asset`) until the next save. The window shows the terrain data's memory and warns over 128 MB.
 - **Valley ground.** A level made before M21 keeps its valley ground (one material). Switch it in the inspector (**Ground**):
   the layered ground starts as leaf litter everywhere; bake the rules.
+
+## 27. Shaping the ground: land shapes, trails, rivers
+
+The palette's Ground tab (or `GameObject > HotPatata Level > Ground`) lays pieces that shape the terrain without being painted into
+it: the ground is your sculpt **plus** the pieces, in the order of the level's `Ground` group. Move a hill, change it or delete it:
+the ground under it comes back, and what you sculpted round it stays (every brush stroke, Unity's or Terrain Tools', goes to your
+sculpt). `HotPatata/Ground/Rebuild Land Shapes` recomposes the whole terrain.
+
+- **Land shapes**: **Hill** and **Hollow** (rise or sink inside the outline, fading out over **Falloff**), **Ridge** (along a line, its
+  half width the falloff), **Plateau** (a flat top at the piece's height plus **Height**, banked sides). **Profile** Smooth, Steep or
+  Terraced; **Outline noise** and **Surface noise** break them up. Drag their dots like a deck's; the white handle sets the height,
+  the green ring shows where it fades out. Presets: Round Hill, Long Ridge, Basin, Mesa.
+- **Trail**: a way on the ground along its dots. The ground is pulled to a profile no steeper than **Max grade** (30 % is about 17°)
+  along it and flat across its **Width**, banked into the ground over **Bank** each side, painted with its layer (trail, gravel or
+  mud) and, when **Walked**, it joins the level's walk lines: the route runner walks it, forests and bursts keep off it. Where the
+  hillside is steeper than its grade it cuts or fills; a cut deeper than 2.5 m is reported (put a Stone Stair there).
+- **River Bed**: a bed carved along its dots, upstream first, **Width** wide and **Depth** deep, falling **Slope** metres every 100 m and
+  never rising; its banks fade into the ground. Its water lies **Water drop** under the banks, over kill zones all along it (falling
+  in, or throwing the bomb in, fails the section); its flow is only drawn, it moves nothing. **Ravine**: the same bed, dry, its floor
+  in scree.
+- Bake the ground rules after shaping (§26): rock comes on the steep faces, riverbed under water, mud on the shores.
+- Verify Level warns of a walk line on the ground steeper than a player walks up (50°), of a trail cut too deep, and reports water
+  with no kill zone under it, a river's anywhere along it.
 
 ## Rules
 
