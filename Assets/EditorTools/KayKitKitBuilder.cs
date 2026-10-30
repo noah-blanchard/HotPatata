@@ -41,7 +41,7 @@ namespace HotPatata.Editor
             (KitShape.Strut, new Regex(@"^strut_horizontal$"))
         };
 
-        [MenuItem("HotPatata/Course/Build KayKit Kit")]
+        [MenuItem("HotPatata/Libraries/Build KayKit Kit", priority = 20)]
         public static void BuildAll()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode) return;
@@ -55,7 +55,7 @@ namespace HotPatata.Editor
             Debug.Log("[KayKitKitBuilder] KayKit kit built");
         }
 
-        [MenuItem("HotPatata/Course/Rebuild All Courses")]
+        [MenuItem("HotPatata/Kit/Rebuild Sandbox And Menu", priority = 40)]
         public static void RebuildCourses()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode) return;

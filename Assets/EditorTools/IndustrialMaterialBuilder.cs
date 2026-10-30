@@ -81,10 +81,10 @@ namespace HotPatata.Editor
         static readonly Color Yellow = new Color(0.72f, 0.60f, 0.22f);   // muted industrial yellow (structure, frames, railings)
         static readonly Color Safety = new Color(0.86f, 0.88f, 0.90f);   // pale cool edge: landing edges, never a warm gameplay hue
 
-        [MenuItem("HotPatata/Course/Build Industrial Materials")]
+        [MenuItem("HotPatata/Legacy/Build Industrial Materials")]
         public static void BuildAll() => Ensure(false);
 
-        [MenuItem("HotPatata/Course/Reset Industrial Placeholders")]
+        [MenuItem("HotPatata/Legacy/Reset Industrial Placeholders")]
         public static void ResetPlaceholders()
         {
             if (!EditorUtility.DisplayDialog("Reset Industrial Placeholders",
@@ -171,7 +171,7 @@ namespace HotPatata.Editor
 
         // ------------------------------------------------------------------ your textures
 
-        [MenuItem("HotPatata/Course/Assign Industrial Textures")]
+        [MenuItem("HotPatata/Legacy/Assign Industrial Textures")]
         public static void AssignTextures()
         {
             Ensure(false);

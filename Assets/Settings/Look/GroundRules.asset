@@ -1,0 +1,227 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 58b82b04ccb92b445bffb7e9d44b2f6a, type: 3}
+  m_Name: GroundRules
+  m_EditorClassIdentifier: HotPatata.EditorTools::HotPatata.Editor.GroundRules
+  sharpness: 4
+  noiseScale: 9
+  curvatureRadius: 4
+  walkLineReach: 1.5
+  layers:
+  - name: Leaf litter
+    baseScore: 0.55
+    slope:
+      boost: 0.1
+      min: 0
+      max: 25
+      soft: 10
+    height:
+      boost: 0
+      min: 0
+      max: 0
+      soft: 0
+    concave: 0.6
+    convex: 0
+    underWater: 0
+    nearWater:
+      boost: 0
+      reach: 0
+    nearWalk:
+      boost: 0
+      reach: 0
+    nearRock:
+      boost: 0
+      reach: 0
+    north: 0
+    noise: 0.25
+  - name: Grass
+    baseScore: 0.22
+    slope:
+      boost: 0.25
+      min: 0
+      max: 18
+      soft: 8
+    height:
+      boost: 0.2
+      min: 4
+      max: 400
+      soft: 4
+    concave: 0
+    convex: 0.35
+    underWater: 0
+    nearWater:
+      boost: 0
+      reach: 0
+    nearWalk:
+      boost: 0
+      reach: 0
+    nearRock:
+      boost: 0
+      reach: 0
+    north: 0
+    noise: 0.5
+  - name: Trail
+    baseScore: 0
+    slope:
+      boost: 0
+      min: 0
+      max: 0
+      soft: 0
+    height:
+      boost: 0
+      min: 0
+      max: 0
+      soft: 0
+    concave: 0
+    convex: 0
+    underWater: 0
+    nearWater:
+      boost: 0
+      reach: 0
+    nearWalk:
+      boost: 2.2
+      reach: 2.2
+    nearRock:
+      boost: 0
+      reach: 0
+    north: 0
+    noise: 0.15
+  - name: Gravel
+    baseScore: 0
+    slope:
+      boost: 0
+      min: 0
+      max: 0
+      soft: 0
+    height:
+      boost: 0
+      min: 0
+      max: 0
+      soft: 0
+    concave: 0
+    convex: 0.9
+    underWater: 0
+    nearWater:
+      boost: 0
+      reach: 0
+    nearWalk:
+      boost: 0.35
+      reach: 3.5
+    nearRock:
+      boost: 0.6
+      reach: 7
+    north: 0
+    noise: 0.3
+  - name: Mud
+    baseScore: 0
+    slope:
+      boost: 0
+      min: 0
+      max: 0
+      soft: 0
+    height:
+      boost: 0
+      min: 0
+      max: 0
+      soft: 0
+    concave: 0.35
+    convex: 0
+    underWater: 0
+    nearWater:
+      boost: 2.2
+      reach: 5
+    nearWalk:
+      boost: 0
+      reach: 0
+    nearRock:
+      boost: 0
+      reach: 0
+    north: 0
+    noise: 0.3
+  - name: Riverbed
+    baseScore: 0
+    slope:
+      boost: 0
+      min: 0
+      max: 0
+      soft: 0
+    height:
+      boost: 0
+      min: 0
+      max: 0
+      soft: 0
+    concave: 0
+    convex: 0
+    underWater: 3
+    nearWater:
+      boost: 0
+      reach: 0
+    nearWalk:
+      boost: 0
+      reach: 0
+    nearRock:
+      boost: 0
+      reach: 0
+    north: 0
+    noise: 0
+  - name: Scree
+    baseScore: 0
+    slope:
+      boost: 1.1
+      min: 35
+      max: 50
+      soft: 5
+    height:
+      boost: 0
+      min: 0
+      max: 0
+      soft: 0
+    concave: 0
+    convex: 0
+    underWater: 0
+    nearWater:
+      boost: 0
+      reach: 0
+    nearWalk:
+      boost: 0
+      reach: 0
+    nearRock:
+      boost: 1.4
+      reach: 4.5
+    north: 0
+    noise: 0.25
+  - name: Rock
+    baseScore: 0
+    slope:
+      boost: 2.6
+      min: 46
+      max: 90
+      soft: 4
+    height:
+      boost: 0
+      min: 0
+      max: 0
+      soft: 0
+    concave: 0
+    convex: 0
+    underWater: 0
+    nearWater:
+      boost: 0
+      reach: 0
+    nearWalk:
+      boost: 0
+      reach: 0
+    nearRock:
+      boost: 0
+      reach: 0
+    north: 0
+    noise: 0

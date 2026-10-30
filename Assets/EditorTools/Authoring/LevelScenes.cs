@@ -38,12 +38,18 @@ namespace HotPatata.Editor
             return null;
         }
 
-        public static Scene Create(string name, string displayName, int minPlayers, LevelDay day, int maxPlayers = 4)
+        /// <summary>
+        /// Makes the level <paramref name="name"/> (in <paramref name="folder"/>, the levels' folder by default) with a terrain of
+        /// <paramref name="size"/> metres a side and <paramref name="resolution"/> height samples (0: the defaults).
+        /// </summary>
+        public static Scene Create(string name, string displayName, int minPlayers, LevelDay day, int maxPlayers = 4, string folder = LevelsFolder,
+                                   float size = 0f, int resolution = 0)
         {
             string problem = NameProblem(name);
             if (problem != null) throw new ArgumentException(problem);
-            if (!AssetDatabase.IsValidFolder(LevelsFolder.TrimEnd('/'))) AssetDatabase.CreateFolder("Assets/Scenes", "Levels");
-            var scene = CourseKit.PrepareCourseScene(ScenePath(name), out var section);
+            folder = folder.TrimEnd('/') + "/";
+            if (!AssetDatabase.IsValidFolder(folder.TrimEnd('/'))) AssetDatabase.CreateFolder(Path.GetDirectoryName(folder.TrimEnd('/')).Replace('\\', '/'), Path.GetFileName(folder.TrimEnd('/')));
+            var scene = CourseKit.PrepareCourseScene(folder + name + ".unity", out var section);
             // the template's plant exposure is the plant's own (a closed, lamp-lit factory)
             foreach (var volume in scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<Volume>(true)).ToArray())
                 if (volume.sharedProfile != null && AssetDatabase.GetAssetPath(volume.sharedProfile) == LookBuilder.PlantProfilePath)
@@ -56,6 +62,7 @@ namespace HotPatata.Editor
             settings.MinPlayers = minPlayers;
             settings.MaxPlayers = maxPlayers;
             settings.Day = day;
+            settings.Ground = GroundLook.Layered;
             Transform Group(string groupName)
             {
                 var g = new GameObject(groupName).transform;
@@ -68,7 +75,7 @@ namespace HotPatata.Editor
                 .Where(s => s.GetComponentInParent<Checkpoint>() == null).Select(s => s.transform.position).ToList();
             var start = starts.Count > 0 ? starts.Aggregate(Vector3.zero, (a, b) => a + b) / starts.Count : Vector3.zero;
             float groundY = starts.Count > 0 ? starts.Min(s => s.y) : 0f;
-            var terrain = MakeTerrain(name, level, new Vector3(start.x, groundY, start.z));
+            var terrain = MakeTerrain(name, level, new Vector3(start.x, groundY, start.z), size > 0f ? size : TerrainSize, resolution > 0 ? resolution : TerrainResolution);
             SafetyNet(level, terrain);
             LevelTerrain.SetupBrushes(terrain);
 
@@ -79,7 +86,7 @@ namespace HotPatata.Editor
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
             AssetDatabase.SaveAssets();
-            Debug.Log($"[Level] {name} made at {ScenePath(name)}: register it in the menu with HotPatata/Level/Register In Menu when it is ready.");
+            Debug.Log($"[Level] {name} made at {folder}{name}.unity: register it in the menu with HotPatata/Level/Register In Menu when it is ready.");
             return scene;
         }
 
@@ -87,17 +94,18 @@ namespace HotPatata.Editor
         /// A flat Unity terrain centred on the start, its surface at <paramref name="surface"/>'s height (it can be dug and raised),
         /// drawn in the nature look (<see cref="LevelTerrain.ApplyLook"/>).
         /// </summary>
-        static Terrain MakeTerrain(string levelName, Transform parent, Vector3 surface)
+        static Terrain MakeTerrain(string levelName, Transform parent, Vector3 surface, float size, int resolution)
         {
             string folder = LevelMeshStore.GeneratedRoot + levelName + "/Terrain";
             Directory.CreateDirectory(folder);
             AssetDatabase.Refresh();
-            var data = new TerrainData { heightmapResolution = TerrainResolution };
-            data.size = new Vector3(TerrainSize, TerrainDepth + TerrainHeight, TerrainSize);
+            var data = new TerrainData { heightmapResolution = resolution };
+            resolution = data.heightmapResolution;
+            data.size = new Vector3(size, TerrainDepth + TerrainHeight, size);
             float flat = TerrainDepth / (TerrainDepth + TerrainHeight);
-            var heights = new float[TerrainResolution, TerrainResolution];
-            for (int z = 0; z < TerrainResolution; z++)
-                for (int x = 0; x < TerrainResolution; x++) heights[z, x] = flat;
+            var heights = new float[resolution, resolution];
+            for (int z = 0; z < resolution; z++)
+                for (int x = 0; x < resolution; x++) heights[z, x] = flat;
             data.SetHeights(0, 0, heights);
             AssetDatabase.CreateAsset(data, folder + "/" + levelName + "_Terrain.asset");
 
@@ -105,7 +113,7 @@ namespace HotPatata.Editor
             go.name = "Terrain";
             go.layer = CourseKit.Layer("Environment");
             go.transform.SetParent(parent, false);
-            go.transform.position = new Vector3(surface.x - TerrainSize / 2f, surface.y - TerrainDepth, surface.z - TerrainSize / 2f);
+            go.transform.position = new Vector3(surface.x - size / 2f, surface.y - TerrainDepth, surface.z - size / 2f);
             GameObjectUtility.SetStaticEditorFlags(go, StaticEditorFlags.BatchingStatic | StaticEditorFlags.ContributeGI);
             var terrain = go.GetComponent<Terrain>();
             LevelTerrain.ApplyLook(terrain);
@@ -115,9 +123,10 @@ namespace HotPatata.Editor
         /// <summary>A kill zone under the whole terrain: nothing falls out of the world.</summary>
         static void SafetyNet(Transform parent, Terrain terrain)
         {
-            var at = terrain.transform.position + new Vector3(TerrainSize / 2f, -NetDrop, TerrainSize / 2f);
+            float size = terrain.terrainData.size.x;
+            var at = terrain.transform.position + new Vector3(size / 2f, -NetDrop, size / 2f);
             var net = CourseKit.Place(parent, CourseKit.GameplayDir + "KillZone", "Safety net", at, Quaternion.identity);
-            net.transform.localScale = new Vector3(TerrainSize * 3f, 4f, TerrainSize * 3f);
+            net.transform.localScale = new Vector3(size * 3f, 4f, size * 3f);
             net.AddComponent<LevelSafetyNet>();
         }
 

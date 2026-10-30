@@ -84,13 +84,12 @@ namespace HotPatata.Editor
         }
     }
 
-    /// <summary>The level's play and course commands (ARCHITECTURE §27): play from a checkpoint, the route runner, checkpoints and the finish.</summary>
+    /// <summary>The level's play and course commands (ARCHITECTURE §27): play from a checkpoint, the route runner, numbering the checkpoints.</summary>
     public static class LevelPlayMenu
     {
         const string Root = "HotPatata/Level/";
-        const string Add = "GameObject/HotPatata Level/";
 
-        [MenuItem(Root + "Play From Selected Checkpoint", priority = 41)]
+        [MenuItem(Root + "Play From Selected Checkpoint", priority = 42)]
         static void PlayFromSelected()
         {
             var cp = Selection.activeGameObject != null ? Selection.activeGameObject.GetComponentInParent<Checkpoint>() : null;
@@ -105,7 +104,7 @@ namespace HotPatata.Editor
             EditorApplication.EnterPlaymode();
         }
 
-        [MenuItem(Root + "Run Route Runner", priority = 42)]
+        [MenuItem(Root + "Run Route Runner", priority = 41)]
         static void RunRouteRunner()
         {
             if (EditorApplication.isPlaying) return;
@@ -122,25 +121,5 @@ namespace HotPatata.Editor
             var ordered = LevelCourse.Number(EditorSceneManager.GetActiveScene());
             Debug.Log("[Level] checkpoints in order: " + (ordered.Count == 0 ? "none" : string.Join(", ", ordered.Select(c => $"{c.name}"))));
         }
-
-        [MenuItem(Add + "Checkpoint (campfire)", priority = 70)]
-        static void AddCheckpoint()
-        {
-            var scene = EditorSceneManager.GetActiveScene();
-            var settings = LevelScenes.SettingsOf(scene);
-            var cp = LevelCourse.AddCheckpoint(scene, settings != null ? settings.Group(LevelGroup.Kit) : null, ViewGround());
-            Selection.activeGameObject = cp.gameObject;
-        }
-
-        [MenuItem(Add + "Finish", priority = 71)]
-        static void AddFinish()
-        {
-            var settings = LevelScenes.SettingsOf(EditorSceneManager.GetActiveScene());
-            var finish = LevelCourse.AddFinish(settings != null ? settings.Group(LevelGroup.Kit) : null, ViewGround());
-            Selection.activeGameObject = finish.gameObject;
-        }
-
-        /// <summary>The floor the Scene view looks at: a checkpoint or the finish goes on the deck in view, not on the ground under it.</summary>
-        static Vector3 ViewGround() => LevelNature.ViewFloor(EditorSceneManager.GetActiveScene());
     }
 }

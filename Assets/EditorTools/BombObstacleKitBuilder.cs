@@ -43,7 +43,7 @@ namespace HotPatata.Editor
 
         public static readonly Vector3 DoorSize = new Vector3(4f, 3.6f, 0.5f);
 
-        [MenuItem("HotPatata/Course/Build Bomb Obstacle Prefabs")]
+        [MenuItem("HotPatata/Libraries/Build Bomb Obstacle Prefabs", priority = 21)]
         public static void BuildAll()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode) return;
@@ -82,7 +82,7 @@ namespace HotPatata.Editor
         /// fixtures at z -14 and of the pass range): a forbidden strip, hot and cold zones, a window between two laser
         /// curtains, and a ring that raises a lift. Play them with the F4 bot.
         /// </summary>
-        [MenuItem("HotPatata/Course/Build Sandbox Bomb Obstacles")]
+        [MenuItem("HotPatata/Kit/Build Sandbox Bomb Obstacles", priority = 41)]
         public static void BuildSandboxDemo()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode) return;

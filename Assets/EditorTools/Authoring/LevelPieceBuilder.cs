@@ -69,6 +69,9 @@ namespace HotPatata.Editor
         public static void Rebuild(IList<LevelPiece> pieces)
         {
             var clock = Stopwatch.StartNew();
+            // the land pieces shape the ground first: their outputs (a trail's line, a river's water) read what the stack made
+            foreach (var scene in pieces.Where(p => p != null && (GroundShapes.IsLand(p) || p is CliffShape)).Select(p => p.gameObject.scene).Distinct().ToList())
+                TerrainStack.Sync(scene);
             EnsureMaterials();
             OrganicAssets.BeginInMemory();
             try
@@ -156,6 +159,7 @@ namespace HotPatata.Editor
                 case MineFrameShape frames:
                     TimberMine.Frames(root, name, frames.WorldPoints(), frames.Width, frames.Height, frames.Spacing, frames.Lagging, frames.LanternEvery,
                                       frames.Wear == TimberWear.Aged, p => SceneSite.GroundAt(p, frames.transform.position.y + 1f, 6f));
+                    if (frames.Stair) return MineStair(frames, root, name);
                     break;
                 case MineRailShape rails:
                     TimberMine.Track(root, name, Curves.Spline(rails.WorldPoints(), 0.5f), rails.Gauge, rails.Decay, p => SceneSite.GroundAt(p, rails.transform.position.y + 1f, 4f));
@@ -168,6 +172,9 @@ namespace HotPatata.Editor
                 case HeroTreeShape tree: LevelNature.BuildTree(tree, root, name); break;
                 case WaterShape water: LevelNature.BuildWater(water, root, name); break;
                 case ForestArea forest: LevelForest.Plant(forest, root); break;
+                case TrailShape trail: return GroundOutputs.BuildTrail(trail);
+                case RiverShape river: GroundOutputs.BuildRiver(river, root, name); break;
+                case DecalShape decal: DecalScatter.BuildDecal(decal, root, name); break;
             }
             return null;
         }
@@ -200,6 +207,10 @@ namespace HotPatata.Editor
                 HeroTreeShape tree => new[] { Vector3.zero, new Vector3(tree.Lean.x, tree.Height, tree.Lean.y) },
                 WaterShape water => new[] { Vector3.zero, new Vector3(water.Size.x, water.Depth, water.Size.y) },
                 ForestArea forest => forest.WorldOutline().Select(p => new Vector3(p.x, 0f, p.y)).ToList(),
+                LandShape land => land.WorldPoints().Select(p => new Vector3(p.x, 0f, p.y)).ToList(),
+                TrailShape trail => trail.WorldPoints().Select(p => new Vector3(p.x, 0f, p.y)).ToList(),
+                RiverShape river => river.WorldPoints().Select(p => new Vector3(p.x, 0f, p.y)).ToList(),
+                DecalShape decal => new[] { Vector3.zero, Vector3.one * decal.Size },
                 _ => Array.Empty<Vector3>(),
             };
             if (points.Count > MaxPoints) return $"{points.Count} points (at most {MaxPoints})";
@@ -209,9 +220,9 @@ namespace HotPatata.Editor
             foreach (var p in points) bounds.Encapsulate(p);
             float span = Mathf.Max(bounds.size.x, bounds.size.y, bounds.size.z);
             if (piece is TimberWalkShape || piece is RailingShape || piece is MineFrameShape || piece is MineRailShape
-                || piece is RockShellShape rock && rock.Kind == RockShellKind.Tunnel)
+                || piece is RockShellShape rock && rock.Kind == RockShellKind.Tunnel || piece is TrailShape || piece is RiverShape)
                 span = Mathf.Max(span, Curves.Length(points));
-            float max = piece is ForestArea ? MaxForestSpan : MaxSpan;
+            float max = piece is ForestArea || GroundShapes.IsLand(piece) ? MaxForestSpan : MaxSpan;
             return span > max ? $"it spans {span:F0} m (at most {max:F0} m)" : null;
         }
 
@@ -303,6 +314,16 @@ namespace HotPatata.Editor
                 agedShare = walk.Wear == TimberWear.Aged ? AgedWalk : 0f,
             };
             TimberKit.Walkway(root, name, path, walk.Width, spec, SceneSite.At(walk.gameObject.scene, y, top + 0.2f, walk.MaxPost));
+            return TimberKit.LastWalkSurface.ToArray();
+        }
+
+        /// <summary>A Mine Frames stair (M21): a walkway along its line, held by its frames (no supports of its own).</summary>
+        static Vector3[] MineStair(MineFrameShape frames, Transform root, string name)
+        {
+            var control = frames.WorldPoints();
+            if (control.Count < 2 || Curves.Length(control) < 0.5f) return null;
+            var spec = new TimberKit.WalkSpec { seed = frames.Seed, held = true, agedShare = frames.Wear == TimberWear.Aged ? AgedWalk : 0f };
+            TimberKit.Walkway(root, name + " stair", Curves.Spline(control, 0.4f), frames.Width - 0.3f, spec, default);
             return TimberKit.LastWalkSurface.ToArray();
         }
 
@@ -446,6 +467,7 @@ namespace HotPatata.Editor
                     foreach (var p in mf.Points) V(s, p);
                     V(s, new Vector3(mf.Width, mf.Height, mf.Spacing));
                     s.Append(mf.Lagging).Append(mf.LanternEvery).Append(mf.Wear).Append('|');
+                    if (mf.Stair) s.Append("stair|");
                     break;
                 case MineRailShape mr:
                     foreach (var p in mr.Points) V(s, p);
@@ -461,12 +483,39 @@ namespace HotPatata.Editor
                     V(s, new Vector3(rs.Width, rs.Height, rs.Thickness));
                     V(s, new Vector3(rs.Roughness, 0f, 0f));
                     foreach (var sky in rs.Skylights) V(s, new Vector3(sky.at.x, sky.radius, sky.at.y));
+                    // M21's caves, written only when used: a cave without them keeps the signature it had
+                    if (rs.Sections.Count > 0 || rs.Flare > 0f || rs.StartAttach.Attached || rs.EndAttach.Attached || rs.ShapedCavern ||
+                        rs.Pillars.Count > 0 || rs.Floors.Count > 0 || rs.Kind == RockShellKind.Shaft || rs.Dressing.Any)
+                    {
+                        foreach (var sec in rs.Sections) s.Append(JsonUtility.ToJson(sec)).Append(';');
+                        V(s, new Vector3(rs.Flare, rs.Apex.x, rs.Apex.y));
+                        V(s, new Vector3(rs.ApexHeight, rs.OpenTop ? 1f : 0f, rs.OpenBottom ? 1f : 0f));
+                        // an attached end follows its chamber: its world points are the input
+                        if (rs.StartAttach.Attached || rs.EndAttach.Attached) foreach (var p in rs.WorldPoints()) V(s, p);
+                        foreach (var al in rs.Alcoves) V(s, new Vector3(al.along, al.width, al.depth));
+                        foreach (var pi in rs.Pillars) V(s, new Vector3(pi.at.x, pi.radius, pi.at.y + pi.waist * 1000f));
+                        foreach (var f in rs.Floors) s.Append(JsonUtility.ToJson(f)).Append(';');
+                        foreach (var l in rs.Ledges) s.Append(JsonUtility.ToJson(l)).Append(';');
+                        s.Append(JsonUtility.ToJson(rs.Dressing)).Append('|');
+                    }
                     break;
                 case CliffShape cl:
                     foreach (var p in cl.Outline) V(s, p);
                     V(s, new Vector3(cl.Height, cl.Roughness, cl.Sink));
                     V(s, new Vector3(cl.Batter, (int)cl.Rock, 0f));
                     foreach (var l in cl.Ledges) V(s, new Vector3(l.height, l.inset, 0f));
+                    // M21's detail, written only when used: a cliff without it keeps the signature it had
+                    if (cl.Detailed || cl.FootBlend > 0f || cl.RockScatter > 0f || cl.Scree > 0f || cl.Fuse > 0f || cl.Decals > 0f)
+                    {
+                        V(s, new Vector3(cl.Octaves, cl.Lacunarity, cl.Strata));
+                        V(s, new Vector3(cl.Fracture, cl.Overhang, cl.FootBlend));
+                        V(s, new Vector3(cl.RockScatter, cl.Scree, cl.ScreeWidth));
+                        V(s, new Vector3(cl.Fuse, cl.Decals, 0f));
+                    }
+                    break;
+                case DecalShape decal:
+                    s.Append(decal.Kind).Append('|');
+                    V(s, new Vector3(decal.Size, decal.Variant, 0f));
                     break;
                 case HeroTreeShape tree:
                     s.Append(tree.TreeKind).Append('|');
@@ -478,6 +527,24 @@ namespace HotPatata.Editor
                     break;
                 case WaterShape water:
                     V(s, new Vector3(water.Size.x, water.Depth, water.Size.y));
+                    break;
+                case LandShape land:
+                    s.Append(land.Kind).Append(land.Profile).Append('|');
+                    foreach (var p in land.Points) V(s, p);
+                    V(s, new Vector3(land.Height, land.Falloff, land.NoiseScale));
+                    V(s, new Vector3(land.OutlineNoise, land.SurfaceNoise, 0f));
+                    break;
+                case TrailShape trail:
+                    s.Append(trail.Paint).Append(trail.Walked).Append('|');
+                    foreach (var p in trail.Points) V(s, p);
+                    V(s, new Vector3(trail.Width, trail.Bank, trail.MaxGrade));
+                    V(s, new Vector3(trail.Flatten, trail.EdgeNoise, 0f));
+                    break;
+                case RiverShape river:
+                    s.Append(river.Kind).Append(river.Profile).Append('|');
+                    foreach (var p in river.Points) V(s, p);
+                    V(s, new Vector3(river.Width, river.Depth, river.Bank));
+                    V(s, new Vector3(river.BankNoise, river.WaterDrop, river.Slope));
                     break;
                 case ForestArea forest:
                     foreach (var p in forest.Outline) V(s, p);

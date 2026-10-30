@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using HotPatata;
 using UnityEditor;
@@ -11,11 +12,17 @@ namespace HotPatata.Editor
     {
         RockShellShape Shell => (RockShellShape)target;
 
-        protected override string Help => Shell.Kind == RockShellKind.Tunnel
-            ? "A tunnel: its dots are the floor's centre line (click a dot to move it, Ctrl+click to delete it, a + to add one). Its walls and roof stop " +
-              "players and the bomb, and the roof is a ceiling (nothing is lobbed over it). Cyan discs are skylights: drag their dot."
-            : "A cavern: its dots are its outline on the floor (keep it round: the dome rises from it to its middle). Leave a tunnel's mouth inside " +
-              "its wall to open a way in. Cyan discs are skylights: drag their dot.";
+        protected override string Help => Shell.Kind switch
+        {
+            RockShellKind.Tunnel => "A tunnel: its dots are the floor's centre line (click a dot to move it, Ctrl+click to delete it, a + to add one). Its walls and roof stop " +
+                                    "players and the bomb, and the roof is a ceiling (nothing is lobbed over it). Cyan discs are skylights: drag their dot. " +
+                                    "With sections, each dot has its own width (cyan arrows) and height (white arrow), blended between dots.",
+            RockShellKind.Shaft => "A shaft: its dots are its outline on the floor; its walls rise Height. The way up is the author's: a Mine Stair, a walkway " +
+                                   "spiralling on posts, or a lift (never a ladder). A throw up a shaft is a pass like any other: with its top closed, Verify's " +
+                                   "ceiling check applies to its roof.",
+            _ => "A cavern: its dots are its outline on the floor (keep it round: the dome rises from it to its crown). With an Apex Height, Height is its walls' " +
+                 "and the white dot moves its crown. Leave a tunnel's mouth inside its wall to open a way in. Cyan discs are skylights, orange ones pillars: drag their dot.",
+        };
 
         protected override void DrawTools()
         {
@@ -27,6 +34,52 @@ namespace HotPatata.Editor
                 Shell.Skylights.Add(new RockSkylight { at = new Vector2(mid.x, mid.z), radius = 1.5f });
                 EditorUtility.SetDirty(Shell);
             }
+            var shell = Shell;
+            if (shell.Kind == RockShellKind.Tunnel)
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button(shell.Sections.Count == 0 ? "Sections at every dot" : "Match sections to dots"))
+                    {
+                        Undo.RecordObject(shell, "Sections");
+                        while (shell.Sections.Count < shell.Points.Count)
+                            shell.Sections.Add(shell.Sections.Count > 0 ? shell.Sections[shell.Sections.Count - 1] : new CaveSection(shell.Width, shell.Height, CaveProfile.Round));
+                        while (shell.Sections.Count > shell.Points.Count) shell.Sections.RemoveAt(shell.Sections.Count - 1);
+                        EditorUtility.SetDirty(shell);
+                    }
+                    if (shell.Sections.Count > 0 && GUILayout.Button("Clear sections"))
+                    {
+                        Undo.RecordObject(shell, "Sections");
+                        shell.Sections.Clear();
+                        EditorUtility.SetDirty(shell);
+                    }
+                }
+            if (shell.Kind == RockShellKind.Cavern)
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    var middle = shell.Points.Count > 0 ? shell.Points.Aggregate(Vector3.zero, (a, p) => a + p) / shell.Points.Count : Vector3.zero;
+                    if (GUILayout.Button("Add pillar"))
+                    {
+                        Undo.RecordObject(shell, "Add pillar");
+                        shell.Pillars.Add(new CavePillar { at = new Vector2(middle.x + 3f, middle.z), radius = 1.2f, waist = 0.6f });
+                        EditorUtility.SetDirty(shell);
+                    }
+                    if (GUILayout.Button("Add alcove"))
+                    {
+                        Undo.RecordObject(shell, "Add alcove");
+                        shell.Alcoves.Add(new CaveAlcove { along = 0.25f * shell.Alcoves.Count, width = 6f, depth = 3f });
+                        EditorUtility.SetDirty(shell);
+                    }
+                    if (GUILayout.Button("Add shelf"))
+                    {
+                        Undo.RecordObject(shell, "Add shelf");
+                        shell.Floors.Add(new CaveFloor
+                        {
+                            outline = new List<Vector2> { new Vector2(middle.x, middle.z), new Vector2(middle.x + 6f, middle.z), new Vector2(middle.x + 6f, middle.z + 5f), new Vector2(middle.x, middle.z + 5f) },
+                            height = 3f, thickness = 0.8f,
+                        });
+                        EditorUtility.SetDirty(shell);
+                    }
+                }
         }
 
         protected override void DrawScene()
@@ -42,7 +95,10 @@ namespace HotPatata.Editor
                 Handles.color = new Color(1f, 0.82f, 0.25f, 0.35f);
                 Handles.DrawAAPolyLine(1.5f, line.Select(p => p + Vector3.up * shell.Height).ToArray());
             }
-            PieceHandles.EditPoints(shell, shell.Points, cavern, cavern, cavern ? 3 : 2);
+            bool closed = shell.Kind != RockShellKind.Tunnel;
+            PieceHandles.EditPoints(shell, shell.Points, closed, closed, closed ? 3 : 2);
+            if (shell.Kind == RockShellKind.Tunnel && shell.Sections.Count > 0) SectionHandles(shell);
+            if (cavern) CavernHandles(shell);
             float top = shell.transform.position.y + shell.Height;
             for (int i = 0; i < shell.Skylights.Count; i++)
             {
@@ -59,6 +115,74 @@ namespace HotPatata.Editor
                     var local = shell.transform.InverseTransformPoint(to);
                     sky.at = new Vector2(local.x, local.z);
                     shell.Skylights[i] = sky;
+                    EditorUtility.SetDirty(shell);
+                }
+            }
+        }
+
+        /// <summary>Each dot's section: its width (cyan arrows, each side) and height (white arrow on top).</summary>
+        static void SectionHandles(RockShellShape shell)
+        {
+            var world = shell.WorldPoints();
+            for (int i = 0; i < world.Count && i < shell.Sections.Count; i++)
+            {
+                var sec = shell.Sections[i];
+                var t = world[Mathf.Min(world.Count - 1, i + 1)] - world[Mathf.Max(0, i - 1)];
+                t.y = 0f;
+                if (t.sqrMagnitude < 1e-6f) continue;
+                var right = Vector3.Cross(Vector3.up, t.normalized);
+                float size = HandleUtility.GetHandleSize(world[i]) * 0.08f;
+                EditorGUI.BeginChangeCheck();
+                Handles.color = PieceHandles.OpeningColor;
+                var r = Handles.Slider(world[i] + right * sec.width * 0.5f, right, size, Handles.ConeHandleCap, 0.1f);
+                var l = Handles.Slider(world[i] - right * sec.width * 0.5f, -right, size, Handles.ConeHandleCap, 0.1f);
+                Handles.color = Color.white;
+                var top = Handles.Slider(world[i] + Vector3.up * sec.height, Vector3.up, size, Handles.ConeHandleCap, 0.1f);
+                Handles.Label(world[i] + Vector3.up * (sec.height + 0.6f), sec.profile.ToString());
+                if (!EditorGUI.EndChangeCheck()) continue;
+                Undo.RecordObject(shell, "Tunnel section");
+                float rw = Vector3.Dot(r - world[i], right) * 2f, lw = Vector3.Dot(l - world[i], -right) * 2f;
+                sec.width = Mathf.Max(1.5f, Mathf.Abs(rw - sec.width) > Mathf.Abs(lw - sec.width) ? rw : lw);
+                sec.height = Mathf.Max(2f, top.y - world[i].y);
+                shell.Sections[i] = sec;
+                EditorUtility.SetDirty(shell);
+            }
+        }
+
+        /// <summary>A cavern's crown (white dot) and its pillars (orange discs).</summary>
+        static void CavernHandles(RockShellShape shell)
+        {
+            var w = shell.WorldPoints();
+            if (w.Count < 3) return;
+            var middle = new Vector3(w.Average(p => p.x), shell.transform.position.y, w.Average(p => p.z));
+            if (shell.ApexHeight > 0f)
+            {
+                var apex = middle + shell.transform.TransformVector(new Vector3(shell.Apex.x, 0f, shell.Apex.y)) + Vector3.up * shell.ApexHeight;
+                Handles.color = Color.white;
+                EditorGUI.BeginChangeCheck();
+                var to = Handles.FreeMoveHandle(apex, HandleUtility.GetHandleSize(apex) * 0.09f, Vector3.zero, Handles.DotHandleCap);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(shell, "Move crown");
+                    var local = shell.transform.InverseTransformVector(to - apex);
+                    shell.Apex += new Vector2(local.x, local.z);
+                    EditorUtility.SetDirty(shell);
+                }
+            }
+            for (int i = 0; i < shell.Pillars.Count; i++)
+            {
+                var pillar = shell.Pillars[i];
+                var at = shell.transform.TransformPoint(new Vector3(pillar.at.x, 0f, pillar.at.y));
+                Handles.color = new Color(1f, 0.55f, 0.2f, 0.9f);
+                Handles.DrawWireDisc(at, Vector3.up, pillar.radius);
+                EditorGUI.BeginChangeCheck();
+                var to = Handles.FreeMoveHandle(at, HandleUtility.GetHandleSize(at) * 0.07f, Vector3.zero, Handles.DotHandleCap);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(shell, "Move pillar");
+                    var local = shell.transform.InverseTransformPoint(to);
+                    pillar.at = new Vector2(local.x, local.z);
+                    shell.Pillars[i] = pillar;
                     EditorUtility.SetDirty(shell);
                 }
             }

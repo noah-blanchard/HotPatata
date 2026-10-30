@@ -13,6 +13,11 @@ The tools come in three steps (M18). This guide covers what is built:
 | 4. Timber by hand | structures (shelter, gantry, sign, pulley beam), freezing into elements, the structure library | built |
 | 5. Rock and mine | caves (tunnels and caverns), cliffs, mine timber, lane markers (M20) | built |
 | 6. Natural ground | caves opening into each other and into the hills, ragged cliff crests, forests on the way (M20) | built |
+| 7. The palette | one window for everything a level places (tabs, pictures, search, favourites, burst, snapping), the menus sorted the same way (M21) | built |
+| 8. The layered ground | eight layers baked from rules and painted by hand, Terrain Tools, the terrain's size and fineness, resample (M21) | built |
+| 9. Shaping the ground | hills, hollows, ridges and plateaus that move without losing the sculpt, trails held to a grade, river beds and ravines (M21) | built |
+| 10. Rock out of the ground | six rocks, detailed faces, scanned rocks set in them, scree, talus, a foot band and decals (M21) | built |
+| 11. Caves v2 | tunnels whose section changes, shaped chambers (crown, alcoves, pillars, shelves), shafts, networks, mouths in a hillside, dressing (M21) | built |
 
 A good order: make the level (§1), shape the land (§2), plant the giant trees (§3), hang the timber on them (§4 to §7),
 plant the forest round it (§8), the mist and the sound (§9), then the game (§10), checked and played (§11), and dress it
@@ -44,13 +49,16 @@ changing it), and the terrain, mist and sound tools below.
 ## 2. Shape the land
 
 The level's ground is a Unity **Terrain** (`Level/Terrain`). Select it and sculpt it with its own brushes (Raise or Lower,
-Set Height, Smooth, Stamp): dig a ravine, raise a hill, flatten a clearing. It is drawn as the forest floor of the nature
-courses by itself: leaf litter where it is flat, rock where it is steep, in the height mist. (Its Paint Texture tool is not
-used.)
+Set Height, Smooth, Stamp) and Terrain Tools' (noise, erosion, terrace, smudge...): dig a ravine, raise a hill, flatten a
+clearing. A level made since M21 has the **layered ground**: eight layers (leaf litter, grass, trail, gravel, mud, riverbed,
+scree, rock) baked from rules and painted by hand with Paint Texture (§26). A level made before draws the valley ground by
+itself: leaf litter where it is flat, rock where it is steep, in the height mist (the Level inspector's **Ground** switches it).
+New Level chooses the terrain's **size** (256 to 1536 m) and **fineness** (a height sample every metre, or every half metre);
+**Resample terrain** changes them later (§26).
 
 - **Valley walls**: on the `Level` object, **Raise valley walls round the edge** lifts the terrain's border into rock walls
-  (choose their width and height). Ctrl+Z undoes it.
-- **Water**: `GameObject > HotPatata Level > Water`. A surface at the piece's height (drag the yellow squares to size it,
+  (choose their width and height; the palette's Ground > Valley Walls raises them 30 m wide and 35 m high). Ctrl+Z undoes it.
+- **Water**: `GameObject > HotPatata Level > Ground > Water` (or the palette's Ground tab, §25). A surface at the piece's height (drag the yellow squares to size it,
   turn the piece to turn its flow) with a kill zone under it down to its depth: falling in, or throwing the bomb into it,
   fails the section. Dig the ground under it first.
 - The safety net follows the terrain on every save (always under its lowest point).
@@ -62,7 +70,7 @@ After reshaping the ground under timber: `HotPatata/Level/Rebuild All Pieces` (t
 
 ## 3. Giant trees
 
-`GameObject > HotPatata Level > Giant Tree` grows a hero tree (the kind the archived PatataRanger's post was built round), 40 to 70 m.
+`GameObject > HotPatata Level > Nature > Giant Tree` grows a hero tree (the kind the archived PatataRanger's post was built round), 40 to 70 m.
 
 - **Start from** an old oak, a tall fir, a pine or a snag (Inspector), then adjust its height, girth, crown and seed.
 - **The white handle at the top of the trunk** leans the tree and sets its height.
@@ -73,7 +81,8 @@ After reshaping the ground under timber: `HotPatata/Level/Rebuild All Pieces` (t
 
 ## 4. Add timber
 
-`GameObject > HotPatata Level` (or right click in the Hierarchy) adds a piece where the Scene view looks, built at once:
+The Level Palette (§25), or `GameObject > HotPatata Level > Timber` (or right click in the Hierarchy), adds a piece where you click
+in the Scene view (the menu: where the Scene view looks), built at once:
 
 | Piece | What it is |
 |---|---|
@@ -122,13 +131,14 @@ to start from and then pull into shape.
 
 **Save As Preset** in a piece's Inspector saves its settings (width, rails, supports, wear...), never its shape. Use it
 again with **Apply Preset**, or drag the preset from the Project window into the Scene view: a new piece of that kind
-appears there with those settings.
+appears there with those settings. The palette lists every preset beside its piece (a **Presets** section of its tab), and an
+armed piece's strip offers its presets.
 
 ## 8. Forest
 
 Two ways, together:
 
-- **Forest Area** (`GameObject > HotPatata Level > Forest Area`): draw its outline like a deck's (dots, +, Ctrl+click, or
+- **Forest Area** (`GameObject > HotPatata Level > Nature > Forest Area`; **Forest Area (Walked)** is one already walked): draw its outline like a deck's (dots, +, Ctrl+click, or
   the pencil). Inside it the forest is planted by itself, like the archived PatataRanger's: giants in groves with clearings, an
   understory, ferns, grass, bushes, rocks, logs and moss. Set how dense each layer is, how open the clearings are, and how
   far it keeps from the paths. Nothing grows on a walkway, a bridge, a deck, a pass arc, on water, on rock too steep, or
@@ -144,18 +154,18 @@ Two ways, together:
 
 - **Mist**: it lies a little under the ground everywhere (the team walks in its veil), thick at dawn, as the day says.
   On the `Level` object: **Mist density** (thinner or thicker than the day) and **Mist depth**. A **Mist Zone**
-  (`GameObject > HotPatata Level > Mist Zone`) fills its box with mist up to its top: a ravine, a hollow, a clearing at
+  (`GameObject > HotPatata Level > Nature > Mist Zone`) fills its box with mist up to its top: a ravine, a hollow, a clearing at
   dawn. The mist is baked again on every save (or **Bake the mist now**).
 - **Ambience**: on the `Level` object, each section's ambience (Forest, River, Canopy, Cave...): from the start, then from
   each checkpoint. Written on save.
-- **Sound Source**: a river, a waterfall, a fire, wind... at a spot (pick its sound and how far it is heard). The sounds
+- **Sound Source** (`GameObject > HotPatata Level > Air > Sound Source`): a river, a waterfall, a fire, wind... at a spot (pick its sound and how far it is heard). The sounds
   are the folders of `Assets/Audio/Ambience/Emitters`; drop files there (`Assets/Audio/README.md`).
-- **Ambience Zone**: a box where the ambience is another one (a cave in the forest).
+- **Ambience Zone** (`Air > Ambience Zone`): a box where the ambience is another one (a cave in the forest).
 
 ## 10. The game: checkpoints, kit, wiring, contracts
 
 **Checkpoints and the finish.** Look at the floor where it goes (a deck, a walkway, the ground: the middle of the Scene view)
-and `GameObject > HotPatata Level > Checkpoint (campfire)`: the checkpoint stands there, its four spawns round it, and its
+and `GameObject > HotPatata Level > Course > Checkpoint (campfire)` (or click it there from the palette's Course tab): the checkpoint stands there, its four spawns round it, and its
 campfire (its child) 3.4 m beside them, on the first side with floor and room (its right, left, ahead, behind, then the
 diagonals): never off the deck, in a rail or on a plate. `Finish` places the end the same way. Place them in any order, then
 **Number checkpoints along the course** (on the `Level` object): they are numbered 1, 2, 3... in the order a team reaches
@@ -167,12 +177,13 @@ A checkpoint needs room: its spawns stand 1.2 m round it and its fire 3.4 m away
 away, on the same floor); the zone follows it. **Place the campfire beside it** puts it back; the zone is also fitted round the
 fire on every save. Verify Level says when a spawn stands in a rail or in the air, or a fire is too near or too far.
 
-**The kit.** `GameObject > HotPatata Level > Kit` (or right click in the Hierarchy) places any kit element on the floor the Scene
-view looks at (a deck, a walkway or the ground; raised where it hangs: a bridge, a hoop), in `Level/Kit`, selected: doors (one that rises, one
+**The kit.** The palette's Kit tab, or `GameObject > HotPatata Level > Kit` (or right click in the Hierarchy), places any kit element
+on the floor you click (the menu: the floor the Scene view looks at) (a deck, a walkway or the ground; raised where it hangs: a bridge, a hoop), in `Level/Kit`, selected: doors (one that rises, one
 that slides aside), bridges, drawbridge, pivot, lift, moving, falling and plain platforms, conveyor; plates (plain,
 hands-free, heavy, hourglass), hoop, arch, sun beam, switch; hot, cold and forbidden zones, laser curtain, body screen, tube,
-cannon, rotating bar, sweeper, piston, crusher, windmill, launch pad, kill zone (what each does: docs/OBSTACLES.md), in the
-kit's own look or, under `Kit/Forest`, in the forest's (§14). Select one in the Scene view:
+cannon, rotating bar, sweeper, piston, crusher, windmill, launch pad (and, under Course, the kill zone; what each does:
+docs/OBSTACLES.md), in the kit's own look or another of its looks: the palette's look chips, or the menu's submenu of a system
+that has several (`Kit > Door (rises) > Palisade Gate`, §14). Select one in the Scene view:
 
 - a **door, bridge or lift**: drag its yellow box to size it; its open position is the blue ghost box: drag the blue ball to
   move where it opens to (and how far): up for a door that rises, aside for one that slides;
@@ -234,7 +245,8 @@ A level is official (shipped in the menu) only once Verify Level reports no erro
 
 ## 14. The kit in the forest look
 
-`GameObject > HotPatata Level > Kit > Forest` places the kit in timber, rope and stone (Prefab Variants of the kit in
+A kit system's **Forest** look (the palette's look chips, or its submenu: `GameObject > HotPatata Level > Kit > Lift > Cage`) places
+the kit in timber, rope and stone (Prefab Variants of the kit in
 `Assets/Prefabs/Variants/Forest/`, docs/OBSTACLES.md §4.1): the same systems, colliders and gameplay cues (a plate's icon, a
 zone's colour, an hourglass's sand, a curtain's field), drawn for the forest.
 
@@ -256,22 +268,24 @@ zone's colour, an hourglass's sand, a curtain's field), drawn for the forest.
 | Rotten planks | falling platform | grey planks with gaps and a broken one, on two stringers |
 | Swinging log | sweeper | a trunk with iron bands on an iron hub; its lethal reach stays the bar's |
 
-Size them with the same handles (§10). `HotPatata/Kit/Build Forest Looks` rebuilds them from their builder; never edit
+Size them with the same handles (§10). `HotPatata/Libraries/Build Forest Looks` rebuilds them from their builder; never edit
 them by hand.
 
 ## 15. Props
 
 **The library.** `Assets/Prefabs/Props/` holds the CC0 models at their real size, sorted by kind (Rocks, Wood, Plants,
 Containers, Household, Lanterns, Ruins, Wildlife), drawn in the nature look, plus ready sets in `Sets/` (a workbench, a
-woodpile, a rope corner). Drag one from the Project window into the Scene view, under `Level/Props`. A prop is decoration
+woodpile, a rope corner). Place one from the palette's Props tab (by folder; the sets under Sets), or drag it from the Project
+window into the Scene view, under `Level/Props`. A prop is decoration
 (walked through) until its **Solid** box is ticked (inspector): tick it for anything that looks walkable or in the way (the
 workbench and the woodpile are solid already). Mind a prop's size: some are groups (`wooden_barrels_01` is three barrels and
-their staves, 4 m wide). Keep props out of walkways, passes and checkpoint clearings. `HotPatata/Level/Build Prop Library`
+their staves, 4 m wide). Keep props out of walkways, passes and checkpoint clearings. `HotPatata/Libraries/Build Prop Library`
 rebuilds the library.
 
-**The brush.** `HotPatata/Level/Props Brush`: choose pebbles, twigs, roots, moss or ferns, its radius and density, press
-**Paint**, then click and drag on the ground or a deck. It never paints on a walkway or a bridge's line. Shift erases what the
-brush painted (nothing else); Escape stops.
+**Bursts.** The palette's Props tab opens on its burst presets (the old Props Brush): Pebbles, Twigs, Roots, Moss, Ferns. Arm one,
+set how many per click, the radius and the size range in the strip, then click or drag on the ground or a deck: it never places on
+a walkway or a bridge's line, on water or near a pass arc. Shift+click erases what this burst placed (nothing else); Escape stops
+(§25).
 
 ## 16. The example level
 
@@ -317,7 +331,7 @@ same.
 
 ## 18. Elements by hand
 
-`GameObject > HotPatata Level > Element` adds one **Plank**, **Post**, **Beam**, **Rope** or **Iron Strap** where the Scene
+`GameObject > HotPatata Level > Elements` (or the palette's Elements tab) adds one **Plank**, **Post**, **Beam**, **Rope** or **Iron Strap** where the Scene
 view looks. With an element selected it goes beside it, in its structure (a plank there is part of the walking surface).
 
 With several elements selected, the Inspector's buttons work on all of them:
@@ -334,15 +348,16 @@ Verify Level warns about a rope that hangs on nothing and a post that stands on 
 
 ## 19. The structure library
 
-`GameObject > HotPatata Level > Structure` adds a **Shelter** (four posts, a roof with two slopes or one, low walls, a winch
+`GameObject > HotPatata Level > Structures` (or the palette's Structures tab) adds a **Shelter** (four posts, a roof with two slopes or one, low walls, a winch
 drum), a **Gantry** (braced legs, a head, a pulley and its rope, a little roof), a **Sign** (a board on one or two posts, an owl,
 a leaf or an axe painted on it) or a **Pulley Beam** (on its own post, or bolted to the trunk or wall the piece is set against).
 Set them in the Inspector, move and turn the piece; freeze them to move their boards by hand.
 
-`HotPatata/Level/Build Structure Library` makes the library's first prefabs (Shelters: Winch Booth, Woodshed, Lean-to;
+`HotPatata/Libraries/Build Structure Library` makes the library's first prefabs (Shelters: Winch Booth, Woodshed, Lean-to;
 Gantries: Gate Tower, Lift Gantry; Signs: three clue boards and a signpost; Pulleys: Pulley Beam, Pulley Post). It only
 makes the missing ones: once a prefab exists it is yours. To start one over, right click it in the Project window,
-**HotPatata > Regenerate Library Structure** (your changes to it are lost).
+**HotPatata > Regenerate Library Structure** (your changes to it are lost). The palette's Structures tab lists the library by
+folder (`Library: Shelters`, `Library: Mine`...): click a tile, then click where it goes.
 
 Select a frozen structure and click **Save to library...** (its Inspector): it becomes a prefab in
 `Assets/Prefabs/Structures/` (pick the folder for its kind: Shelters, Gantries, Signs, Pulleys...). Drag it from the Project
@@ -371,8 +386,14 @@ and tower a structure of elements. The library's booths, gantries, pulleys and s
   it), and a pass drawn under it is reported.
 - No rock is drawn in another cave's clear space: a tunnel's mouth opens in a cavern's wall, through a gallery's dead end or a
   cliff's face; overlap them and the way is clear. Moved one? **Rebuild All Pieces** (the others are cut again).
-- Dress it with the props (§15): the rock formations, roots, mushrooms, the calcite druse, lanterns.
+- Dress it with the props (§15): the rock formations, roots, mushrooms, the calcite druse, lanterns; or with its own **Dressing**
+  (§29).
 - No height mist fills a cave from the ground above it: under its footprint, the mist lies on the cave's own floor.
+- **Since M21** (§29): a tunnel takes a **section** at each dot (its width, height, profile, lean and a step in its floor, blended
+  between dots; `Sections at every dot` in the inspector, then the cyan and white arrows), a **Flare** (its ends widen where they
+  open into a chamber), and follows its line's pitch up to 35°. A cavern takes an **Apex Height** (its crown; Height becomes its
+  walls'), an **Apex** offset (the white dot), **Alcoves**, **Pillars** (solid) and **Floors** (shelves, walked). A cave without any
+  of it is built exactly as before.
 
 ## 21. Cliffs
 
@@ -380,7 +401,9 @@ and tower a structure of elements. The library's booths, gantries, pulleys and s
 piece's height up **Height** (the white handle on top). Each **Ledge** steps its face back by its inset at its height: a shelf one
 walks on. Its top is walked on too; timber stands on it (a deck's posts find it).
 
-- **Rock**: granite (grey, lichen), sandstone (layered) or mossy. **Batter** leans its faces back; **Sink** buries its foot;
+- **Rock**: granite (grey, lichen), sandstone (layered), mossy, limestone (pale, karst), basalt (dark, in columns) or an earth
+  bank (soil and roots; kept under 3.4 m: never a lock). The palette's Cliff tile has the six as looks, each with its detail and its
+  transitions already set (§28). **Batter** leans its faces back; **Sink** buries its foot;
   **Crest** raises its top edge in a ragged skyline (only ever higher, so a lock holds; keep 0 for a top that is walked on).
 - For a natural face, draw an irregular outline (many dots), bury its back in a hill, and overlap two or three cliffs of different
   rocks and crests rather than one long block.
@@ -390,16 +413,16 @@ walks on. Its top is walked on too; timber stands on it (a deck's posts find it)
 
 ## 22. Mine timber
 
-- **Mine Frames** (`GameObject > HotPatata Level > Mine > Mine Frames`): frames along its line every **Spacing**, two posts on the
+- **Mine Frames** (`GameObject > HotPatata Level > Timber > Mine Frames`): frames along its line every **Spacing**, two posts on the
   ground (or rock) under each, a cap beam **Height** up, **Lagging** boards over the caps, a lantern under every few caps. Its
   posts stop players and the bomb. Put it inside a cave tunnel, its line along the tunnel's.
-- **Mine Track** (`Mine > Mine Track`): sleepers and two rails on the ground along its line, some rotted (**Decay**). Decoration.
+- **Mine Track** (`Timber > Mine Track`): sleepers and two rails on the ground along its line, some rotted (**Decay**). Decoration.
 - Both freeze into elements (§17); the lanterns go with them.
 - The library's `Structures/Mine/` holds an entrance, a 9 m gallery and an 8 m track.
 
 ## 23. Lane markers
 
-Where a team splits onto two lanes (PROJECT_SPEC §15g), name each lane: `GameObject > HotPatata Level > Structure > Lane Marker`.
+Where a team splits onto two lanes (PROJECT_SPEC §15g), name each lane: `GameObject > HotPatata Level > Structures > Lane Marker`.
 **Lane** Sun (gold) or Moon (blue), **Form** a post beside the path or an arch over it (**Span**), a **Lantern**. Its face is the
 piece's forward (the arrow): turn it toward the team coming. The library's `Structures/Lanes/` holds the four of them.
 
@@ -410,7 +433,7 @@ make the other kind (The Long Climb is made this way):
 
 - **Turn the route.** Do not lay the whole course along one line: each place (an act) turns from the last at a junction
   (a round cavern, a landing, a beach, a clearing), so the next place is found round a bend, never seen from the start.
-- **Shape the ground in curves.** Sculpt the terrain (§2) in irregular outlines: a valley floor that widens into a clearing,
+- **Shape the ground in curves.** Lay hills, ridges, hollows and plateaus (§27) and sculpt the terrain (§2) in irregular outlines: a valley floor that widens into a clearing,
   forest rising round it, walls of rock beyond, a basin with ragged banks rather than a pit. Hide a water surface's straight
   edges under banks of terrain a little higher than it: the ground draws the shore.
 - **Rock out of the hills.** A cliff's outline has many dots, its free sides bulge, its top is ragged (**Crest**) and its back
@@ -420,9 +443,158 @@ make the other kind (The Long Climb is made this way):
   and tunnels open into caverns, galleries and cliffs (§20). Lay a cliff over a mouth as its lintel, where the slope crosses it.
 - **The forest on the way.** Woods come up to the way on both sides (their outlines drawn off it); on the way itself a
   **Walked** Forest Area (§8) grows ferns, grass and moss; under a canopy the forest fills the ground below the walks.
+- **Ways on the ground.** A trail (§27) holds its grade up a hillside, banked into it and painted; a river bed or a ravine carves its
+  way across (a river's water over its kill zones).
 - **Still locked.** A natural slope is not a lock: a player may climb a steep one by jumping. What keeps a team on the way is
   what always did: faces of 5 m (cliffs), the void, water, roofs (§10). Run Verify Level and the contracts after reshaping.
 - **Mist.** A forest in a thick mist reads as grey: thin the level's **Mist density** (§9) when the shapes matter.
+
+## 25. The palette
+
+`HotPatata/Level/Palette` opens the **Level Palette**: everything a level places, in one window (dock it beside the Scene view).
+The `GameObject > HotPatata Level` menus hold the same entries in the same order (written from the same catalogue).
+
+- **Tabs**: Ground, Rock, Nature, Timber, Masonry, Structures, Elements, Course, Kit, Props, Air, plus **★** (your favourites)
+  and **Recent** (the last 12 placed). Each tab is cut into sections you can fold. **List** shows rows instead of tiles.
+- **Search** looks through every tab: names, sections, tags and looks (`door`, `rope`, `cave`, `forest`...).
+- **Place**:
+  - click a tile to arm it, then click in the Scene view: it goes on the surface under the mouse (a ghost follows the mouse;
+    **R** turns it by 45°, Shift+R back, **Ctrl+wheel** by 15°). It stays armed: click again for another. **Esc** or a right
+    click disarms it;
+  - double-click a tile: it goes where the Scene view looks (as the menus place it);
+  - drag a tile into the Scene view: it goes where you drop it.
+- **Looks**: a kit system with several looks (the KayKit look, the forest look, later the stone looks) has one tile; its looks
+  are chips in the strip at the bottom once it is armed.
+- **Presets**: an armed piece's strip lists its presets (§7); pick one and the next pieces are placed with it.
+- **Bursts** (props, scanned rocks, the burst presets): each click scatters copies, turned and sized at random (the strip: how
+  many per click, radius, size range, random turn, aligned to the surface). Drag to keep scattering. A burst never places on a
+  walkway, a bridge's line, a deck's or a house's outline, water or near a pass arc. **Shift+click** erases what this burst placed.
+- **Snapping** (the strip's toggles, all on; **Alt** held places freely): on the ground and floors; a walkway, rope bridge or
+  railing armed near a deck's edge or a walkway's end starts there, runs off it and is attached (as dragging its end there does,
+  §6); later tools add a wall's end and a wall's opening.
+- **Pictures**: kit, props and the library show their prefab; pieces are pictured once (saved in `Library/`, made again when a
+  piece's script changes: the window's **More > Refresh thumbnails**, or `HotPatata/Libraries/Refresh Palette Thumbnails`).
+  Save the open scene first: an unsaved scene shows icons.
+- **The tools' menu.** `HotPatata/` is sorted by job: `Level` (new level, register, palette, look, rebuild, verify, play,
+  wiring, the mesh catalogue), `Ground`, `Libraries` (props, structures, the kit's looks and prefabs, thumbnails), `Look`, `Kit`
+  (validation, contracts, the sandbox), `Audio`, `Menu`, `Player`, and `Legacy` (builders only the archived courses used).
+- **A new piece in code** gets a `[PaletteItem]` (ARCHITECTURE §27.3), then `HotPatata/Level/Write Palette Menus` writes the
+  menus again; a test fails until it is done.
+
+The showcase (`Assets/Scenes/Dev/LevelToolsShowcase.unity`, `HotPatata/Level/Showcase`) shows every entry once, labelled: a dev
+scene, never in the menu.
+
+## 26. The ground: layers, rules and paint
+
+A level's terrain has eight layers, in this order (the Terrain's **Paint Texture** brush lists them so):
+
+| Layer | Where the rules put it |
+|---|---|
+| 0 Leaf litter | the forest's flat ground, dry hollows |
+| 1 Grass | patches on the open ground and the knolls |
+| 2 Trail | along the walk lines on the ground (a walkway on the ground, a trail) |
+| 3 Gravel | ridges, beside rock and trails |
+| 4 Mud | shores |
+| 5 Riverbed | under water |
+| 6 Scree | slopes of 35 to 50°, the foot of rock |
+| 7 Rock | slopes over about 45° |
+
+- **Bake ground rules** (the Level inspector, the palette's Ground tab, or `HotPatata/Ground/Bake Ground Rules`) paints the whole
+  ground from the rules. Bake after shaping the ground, adding water, walkways or rock. **Bake rules on save** does it on every
+  save (off by default).
+- **Paint by hand** with the Terrain's Paint Texture brush (or Terrain Tools'): a path, a patch of mud, scree under a cliff.
+  A bake keeps what you painted: every texel you changed since the last bake is remembered as painted. **Show painted** tints it
+  red; the **Reset painted** brush (the inspector or the palette: click and drag, Shift+wheel sizes it, Esc stops) gives a region
+  back to the rules.
+- **The rules** themselves are `Assets/Settings/Look/GroundRules.asset` (**Edit the rules**): per layer a score from the slope,
+  the height over the level's floor, hollows and ridges, water, walk lines, rock, north faces and a noise; the best scores win.
+  They are art settings shared by every level: change them with care, and bake again.
+- **Sculpt** with Terrain Tools (installed): noise, hydraulic, thermal and wind erosion, terrace, sharpen peaks, smudge, bridge,
+  clone, twist, stamp. It works on the terrain only; nothing in the game depends on it.
+- **Size and fineness.** `HotPatata/Ground/Resample Terrain...` (or the inspector's button): 256, 512, 1024 or 1536 m, a sample
+  every metre (Normal) or every half metre (Fine). The relief is kept (exactly at the old samples), the centre stays, trees and
+  details stay where they stand, the holes are cut again and the mist baked. Ctrl+Z undoes it; the old data is kept beside the
+  terrain (`..._Backup.asset`) until the next save. The window shows the terrain data's memory and warns over 128 MB.
+- **Valley ground.** A level made before M21 keeps its valley ground (one material). Switch it in the inspector (**Ground**):
+  the layered ground starts as leaf litter everywhere; bake the rules.
+
+## 27. Shaping the ground: land shapes, trails, rivers
+
+The palette's Ground tab (or `GameObject > HotPatata Level > Ground`) lays pieces that shape the terrain without being painted into
+it: the ground is your sculpt **plus** the pieces, in the order of the level's `Ground` group. Move a hill, change it or delete it:
+the ground under it comes back, and what you sculpted round it stays (every brush stroke, Unity's or Terrain Tools', goes to your
+sculpt). `HotPatata/Ground/Rebuild Land Shapes` recomposes the whole terrain.
+
+- **Land shapes**: **Hill** and **Hollow** (rise or sink inside the outline, fading out over **Falloff**), **Ridge** (along a line, its
+  half width the falloff), **Plateau** (a flat top at the piece's height plus **Height**, banked sides). **Profile** Smooth, Steep or
+  Terraced; **Outline noise** and **Surface noise** break them up. Drag their dots like a deck's; the white handle sets the height,
+  the green ring shows where it fades out. Presets: Round Hill, Long Ridge, Basin, Mesa.
+- **Trail**: a way on the ground along its dots. The ground is pulled to a profile no steeper than **Max grade** (30 % is about 17°)
+  along it and flat across its **Width**, banked into the ground over **Bank** each side, painted with its layer (trail, gravel or
+  mud) and, when **Walked**, it joins the level's walk lines: the route runner walks it, forests and bursts keep off it. Where the
+  hillside is steeper than its grade it cuts or fills; a cut deeper than 2.5 m is reported (put a Stone Stair there).
+- **River Bed**: a bed carved along its dots, upstream first, **Width** wide and **Depth** deep, falling **Slope** metres every 100 m and
+  never rising; its banks fade into the ground. Its water lies **Water drop** under the banks, over kill zones all along it (falling
+  in, or throwing the bomb in, fails the section); its flow is only drawn, it moves nothing. **Ravine**: the same bed, dry, its floor
+  in scree.
+- Bake the ground rules after shaping (§26): rock comes on the steep faces, riverbed under water, mud on the shores.
+- Verify Level warns of a walk line on the ground steeper than a player walks up (50°), of a trail cut too deep, and reports water
+  with no kill zone under it, a river's anywhere along it.
+
+## 28. Rock that grows out of the ground
+
+A cliff's **Detail** (every value at 0 draws it as in M20; the palette's cliffs come with it set):
+
+- **Octaves** and **Lacunarity**: finer rock over the broad bulges. **Strata**: horizontal bands (sandstone, limestone).
+  **Fracture**: faces broken into planes like jointed rock. **Overhang**: an outward lip in its top third (never over a walk:
+  Verify warns within 2 m). Basalt is drawn in columns.
+- The detail is drawn only: the cliff still collides as its plain build, so its locked faces and heights stay exactly what the
+  contract reads (and the collider costs no more).
+
+**Into the ground** (decoration, nothing collides):
+
+- **Foot blend**: a band at the foot drawn in the ground's scree, up to that many metres.
+- **Rock scatter**: CC0 scanned rocks set into its faces, mostly inside the rock (they stick out 40 cm at most), never in a cave.
+  An earth bank gets roots instead.
+- **Scree** (and **Scree width**): stones and small rocks at its foot, denser near it, never on a walk, a pass arc, water or a
+  checkpoint's clearing.
+- **Fuse**: the ground rises to meet its foot over that many metres (a talus, through the height stack of §27): no cut shows.
+  Bake the ground rules after (§26): scree and gravel come round it.
+- **Decals**: moss, mud, leaf and wet patches round its foot. The palette's Ground tab places them by hand too (Moss, Mud, Leaf
+  and Wet Patch): each lies on what is under it, a rock face as well as the ground.
+- **Rock Outcrop** (palette): a small, many-sided, fractured cliff half buried: the rock out of a hillside.
+- Verify Level warns of a Climb lock on an earth bank, and reports a scan in a cave's clear space.
+
+## 29. Cave networks, mouths and shafts
+
+The palette's Rock tab (`Rock/Caves`): **Cave Tunnel** (plain, or **Varied**: round, a tall rift, a low gallery, an arch, dressed),
+**Cavern** (plain, or **Shaped**), **Shaft**, **Cave Network** and **Cave Mouth**; the Timber tab has the **Mine Stair**.
+
+- **Sections.** Profiles: **Round** (as before), **Rift** (tall and narrow), **Gallery** (low, wide, a flat roof), **Arch** (straight
+  walls, a round roof), **Fissure** (one side flatter than the other). **Lean** tilts it; **Floor offset** raises its floor at that
+  dot (a step or a ramp). What you set is the clear space: the rock only bulges outward from it, and Verify, the mist and the
+  "no rock in another cave" rule read it. A floor climbing steeper than a player walks is reported ("add a Stone Stair or Mine
+  Frames' steps").
+- **A shaped chamber.** Its walls rise **Height** round its outline, then its vault to its crown at **Apex Height**, offset by the
+  white dot: an asymmetric hall. An **alcove** bulges its outline out (where round it, how wide, how deep). A **pillar** (the orange
+  disc) stands floor to roof and collides: an obstacle, never a lock. A **floor** is a shelf of rock (its outline, height and
+  thickness): walked on, its edge a ledge; join it with a stair, a walkway or a lift.
+- **A shaft**: straight walls up **Height** from its outline, **Open top** (the sky) or roofed (a ceiling: a pass under it is
+  checked), **Open bottom** (no floor), **Ledges** round part of its wall. The way up is yours: a **Mine Stair** (Mine Frames with
+  **Stair** ticked: treads along their line, held by the frames), a walkway spiralling on posts, or a lift. **Never a ladder**
+  (climbing is not a mechanic). A throw up a shaft is a pass like any other.
+- **A network**: chambers (caverns and shafts) and the tunnels linking them, all children of the Cave Network. **Shift+click** the
+  ground to add a chamber, drag a chamber's sphere to move it (its tunnels' ends follow: they are attached to its wall, facing the
+  other chamber), pick two chambers and **Link** them. Each child is an ordinary rock piece: select it to shape it, **Detach** it to
+  make it stand alone, or × to remove it (its tunnels let go of it where they are). New links flare by the network's **Flare**.
+- **A mouth**: click a hillside. It makes, together: a tunnel into the hill (floored, so the ground opens over it when you save,
+  closed at its far end, dressed), a **lintel** of fractured granite round its top with its scree and its talus, the cave's
+  **ambience** over its first 12 m and two lanterns inside. Each is a child to edit as usual; delete the mouth and they go with it.
+- **Dressing** (any cave): **Stalactites** (never lower than 2.4 m over the floor, never under a skylight), **Stalagmites** (small
+  ones off the walk's 1.5 m clearance, drawn only; large ones outside a 3 m corridor, solid), **Columns** (floor to roof, outside
+  the corridor, solid), **Puddles** (wet mud, never water: no kill zone), **Props** (cave mushrooms off the walk) and **Lantern
+  spacing** (lanterns on alternating walls along the walk). The walk is a tunnel's centre line, or in a chamber the lines from the
+  tunnels meeting it to its middle. Verify warns past 24 real-time lights in one cave.
 
 ## Rules
 

@@ -7,7 +7,7 @@
 
 ---
 
-# Status (last updated 2026-10-16)
+# Status (last updated 2026-10-17)
 
 A ticked box is verified by the automated tests (see [`TESTING.md`](TESTING.md)), by recorded bot/latency runs, or
 by the owner's own play. An unticked box in a finished milestone is a **human gate**: it needs a group or external
@@ -36,6 +36,7 @@ playtest and cannot be closed by code.
 | M16 Audio (#46–#49) | built (code, mixer, settings, docs): a drop-in sound library, sounds are folders of `Assets/Audio`; music by place and act, ambience in layers, movement sounds back (spec §11), bomb, run, obstacle and menu sounds; automated checks pass (M16.6) | the owner's sounds and music; the listening pass with two players (M16.6) |
 | **M20 The Long Climb** | in progress: the v1.0 level for two (PROJECT_SPEC §15g): exactly two players (a level's maximum), the rock, mine and lane pieces, the caves' and mine's CC0 props and library structures (M20.1–M20.4); the blockout of the seven acts laid, checked and walked (M20.5, approved by the owner); dressed, then the organic pass: the route
 turns, the land and rock organic, the forest on the way (M20.6) | window and fuse tuning in play, playtests (M20.7) |
+| **M21 Level tools v2** (#125) | in progress: L0 built (the Level Palette and one catalogue, the menus written from it and re-sorted, the Props Brush folded into bursts, the dev showcase); L1 built (the layered ground: eight layers baked from rules and painted by hand, Terrain Tools, size and fineness, resample); L2 built (the height stack, land shapes, trails, rivers and ravines); L3 built (six rocks, detailed faces drawn over their plain collider, scans, scree, talus, foot band, decals); L4 built (tunnel sections, shaped chambers, shafts, networks, mouths, dressing) | L5 masonry and door looks, L6 showcase; the owner's try of each |
 | **M19 Fresh start** | done: every map archived (`docs/MAP_ARCHIVE.md`, branch `archive/maps-v1`); only `Bootstrap` and `PassSandbox` remain, the sandbox dev-only (never listed in a release build); new levels copied from `Templates/CourseTemplate` | the first new map, by hand with the level tools |
 | Cleanup and generic obstacles | done: only `PatataWilds`, `IndustrialPlant` and `PassSandbox` (plus `Bootstrap`) remain; every obstacle system is generic (references, `IObstacleState`, `ObstacleVisualDriver`, `CustomVisual`, overridable poses, `ObstaclePrefabValidator`), with two example variants; the obstacle catalogue is `docs/OBSTACLES.md` | |
 
@@ -1810,6 +1811,81 @@ stacked PRs: the pieces, the blockout (then the owner's OK), the dressing.
 
 - [ ] a clear by two (about 20 minutes clean); every split forced (no lane walked alone, no shortcut); a third player refused;
   host + client on two machines; 1080p/60 fps; readability (the lanes read in ten seconds, the cave and the mist).
+
+
+---
+
+# M21 — Level tools v2 (#125)
+
+The owner's review after The Long Climb: the menus are a mess, the ground is hard to texture and blocky, caves are hard to make,
+and there is too little to place. Plan and owner decisions: issue #125. Nothing here adds gameplay (spec §17.2): every new piece
+is level geometry or decoration, every door that opens is the kit with a new look. The Long Climb is not touched.
+
+## M21.L0 — The palette and the menus
+
+- [x] every one of the 80 old menu items is a palette entry and a menu item, and creates what it did, in its group, at the same
+  offsets (`LevelPaletteTests`);
+- [x] the menus are written from the catalogue (`LevelMenus.g.cs`), one to one; no two items share a priority in a submenu;
+- [x] click-to-place with a ghost, drag-and-drop, double-click where the view looks, bursts with Shift erase, favourites, recent
+  and search; a burst never lands on a walkway, a bridge's line, a pass arc or water;
+- [x] snapping: a walkway placed near a deck's edge starts there and is attached as the handles attach it (wall ends and openings:
+  L5);
+- [x] the Props Brush removed, its five brushes burst presets;
+- [x] the `HotPatata/` top menu sorted by job, the legacy audit in the PR (industrial materials to `Legacy/`; the sandbox's demos,
+  the giant trees and the kit builders kept and moved);
+- [x] docs: LEVEL_AUTHORING §25 and the menu paths of §1–§24 in place; ARCHITECTURE §27.3; the showcase's palette tour.
+
+## M21.L1 — Ground material: 8 layers, rules, paint, Terrain Tools, size
+
+- [x] Terrain Tools installed (5.3.3), AGENTS.md updated, nothing from it referenced by runtime code;
+- [x] a new level's ground shows 8 layers; painting any layer shows it in the Scene view and in Play, fogged like the rest;
+- [x] bake: slopes are rock, shores mud, hollows litter, walk lines trail; a re-bake keeps the paint; Reset painted gives a region
+  back to the rules (`LevelGroundTests`);
+- [x] resample Normal → Fine keeps heights within 2 cm at the old samples, trees, details and holes; Undo restores;
+- [x] the shader: one pass plus shadow, depth and depth-normals; `HP_MixFog`; frame cost measured on the showcase;
+- [x] docs: LEVEL_AUTHORING §26 and §2; ARCHITECTURE §27.4 (no new texture: the eight layers use the Poly Haven folders already credited).
+
+## M21.L2 — Ground shaping: land shapes, trail, river and ravine
+
+- [x] a sculpt near a hill survives moving the hill (`LevelGroundTests`);
+- [x] a trail over a 40 % slope keeps ≤ 30 %, its banks meet the ground with no step over 0.3 m, its line is in `RouteWalks`;
+- [x] a river carves its bed, its ribbon lies `waterDrop` under the banks, kill zones cover it; a ravine has neither;
+- [x] Verify Level warns of a walk line on ground steeper than the movement climbs;
+- [x] docs: LEVEL_AUTHORING §27 and §24.
+
+## M21.L3 — Rock v2 and transitions
+
+- [x] a detailed cliff keeps its locked faces and heights (`LevelRockTests`), its collider within 1.2× today's triangles;
+- [x] the six rocks render, basalt shows columns; a Climb lock on an Earth cliff is warned;
+- [x] scans never protrude more than 0.4 m nor sit in a cave's clear space;
+- [x] scree, talus, foot blend and decals on the showcase's cliffs; walk lines still pass `WalkProbe`;
+- [x] docs: LEVEL_AUTHORING §21 and §28; ARCHITECTURE §27.2 and §27.5; CREDITS (seven Poly Haven textures).
+
+## M21.L4 — Caves v2
+
+- [x] a tunnel whose section changes along it keeps its clear space exact at each point, opens into a cavern, is walked;
+- [x] a cavern with an offset apex, alcoves, a pillar and a mezzanine: walked, the pillar collides (the ceiling's pass check is M20's, unchanged);
+- [x] a 20 m shaft with an open top and a Mine Frames stair in it (the stair's walk line passes `WalkProbe`);
+- [x] a network of three chambers and three tunnels: a chamber moved moves its tunnels' ends, junctions flare, no rock in a clear space;
+- [x] a cave mouth on a slope: terrain cut, lintel, scree, talus, ambience, lanterns; every part deletable;
+- [x] dressing never in the corridor; large stalagmites collide;
+- [x] docs: LEVEL_AUTHORING §20 and §29; ARCHITECTURE §27.6.
+
+## M21.L5 — Masonry, walls and kit door looks
+
+- [ ] each wall style on a 3-point line with an opening of each passage: the kit placed, sized and wired; a rebuild keeps it;
+- [ ] stone walls: segment collision, mantle and lock heights shown and verified; per-stone freeze under 400 stones, per segment
+  offered over; frozen stones jitter and set down; "Open here" cuts the segment wall;
+- [ ] stone stair, paving, stepping stones, stone bridge and pier walkway walked by the route runner;
+- [ ] column, tower, arch: collisions and ceiling as specified;
+- [ ] iron portcullis, stone slab and plank door pass `ObstaclePrefabTests` and open, close and kill as their base;
+- [ ] docs: LEVEL_AUTHORING §30 and §31; OBSTACLES §2 and §4.1; ARCHITECTURE §27.7.
+
+## M21.L6 — The showcase
+
+- [ ] `LevelToolsShowcase` holds each phase's area; a gallery of before and after screenshots per PR;
+- [ ] `AuthoredLevelTests` walks it (Verify clean apart from "not in the menu");
+- [ ] The Long Climb rebuilds exactly as before (its pieces' signatures and meshes unchanged).
 
 ---
 

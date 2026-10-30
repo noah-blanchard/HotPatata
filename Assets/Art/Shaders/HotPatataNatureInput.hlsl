@@ -50,6 +50,8 @@ CBUFFER_START(UnityPerMaterial)
     half _Cull;
     float _FadeStart;
     float _FadeEnd;
+    float _FootTileSize;
+    half _FootSharpness;
 CBUFFER_END
 
 // _BaseMap and _BumpMap come from URP's SurfaceInput.hlsl.
@@ -58,6 +60,8 @@ TEXTURE2D(_OcclusionMap);   SAMPLER(sampler_OcclusionMap);
 TEXTURE2D(_AlphaMap);       SAMPLER(sampler_AlphaMap);
 TEXTURE2D(_TopMap);         SAMPLER(sampler_TopMap);
 TEXTURE2D(_TopBumpMap);     SAMPLER(sampler_TopBumpMap);
+TEXTURE2D(_FootMap);        SAMPLER(sampler_FootMap);
+TEXTURE2D(_FootBumpMap);    SAMPLER(sampler_FootBumpMap);
 
 // Set once per frame by TimeOfDayBlender (presentation): xy = wind direction (world XZ), z = strength (0 = still), w = gust speed.
 float4 _HP_Wind;

@@ -15,7 +15,7 @@ namespace HotPatata.Editor
     /// rock is drawn in another cave's clear space (a tunnel's mouth opens in a cavern's wall, a gallery's end, a cliff's face).
     /// Called by <see cref="LevelPieceBuilder"/>.
     /// </summary>
-    public static class LevelRock
+    public static partial class LevelRock
     {
         /// <summary>A cave's inside, its outside (moss on what faces up), its floor.</summary>
         public const string CaveMaterial = "Nature_CaveRock", CaveOutsideMaterial = "Nature_MossyRock", CaveFloorMaterial = "Nature_RocksGround";
@@ -25,8 +25,14 @@ namespace HotPatata.Editor
         {
             CliffRock.Sandstone => "Nature_Cliff",
             CliffRock.Mossy => "Nature_MossyRock",
+            CliffRock.Limestone => "Nature_Limestone",
+            CliffRock.Basalt => "Nature_Basalt",
+            CliffRock.Earth => "Nature_EarthBank",
             _ => "Nature_Granite",
         };
+
+        /// <summary>A cliff's detailed faces are sampled about every this many metres where strata or fracture are strong.</summary>
+        public const float FineStep = 0.6f;
         /// <summary>How far a cave's walls reach under its floor (m): into the ground, so no gap shows at their foot.</summary>
         public const float CaveSink = 1.5f;
         /// <summary>A tunnel is sampled about every this many metres along its line; a cliff's outline about every this many.</summary>
@@ -42,6 +48,8 @@ namespace HotPatata.Editor
         sealed class Rock
         {
             public readonly List<Vector3> V = new List<Vector3>();
+            /// <summary>Per vertex (when set): alpha is the foot band, 1 at the ground fading to 0 at its top.</summary>
+            public List<Color> Colors;
             readonly List<int>[] subs = { new List<int>(), new List<int>() };
             List<int> tris;
 
@@ -82,10 +90,39 @@ namespace HotPatata.Editor
                 mesh.subMeshCount = Slots;
                 for (int s = 0; s < Slots; s++) mesh.SetTriangles(subs[s], s);
                 mesh.SetUVs(0, V.Select(v => new Vector2(v.x + v.y * 0.37f, v.z + v.y * 0.61f) * 0.25f).ToList());
+                if (Colors != null && Colors.Count == V.Count) mesh.SetColors(Colors);
                 mesh.RecalculateNormals();
                 mesh.RecalculateTangents();
                 mesh.RecalculateBounds();
                 return mesh;
+            }
+        }
+
+        /// <summary>
+        /// The rock's roughness in <paramref name="octaves"/> octaves (fBm), each <paramref name="lacunarity"/> times finer and 0.5 as strong,
+        /// 0..1. One octave is <see cref="Noise"/> itself.
+        /// </summary>
+        public static float Fbm(Vector3 p, int seed, int octaves, float lacunarity)
+        {
+            if (octaves <= 1) return Noise(p, seed);
+            float sum = 0f, amp = 1f, norm = 0f, f = 1f;
+            for (int o = 0; o < octaves; o++)
+            {
+                sum += Noise(p * f, seed + o * 31) * amp;
+                norm += amp;
+                amp *= 0.5f;
+                f *= lacunarity;
+            }
+            return sum / norm;
+        }
+
+        static float Hash(int a, int b, int seed)
+        {
+            unchecked
+            {
+                uint h = (uint)(a * 374761393 + b * 668265263 + seed * 2246822519);
+                h = (h ^ (h >> 13)) * 1274126177;
+                return ((h ^ (h >> 16)) & 0xffffff) / 16777215f;
             }
         }
 
@@ -100,6 +137,35 @@ namespace HotPatata.Editor
             }
             float n = Octave(0.12f) * 0.45f + Octave(0.33f) * 0.33f + Octave(0.9f) * 0.22f;
             return Mathf.Clamp01((n - 0.3f) / 0.4f);
+        }
+
+        /// <summary>Puts a rock mesh under <paramref name="root"/> that is only drawn (its collider is a simpler mesh beside it).</summary>
+        static GameObject PlaceDrawn(Transform root, string name, Rock rock, params string[] materials)
+        {
+            if (rock.Triangles == 0) return null;
+            var mesh = OrganicAssets.Save(rock.ToMesh(name + " rock"));
+            var go = new GameObject(name) { layer = CourseKit.Layer("Environment") };
+            go.transform.SetParent(root, false);
+            go.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            go.AddComponent<MeshRenderer>().sharedMaterials = materials.Take(rock.Slots).Select(NatureMaterialBuilder.Load).ToArray();
+            GameObjectUtility.SetStaticEditorFlags(go, StaticEditorFlags.BatchingStatic);
+            return go;
+        }
+
+        /// <summary>Puts a rock's collider under <paramref name="root"/> (no renderer): the same faces a plain build of the piece collides with.</summary>
+        static GameObject PlaceCollider(Transform root, string name, Rock rock, bool ceiling)
+        {
+            if (rock.Triangles == 0) return null;
+            var mesh = OrganicAssets.Save(rock.ToMesh(name + " collider"));
+            var go = new GameObject(name) { layer = CourseKit.Layer("Environment") };
+            go.transform.SetParent(root, false);
+            go.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+            go.AddComponent<MeshCollider>().sharedMesh = mesh;
+            go.AddComponent<WalkableProxy>().Configure(WalkableProxy.Kind.Solid, 0.05f);
+            if (ceiling) go.AddComponent<CourseCeiling>();
+            GameObjectUtility.SetStaticEditorFlags(go, StaticEditorFlags.BatchingStatic);
+            return go;
         }
 
         /// <summary>Puts a built rock mesh under <paramref name="root"/>: drawn in its <paramref name="materials"/> (one per slot), colliding as itself.</summary>
@@ -162,7 +228,9 @@ namespace HotPatata.Editor
         }
 
         /// <summary>The clear space of <paramref name="shell"/>: over its floor and under its roof (a tunnel's section, a cavern's dome).</summary>
-        public static ClearSpace Clear(RockShellShape shell)
+        public static ClearSpace Clear(RockShellShape shell) => WithoutParts(shell, ClearV2(shell) ?? ClearM20(shell));
+
+        static ClearSpace ClearM20(RockShellShape shell)
         {
             var world = shell.WorldPoints();
             if (shell.Kind == RockShellKind.Cavern)
@@ -271,8 +339,16 @@ namespace HotPatata.Editor
 
         public static void BuildShell(RockShellShape shell, Transform root, string name)
         {
-            if (shell.Kind == RockShellKind.Cavern) BuildCavern(shell, root, name);
+            if (shell.Kind == RockShellKind.Shaft) BuildShaft(shell, root, name);
+            else if (shell.Kind == RockShellKind.Cavern)
+            {
+                if (shell.ShapedCavern) BuildCavernV2(shell, root, name);
+                else BuildCavern(shell, root, name);
+            }
+            else if (TunnelV2(shell)) BuildTunnelV2(shell, root, name);
             else BuildTunnel(shell, root, name);
+            if (shell.Kind != RockShellKind.Tunnel) CavernParts(shell, root, name);
+            Dress(shell, root, name);
         }
 
         /// <summary>A hole is cut where a quad's middle (world) is in a skylight (high up) or a mouth.</summary>
@@ -567,9 +643,71 @@ namespace HotPatata.Editor
 
         public static void BuildCliff(CliffShape cliff, Transform root, string name)
         {
+            if (cliff.WorldOutline().Count < 3) return;
+            string material = CliffMaterial(cliff.Rock);
+            if (cliff.FootBlend > 0f) material = FootMaterial(material);
+            var plain = CliffRockMesh(cliff, name, CliffStep, false);
+            if (!cliff.Detailed)
+            {
+                if (cliff.FootBlend > 0f) plain.Colors = FootColors(cliff, plain.V);
+                Place(root, name + " rock", plain, false, material);
+            }
+            else
+            {
+                // the faces drawn finer than they collide: the collider is the plain build (the locks read it), the drawing the detail
+                bool fine = cliff.Strata > 0.3f || cliff.Fracture > 0.3f || cliff.Rock == CliffRock.Basalt;
+                var drawn = CliffRockMesh(cliff, name, fine ? FineStep : CliffStep, true);
+                if (cliff.FootBlend > 0f) drawn.Colors = FootColors(cliff, drawn.V);
+                PlaceDrawn(root, name + " rock", drawn, material);
+                PlaceCollider(root, name + " rock collider", plain, false);
+            }
+            RockDressing.DressCliff(cliff, root, name);
+        }
+
+        /// <summary>The foot band of each vertex: 1 at the ground under it, 0 from <see cref="CliffShape.FootBlend"/> up.</summary>
+        static List<Color> FootColors(CliffShape cliff, List<Vector3> v)
+        {
+            var scene = cliff.gameObject.scene;
+            float band = Mathf.Max(0.05f, cliff.FootBlend);
+            return v.Select(p =>
+            {
+                float ground = LevelNature.GroundAt(scene, new Vector2(p.x, p.z));
+                if (float.IsNaN(ground)) ground = cliff.transform.position.y;
+                return new Color(1f, 1f, 1f, Mathf.Clamp01(1f - (p.y - ground) / band));
+            }).ToList();
+        }
+
+        /// <summary>
+        /// The material <paramref name="baseName"/> with its foot drawn in the ground's scree (the <c>_FOOTLAYER</c> of HotPatata/Nature,
+        /// masked by the mesh's vertex alpha): made once beside the nature materials.
+        /// </summary>
+        public static string FootMaterial(string baseName)
+        {
+            string name = baseName + "_Foot";
+            if (AssetDatabase.LoadAssetAtPath<Material>(NatureMaterialBuilder.Dir + name + ".mat") != null) return name;
+            var source = NatureMaterialBuilder.Load(baseName);
+            var scree = NatureMaterialBuilder.Load("Nature_RocksGround");
+            var mat = new Material(source) { name = name };
+            mat.EnableKeyword("_FOOTLAYER");
+            mat.SetFloat("_FootLayer", 1f);
+            if (scree != null)
+            {
+                mat.SetTexture("_FootMap", scree.GetTexture("_BaseMap"));
+                mat.SetTexture("_FootBumpMap", scree.GetTexture("_BumpMap"));
+            }
+            AssetDatabase.CreateAsset(mat, NatureMaterialBuilder.Dir + name + ".mat");
+            return name;
+        }
+
+        /// <summary>
+        /// A cliff's rock: bands from its foot (sunk) to each ledge and the top, every face pushed outward only. Plain
+        /// (<paramref name="detail"/> off, every <see cref="CliffStep"/>): the M20 build exactly (its collider). Detailed: fBm, strata,
+        /// fracture facets, basalt's columns and the overhang, every <paramref name="step"/>.
+        /// </summary>
+        static Rock CliffRockMesh(CliffShape cliff, string name, float step, bool detail)
+        {
             var outline = cliff.WorldOutline();
-            if (outline.Count < 3) return;
-            var ring = ResampleClosed(Poly2.CounterClockwise(outline), CliffStep);
+            var ring = ResampleClosed(Poly2.CounterClockwise(outline), step);
             int k = ring.Count;
             float foot = cliff.transform.position.y, rough = cliff.Roughness;
             int seed = cliff.Seed + TimberKit.Seed(cliff.PieceId ?? name, 7);
@@ -586,6 +724,9 @@ namespace HotPatata.Editor
                 if (bis.sqrMagnitude < 1e-6f) bis = n1;
                 outward[i] = bis / Mathf.Max(0.35f, Vector2.Dot(bis, n1));
             }
+            // the distance round the outline at each column (the facets and columns are laid in it)
+            var along = new float[k];
+            for (int i = 1; i < k; i++) along[i] = along[i - 1] + Vector2.Distance(ring[i], ring[i - 1]);
 
             // the bands: from the foot (sunk) to the first shelf, shelf to shelf, the last up to the top; each with its inset
             var shelves = cliff.Ledges.Where(l => l.height > 0f && l.height < cliff.Height).OrderBy(l => l.height).ToList();
@@ -606,24 +747,65 @@ namespace HotPatata.Editor
             var crest = new float[k];
             for (int col = 0; col < k; col++)
                 crest[col] = cliff.Crest * Noise(new Vector3(ring[col].x * 1.6f, 17.3f, ring[col].y * 1.6f), seed + 23);
-            Vector3 Point(int col, float up, float ins, bool rough0)
+
+            // how far a face is pushed out at a point (0..rough and more for the overhang): always outward
+            float Push(Vector3 p0, int col, float up)
+            {
+                if (!detail) return rough * Noise(p0, seed);
+                float d = Fbm(p0, seed, cliff.Octaves, cliff.Lacunarity);
+                if (cliff.Strata > 0f)
+                {
+                    float band = up / 1.6f + Noise(p0 * 0.35f, seed + 5) * 0.8f;
+                    float s = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((band - Mathf.Floor(band) - 0.35f) / 0.3f));
+                    d *= Mathf.Lerp(1f, 0.3f + 0.9f * s, cliff.Strata);
+                }
+                if (cliff.Rock == CliffRock.Basalt)
+                {
+                    // hexagonal columns: flat vertical faces, each its own depth
+                    int c = Mathf.FloorToInt(along[col] / 1.1f);
+                    d = Mathf.Lerp(d, 0.2f + 0.8f * Hash(c, 0, seed), 0.85f);
+                }
+                if (cliff.Fracture > 0f)
+                {
+                    // facets: the nearest jittered site in (along, up), its own plane through it
+                    const float cell = 2.2f;
+                    float u = along[col] / cell, v = up / cell;
+                    int cu = Mathf.FloorToInt(u), cv = Mathf.FloorToInt(v);
+                    float best = float.MaxValue, facet = 0f;
+                    for (int du = -1; du <= 1; du++)
+                        for (int dv = -1; dv <= 1; dv++)
+                        {
+                            int iu = cu + du, iv = cv + dv;
+                            float su = iu + Hash(iu, iv, seed + 1), sv = iv + Hash(iu, iv, seed + 2);
+                            float dist = (u - su) * (u - su) + (v - sv) * (v - sv);
+                            if (dist >= best) continue;
+                            best = dist;
+                            float tiltU = (Hash(iu, iv, seed + 3) - 0.5f) * 0.6f, tiltV = (Hash(iu, iv, seed + 4) - 0.5f) * 0.6f;
+                            facet = Hash(iu, iv, seed + 9) + tiltU * (u - su) + tiltV * (v - sv);
+                        }
+                    d = Mathf.Lerp(d, Mathf.Clamp01(facet), cliff.Fracture);
+                }
+                float push = rough * Mathf.Max(0f, d);
+                if (cliff.Overhang > 0f) push += cliff.Overhang * Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((up / Mathf.Max(0.5f, cliff.Height) - 0.62f) / 0.38f));
+                return push;
+            }
+            Vector3 Point(int col, float up, float ins)
             {
                 var xz = ring[col] - outward[col] * (ins + lean * Mathf.Max(0f, up));
                 var p0 = new Vector3(xz.x, foot + up, xz.y);
-                if (rough0) return p0;
                 var n = new Vector3(outward[col].x, 0f, outward[col].y).normalized;
-                return p0 + n * rough * Noise(p0, seed);
+                return p0 + n * Push(p0, col, up);
             }
             int[] lastTop = null;
             for (int b = 0; b < bands.Count; b++)
             {
                 var (y0, y1, ins) = bands[b];
                 bool last = b == bands.Count - 1;
-                int rows = Mathf.Max(1, Mathf.CeilToInt((y1 + (last ? cliff.Crest * 0.5f : 0f) - y0) / CliffStep));
+                int rows = Mathf.Max(1, Mathf.CeilToInt((y1 + (last ? cliff.Crest * 0.5f : 0f) - y0) / step));
                 var grid = new int[k, rows + 1];
                 for (int col = 0; col < k; col++)
                     for (int r = 0; r <= rows; r++)
-                        grid[col, r] = rock.Add(Point(col, Mathf.Lerp(y0, y1 + (last ? crest[col] : 0f), r / (float)rows), ins, false));
+                        grid[col, r] = rock.Add(Point(col, Mathf.Lerp(y0, y1 + (last ? crest[col] : 0f), r / (float)rows), ins));
                 for (int col = 0; col < k; col++)
                 {
                     int next = (col + 1) % k;
@@ -654,7 +836,7 @@ namespace HotPatata.Editor
                 if (InCaves(caves, rock.V[a], rock.V[b], rock.V[c])) continue;
                 rock.Tri(a, b, c, Vector3.up);
             }
-            Place(root, name + " rock", rock, false, CliffMaterial(cliff.Rock));
+            return rock;
         }
     }
 }

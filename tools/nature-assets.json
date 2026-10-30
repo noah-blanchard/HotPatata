@@ -34,7 +34,14 @@
     { "id": "grassy_cobblestone",     "folder": "TempleFloor",  "res": "2k" },
     { "id": "brick_moss_001",         "folder": "TempleRoof",   "res": "1k" },
     { "id": "defense_wall",           "folder": "TempleSlab",   "res": "1k" },
-    { "id": "rusty_metal_02",         "folder": "Iron",         "res": "1k" }
+    { "id": "rusty_metal_02",         "folder": "Iron",         "res": "1k" },
+    { "id": "marble_rock_01",         "folder": "Limestone",    "res": "2k" },
+    { "id": "dark_rock_02",           "folder": "Basalt",       "res": "2k" },
+    { "id": "excavated_soil_wall",    "folder": "EarthBank",    "res": "2k" },
+    { "id": "clay_plaster",           "folder": "Plaster",      "res": "1k" },
+    { "id": "concrete_moss",          "folder": "DecalMoss",    "res": "1k" },
+    { "id": "brown_mud_02",           "folder": "DecalMud",     "res": "1k" },
+    { "id": "dry_decay_leaves",       "folder": "DecalLeaves",  "res": "1k" }
   ],
   "models": [
     { "id": "boulder_01",          "res": "1k" },

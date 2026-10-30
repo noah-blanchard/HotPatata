@@ -57,7 +57,7 @@ namespace HotPatata.Editor
         static Entry Make<T>(string category, string name, Action<T> setup) where T : LevelPiece =>
             new Entry { category = category, name = name, type = typeof(T), setup = p => setup((T)p) };
 
-        [MenuItem("HotPatata/Level/Build Structure Library", priority = 31)]
+        [MenuItem("HotPatata/Libraries/Build Structure Library", priority = 1)]
         static void BuildMenu()
         {
             var made = Build(Entries.Where(e => AssetDatabase.LoadAssetAtPath<GameObject>(e.Path) == null));

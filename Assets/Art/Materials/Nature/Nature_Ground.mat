@@ -1,0 +1,74 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Nature_Ground
+  m_Shader: {fileID: 4800000, guid: afa7efb6246cdfb4a9bf9e5ad82085ca, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords:
+  - _ANTITILE
+  - _TERRAIN_HOLES
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _GroundAlbedo:
+        m_Texture: {fileID: 18700000, guid: d1e2b4fd42a8b3f4e97f831dcdb1a58e, type: 2}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _GroundNormal:
+        m_Texture: {fileID: 18700000, guid: e46ed099a0238194dbec63d7c7cd5690, type: 2}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _TerrainHolesTexture:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _AmbientStrength: 0.45
+    - _AntiTile: 1
+    - _AntiTileScale: 3
+    - _BaseBrightness: 1
+    - _BaseSaturation: 1
+    - _BlendDepth: 0.2
+    - _BumpScale: 1
+    - _EnvReflection: 0.6
+    - _HeightContrast: 1
+    - _MossNoise: 0.6
+    - _MossNorth: 0.35
+    - _OcclusionStrength: 1
+    - _RimPower: 3.5
+    - _RimStrength: 0.05
+    - _SmoothnessMax: 0.45
+    - _SmoothnessMin: 0.02
+    - _TerrainHoles: 1
+    - _TriplanarSharpness: 6
+    - _VariationScale: 6
+    - _VariationStrength: 0.12
+    - _Wrap: 0.2
+    m_Colors:
+    - _LayerBright0: {r: 1, g: 1.45, b: 1, a: 1}
+    - _LayerBright1: {r: 1, g: 1, b: 1, a: 1}
+    - _LayerTile0: {r: 3, g: 3, b: 3, a: 2.5}
+    - _LayerTile1: {r: 3, g: 3, b: 4, a: 6}
+    - _LayerTriplanar0: {r: 0, g: 0, b: 0, a: 0}
+    - _LayerTriplanar1: {r: 0, g: 0, b: 1, a: 1}
+    - _MossColor: {r: 0.31999996, g: 0.39999998, b: 0.15999997, a: 1}
+    - _RimColor: {r: 1, g: 0.92, b: 0.8, a: 1}
+    - _ShadeColor: {r: 0.72, g: 0.76, b: 0.86, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

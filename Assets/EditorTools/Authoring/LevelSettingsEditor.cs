@@ -17,6 +17,46 @@ namespace HotPatata.Editor
 
         LevelSettings Settings => (LevelSettings)target;
 
+        /// <summary>The ground: valley or layered, the rules' bake, the painted overlay, the terrain's size (ARCHITECTURE §27.4).</summary>
+        void GroundSection(Terrain terrain)
+        {
+            var d = terrain.terrainData;
+            EditorGUILayout.LabelField($"{d.size.x:F0} m, {d.heightmapResolution}² heights ({d.size.x / (d.heightmapResolution - 1):F2} m a sample), " +
+                                       $"{TerrainResample.MemoryMb(d.heightmapResolution):F0} MB", EditorStyles.miniLabel);
+            serializedObject.Update();
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("ground"));
+            bool layered = Settings.Ground == GroundLook.Layered;
+            if (layered) EditorGUILayout.PropertyField(serializedObject.FindProperty("bakeGroundOnSave"), new GUIContent("Bake rules on save"));
+            bool changed = serializedObject.ApplyModifiedProperties();
+            if (changed || layered != GroundBaker.IsLayered(terrain) && GUILayout.Button(layered ? "Use the layered ground" : "Use the valley ground"))
+                LevelTerrain.ApplyLook(terrain);
+            if (!layered)
+            {
+                EditorGUILayout.HelpBox("Sculpt it with the Terrain's brushes (and Terrain Tools'). It is drawn as the forest floor: leaf litter where it is flat, " +
+                                        "rock where it is steep. Choose Layered to paint eight layers.", MessageType.None);
+            }
+            else if (GroundBaker.IsLayered(terrain))
+            {
+                EditorGUILayout.HelpBox("Eight layers: leaf litter, grass, trail, gravel, mud, riverbed, scree, rock. Bake the rules, then paint any layer with " +
+                                        "the Terrain's Paint Texture brush: a bake keeps what you painted (Show painted). Sculpt with Terrain Tools' brushes.", MessageType.None);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("Bake ground rules"))
+                    {
+                        int kept = GroundBaker.Bake(terrain);
+                        Debug.Log($"[Ground] rules baked; {kept} painted texel(s) kept.");
+                    }
+                    var splat = terrain.GetComponent<GroundSplat>();
+                    bool showing = splat != null && splat.ShowingPainted;
+                    if (splat != null && GUILayout.Button(showing ? "Hide painted" : "Show painted"))
+                        splat.ShowPainted(showing ? null : GroundBaker.PaintedTexture(terrain), !showing);
+                    if (GUILayout.Button(GroundTools.ResetBrush ? "Stop resetting" : "Reset painted (brush)")) GroundTools.ResetBrush = !GroundTools.ResetBrush;
+                }
+                if (GUILayout.Button("Edit the rules")) Selection.activeObject = GroundRules.Load();
+            }
+            if (GUILayout.Button("Resample terrain (size, fineness)...")) ResampleTerrainWindow.Open();
+        }
+
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
@@ -56,10 +96,7 @@ namespace HotPatata.Editor
             if (terrain == null) EditorGUILayout.HelpBox("No terrain in the level.", MessageType.Info);
             else
             {
-                EditorGUILayout.HelpBox("Sculpt it with the Terrain's own brushes (Raise or Lower, Set Height, Smooth, Stamp). It is drawn as the forest " +
-                                        "floor: leaf litter where it is flat, rock where it is steep. Paint trees and ferns with its Paint Trees and " +
-                                        "Paint Details tools (the forest brushes).", MessageType.None);
-                if (GUILayout.Button("Draw it in the nature look")) LevelTerrain.ApplyLook(terrain);
+                GroundSection(terrain);
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     wallWidth = EditorGUILayout.FloatField("Valley walls: width", wallWidth);

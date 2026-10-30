@@ -6,8 +6,14 @@ namespace HotPatata
     /// <summary>The day an authored level borrows (ARCHITECTURE §27): one of the nature courses' days, applied by the editor's look.</summary>
     public enum LevelDay { Wilds, Canopy, Temple, Ranger }
 
+    /// <summary>
+    /// How an authored level's terrain is drawn (ARCHITECTURE §27.4): the valley ground of M18 (one triplanar material: litter on the flat,
+    /// rock on the slopes), or the layered ground of M21 (eight layers baked from rules and painted by hand).
+    /// </summary>
+    public enum GroundLook { Valley, Layered }
+
     /// <summary>The groups an authored level keeps its pieces in.</summary>
-    public enum LevelGroup { Timber, Trees, Kit, Props }
+    public enum LevelGroup { Timber, Trees, Kit, Props, Ground }
 
     /// <summary>
     /// An authored level's settings (ARCHITECTURE §27, docs/LEVEL_AUTHORING.md): the name the menu shows, the players it needs
@@ -30,7 +36,11 @@ namespace HotPatata
         List<string> sectionAmbience = new List<string>();
         [SerializeField, Tooltip("The music's act of each section: from the start (0), then from each checkpoint id. Empty = act 1.")]
         List<int> sectionActs = new List<int>();
-        [SerializeField, HideInInspector] Transform timber, trees, kit, props;
+        [Header("Ground")]
+        [SerializeField, Tooltip("Valley: one material (levels made before M21). Layered: eight layers baked from rules and painted by hand.")]
+        GroundLook ground;
+        [SerializeField, Tooltip("Bake the ground rules on every save (off: the Level inspector's button bakes them).")] bool bakeGroundOnSave;
+        [SerializeField, HideInInspector] Transform timber, trees, kit, props, groundGroup;
 
         public string DisplayName { get => displayName; set => displayName = value; }
         public int MinPlayers { get => minPlayers; set => minPlayers = Mathf.Clamp(value, 1, 4); }
@@ -42,13 +52,18 @@ namespace HotPatata
         public string DefaultAmbience { get => defaultAmbience; set => defaultAmbience = value ?? ""; }
         public List<string> SectionAmbience => sectionAmbience;
         public List<int> SectionActs => sectionActs;
+        public GroundLook Ground { get => ground; set => ground = value; }
+        public bool BakeGroundOnSave { get => bakeGroundOnSave; set => bakeGroundOnSave = value; }
 
         /// <summary>Where new pieces of a kind go (the level itself when the group is gone).</summary>
         public Transform Group(LevelGroup group)
         {
-            var t = group switch { LevelGroup.Timber => timber, LevelGroup.Trees => trees, LevelGroup.Kit => kit, _ => props };
+            var t = group switch { LevelGroup.Timber => timber, LevelGroup.Trees => trees, LevelGroup.Kit => kit, LevelGroup.Ground => groundGroup, _ => props };
             return t != null ? t : transform;
         }
+
+        /// <summary>Editor: the land pieces' group (the height stack applies them in its order), made by the editor when missing.</summary>
+        public void SetGroundGroup(Transform group) => groundGroup = group;
 
         /// <summary>Editor: the level's groups.</summary>
         public void SetGroups(Transform timberGroup, Transform treesGroup, Transform kitGroup, Transform propsGroup)

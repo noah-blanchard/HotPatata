@@ -103,5 +103,45 @@ namespace HotPatata.Tests
                 .Distinct().ToList();
             Assert.IsEmpty(missing, string.Join(", ", missing));
         }
+
+        /// <summary>
+        /// M21's guard (owner decision: The Long Climb is not touched): every piece's signature is the one it was built with (so nothing
+        /// rebuilds it), and its rock (cliffs and caves) rebuilt now gives the very meshes it has.
+        /// </summary>
+        [Test]
+        public void Pieces_RebuildExactlyAsBefore()
+        {
+            var stale = TimberLinks.Pieces(scene).Where(p => p.Output != null && LevelPieceBuilder.NeedsRebuild(p)).Select(p => p.name).ToList();
+            Assert.IsEmpty(stale, "pieces whose signature changed (they would be rebuilt): " + string.Join(", ", stale));
+            var changed = new System.Collections.Generic.List<string>();
+            OrganicAssets.BeginInMemory();
+            try
+            {
+                foreach (var piece in TimberLinks.Pieces(scene).Where(p => p is CliffShape || p is RockShellShape))
+                {
+                    var root = new GameObject("rebuilt " + piece.name);
+                    try
+                    {
+                        LevelPieceBuilder.BuildGeometry(piece, root.transform);
+                        var before = piece.Output.GetComponentsInChildren<MeshCollider>(true).Select(c => c.sharedMesh).ToList();
+                        var after = root.GetComponentsInChildren<MeshCollider>(true).Select(c => c.sharedMesh).ToList();
+                        if (before.Count != after.Count || before.Zip(after, (a, b) => !Same(a, b)).Any(x => x)) changed.Add(piece.name);
+                    }
+                    finally { Object.DestroyImmediate(root); }
+                }
+            }
+            finally { OrganicAssets.End(); }
+            Assert.IsEmpty(changed, "rock that would rebuild differently: " + string.Join(", ", changed));
+        }
+
+        static bool Same(Mesh a, Mesh b)
+        {
+            if (a == null || b == null || a.vertexCount != b.vertexCount || a.triangles.Length != b.triangles.Length) return false;
+            var va = a.vertices;
+            var vb = b.vertices;
+            for (int i = 0; i < va.Length; i++)
+                if ((va[i] - vb[i]).sqrMagnitude > 1e-6f) return false;
+            return a.triangles.SequenceEqual(b.triangles);
+        }
     }
 }

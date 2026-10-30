@@ -24,7 +24,7 @@ namespace HotPatata.Editor
         public const string BoulderPath = VariantsDir + "Platform_Moving_Boulder.prefab";
         public const string DrawbridgePath = VariantsDir + "Actuator_Bridge_Drawbridge.prefab";
 
-        [MenuItem("HotPatata/Kit/Build Example Variants")]
+        [MenuItem("HotPatata/Libraries/Build Example Variants", priority = 24)]
         public static void BuildAll()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode) return;

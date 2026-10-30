@@ -20,6 +20,8 @@ namespace HotPatata
         [SerializeField, Tooltip("Boards laid over the caps (a lagged roof).")] bool lagging = true;
         [SerializeField, Min(0), Tooltip("A lantern under every this many caps (0: none).")] int lanternEvery = 3;
         [SerializeField] TimberWear wear = TimberWear.Aged;
+        [SerializeField, Tooltip("A stair (M21): a walkway of treads along the line, held by the frames (the way up a shaft; never a ladder).")]
+        bool stair;
 
         public List<Vector3> Points => points;
         public float Width { get => width; set => width = Mathf.Max(1.6f, value); }
@@ -28,6 +30,7 @@ namespace HotPatata
         public bool Lagging { get => lagging; set => lagging = value; }
         public int LanternEvery { get => lanternEvery; set => lanternEvery = Mathf.Max(0, value); }
         public TimberWear Wear { get => wear; set => wear = value; }
+        public bool Stair { get => stair; set => stair = value; }
 
         public List<Vector3> WorldPoints()
         {

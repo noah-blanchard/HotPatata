@@ -64,7 +64,7 @@ namespace HotPatata.Editor
 
         public static float SunYaw(string scenePath) => Scenes.FirstOrDefault(s => s.scene == scenePath).yaw;
 
-        [MenuItem("HotPatata/Look/Apply Look To All Scenes")]
+        [MenuItem("HotPatata/Look/Apply Look To All Scenes", priority = 0)]
         public static void ApplyToAllScenes()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode) return;

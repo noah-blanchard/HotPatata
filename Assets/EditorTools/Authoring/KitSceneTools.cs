@@ -36,7 +36,7 @@ namespace HotPatata.Editor
             set => EditorPrefs.SetBool(WiringPref, value);
         }
 
-        [MenuItem(WiringMenu, priority = 44)]
+        [MenuItem(WiringMenu, priority = 60)]
         static void ToggleWiring()
         {
             ShowWiring = !ShowWiring;

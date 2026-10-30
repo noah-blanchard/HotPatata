@@ -205,7 +205,7 @@ namespace HotPatata.Editor
             };
         }
 
-        [MenuItem("HotPatata/Level/Clean Mesh Catalog", priority = 40)]
+        [MenuItem("HotPatata/Level/Clean Mesh Catalog", priority = 61)]
         static void CleanMenu() => Debug.Log($"[Catalog] cleaned: {Clean()} unused mesh(es) removed");
 
         /// <summary>

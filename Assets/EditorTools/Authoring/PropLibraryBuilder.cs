@@ -54,7 +54,7 @@ namespace HotPatata.Editor
 
         public static string PrefabPath(string model) => Models.TryGetValue(model, out var m) ? $"{Folder}{m.kind}/{model}.prefab" : null;
 
-        [MenuItem("HotPatata/Level/Build Prop Library", priority = 60)]
+        [MenuItem("HotPatata/Libraries/Build Prop Library", priority = 0)]
         public static void BuildAll()
         {
             NatureMaterialBuilder.Ensure(false);
