@@ -62,6 +62,9 @@ namespace HotPatata.Editor
         [MenuItem(Menu + "Build Caves (L4)", priority = 14)]
         public static void BuildCaves() => Build("L4 Caves", CavesArea);
 
+        [MenuItem(Menu + "Build Masonry (L5)", priority = 15)]
+        public static void BuildMasonry() => Build("L5 Masonry", MasonryArea);
+
         /// <summary>Opens the showcase (made if missing), clears area <paramref name="area"/>'s groups and fills it again.</summary>
         public static void Build(string area, Action<Area> fill)
         {
@@ -398,6 +401,61 @@ namespace HotPatata.Editor
             LevelPieceBuilder.Rebuild(TimberLinks.Pieces(a.Scene).Where(piece => piece.transform.IsChildOf(a.Group(LevelGroup.Props)) || piece.transform.IsChildOf(a.Group(LevelGroup.Timber))).ToList());
             LevelTerrain.CutCaves(a.Scene);
             GroundBaker.Bake(terrain);
+        }
+
+        // ------------------------------------------------------------------ L5: masonry
+
+        /// <summary>
+        /// Every wall style in two rows of walls, each with a free arch and a passage (a body screen, a curtain or a door, alternately);
+        /// a gate wall, a ruin fragment, and the stone door looks standing on their own.
+        /// </summary>
+        static void MasonryArea(Area a)
+        {
+            StoneKitBuilder.EnsureBuilt();
+            var styles = new (string entry, string look, string label)[]
+            {
+                ("masonry.stone-wall", null, "Dry stone"), ("masonry.stone-wall", "mortared", "Mortared"), ("masonry.stone-wall", "ruined", "Ruined"),
+                ("masonry.stone-wall", "retaining", "Retaining"), ("masonry.timber-wall", null, "Palisade"), ("masonry.timber-wall", "plank", "Plank"),
+                ("masonry.timber-wall", "logs", "Stacked logs"), ("masonry.timber-wall", "wattle", "Wattle"), ("masonry.fence", null, "Rail fence"),
+                ("masonry.fence", "pickets", "Pickets"), ("masonry.fence", "rope", "Rope on posts"), ("masonry.fence", "hedge", "Hedge"),
+                ("masonry.mixed-wall", null, "Stone and planks"), ("masonry.mixed-wall", "half-timbered", "Half-timbered"), ("masonry.mixed-wall", "timber-cap", "Timber cap"),
+            };
+            var passages = new[] { OpeningPassage.BombOnly, OpeningPassage.RunnersOnly, OpeningPassage.KitDoor };
+            var made = new List<LevelPiece>();
+            for (int i = 0; i < styles.Length; i++)
+            {
+                var (id, look, label) = styles[i];
+                float u = i % 2 == 0 ? 0.3f : 0.72f, v = 0.06f + (i / 2) * 0.105f;
+                var wall = a.Place(PaletteCatalog.Find(id), look, a.At(u, v), label + " wall").GetComponent<WallShape>();
+                wall.Points.Clear();
+                wall.Points.AddRange(new[] { new Vector3(-9f, 0f, 0f), new Vector3(0f, 0f, 2f), new Vector3(9f, 0f, 0f) });
+                float h = Mathf.Max(0.8f, wall.Height - 0.4f);
+                wall.Openings.Clear();
+                if (wall.Family != WallFamily.Fence)
+                    wall.Openings.Add(new WallOpening(4.5f, 1.4f, Mathf.Min(2.4f, h), OpeningPassage.Free, OpeningShape.RoundArch)
+                                      { frame = wall.Family == WallFamily.Stone ? OpeningFrame.Stone : OpeningFrame.Timber });
+                var passage = passages[i % passages.Length];
+                wall.Openings.Add(new WallOpening(12.5f, 2.6f, Mathf.Min(3f, h), passage)
+                {
+                    frame = wall.Family == WallFamily.Stone || wall.Family == WallFamily.Mixed ? OpeningFrame.Stone : OpeningFrame.Timber,
+                    look = passage == OpeningPassage.KitDoor ? (wall.Family == WallFamily.Stone ? StoneKitBuilder.Portcullis : wall.Family == WallFamily.Mixed ? StoneKitBuilder.PlankDoor : ForestKitBuilder.Gate)
+                         : wall.Family == WallFamily.Stone ? ""
+                         : passage == OpeningPassage.BombOnly ? ForestKitBuilder.Net : ForestKitBuilder.Sparks,
+                });
+                made.Add(wall);
+            }
+            made.Add(a.Place(PaletteCatalog.Find("masonry.gate-wall"), null, a.At(0.3f, 0.93f), "Gate wall (a kit door in it)").GetComponent<WallShape>());
+            made.Add(a.Place(PaletteCatalog.Find("masonry.ruin"), null, a.At(0.72f, 0.9f), "Ruin fragment").GetComponent<WallShape>());
+            LevelPieceBuilder.Rebuild(made);
+            var door = PaletteCatalog.Find("kit.door");
+            var sliding = PaletteCatalog.Find("kit.sliding-door");
+            a.Place(door, "portcullis", a.At(0.15f, 0.97f), "Iron portcullis");
+            a.Place(door, "slab", a.At(0.5f, 0.97f), "Stone slab");
+            a.Place(door, "plank", a.At(0.85f, 0.97f), "Plank door");
+            a.Place(sliding, "slab", a.At(0.15f, 0.99f), "Stone slab (slides)");
+            a.Place(sliding, "plank", a.At(0.85f, 0.99f), "Plank door (slides)");
+            var terrain = LevelTerrain.Terrains(a.Scene).FirstOrDefault();
+            if (terrain != null && GroundBaker.IsLayered(terrain)) GroundBaker.Bake(terrain);
         }
 
         // ------------------------------------------------------------------ L0: every entry once

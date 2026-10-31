@@ -319,6 +319,7 @@ namespace HotPatata.Editor
                 if (GroundShapes.Trails.TryGetValue(trail.PieceId ?? "", out var p) && p.worstCut > TrailShape.DeepCut)
                     findings.Add(LevelFinding.Warning($"{trail.name}: the slope is steeper than its {trail.MaxGrade:F0} % grade (a cut or fill of {p.worstCut:F1} m): add a Stone Stair, or lower its grade.", trail));
             Rock(scene, findings);
+            Walls(scene, findings);
         }
 
         /// <summary>The rock (M21, ARCHITECTURE §27.5): an overhang over a walk, a Climb lock on an earth bank, a scan in a cave's clear space.</summary>
@@ -349,6 +350,57 @@ namespace HotPatata.Editor
                 if (caves.Any(c => c.Contains(scan.transform.position)))
                     findings.Add(LevelFinding.Error($"{scan.name}: a scan set in a cave's clear space.", scan));
             Caves(scene, findings);
+        }
+
+        /// <summary>
+        /// Walls (M21, ARCHITECTURE §27.7): a bomb-only opening has a body screen covering it, a runners-only one a curtain, a kit door
+        /// its actuator wired to a source; a Climb lock on a wall under 3.4 m is no lock.
+        /// </summary>
+        public static void Walls(Scene scene, List<LevelFinding> findings)
+        {
+            var walls = TimberLinks.Pieces(scene).OfType<WallShape>().ToList();
+            foreach (var wall in walls)
+                for (int i = 0; i < wall.Openings.Count; i++)
+                {
+                    var o = wall.Openings[i];
+                    string which = $"{wall.name}: opening {i + 1}";
+                    switch (o.passage)
+                    {
+                        case OpeningPassage.BombOnly:
+                        {
+                            var screen = o.kit != null ? o.kit.GetComponentInChildren<BodyScreen>(true) : null;
+                            var box = screen != null ? screen.GetComponentInChildren<BoxCollider>(true) : null;
+                            if (box == null) findings.Add(LevelFinding.Error($"{which} is bomb-only but no body screen closes it.", wall));
+                            else if (box.size.x < o.width - 0.05f || box.size.y < Mathf.Min(o.height, MasonryKit.OpeningTop(o, o.along) - o.sill) * 0.8f)
+                                findings.Add(LevelFinding.Error($"{which}: its body screen ({box.size.x:F1} × {box.size.y:F1} m) does not cover it ({o.width:F1} × {o.height:F1} m): a player walks through.", o.kit));
+                            break;
+                        }
+                        case OpeningPassage.RunnersOnly:
+                            if (o.kit == null || o.kit.GetComponentInChildren<BombBarrier>(true) == null)
+                                findings.Add(LevelFinding.Error($"{which} is runners-only but no curtain closes it to the bomb.", wall));
+                            break;
+                        case OpeningPassage.KitDoor:
+                        {
+                            var actuator = o.kit != null ? o.kit.GetComponent<SignalActuator>() : null;
+                            if (actuator == null) findings.Add(LevelFinding.Error($"{which} is a kit door but holds no door.", wall));
+                            else if (actuator.Source == null) findings.Add(LevelFinding.Warning($"{which}: its door {o.kit.name} is unwired (link it to a source).", o.kit));
+                            break;
+                        }
+                    }
+                }
+            foreach (var contract in scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<SectionContract>(true)))
+                foreach (var sc in contract.Shortcuts.Where(x => x.kind == SectionContract.ShortcutKind.Climb))
+                {
+                    var mid = (contract.From(sc) + contract.To(sc)) * 0.5f;
+                    foreach (var wall in walls)
+                    {
+                        var line = wall.WorldLine().Select(p => new Vector2(p.x, p.z)).ToList();
+                        if (line.Count < 2 || GroundShapes.DistanceToLine(line, new Vector2(mid.x, mid.z), out _, out _) > 3f) continue;
+                        float locked = MasonryKit.LockedHeight(wall);
+                        if (locked < WallShape.LockHeight)
+                            findings.Add(LevelFinding.Warning($"{contract.name}: a Climb lock on the wall {wall.name}, {locked:F1} m at its lowest (under {WallShape.LockHeight} m it is {MasonryKit.Reads(locked)}).", contract, mid));
+                    }
+                }
         }
 
         /// <summary>The most real-time lights one cave should hold (M21): past it, emissive-only lanterns.</summary>

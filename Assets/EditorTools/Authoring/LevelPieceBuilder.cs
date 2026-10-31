@@ -70,7 +70,7 @@ namespace HotPatata.Editor
         {
             var clock = Stopwatch.StartNew();
             // the land pieces shape the ground first: their outputs (a trail's line, a river's water) read what the stack made
-            foreach (var scene in pieces.Where(p => p != null && (GroundShapes.IsLand(p) || p is CliffShape)).Select(p => p.gameObject.scene).Distinct().ToList())
+            foreach (var scene in pieces.Where(p => p != null && (GroundShapes.IsLand(p) || p is CliffShape || p is WallShape w && w.Style == WallStyle.Retaining)).Select(p => p.gameObject.scene).Distinct().ToList())
                 TerrainStack.Sync(scene);
             EnsureMaterials();
             OrganicAssets.BeginInMemory();
@@ -84,6 +84,9 @@ namespace HotPatata.Editor
                 }
             }
             finally { OrganicAssets.End(); }
+            // a wall's openings hold kit in the level's Kit group: placed once, then moved and sized with the wall
+            foreach (var wall in pieces.OfType<WallShape>().Where(w => w != null))
+                foreach (var note in MasonryKit.PlaceKit(wall)) Debug.LogWarning($"[Level] {wall.name}: {note}", wall);
             Physics.SyncTransforms();
             LastMilliseconds = clock.Elapsed.TotalMilliseconds;
         }
@@ -175,6 +178,7 @@ namespace HotPatata.Editor
                 case TrailShape trail: return GroundOutputs.BuildTrail(trail);
                 case RiverShape river: GroundOutputs.BuildRiver(river, root, name); break;
                 case DecalShape decal: DecalScatter.BuildDecal(decal, root, name); break;
+                case WallShape wall: MasonryKit.Build(wall, root, name); break;
             }
             return null;
         }
@@ -211,6 +215,7 @@ namespace HotPatata.Editor
                 TrailShape trail => trail.WorldPoints().Select(p => new Vector3(p.x, 0f, p.y)).ToList(),
                 RiverShape river => river.WorldPoints().Select(p => new Vector3(p.x, 0f, p.y)).ToList(),
                 DecalShape decal => new[] { Vector3.zero, Vector3.one * decal.Size },
+                WallShape wall => wall.WorldLine(),
                 _ => Array.Empty<Vector3>(),
             };
             if (points.Count > MaxPoints) return $"{points.Count} points (at most {MaxPoints})";
@@ -220,7 +225,7 @@ namespace HotPatata.Editor
             foreach (var p in points) bounds.Encapsulate(p);
             float span = Mathf.Max(bounds.size.x, bounds.size.y, bounds.size.z);
             if (piece is TimberWalkShape || piece is RailingShape || piece is MineFrameShape || piece is MineRailShape
-                || piece is RockShellShape rock && rock.Kind == RockShellKind.Tunnel || piece is TrailShape || piece is RiverShape)
+                || piece is RockShellShape rock && rock.Kind == RockShellKind.Tunnel || piece is TrailShape || piece is RiverShape || piece is WallShape)
                 span = Mathf.Max(span, Curves.Length(points));
             float max = piece is ForestArea || GroundShapes.IsLand(piece) ? MaxForestSpan : MaxSpan;
             return span > max ? $"it spans {span:F0} m (at most {max:F0} m)" : null;
@@ -511,6 +516,19 @@ namespace HotPatata.Editor
                         V(s, new Vector3(cl.Fracture, cl.Overhang, cl.FootBlend));
                         V(s, new Vector3(cl.RockScatter, cl.Scree, cl.ScreeWidth));
                         V(s, new Vector3(cl.Fuse, cl.Decals, 0f));
+                    }
+                    break;
+                case WallShape wall:
+                    foreach (var p in wall.Points) V(s, p);
+                    s.Append(wall.Closed).Append(wall.Style).Append(wall.Cap).Append(wall.Wear).Append(wall.RetainRight).Append('|');
+                    V(s, new Vector3(wall.Height, wall.Thickness, wall.Crest));
+                    V(s, new Vector3(wall.PostSpacing, wall.Terrace, 0f));
+                    foreach (var b in wall.Breaches) V(s, new Vector3(b.along, b.width, b.depth));
+                    foreach (var o in wall.Openings)
+                    {
+                        V(s, new Vector3(o.along, o.width, o.height));
+                        V(s, new Vector3(o.sill, (int)o.shape, (int)o.frame));
+                        s.Append(o.passage).Append(o.look).Append('|');
                     }
                     break;
                 case DecalShape decal:
