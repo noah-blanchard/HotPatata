@@ -53,11 +53,12 @@ namespace HotPatata.Editor
             return best;
         }
 
-        /// <summary>A rock piece's output (a cave, a cliff): ground the timber stands on.</summary>
+        /// <summary>A rock or masonry piece's output (a cave, a cliff; M21: a stone wall, an arch, a plinth, paving, a stone bridge, a tower): ground the timber stands on.</summary>
         public static bool IsRock(LevelPieceOutput output)
         {
             var piece = output.transform.parent != null ? output.transform.parent.GetComponent<LevelPiece>() : null;
-            return piece is RockShellShape || piece is CliffShape;
+            return piece is RockShellShape || piece is CliffShape || piece is ArchShape || piece is PlinthShape || piece is PavingShape || piece is StoneBridgeShape
+                   || piece is TowerShape || piece is ColumnShape || piece is WallShape w && w.Family == WallFamily.Stone;
         }
     }
 }

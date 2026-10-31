@@ -68,6 +68,8 @@ namespace HotPatata.Editor
                 if (TimberElementBuilder.Refresh(element)) changed++;
             foreach (var wall in list.SelectMany(r => r.GetComponentsInChildren<TimberWall>(true)))
                 if (TimberElementBuilder.Refresh(wall)) changed++;
+            foreach (var masonry in list.SelectMany(r => r.GetComponentsInChildren<MasonryWall>(true)))
+                if (StoneFreeze.Refresh(masonry)) changed++;
             foreach (var structure in list.SelectMany(r => r.GetComponentsInChildren<FrozenStructure>(true)))
                 if (WalkSurfaceBuilder.Refresh(structure)) changed++;
             if (changed == 0) return 0;

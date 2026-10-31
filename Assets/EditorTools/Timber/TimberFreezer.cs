@@ -21,7 +21,7 @@ namespace HotPatata.Editor
         public static bool CanFreeze(LevelPiece piece) =>
             piece is TimberDeckShape || piece is TimberWalkShape || piece is RopeBridgeShape || piece is RailingShape || piece is HouseShape || piece is TrestleShape
             || piece is ShelterShape || piece is GantryShape || piece is SignShape || piece is PulleyBeamShape
-            || piece is MineFrameShape || piece is MineRailShape || piece is LaneMarkerShape;
+            || piece is MineFrameShape || piece is MineRailShape || piece is LaneMarkerShape || piece is WallShape;
 
         /// <summary>Freezes every piece that can be (one undo step); returns the structures made.</summary>
         public static List<FrozenStructure> Freeze(IEnumerable<LevelPiece> pieces)
@@ -35,7 +35,13 @@ namespace HotPatata.Editor
             return made;
         }
 
-        public static FrozenStructure Freeze(LevelPiece piece)
+        public static FrozenStructure Freeze(LevelPiece piece) => Freeze(piece, false);
+
+        /// <summary>
+        /// Freezes <paramref name="piece"/>; a wall's stones become stone elements, or with <paramref name="perSegment"/> a mesh per straight
+        /// run (a wall of more than <see cref="StoneFreeze.StoneFreezeLimit"/> stones freezes only that way).
+        /// </summary>
+        public static FrozenStructure Freeze(LevelPiece piece, bool perSegment)
         {
             if (piece == null || !CanFreeze(piece)) return null;
             string tooBig = LevelPieceBuilder.TooBig(piece);
@@ -56,15 +62,26 @@ namespace HotPatata.Editor
             ElementRecorder.Active = recorder;
             OrganicAssets.BeginInMemory();
             TimberKit.ClearReport();
+            if (piece is WallShape) StoneFreeze.Begin();
+            List<StoneFreeze.StoneRecord> stones;
+            List<StoneFreeze.SolidRecord> solids;
             try { LevelPieceBuilder.BuildGeometry(piece, temp.transform); }
             finally
             {
+                (stones, solids) = StoneFreeze.End();
                 ElementRecorder.Active = null;
                 OrganicAssets.End();
                 TimberKit.ClearReport();
                 if (output != null) output.SetActive(wasActive);
             }
 
+            if (piece is WallShape tooMany && stones.Count > StoneFreeze.StoneFreezeLimit && !perSegment)
+            {
+                foreach (var mesh in LevelPieceBuilder.Meshes(temp).Where(m => !EditorUtility.IsPersistent(m)).ToList()) Object.DestroyImmediate(mesh);
+                Object.DestroyImmediate(temp);
+                Debug.LogWarning($"[Masonry] {piece.name} is not frozen: {stones.Count} stones (more than {StoneFreeze.StoneFreezeLimit}). Freeze it per segment.", piece);
+                return null;
+            }
             var t = piece.transform;
             var root = new GameObject(piece.name);
             Undo.RegisterCreatedObjectUndo(root, "Freeze " + piece.name);
@@ -115,6 +132,18 @@ namespace HotPatata.Editor
                 w.Points.Clear();
                 w.Points.AddRange(wall.line.Select(go.transform.InverseTransformPoint));
             }
+            if (piece is WallShape stoneWall)
+            {
+                if (stones.Count > 0) StoneFreeze.Make(stones, Group("Stones"), StoneFreeze.KindOf(MasonryKit.StoneMaterial(stoneWall)), perSegment, stoneWall);
+                if (solids.Count > 0) StoneFreeze.MakeWalls(solids, Group("Masonry walls"));
+                // what the stones are laid on (the core behind the joints, plaster panels): kept, its mesh in the catalogue
+                foreach (var drawn in temp.GetComponentsInChildren<MeshFilter>(true).Where(f => f.sharedMesh != null && f.GetComponent<CourseDecoration>() != null).ToList())
+                {
+                    drawn.sharedMesh = MeshCatalog.Store(drawn.sharedMesh);
+                    drawn.transform.SetParent(Group("Core"), true);
+                    drawn.gameObject.hideFlags = HideFlags.None;
+                }
+            }
             // colliders the elements do not stand for (a ceiling): kept as they are
             foreach (var collider in temp.GetComponentsInChildren<Collider>(true))
             {
@@ -149,6 +178,7 @@ namespace HotPatata.Editor
         {
             foreach (var element in frozen.GetComponentsInChildren<TimberElement>(true)) TimberElementBuilder.Refresh(element, true);
             foreach (var wall in frozen.GetComponentsInChildren<TimberWall>(true)) TimberElementBuilder.Refresh(wall, true);
+            foreach (var masonry in frozen.GetComponentsInChildren<MasonryWall>(true)) StoneFreeze.Refresh(masonry, true);
             WalkSurfaceBuilder.Refresh(frozen, true);
             Physics.SyncTransforms();
         }

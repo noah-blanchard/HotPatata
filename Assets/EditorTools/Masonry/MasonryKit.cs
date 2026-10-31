@@ -25,12 +25,12 @@ namespace HotPatata.Editor
         public const float MaxSolid = 4f;
         const float Column = 0.25f;   // the collision's sampling along the line (m)
 
-        public static string StoneMaterial(WallShape wall) => wall.Wear == StoneWear.Mossy ? "Nature_MossyRock"
+        public static string StoneMaterial(IWallSpec wall) => wall.Wear == StoneWear.Mossy ? "Nature_MossyRock"
             : wall.Style is WallStyle.Mortared or WallStyle.HalfTimbered or WallStyle.StoneBaseTimberTop or WallStyle.StoneTimberCap
                 ? (wall.Wear == StoneWear.New ? "Nature_Limestone" : "Nature_Cliff")
                 : (wall.Wear == StoneWear.New ? "Nature_Limestone" : "Nature_Granite");
 
-        public static string CoreMaterial(WallShape wall) => wall.Style == WallStyle.Mortared || wall.Family == WallFamily.Mixed ? "Nature_Plaster" : "Nature_CaveRock";
+        public static string CoreMaterial(IWallSpec wall) => wall.Style == WallStyle.Mortared || wall.Family == WallFamily.Mixed ? "Nature_Plaster" : "Nature_CaveRock";
 
         // ------------------------------------------------------------------ the line
 
@@ -43,7 +43,7 @@ namespace HotPatata.Editor
             public Vector3 At(float s, float up) => a + along * (s - start) + Vector3.up * (Mathf.Lerp(a.y, b.y, Mathf.Clamp01((s - start) / Mathf.Max(1e-4f, length))) - a.y + up);
         }
 
-        public static List<Run> Runs(WallShape wall)
+        public static List<Run> Runs(IWallSpec wall)
         {
             var line = wall.WorldLine();
             var runs = new List<Run>();
@@ -66,7 +66,7 @@ namespace HotPatata.Editor
         // ------------------------------------------------------------------ heights
 
         /// <summary>The wall's top above its foot at <paramref name="s"/> metres along it: its height, lowered by a ruined crest and its breaches.</summary>
-        public static float Top(WallShape wall, float s)
+        public static float Top(IWallSpec wall, float s)
         {
             float top = Full(wall);
             if (wall.Style == WallStyle.Ruined && wall.Crest > 0f)
@@ -84,10 +84,10 @@ namespace HotPatata.Editor
         }
 
         /// <summary>The wall's top where nothing lowers it: its height (a hedge is a fence's height at most).</summary>
-        public static float Full(WallShape wall) => wall.Style == WallStyle.Hedge ? Mathf.Min(wall.Height, WallShape.FenceHeight + 0.6f) : wall.Height;
+        public static float Full(IWallSpec wall) => wall.Style == WallStyle.Hedge ? Mathf.Min(wall.Height, WallShape.FenceHeight + 0.6f) : wall.Height;
 
         /// <summary>The wall's locked height: its lowest top along it (a breach, a ruined crest), what a lock or a climb is judged by.</summary>
-        public static float LockedHeight(WallShape wall)
+        public static float LockedHeight(IWallSpec wall)
         {
             float length = wall.Length;
             if (length <= 0f) return 0f;
@@ -97,7 +97,7 @@ namespace HotPatata.Editor
         }
 
         /// <summary>The height its collision reaches: a fence to its top rail, a hedge to a fence's height, any other wall to its top.</summary>
-        public static float SolidTop(WallShape wall, float s) => wall.Style == WallStyle.Hedge ? WallShape.FenceHeight : Top(wall, s);
+        public static float SolidTop(IWallSpec wall, float s) => wall.Style == WallStyle.Hedge ? WallShape.FenceHeight : Top(wall, s);
 
         /// <summary>What a player does at a wall this high: mantle it, climb it (a jump and a mantle), or not (a lock).</summary>
         public static string Reads(float height) => height < WallShape.MantleHeight ? "mantled" : height < WallShape.LockHeight ? "climbed (a jump and a mantle)" : "a lock (no climb)";
@@ -140,7 +140,7 @@ namespace HotPatata.Editor
         }
 
         /// <summary>True when (s, up) is in an opening of the wall.</summary>
-        public static bool InOpening(WallShape wall, float s, float up)
+        public static bool InOpening(IWallSpec wall, float s, float up)
         {
             foreach (var o in wall.Openings)
             {
@@ -152,7 +152,7 @@ namespace HotPatata.Editor
 
         // ------------------------------------------------------------------ the build
 
-        public static void Build(WallShape wall, Transform root, string name)
+        public static void Build(IWallSpec wall, Transform root, string name)
         {
             var runs = Runs(wall);
             if (runs.Count == 0) return;
@@ -224,7 +224,7 @@ namespace HotPatata.Editor
         /// Courses of stones along <paramref name="run"/> from <paramref name="y0"/> to <paramref name="y1"/> over its foot (cut by its top and
         /// its openings), staggered, each its own size; a core behind them (mortar or a dark fill) so no light shows through the joints.
         /// </summary>
-        static void Courses(WallShape wall, MeshBuilder mb, Run run, float y0, float y1, Random rng)
+        static void Courses(IWallSpec wall, MeshBuilder mb, Run run, float y0, float y1, Random rng)
         {
             bool mortared = wall.Style == WallStyle.Mortared || wall.Family == WallFamily.Mixed;
             float t = wall.Thickness;
@@ -264,7 +264,7 @@ namespace HotPatata.Editor
             }
         }
 
-        static void Core(WallShape wall, MeshBuilder mb, Run run, float y0, float y1, float t)
+        static void Core(IWallSpec wall, MeshBuilder mb, Run run, float y0, float y1, float t)
         {
             float s = run.start, end = run.start + run.length;
             while (s < end)
@@ -295,12 +295,14 @@ namespace HotPatata.Editor
         /// A stone: a box (x across, y up, z along) with its edges bevelled by <paramref name="bevel"/> and each face pushed by up to
         /// <paramref name="rough"/>. Its faces are laid in quads (faceted, as cut stone reads).
         /// </summary>
-        public static void Block(MeshBuilder mb, Vector3 center, Quaternion rot, Vector3 size, float bevel, float rough, int seed, int slot)
+        public static void Block(MeshBuilder mb, Vector3 center, Quaternion rot, Vector3 size, float bevel, float rough, int seed, int slot, int detail = 3)
         {
             var half = size * 0.5f;
             float b = Mathf.Min(bevel, Mathf.Min(half.x, Mathf.Min(half.y, half.z)) * 0.45f);
             var inner = half - Vector3.one * b;
-            const int N = 3;
+            // freezing a wall: the stone is heard (it becomes an element), not meshed
+            if (slot == Stone && StoneFreeze.Stone(center, rot, size, bevel, seed)) return;
+            int N = Mathf.Clamp(detail, 1, 4);
             Vector3 P(Vector3 cube)
             {
                 var p = Vector3.Scale(cube, half);
@@ -333,7 +335,7 @@ namespace HotPatata.Editor
         }
 
         /// <summary>Flat coping stones over the top, a little wider than the wall.</summary>
-        static void Coping(WallShape wall, MeshBuilder mb, List<Run> runs, Random rng)
+        static void Coping(IWallSpec wall, MeshBuilder mb, List<Run> runs, Random rng)
         {
             foreach (var run in runs)
                 for (float s = run.start; s < run.start + run.length - 0.1f; s += 0.7f)
@@ -350,7 +352,7 @@ namespace HotPatata.Editor
         static float R(Random rng, float a, float b) => Mathf.Lerp(a, b, (float)rng.NextDouble());
 
         /// <summary>The spans of <paramref name="run"/> between its openings that reach down to <paramref name="y"/> (a log or a board there is cut round them).</summary>
-        static IEnumerable<(float s0, float s1)> Spans(WallShape wall, Run run, float y)
+        static IEnumerable<(float s0, float s1)> Spans(IWallSpec wall, Run run, float y)
         {
             float s = run.start, end = run.start + run.length;
             foreach (var o in wall.Openings.Where(o => o.along + o.width * 0.5f > run.start && o.along - o.width * 0.5f < end && y > o.sill && y < OpeningTop(o, o.along)).OrderBy(o => o.along))
@@ -363,7 +365,7 @@ namespace HotPatata.Editor
         }
 
         /// <summary>Sharpened logs side by side, two rails behind them.</summary>
-        static void Palisade(WallShape wall, MeshBuilder mb, Run run, Random rng)
+        static void Palisade(IWallSpec wall, MeshBuilder mb, Run run, Random rng)
         {
             float r = Mathf.Clamp(wall.Thickness * 0.5f, 0.1f, 0.2f), full = Full(wall);
             using (ElementRecorder.Tag("Logs", TimberElementKind.Post, TimberWalk.None, solid: false))
@@ -388,7 +390,7 @@ namespace HotPatata.Editor
         }
 
         /// <summary>Boards upright between <paramref name="y0"/> and <paramref name="y1"/>, a rail at the bottom and the top, posts at the ends and round openings.</summary>
-        static void Planks(WallShape wall, MeshBuilder mb, Run run, float y0, float y1, Random rng)
+        static void Planks(IWallSpec wall, MeshBuilder mb, Run run, float y0, float y1, Random rng)
         {
             var rot = Quaternion.LookRotation(run.right, Vector3.up);
             using (ElementRecorder.Tag("Boards", TimberElementKind.Plank, TimberWalk.None, solid: false))
@@ -419,7 +421,7 @@ namespace HotPatata.Editor
         }
 
         /// <summary>Logs laid one on another, their ends past the corners.</summary>
-        static void StackedLogs(WallShape wall, MeshBuilder mb, Run run, Random rng)
+        static void StackedLogs(IWallSpec wall, MeshBuilder mb, Run run, Random rng)
         {
             float r = Mathf.Clamp(wall.Thickness * 0.5f, 0.12f, 0.22f), full = Full(wall);
             using (ElementRecorder.Tag("Logs", TimberElementKind.Beam, TimberWalk.None, solid: false))
@@ -432,7 +434,7 @@ namespace HotPatata.Editor
         }
 
         /// <summary>Stakes, and rods woven in and out between them.</summary>
-        static void Wattle(WallShape wall, MeshBuilder mb, Run run, Random rng)
+        static void Wattle(IWallSpec wall, MeshBuilder mb, Run run, Random rng)
         {
             float full = Full(wall);
             const float StakeEvery = 0.5f;
@@ -459,7 +461,7 @@ namespace HotPatata.Editor
         }
 
         /// <summary>A half-timbered wall over its stone band: sill, posts, braces and a plate, plaster in the panels.</summary>
-        static void HalfTimber(WallShape wall, MeshBuilder mb, MeshBuilder stone, Run run, float y0, float y1)
+        static void HalfTimber(IWallSpec wall, MeshBuilder mb, MeshBuilder stone, Run run, float y0, float y1)
         {
             const float Bay = 1.6f;
             int bays = Mathf.Max(1, Mathf.RoundToInt(run.length / Bay));
@@ -494,7 +496,7 @@ namespace HotPatata.Editor
 
         // ------------------------------------------------------------------ fences
 
-        static void Fence(WallShape wall, MeshBuilder mb, Run run, Random rng)
+        static void Fence(IWallSpec wall, MeshBuilder mb, Run run, Random rng)
         {
             float h = Full(wall);
             int posts = Mathf.Max(1, Mathf.CeilToInt(run.length / wall.PostSpacing));
@@ -530,7 +532,7 @@ namespace HotPatata.Editor
         }
 
         /// <summary>A hedge: shrubs along the line, drawn only (its collision is the wall's box, a fence's height).</summary>
-        static void Hedge(WallShape wall, Transform root, string name, List<Run> runs, Random rng)
+        static void Hedge(IWallSpec wall, Transform root, string name, List<Run> runs, Random rng)
         {
             var shrubs = new[] { "shrub_02", "shrub_03", "shrub_04" }.Select(PropLibraryBuilder.PrefabPath).Where(p => p != null)
                 .Select(AssetDatabase.LoadAssetAtPath<GameObject>).Where(p => p != null).ToArray();
@@ -555,7 +557,7 @@ namespace HotPatata.Editor
         // ------------------------------------------------------------------ opening frames
 
         /// <summary>Each opening's frame: stone voussoirs round an arch or a lintel stone over a flat top, or timber jambs and a lintel.</summary>
-        static void Frames(WallShape wall, Transform root, string name, MeshBuilder stone, List<Run> runs, Random rng)
+        static void Frames(IWallSpec wall, Transform root, string name, MeshBuilder stone, List<Run> runs, Random rng)
         {
             var timber = wall.Openings.Where(o => o.frame == OpeningFrame.Timber && o.shape != OpeningShape.Breach).ToList();
             foreach (var o in wall.Openings.Where(o => o.frame == OpeningFrame.Stone && o.shape != OpeningShape.Breach))
@@ -613,7 +615,7 @@ namespace HotPatata.Editor
         /// The wall's collision: invisible boxes along its line, each a column of the same solid intervals (from the foot to its solid
         /// top, less its openings), merged up to <see cref="MaxSolid"/> long.
         /// </summary>
-        public static void Solids(WallShape wall, Transform root, string name, List<Run> runs)
+        public static void Solids(IWallSpec wall, Transform root, string name, List<Run> runs)
         {
             float t = wall.Style == WallStyle.Hedge || wall.Family == WallFamily.Fence ? Mathf.Max(0.2f, wall.Thickness) : wall.Thickness;
             int n = 0;
@@ -628,7 +630,7 @@ namespace HotPatata.Editor
                     {
                         float mid = (openStart + end) * 0.5f;
                         var c = run.At(mid, (y0 + y1) * 0.5f);
-                        TimberBuildings.SolidInvisible(root, $"{name} solid {++n}", c, Quaternion.LookRotation(run.along, Vector3.up), new Vector3(t, y1 - y0, end - openStart));
+                        StoneFreeze.Solid(TimberBuildings.SolidInvisible(root, $"{name} solid {++n}", c, Quaternion.LookRotation(run.along, Vector3.up), new Vector3(t, y1 - y0, end - openStart)));
                     }
                 }
                 for (float s = run.start; s < run.start + run.length - 1e-3f; s += Column)
@@ -647,7 +649,7 @@ namespace HotPatata.Editor
         }
 
         /// <summary>The solid heights of the wall's column at <paramref name="s"/>: from under its foot to its solid top, less its openings.</summary>
-        static List<(float y0, float y1)> Intervals(WallShape wall, float s)
+        static List<(float y0, float y1)> Intervals(IWallSpec wall, float s)
         {
             var list = new List<(float, float)> { (-0.3f, SolidTop(wall, s)) };
             foreach (var o in wall.Openings)
@@ -686,12 +688,12 @@ namespace HotPatata.Editor
         /// Places (once) and fits the kit of each opening with a passage: in the level's Kit group, at the opening, sized to it. A kit
         /// already placed is moved and resized, never made again (its wiring holds); one of another look is left and reported.
         /// </summary>
-        public static List<string> PlaceKit(WallShape wall)
+        public static List<string> PlaceKit(IWallSpec wall)
         {
             var notes = new List<string>();
             var runs = Runs(wall);
             if (runs.Count == 0) return notes;
-            var settings = LevelScenes.SettingsOf(wall.gameObject.scene);
+            var settings = LevelScenes.SettingsOf(wall.Owner.gameObject.scene);
             var parent = settings != null ? settings.Group(LevelGroup.Kit) : null;
             bool changed = false;
             for (int i = 0; i < wall.Openings.Count; i++)
@@ -707,7 +709,7 @@ namespace HotPatata.Editor
                 {
                     if (AssetDatabase.LoadAssetAtPath<GameObject>(look + ".prefab") == null) { notes.Add($"opening {i + 1}: no kit prefab at {look}"); continue; }
                     var siblings = parent != null ? parent.Cast<Transform>().Select(t => t.name).ToArray() : Array.Empty<string>();
-                    o.kit = CourseKit.Place(parent, look, ObjectNames.GetUniqueName(siblings, $"{wall.name} {o.passage}"), foot, rot);
+                    o.kit = CourseKit.Place(parent, look, ObjectNames.GetUniqueName(siblings, $"{wall.Owner.name} {o.passage}"), foot, rot);
                     Undo.RegisterCreatedObjectUndo(o.kit, "Wall kit");
                     wall.Openings[i] = o;
                     changed = true;
@@ -720,7 +722,7 @@ namespace HotPatata.Editor
                 }
                 Fit(o, o.kit, foot, rot, wall.Thickness);
             }
-            if (changed) EditorUtility.SetDirty(wall);
+            if (changed) EditorUtility.SetDirty(wall.Owner);
             return notes;
         }
 

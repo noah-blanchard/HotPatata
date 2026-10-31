@@ -79,13 +79,36 @@ namespace HotPatata
     }
 
     /// <summary>
+    /// What draws as a wall (M21, ARCHITECTURE §27.7): a wall piece, or a tower's round of walls. The editor's masonry kit reads only this.
+    /// </summary>
+    public interface IWallSpec
+    {
+        Component Owner { get; }
+        string PieceId { get; }
+        int Seed { get; }
+        WallStyle Style { get; }
+        WallFamily Family { get; }
+        float Height { get; }
+        float Thickness { get; }
+        float Crest { get; }
+        List<WallBreach> Breaches { get; }
+        WallCap Cap { get; }
+        float PostSpacing { get; }
+        StoneWear Wear { get; }
+        List<WallOpening> Openings { get; }
+        /// <summary>The line in the world, its first point again at its end when closed.</summary>
+        List<Vector3> WorldLine();
+        float Length { get; }
+    }
+
+    /// <summary>
     /// A wall of an authored level (M21, ARCHITECTURE §27.7): stone (dry-stone, mortared, ruined, retaining), timber (palisade, plank,
     /// stacked logs, wattle), a fence (rails, pickets, rope on posts, a hedge) or mixed, along a line through its points (closed if
     /// asked), with openings that place the kit. It collides as a box per straight run, from its foot to its locked height (its lowest
     /// top): under 1.4 m a player mantles it, under 3.4 m climbs it, from 3.4 m it is a lock. Data only: the editor draws it.
     /// </summary>
     [SelectionBase]
-    public sealed class WallShape : LevelPiece
+    public sealed class WallShape : LevelPiece, IWallSpec
     {
         [SerializeField, Tooltip("The wall's line at its foot (piece space).")]
         List<Vector3> points = new List<Vector3> { new Vector3(-5f, 0f, 0f), new Vector3(5f, 0f, 0f) };
@@ -117,6 +140,7 @@ namespace HotPatata
         public List<WallOpening> Openings => openings;
 
         public WallFamily Family => FamilyOf(style);
+        public Component Owner => this;
 
         public static WallFamily FamilyOf(WallStyle s) => s switch
         {

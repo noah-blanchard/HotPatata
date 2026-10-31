@@ -2557,3 +2557,28 @@ a mouth makes its parts on a 30° slope and they go with it; dressing never in t
 Tests: `LevelWallTests` (every style on a three-point line with an opening of each passage: the kit placed, sized, kept and still
 wired after a rebuild; a stone wall's runs, its top and its open arch, mantle/climb/lock; Verify's screen and door findings; the
 stone looks keep the contract, their base's lethal edge and timing, and rise or slide), `ObstaclePrefabTests` (every prefab).
+
+**L5b (stone freezing, stone ways, arches, ruins and towers).**
+
+- **Freezing stone.** `TimberFreezer` freezes a `WallShape` too (`Freeze(piece, perSegment)`): while the wall is drawn,
+  `StoneFreeze` hears each stone `MasonryKit.Block` lays (not meshed) and each collision box `Solids` lays (`ElementRecorder.Replaced`);
+  then each stone becomes a `StoneBlock` (`Assets/Scripts/Structures`, a `TimberElement`: size, bevel, variant, `StoneKind`; drawn
+  from the catalogue at a coarse size, `DrawnSize`, so a wall shares a few dozen meshes; no collider unless solid) and the boxes become
+  `MasonryWall`s (merged end to end, laid by `StoneFreeze.Refresh`, refreshed by the element watcher). The core and the plaster stay
+  as drawn meshes (stored in the catalogue). Past `StoneFreezeLimit` (400) stones only `perSegment` freezes (a mesh per run).
+  `StoneFreeze.OpenHere` removes stones and cuts the masonry walls and the core round them (one undo step).
+- **Stone pieces.** `StoneStairShape`, `PavingShape`, `SteppingStonesShape`, `StoneBridgeShape`, `ArchShape`, `ColumnShape`,
+  `PlinthShape`, `TowerShape` (data, `Assets/Scripts/Authoring`), drawn by `StoneWays` (editor): blocks in one mesh per piece,
+  walking proxies (`WalkableProxy`: a stair's ramp and a bridge's deck as swept slabs, paving as a prism) and invisible boxes. Their
+  signature is every serialised field but the output and the id. A tower draws its walls through `MasonryKit` (it is an
+  `IWallSpec`, as `WallShape` is: the masonry kit reads only that), its floors as sector prisms with a hatch, its roof a
+  `CourseCeiling`. `TimberSupport.StonePiers` (appended) puts a walkway on `StoneWays.Piers`.
+- **Ground.** `SceneSite.IsRock` counts masonry (stone walls, arches, plinths, paving, stone bridges, towers, columns): timber
+  stands on it.
+- **Library.** `StructureLibraryBuilder` gains Walls, Arches, Stone and Towers entries; a piece that does not freeze is baked (its
+  output's objects, meshes stored in the catalogue).
+
+Tests: `LevelStoneTests` (a dry-stone wall freezes per stone, its stones share meshes, its masonry walls collide, Jitter moves them,
+Open Here cuts the wall under and over the hole; a long wall freezes only per segment; the stair, raised paving, stepping stones,
+the bridge and a pier walkway are walked or stood on; a broken column, a tower's floors, roof (ceiling) and kit door, an arch open
+under and found as ground on top).
