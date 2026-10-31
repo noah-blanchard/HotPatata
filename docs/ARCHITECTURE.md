@@ -2531,3 +2531,29 @@ Tests: `LevelCaveTests` (a tunnel's clear space exact at each of its sections an
 pillar that collides and a shelf that is walked, both out of the clear space; a shaft open at its top and a Mine Stair walked up;
 a network's tunnels follow a moved chamber, flare, leave no rock deep in another clear space and open the way between chambers;
 a mouth makes its parts on a 30° slope and they go with it; dressing never in the walk, large stalagmites solid).
+
+### 27.7 Masonry (M21, L5)
+
+- **Walls.** `WallShape : LevelPiece` (a line, closed or not; `WallStyle` fifteen styles, `Family` follows from it; height,
+  thickness, crest, breaches, cap, post spacing, wear, the retained side and its terrace, `WallOpening`s). `MasonryKit` (editor,
+  `Assets/EditorTools/Masonry`) draws it: stone laid in courses along each straight run (`Runs`), each stone a bevelled, faceted box
+  (`Block`) in one combined mesh (stone, a core behind the joints, plaster panels), cut by the top (`Top`: crest and breaches) and
+  the openings (`OpeningTop`, `OpeningSpan`: an arch narrows the course it crosses); timber through `TimberBuildings.Frame` and the
+  `ElementRecorder` (it freezes as timber does); fences and their posts; a hedge of the prop library's shrubs (drawn only). An
+  opening's stone frame is voussoirs along its curve (or a lintel stone) and quoins; a ruined top below it takes it away.
+- **Collision.** `Solids`: invisible boxes on Environment, one per column of equal solid intervals (sampled every 0.25 m: from
+  0.3 m under the foot to its solid top, less the openings), merged up to `MaxSolid` (4 m). `LockedHeight` is the lowest solid
+  top; `Reads` says mantled (< 1.4 m), climbed (< 3.4 m) or a lock.
+- **The kit in openings.** After the pieces build, `MasonryKit.PlaceKit` places each passage's kit once (`CourseKit.Place` in the
+  Kit group; the look from the opening, else `DefaultLook`) and links it (`WallOpening.kit`); every build moves and fits it
+  (`Fit`: `ResizeScreen`, `ResizeCurtain`, `ResizeActuator` with a rise or a slide as the look opens, its `CustomVisual` scaled,
+  its own static frame hidden). It never deletes a kit: a mismatch is reported, the inspector replaces it on demand.
+- **Terraces.** `WallGround` adds a contribution to the height stack for each retaining wall (the held side raised to its top,
+  only ever up), synced when the wall builds.
+- **Stone looks.** `StoneKitBuilder`: Prefab Variants of `Actuator_Door` in `Assets/Prefabs/Variants/Stone/` (docs/OBSTACLES.md §4.1).
+- **Verify.** `LevelVerifier.Walls`: a bomb-only opening's screen covering it, a runners-only one's curtain (a `BombBarrier`), a kit
+  door's actuator and its source; a Climb lock on a wall under 3.4 m.
+
+Tests: `LevelWallTests` (every style on a three-point line with an opening of each passage: the kit placed, sized, kept and still
+wired after a rebuild; a stone wall's runs, its top and its open arch, mantle/climb/lock; Verify's screen and door findings; the
+stone looks keep the contract, their base's lethal edge and timing, and rise or slide), `ObstaclePrefabTests` (every prefab).

@@ -18,6 +18,7 @@ The tools come in three steps (M18). This guide covers what is built:
 | 9. Shaping the ground | hills, hollows, ridges and plateaus that move without losing the sculpt, trails held to a grade, river beds and ravines (M21) | built |
 | 10. Rock out of the ground | six rocks, detailed faces, scanned rocks set in them, scree, talus, a foot band and decals (M21) | built |
 | 11. Caves v2 | tunnels whose section changes, shaped chambers (crown, alcoves, pillars, shelves), shafts, networks, mouths in a hillside, dressing (M21) | built |
+| 12. Walls and openings | stone, timber, fence and mixed walls in fifteen styles, their openings placing the kit (screens, curtains, doors), the stone door looks (M21) | built |
 
 A good order: make the level (§1), shape the land (§2), plant the giant trees (§3), hang the timber on them (§4 to §7),
 plant the forest round it (§8), the mist and the sound (§9), then the game (§10), checked and played (§11), and dress it
@@ -595,6 +596,38 @@ The palette's Rock tab (`Rock/Caves`): **Cave Tunnel** (plain, or **Varied**: ro
   the corridor, solid), **Puddles** (wet mud, never water: no kill zone), **Props** (cave mushrooms off the walk) and **Lantern
   spacing** (lanterns on alternating walls along the walk). The walk is a tunnel's centre line, or in a chamber the lines from the
   tunnels meeting it to its middle. Verify warns past 24 real-time lights in one cave.
+
+## 30. Walls and openings
+
+The palette's **Masonry** tab: **Stone Wall** (Dry Stone, Mortared, Ruined, Retaining), **Timber Wall** (Palisade, Plank, Stacked Logs,
+Wattle), **Fence** (Rail Fence, Pickets, Rope on Posts, Hedge), **Mixed Wall** (Stone and Planks, Half-timbered, Timber Cap), **Ruin
+Fragment** and **Gate Wall** (a palisade with a kit door in it).
+
+- **The line**: its dots are the wall's foot (dots, +, Ctrl+click, the pencil); **Closed** joins the last to the first (an
+  enclosure). **Height** and **Thickness** are its own; a fence defaults to 1.1 m.
+- **Stone** is laid in courses along the line, each stone its own size, the joints staggered (a mortared wall's stones are dressed,
+  in mortar, a coping on top). **Ruined**: **Crest** breaks its top down by up to that much, **Breaches** cut gaps from its top
+  (where along, how wide, how deep). **Retaining**: the ground behind it (its left along the line, or **Retain Right**) is raised
+  to its top over **Terrace** metres (the height stack, §27: the sculpt is kept).
+- **Timber** walls are drawn by the timber kit (they freeze into elements like the rest, §17); **Cap** tops a wall with coping
+  stones or a timber beam; a palisade's logs are sharpened unless it is capped.
+- **What a player does at it**: the inspector shows its **locked height** (its lowest top: a breach counts) and what it is: under
+  1.4 m it is mantled (a fence is never a barrier), under 3.4 m climbed by a jump and a mantle, from 3.4 m a lock. A Climb lock on a
+  wall under 3.4 m is reported by Verify. It collides as invisible boxes along its line (4 m at most, shorter where a ruined top
+  steps) from its foot to its top, cut round its openings; a hedge to 1.1 m.
+- **Openings** (**Add opening**: Free, BombOnly, RunnersOnly, KitDoor): where along the line (drag its dot), width, height and
+  sill (a window), **Shape** (Rect, Round Arch, Pointed Arch, Lintel, Breach) and **Frame** (stone voussoirs and quoins, or timber
+  jambs and a lintel). The stones and the collision are cut round it.
+  - **Free**: nothing placed. The inspector says "both pass" when a player fits through it (0.8 m wide and 1.2 m high or more): a
+    window a player fits through is never bomb-only.
+  - **BombOnly**: a body screen (its **Look**: the kit's, or the forest Net) placed in the level's Kit group, sized to the opening.
+  - **RunnersOnly**: a laser curtain (the kit's, or the forest Sparks), sized to it.
+  - **KitDoor**: a door (the kit's, the forest Palisade Gate, or the stone set: Iron Portcullis, Stone Slab, Plank Door, sliding or
+    not), filling it, rising by its height or sliding aside. Wire it to a source as any door; Verify reports it unwired.
+  - A rebuild of the wall **moves and resizes** its kit, never makes it again: its wiring holds. A kit of another look than the
+    opening's is reported; **Replace kit** (it asks) puts the new one in. Removing an opening asks whether its kit goes too.
+- Verify: a bomb-only opening without a body screen covering it, a runners-only one without its curtain (errors), an unwired door
+  (warning).
 
 ## Rules
 

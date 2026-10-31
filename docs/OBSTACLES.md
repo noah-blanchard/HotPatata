@@ -96,8 +96,8 @@ direction): the host records only that. `SignalIndicator` lights sources (pulsin
 The same prefab is drawn three ways. Colliders, sizes and layers never change with the look; gameplay cues (zones,
 laser beams, pads, icons, plates, launch pads, tube slot lamps) are never restyled.
 
-| System | KayKit (toy kit, §25.1) | Industrial (§25.2) | Nature (§25.3) |
-|---|---|---|---|
+| System | KayKit (toy kit, §25.1) | Industrial (§25.2) | Nature (§25.3) | Stone (M21, §4.1) |
+|---|---|---|---|---|
 | Floor / wall | KayKit blocks | bevelled steel, concrete, brick per room theme | rough rock (`RoughBox`, crags, boulders) |
 | Moving platform | coloured block | steel crane platform | log raft |
 | Falling platform | cracked block | falling grate | rotten mossy planks |
@@ -117,7 +117,7 @@ laser beams, pads, icons, plates, launch pads, tube slot lamps) are never restyl
 | Hourglass plate | the hands-free plate and a ring of amber sand lamps (cue kept) | same | same |
 | Sun beam | gold shaft, stone slit and eye (cue kept) | same | same; carved masonry on the temple |
 | Pivot | slab on a drum | slab | log raft on a drum; a stone slab on the temple |
-| Door | portcullis | portcullis | palisade of upright logs |
+| Door | portcullis | portcullis | palisade of upright logs | iron portcullis, stone slab or plank door (the slab and the plank also slide) |
 | Checkpoint | square pad | square pad | campfire that lights up (pad hidden) |
 | Water | — | — | lethal surface, kill zone 0.3 m below |
 
@@ -174,6 +174,19 @@ only its pipe's materials change, a tube lays its pipe per level), `Forest_Net` 
 sand, a curtain's field); only the kit's construction is hidden and drawn again in timber under a `CustomVisual`. Authored
 levels place them from the Level Palette's look chips or `GameObject > HotPatata Level > Kit > <system> > <look>` (docs/LEVEL_AUTHORING.md §14); the size handles scale
 their visual with them.
+
+**The stone looks** (`Assets/Prefabs/Variants/Stone/`, M21) are made the same way by `StoneKitBuilder` (menu
+`HotPatata/Libraries/Build Stone Looks`; never edit them by hand), all variants of the door (`Actuator_Door`):
+
+| Look | Variant | Opens | Visual |
+|---|---|---|---|
+| Iron Portcullis | `Stone_Portcullis` | rises | an iron grid (bars, rails, rivets, spikes at its foot) on the moving part; a static stone frame (jambs of quoins, a lintel) |
+| Stone Slab | `Stone_Slab`, `Stone_SlabSliding` | rises, or slides | a chamfered slab with a carved band; the rising one in a stone frame |
+| Plank Door | `Stone_PlankDoor`, `Stone_PlankDoorSliding` | rises, or slides | upright planks, two ledges and a brace behind, iron straps and studs in front |
+
+Each keeps the door's colliders, its lethal lower edge while closing and its timing. They are look chips of the palette's Door and
+Sliding Door, and a wall opening's `look` (docs/LEVEL_AUTHORING.md §30): set in a wall, a look's own frame is hidden (the wall frames
+the opening) and its visual is scaled to the opening.
 
 ### 4.2 Another motion for an existing system (no code)
 
