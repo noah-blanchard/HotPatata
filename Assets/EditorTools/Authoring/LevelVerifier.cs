@@ -497,6 +497,9 @@ namespace HotPatata.Editor
                 {
                     if ((start ? rope.StartAnchor : rope.EndAnchor) != null) continue;
                     var end = rope.transform.TransformPoint(start ? rope.Points[0] : rope.Points[rope.Points.Count - 1]);
+                    // a rope drop (plumb from a pulley or a beam) hangs by design: its lower end is free
+                    var other = rope.transform.TransformPoint(start ? rope.Points[rope.Points.Count - 1] : rope.Points[0]);
+                    if (Vector3.Angle(end - other, Vector3.down) < 15f) continue;
                     if (TimberElementTools.AnchorAt(rope, end, TimberReach) == null) loose.Add((rope, end, "a rope hangs on nothing"));
                 }
             foreach (var post in elements.OfType<TimberBoard>().Where(b => b.Kind == TimberElementKind.Post))

@@ -88,7 +88,11 @@ namespace HotPatata.Editor
                                              BodyRadius - 0.05f, body);
                         if (floor && free) problems.Add($"{Path(screen.transform)}: a player walks round its {(side < 0 ? "left" : "right")} end");
                     }
-                    if (height < tuning.jumpHeight + 0.4f) problems.Add($"{Path(screen.transform)}: {height:F1} m tall, a player jumps onto it");
+                    // a screen in a wall's opening, the wall over it: no room to stand on it
+                    var crown = center;
+                    crown.y = bottom + height + FramePost;
+                    if (height < tuning.jumpHeight + 0.4f && !Ray(scene, crown, Vector3.up, BodyHeight, solid))
+                        problems.Add($"{Path(screen.transform)}: {height:F1} m tall, a player jumps onto it");
                 }
 
             foreach (var zone in roots.SelectMany(r => r.GetComponentsInChildren<Zone>(false)).Where(z => z.GetComponent<BombBarrier>() != null))

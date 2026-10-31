@@ -10,7 +10,8 @@ namespace HotPatata.Tests
     /// <summary>
     /// Every authored level (ARCHITECTURE §27, Assets/Scenes/Levels): the route runner walks every walkway, stair and bridge it lays
     /// (its <see cref="RouteWalks"/>, gathered on save) and must reach each end without stalling or falling; the level has players,
-    /// a bomb and a finish. One fixture per level; none when there are no levels.
+    /// a bomb and a finish. One fixture per level; none when there are no levels. The level tools' showcase (a dev scene, never in the
+    /// menu, M21 L6) is walked the same way.
     /// </summary>
     [TestFixtureSource(nameof(Levels))]
     public class AuthoredLevelTests : SandboxTestBase
@@ -19,15 +20,18 @@ namespace HotPatata.Tests
 
         public AuthoredLevelTests(string level) => this.level = level;
 
-        protected override string SceneName => "Levels/" + level;
+        protected override string SceneName => level.Contains("/") ? level : "Levels/" + level;
 
         static IEnumerable<string> Levels()
         {
 #if UNITY_EDITOR
-            const string folder = "Assets/Scenes/Levels";
-            if (!UnityEditor.AssetDatabase.IsValidFolder(folder)) return Enumerable.Empty<string>();
-            return UnityEditor.AssetDatabase.FindAssets("t:Scene", new[] { folder }).Select(UnityEditor.AssetDatabase.GUIDToAssetPath)
-                .Select(System.IO.Path.GetFileNameWithoutExtension).OrderBy(n => n).ToList();
+            const string folder = "Assets/Scenes/Levels", showcase = "Assets/Scenes/Dev/LevelToolsShowcase.unity";
+            var levels = UnityEditor.AssetDatabase.IsValidFolder(folder)
+                ? UnityEditor.AssetDatabase.FindAssets("t:Scene", new[] { folder }).Select(UnityEditor.AssetDatabase.GUIDToAssetPath)
+                    .Select(System.IO.Path.GetFileNameWithoutExtension).OrderBy(n => n).ToList()
+                : new List<string>();
+            if (System.IO.File.Exists(showcase)) levels.Add("Dev/LevelToolsShowcase");
+            return levels;
 #else
             return Enumerable.Empty<string>();
 #endif

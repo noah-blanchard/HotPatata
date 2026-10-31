@@ -36,7 +36,7 @@ playtest and cannot be closed by code.
 | M16 Audio (#46–#49) | built (code, mixer, settings, docs): a drop-in sound library, sounds are folders of `Assets/Audio`; music by place and act, ambience in layers, movement sounds back (spec §11), bomb, run, obstacle and menu sounds; automated checks pass (M16.6) | the owner's sounds and music; the listening pass with two players (M16.6) |
 | **M20 The Long Climb** | in progress: the v1.0 level for two (PROJECT_SPEC §15g): exactly two players (a level's maximum), the rock, mine and lane pieces, the caves' and mine's CC0 props and library structures (M20.1–M20.4); the blockout of the seven acts laid, checked and walked (M20.5, approved by the owner); dressed, then the organic pass: the route
 turns, the land and rock organic, the forest on the way (M20.6) | window and fuse tuning in play, playtests (M20.7) |
-| **M21 Level tools v2** (#125) | in progress: L0 built (the Level Palette and one catalogue, the menus written from it and re-sorted, the Props Brush folded into bursts, the dev showcase); L1 built (the layered ground: eight layers baked from rules and painted by hand, Terrain Tools, size and fineness, resample); L2 built (the height stack, land shapes, trails, rivers and ravines); L3 built (six rocks, detailed faces drawn over their plain collider, scans, scree, talus, foot band, decals); L4 built (tunnel sections, shaped chambers, shafts, networks, mouths, dressing); L5a built (walls in fifteen styles, openings placing the kit, the stone door looks); L5b built (stone freezing, stone ways, arches, ruins and towers, the stone library) | L6 showcase; the owner's try of each |
+| **M21 Level tools v2** (#125) | in progress: L0 built (the Level Palette and one catalogue, the menus written from it and re-sorted, the Props Brush folded into bursts, the dev showcase); L1 built (the layered ground: eight layers baked from rules and painted by hand, Terrain Tools, size and fineness, resample); L2 built (the height stack, land shapes, trails, rivers and ravines); L3 built (six rocks, detailed faces drawn over their plain collider, scans, scree, talus, foot band, decals); L4 built (tunnel sections, shaped chambers, shafts, networks, mouths, dressing); L5a built (walls in fifteen styles, openings placing the kit, the stone door looks); L5b built (stone freezing, stone ways, arches, ruins and towers, the stone library); L6 built (the showcase passes Verify and the route runner) | the owner's try of each |
 | **M19 Fresh start** | done: every map archived (`docs/MAP_ARCHIVE.md`, branch `archive/maps-v1`); only `Bootstrap` and `PassSandbox` remain, the sandbox dev-only (never listed in a release build); new levels copied from `Templates/CourseTemplate` | the first new map, by hand with the level tools |
 | Cleanup and generic obstacles | done: only `PatataWilds`, `IndustrialPlant` and `PassSandbox` (plus `Bootstrap`) remain; every obstacle system is generic (references, `IObstacleState`, `ObstacleVisualDriver`, `CustomVisual`, overridable poses, `ObstaclePrefabValidator`), with two example variants; the obstacle catalogue is `docs/OBSTACLES.md` | |
 
@@ -1883,9 +1883,9 @@ is level geometry or decoration, every door that opens is the kit with a new loo
 
 ## M21.L6 — The showcase
 
-- [ ] `LevelToolsShowcase` holds each phase's area; a gallery of before and after screenshots per PR;
-- [ ] `AuthoredLevelTests` walks it (Verify clean apart from "not in the menu");
-- [ ] The Long Climb rebuilds exactly as before (its pieces' signatures and meshes unchanged).
+- [x] `LevelToolsShowcase` holds each phase's area; a gallery of screenshots per phase;
+- [x] `AuthoredLevelTests` walks it (Verify clean apart from "not in the menu");
+- [x] The Long Climb rebuilds exactly as before (its pieces' signatures and meshes unchanged: `LongClimbTests.Pieces_RebuildExactlyAsBefore`, and its `AuthoredLevelTests` fixture passes).
 
 ---
 
