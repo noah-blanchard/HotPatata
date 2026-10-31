@@ -425,7 +425,7 @@ namespace HotPatata.Editor
             for (int i = 0; i < styles.Length; i++)
             {
                 var (id, look, label) = styles[i];
-                float u = i % 2 == 0 ? 0.3f : 0.72f, v = 0.06f + (i / 2) * 0.105f;
+                float u = i % 2 == 0 ? 0.3f : 0.72f, v = 0.04f + (i / 2) * 0.06f;
                 var wall = a.Place(PaletteCatalog.Find(id), look, a.At(u, v), label + " wall").GetComponent<WallShape>();
                 wall.Points.Clear();
                 wall.Points.AddRange(new[] { new Vector3(-9f, 0f, 0f), new Vector3(0f, 0f, 2f), new Vector3(9f, 0f, 0f) });
@@ -444,9 +444,48 @@ namespace HotPatata.Editor
                 });
                 made.Add(wall);
             }
-            made.Add(a.Place(PaletteCatalog.Find("masonry.gate-wall"), null, a.At(0.3f, 0.93f), "Gate wall (a kit door in it)").GetComponent<WallShape>());
-            made.Add(a.Place(PaletteCatalog.Find("masonry.ruin"), null, a.At(0.72f, 0.9f), "Ruin fragment").GetComponent<WallShape>());
+            made.Add(a.Place(PaletteCatalog.Find("masonry.gate-wall"), null, a.At(0.3f, 0.53f), "Gate wall (a kit door in it)").GetComponent<WallShape>());
+            made.Add(a.Place(PaletteCatalog.Find("masonry.ruin"), null, a.At(0.72f, 0.52f), "Ruin fragment").GetComponent<WallShape>());
             LevelPieceBuilder.Rebuild(made);
+
+            // L5b: the stone ways, arches, ruins and towers
+            GameObject P(string id, string look, float u, float v, string label) => a.Place(PaletteCatalog.Find(id), look, a.At(u, v), label);
+            P("masonry.stone-stair", "built", 0.12f, 0.6f, "Stone stair (built)");
+            P("masonry.stone-stair", "rock", 0.24f, 0.6f, "Stone stair (cut in rock)");
+            P("masonry.paving", "terrace", 0.42f, 0.6f, "Raised terrace (slabs)");
+            P("masonry.paving", "cobbles", 0.58f, 0.6f, "Cobbles");
+            P("masonry.stepping-stones", null, 0.7f, 0.6f, "Stepping stones");
+            var bridge = P("masonry.stone-bridge", null, 0.86f, 0.6f, "Stone bridge").GetComponent<StoneBridgeShape>();
+            bridge.Start = new Vector3(0f, 2.5f, -10f);
+            bridge.End = new Vector3(0f, 2.5f, 10f);
+            bridge.Arches = 3;
+            LevelPieceBuilder.Rebuild(bridge);
+            P("masonry.arch", null, 0.1f, 0.7f, "Round arch");
+            P("masonry.arch", "pointed", 0.24f, 0.7f, "Pointed arch");
+            P("masonry.arch", "lintel", 0.38f, 0.7f, "Stone lintel");
+            P("masonry.portal", null, 0.52f, 0.7f, "Log portal");
+            P("masonry.column", null, 0.64f, 0.7f, "Column");
+            P("masonry.column", "broken", 0.72f, 0.7f, "Broken column");
+            P("masonry.plinth", null, 0.86f, 0.7f, "Plinth");
+            P("masonry.tower", null, 0.2f, 0.8f, "Watchtower");
+            P("masonry.tower", "roofed", 0.5f, 0.8f, "Roofed tower");
+            P("masonry.tower", "ruined", 0.8f, 0.8f, "Ruined tower");
+            // a dry-stone wall frozen into its stones, opened by hand in its middle
+            var frozenWall = P("masonry.stone-wall", null, 0.3f, 0.89f, null).GetComponent<WallShape>();
+            frozenWall.Points.Clear();
+            frozenWall.Points.AddRange(new[] { new Vector3(-7f, 0f, 0f), new Vector3(7f, 0f, 0f) });
+            LevelPieceBuilder.Rebuild(frozenWall);
+            var frozen = TimberFreezer.Freeze(frozenWall);
+            if (frozen != null)
+            {
+                Area.Label(frozen.gameObject, "Frozen dry-stone wall (opened here)");
+                var c = frozen.transform.position;
+                StoneFreeze.OpenHere(frozen.GetComponentsInChildren<StoneBlock>(true).Where(st => Mathf.Abs(st.transform.position.x - c.x) < 0.8f && st.transform.position.y - c.y < 1.6f).ToList());
+            }
+            var piers = P("timber.walkway", null, 0.7f, 0.89f, "Walkway on stone piers").GetComponent<TimberWalkShape>();
+            piers.Support = TimberSupport.StonePiers;
+            piers.transform.position += Vector3.up * 3f;
+            LevelPieceBuilder.Rebuild(piers);
             var door = PaletteCatalog.Find("kit.door");
             var sliding = PaletteCatalog.Find("kit.sliding-door");
             a.Place(door, "portcullis", a.At(0.15f, 0.97f), "Iron portcullis");

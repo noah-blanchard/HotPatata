@@ -19,6 +19,7 @@ The tools come in three steps (M18). This guide covers what is built:
 | 10. Rock out of the ground | six rocks, detailed faces, scanned rocks set in them, scree, talus, a foot band and decals (M21) | built |
 | 11. Caves v2 | tunnels whose section changes, shaped chambers (crown, alcoves, pillars, shelves), shafts, networks, mouths in a hillside, dressing (M21) | built |
 | 12. Walls and openings | stone, timber, fence and mixed walls in fifteen styles, their openings placing the kit (screens, curtains, doors), the stone door looks (M21) | built |
+| 13. Stone ways, arches and ruins | frozen stone walls (stone by stone, Open Here), stone stairs, paving, stepping stones, stone bridges, piers, arches, columns, plinths, towers, the stone library (M21) | built |
 
 A good order: make the level (§1), shape the land (§2), plant the giant trees (§3), hang the timber on them (§4 to §7),
 plant the forest round it (§8), the mist and the sound (§9), then the game (§10), checked and played (§11), and dress it
@@ -356,7 +357,9 @@ Set them in the Inspector, move and turn the piece; freeze them to move their bo
 
 `HotPatata/Libraries/Build Structure Library` makes the library's first prefabs (Shelters: Winch Booth, Woodshed, Lean-to;
 Gantries: Gate Tower, Lift Gantry; Signs: three clue boards and a signpost; Pulleys: Pulley Beam, Pulley Post). It only
-makes the missing ones: once a prefab exists it is yours. To start one over, right click it in the Project window,
+makes the missing ones (since M21 also Walls: Dry-stone Run, Palisade Gate-wall, Ruin Corner; Arches: Stone Arch, Pointed Arch,
+Log Portal; Stone: Stone Stair, Terrace, Stone Bridge; Towers: Watchtower, Ruined Tower; the stone pieces are saved as built, the
+walls frozen): once a prefab exists it is yours. To start one over, right click it in the Project window,
 **HotPatata > Regenerate Library Structure** (your changes to it are lost). The palette's Structures tab lists the library by
 folder (`Library: Shelters`, `Library: Mine`...): click a tile, then click where it goes.
 
@@ -628,6 +631,33 @@ Fragment** and **Gate Wall** (a palisade with a kit door in it).
     opening's is reported; **Replace kit** (it asks) puts the new one in. Removing an opening asks whether its kit goes too.
 - Verify: a bomb-only opening without a body screen covering it, a runners-only one without its curtain (errors), an unwired door
   (warning).
+- **Freeze** (as timber, §17): a stone wall becomes its stones (**Element → Stone** elements: move, Jitter, Set down, Align as any
+  element) and its collision becomes **masonry walls** (invisible, their points dragged like a rail wall's). Taking stones out does not
+  open a wall: select the stones and **HotPatata/Level/Open Wall Here** (the stones go, the masonry wall and the fill behind them are
+  cut round where they were, what is under and over them kept). A wall of more than 400 stones freezes only **per segment** (the
+  inspector's button: a mesh per straight run, no stone elements).
+
+## 31. Stone ways, arches and ruins
+
+The palette's **Masonry** tab:
+
+- **Stone Stair** (Flagstone, Cut in Rock, Built between side walls): its dots are its walk's line from foot to top. Its steps rise
+  **Rise** each (0.15 to 0.22 m), as many as its rise needs; it is walked as a smooth ramp (the steps are drawn).
+- **Paving** (Flagstones, Cobbles, Raised Terrace): over its outline, walked flat; **Raised** stands it on a retaining edge of
+  stone up to 3 m; **Edge Stones** a kerb.
+- **Stepping Stones**: along their line, a stone every **Spacing** (0.8 to 2.5 m: a jump, never a lock); each top is solid. Over
+  water a miss is a fall into the water's kill zone, on purpose.
+- **Stone Bridge**: from one dot to the other, its deck humped (**Hump**), **Arches** on piers, **Parapets** that stop a body; the
+  arches stay open under it.
+- A **Walkway** with **Support: Stone Piers** stands on coursed stone piers instead of timber bents.
+- **Arch** (Round, Pointed, Stone Lintel) and **Portal** (Log Portal, Log Lintel): piers and a top that collide, the passage under
+  open; timber stands on its top. **Crest** ruins one side.
+- **Column** (standing, or **Broken**: its top's drums lie at its foot, they collide; **Lean**), **Plinth** (a walked block with up to
+  three steps round it).
+- **Tower** (Watchtower: crenellations; Roofed: a cone roof that is a ceiling; Ruined): its walls are a wall's (stone or timber, its
+  openings round its wall from its south point, the same passages and kit), its **Floors** walked with a hatch to the east. The climb
+  inside is yours: a stone stair, a walkway, a lift.
+- Masonry is ground to timber: a deck or a walkway's posts stand on an arch, a plinth, paving, a stone bridge, a tower or a stone wall.
 
 ## Rules
 

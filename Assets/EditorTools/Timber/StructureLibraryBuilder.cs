@@ -52,6 +52,39 @@ namespace HotPatata.Editor
             Make<MineFrameShape>("Mine", "Mine Entrance", f => { f.Points.Clear(); f.Points.AddRange(new[] { Vector3.zero, new Vector3(0f, 0f, 3f) }); f.Spacing = 3f; f.LanternEvery = 2; }),
             Make<MineFrameShape>("Mine", "Mine Gallery 9 m", f => { f.Points.Clear(); f.Points.AddRange(new[] { Vector3.zero, new Vector3(0f, 0f, 9f) }); }),
             Make<MineRailShape>("Mine", "Mine Track 8 m", r => { r.Points.Clear(); r.Points.AddRange(new[] { Vector3.zero, new Vector3(0f, 0f, 8f) }); }),
+            // masonry (M21, ARCHITECTURE §27.7): walls freeze into stones and timber; the stone pieces are baked as they are built
+            Make<WallShape>("Walls", "Dry-stone Run", w => { WallEntries.Dress(w, WallStyle.DryStone); w.Points.Clear(); w.Points.AddRange(new[] { new Vector3(-4f, 0f, 0f), new Vector3(4f, 0f, 0f) }); }),
+            Make<WallShape>("Walls", "Palisade Gate-wall", w =>
+            {
+                WallEntries.Dress(w, WallStyle.Palisade);
+                w.Points.Clear();
+                w.Points.AddRange(new[] { new Vector3(-6f, 0f, 0f), new Vector3(6f, 0f, 0f) });
+                // its gate is left open: the kit door is placed in the level (a wall opening's passage, or the palette's Door)
+                w.Openings.Add(new WallOpening(6f, 3.4f, 3f, OpeningPassage.Free) { frame = OpeningFrame.Timber });
+            }),
+            Make<WallShape>("Walls", "Ruin Corner", w =>
+            {
+                WallEntries.Dress(w, WallStyle.Ruined);
+                w.Points.Clear();
+                w.Points.AddRange(new[] { new Vector3(-3.5f, 0f, 0f), Vector3.zero, new Vector3(0f, 0f, 3f) });
+                w.Height = 3.6f;
+                w.Crest = 2.6f;
+                w.Breaches.Clear();
+            }),
+            Make<ArchShape>("Arches", "Stone Arch", a => { a.Kind = ArchKind.StoneRound; }),
+            Make<ArchShape>("Arches", "Pointed Arch", a => { a.Kind = ArchKind.StonePointed; a.Rise = 2.2f; }),
+            Make<ArchShape>("Arches", "Log Portal", a => { a.Kind = ArchKind.LogPortal; }),
+            Make<StoneStairShape>("Stone", "Stone Stair", s => { s.Kind = StoneStairKind.Built; }),
+            Make<PavingShape>("Stone", "Terrace", p => { p.Kind = PavingKind.Slabs; p.Raised = 1.5f; }),
+            Make<StoneBridgeShape>("Stone", "Stone Bridge", b => { b.Start = new Vector3(0f, 2f, -9f); b.End = new Vector3(0f, 2f, 9f); }),
+            Make<TowerShape>("Towers", "Watchtower", t => { t.Openings.Add(new WallOpening(2f, 2.2f, 2.8f, OpeningPassage.Free) { shape = OpeningShape.RoundArch, frame = OpeningFrame.Stone }); }),
+            Make<TowerShape>("Towers", "Ruined Tower", t =>
+            {
+                t.Top = TowerTop.Ruined;
+                t.WallStyle = WallStyle.DryStone;
+                t.Floors.Clear();
+                t.Openings.Add(new WallOpening(2f, 2.2f, 2.8f, OpeningPassage.Free) { shape = OpeningShape.Breach });
+            }),
         };
 
         static Entry Make<T>(string category, string name, Action<T> setup) where T : LevelPiece =>
@@ -84,6 +117,23 @@ namespace HotPatata.Editor
             return string.IsNullOrEmpty(path) ? null : Entries.FirstOrDefault(e => e.Path == path);
         }
 
+        /// <summary>
+        /// A piece that does not freeze (a stone piece) as it was built: its output's objects under a root of its name, every mesh in the
+        /// catalogue, the piece gone (M21).
+        /// </summary>
+        static GameObject Bake(LevelPiece piece)
+        {
+            if (piece.Output == null) return null;
+            var root = new GameObject(piece.name);
+            root.transform.SetPositionAndRotation(piece.transform.position, Quaternion.Euler(0f, piece.transform.eulerAngles.y, 0f));
+            foreach (var filter in piece.Output.GetComponentsInChildren<MeshFilter>(true)) filter.sharedMesh = MeshCatalog.Store(filter.sharedMesh);
+            foreach (var collider in piece.Output.GetComponentsInChildren<MeshCollider>(true)) collider.sharedMesh = MeshCatalog.Store(collider.sharedMesh);
+            foreach (Transform child in piece.Output.transform.Cast<Transform>().ToList()) child.SetParent(root.transform, true);
+            foreach (var t in root.GetComponentsInChildren<Transform>(true)) t.gameObject.hideFlags = HideFlags.None;
+            Object.DestroyImmediate(piece.gameObject);
+            return root;
+        }
+
         /// <summary>Draws, freezes and saves <paramref name="entries"/> (overwriting); returns the names made.</summary>
         public static List<string> Build(IEnumerable<Entry> entries)
         {
@@ -105,13 +155,13 @@ namespace HotPatata.Editor
                     entry.setup(piece);
                     piece.EnsureId();
                     LevelPieceBuilder.Rebuild(piece);
-                    var frozen = TimberFreezer.Freeze(piece);
+                    var frozen = TimberFreezer.CanFreeze(piece) ? TimberFreezer.Freeze(piece)?.gameObject : Bake(piece);
                     if (frozen == null) continue;
                     Directory.CreateDirectory(System.IO.Path.GetDirectoryName(entry.Path));
                     MeshCatalog.Flush();
-                    PrefabUtility.SaveAsPrefabAsset(frozen.gameObject, entry.Path, out bool saved);
+                    PrefabUtility.SaveAsPrefabAsset(frozen, entry.Path, out bool saved);
                     if (saved) made.Add(entry.name);
-                    Object.DestroyImmediate(frozen.gameObject);
+                    Object.DestroyImmediate(frozen);
                 }
             }
             finally

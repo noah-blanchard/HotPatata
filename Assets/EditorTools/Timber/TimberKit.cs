@@ -560,9 +560,16 @@ namespace HotPatata.Editor
             // supports: sleepers where the walk lies on the ground, else a braced trestle bent about every 5.5 m, a brace to a trunk,
             // or hangers from the limbs above
             bool walkAuto = spec.support == TimberSupport.Auto;
+            var piers = new List<(Vector3 top, Vector3 across)>();
             for (float sc = 0.6f; !spec.held && spec.support != TimberSupport.None && sc < s[n - 1] - 0.3f; sc += 5.5f)
             {
                 var (c, side) = AtS(surface, s, sides, sc);
+                if (spec.support == TimberSupport.StonePiers)
+                {
+                    // M21: coursed stone piers under it (drawn with the walk's root)
+                    piers.Add((c + Vector3.down * (BoardThickness + 0.26f), side));
+                    continue;
+                }
                 var footL = c - side * inset + Vector3.down * (BoardThickness + 0.26f);
                 var footR = c + side * inset + Vector3.down * (BoardThickness + 0.26f);
                 float drop = Mathf.Min(footL.y - site.GroundAt(new Vector2(footL.x, footL.z)), footR.y - site.GroundAt(new Vector2(footR.x, footR.z)));
@@ -597,6 +604,7 @@ namespace HotPatata.Editor
             proxy.Sweep(Curves.Resample(surface, 0.25f), width, ProxyDepth, 0, MeshBuilder.Anchor.Top);
             float tolerance = flights.Count > 0 ? 0.12f : 0.08f;
             var root = Finish(parent, name, vis, proxy, WalkableProxy.Kind.Walkway, tolerance);
+            if (piers.Count > 0) StoneWays.Piers(root.transform, name, piers, width, site.GroundAt);
             if (spec.railLeft) Railing(root.transform, name + " rail L", surface.Select((v, i) => v - sides[i] * (width * 0.5f - 0.05f)).ToList(), rng.Next());
             if (spec.railRight) Railing(root.transform, name + " rail R", surface.Select((v, i) => v + sides[i] * (width * 0.5f - 0.05f)).ToList(), rng.Next());
             return root;

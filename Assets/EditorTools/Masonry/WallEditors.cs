@@ -23,6 +23,11 @@ namespace HotPatata.Editor
         {
             var wall = Wall;
             PencilButton(wall.Points, false);
+            if (GUILayout.Button(new GUIContent("Freeze per segment", $"A mesh per straight run instead of an element per stone (a wall of more than {StoneFreeze.StoneFreezeLimit} stones freezes only so). One way (Ctrl+Z only).")))
+            {
+                TimberFreezer.Freeze(wall, true);
+                GUIUtility.ExitGUI();
+            }
             float locked = MasonryKit.LockedHeight(wall);
             EditorGUILayout.HelpBox($"{wall.Family} wall. Locked height {locked:F2} m (its lowest top): {MasonryKit.Reads(locked)}.", MessageType.Info);
             using (new EditorGUILayout.HorizontalScope())

@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using HotPatata;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -85,8 +86,8 @@ namespace HotPatata.Editor
             }
             finally { OrganicAssets.End(); }
             // a wall's openings hold kit in the level's Kit group: placed once, then moved and sized with the wall
-            foreach (var wall in pieces.OfType<WallShape>().Where(w => w != null))
-                foreach (var note in MasonryKit.PlaceKit(wall)) Debug.LogWarning($"[Level] {wall.name}: {note}", wall);
+            foreach (var wall in pieces.Where(p => p != null).OfType<IWallSpec>())
+                foreach (var note in MasonryKit.PlaceKit(wall)) Debug.LogWarning($"[Level] {wall.Owner.name}: {note}", wall.Owner);
             Physics.SyncTransforms();
             LastMilliseconds = clock.Elapsed.TotalMilliseconds;
         }
@@ -179,6 +180,14 @@ namespace HotPatata.Editor
                 case RiverShape river: GroundOutputs.BuildRiver(river, root, name); break;
                 case DecalShape decal: DecalScatter.BuildDecal(decal, root, name); break;
                 case WallShape wall: MasonryKit.Build(wall, root, name); break;
+                case StoneStairShape stair: return StoneWays.Stair(stair, root, name);
+                case PavingShape paving: StoneWays.Paving(paving, root, name); break;
+                case SteppingStonesShape stepping: return StoneWays.SteppingStones(stepping, root, name);
+                case StoneBridgeShape stoneBridge: return StoneWays.Bridge(stoneBridge, root, name);
+                case ArchShape arch: StoneWays.Arch(arch, root, name); break;
+                case ColumnShape column: StoneWays.Column(column, root, name); break;
+                case PlinthShape plinth: StoneWays.Plinth(plinth, root, name); break;
+                case TowerShape tower: StoneWays.Tower(tower, root, name); break;
             }
             return null;
         }
@@ -216,6 +225,12 @@ namespace HotPatata.Editor
                 RiverShape river => river.WorldPoints().Select(p => new Vector3(p.x, 0f, p.y)).ToList(),
                 DecalShape decal => new[] { Vector3.zero, Vector3.one * decal.Size },
                 WallShape wall => wall.WorldLine(),
+                StoneStairShape stair => stair.WorldPoints(),
+                PavingShape paving => paving.WorldOutline().Select(p => new Vector3(p.x, 0f, p.y)).ToList(),
+                SteppingStonesShape stepping => stepping.WorldPoints(),
+                StoneBridgeShape sb => new[] { sb.WorldEnds().a, sb.WorldEnds().b },
+                ArchShape arch => new[] { Vector3.zero, new Vector3(arch.Span + 2f * arch.PierWidth, arch.PierHeight + arch.Rise, arch.Depth) },
+                TowerShape tower => new[] { Vector3.zero, new Vector3(tower.Radius * 2f, tower.Height, tower.Radius * 2f) },
                 _ => Array.Empty<Vector3>(),
             };
             if (points.Count > MaxPoints) return $"{points.Count} points (at most {MaxPoints})";
@@ -530,6 +545,10 @@ namespace HotPatata.Editor
                         V(s, new Vector3(o.sill, (int)o.shape, (int)o.frame));
                         s.Append(o.passage).Append(o.look).Append('|');
                     }
+                    break;
+                case StoneStairShape or PavingShape or SteppingStonesShape or StoneBridgeShape or ArchShape or ColumnShape or PlinthShape or TowerShape:
+                    // every serialised field but the output and the id (an opening's kit is a link, not an input)
+                    s.Append(Regex.Replace(EditorJsonUtility.ToJson(piece), "\"(output|pieceId|kit)\":(\\{[^}]*\\}|\"[^\"]*\"),?", "")).Append('|');
                     break;
                 case DecalShape decal:
                     s.Append(decal.Kind).Append('|');

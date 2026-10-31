@@ -183,6 +183,22 @@ namespace HotPatata.Editor
         static GameObject Beam(PlaceContext c) =>
             Board(c, "Beam", TimberElementKind.Beam, TimberWood.Timber, new Vector3(0.16f, 0.2f, 3f), Quaternion.identity, 2f, false);
 
+        [PaletteItem("element.stone", "Elements/Stone", "Stone", Kind = PaletteKind.Element, Tags = "element stone block masonry",
+                     Tooltip = "One stone, moved by hand (in a frozen wall, beside the stone selected).")]
+        static GameObject StoneElement(PlaceContext c)
+        {
+            var go = NewElement(c, "Stone", 0.15f);
+            var near = Selection.activeGameObject != null ? Selection.activeGameObject.GetComponent<StoneBlock>() : null;
+            var stone = Undo.AddComponent<StoneBlock>(go);
+            stone.Kind = TimberElementKind.Trim;
+            stone.Size = near != null ? near.Size : new Vector3(0.7f, 0.3f, 0.6f);
+            stone.Stone = near != null ? near.Stone : StoneKind.Granite;
+            stone.Variant = Random.Range(0, StoneBlock.Variants);
+            stone.Solid = near == null;
+            Done(stone);
+            return go;
+        }
+
         [PaletteItem("element.rope", "Elements/Timber", "Rope", Kind = PaletteKind.Element, Tags = "element rope")]
         static GameObject Rope(PlaceContext c)
         {

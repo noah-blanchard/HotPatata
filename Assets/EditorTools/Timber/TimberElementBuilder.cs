@@ -20,7 +20,7 @@ namespace HotPatata.Editor
             if (element == null) return false;
             if (element is TimberPath path && path.FollowAnchors()) EditorUtility.SetDirty(path);
             string key = element.ShapeKey();
-            string built = key + "|" + element.Wood + "|" + element.Solid + (element is TimberPaint p ? "|" + p.Paint : "");
+            string built = key + "|" + element.Wood + "|" + element.Solid + (element is TimberPaint p ? "|" + p.Paint : "") + (element is StoneBlock sb ? "|" + sb.Stone : "");
             var filter = element.GetComponent<MeshFilter>();
             if (!force && element.BuiltFrom == built && filter != null && filter.sharedMesh != null) return false;
             var mesh = MeshCatalog.Get(key, () => Mesh(element));
@@ -28,7 +28,8 @@ namespace HotPatata.Editor
             filter.sharedMesh = mesh;
             var renderer = element.GetComponent<MeshRenderer>();
             if (renderer == null) renderer = element.gameObject.AddComponent<MeshRenderer>();
-            renderer.sharedMaterial = NatureMaterialBuilder.Load(element is TimberPaint paint ? PaintMaterial(paint.Paint) : TimberKit.SlotMaterials[(int)element.Wood]);
+            renderer.sharedMaterial = NatureMaterialBuilder.Load(element is TimberPaint paint ? PaintMaterial(paint.Paint)
+                : element is StoneBlock stone ? StoneFreeze.MaterialOf(stone.Stone) : TimberKit.SlotMaterials[(int)element.Wood]);
             renderer.shadowCastingMode = element is TimberPaint ? UnityEngine.Rendering.ShadowCastingMode.Off : UnityEngine.Rendering.ShadowCastingMode.On;
             Collide(element, mesh);
             GameObjectUtility.SetStaticEditorFlags(element.gameObject, StaticEditorFlags.BatchingStatic);
@@ -50,12 +51,12 @@ namespace HotPatata.Editor
                 return;
             }
             go.layer = CourseKit.Layer("Environment");
-            if (element is TimberBoard board)
+            if (element is TimberBoard || element is StoneBlock)
             {
                 if (meshCollider != null) Object.DestroyImmediate(meshCollider);
                 if (box == null) box = go.AddComponent<BoxCollider>();
                 box.center = Vector3.zero;
-                box.size = board.Size;
+                box.size = element is TimberBoard board ? board.Size : ((StoneBlock)element).Size;
                 return;
             }
             if (box != null) Object.DestroyImmediate(box);
@@ -95,6 +96,9 @@ namespace HotPatata.Editor
                         mb.Tube(points, points.Select(_ => path.Radius).ToList(), Sides(path.Radius), 0, path.Caps, shift.x);
                     else
                         mb.Sweep(points, path.Width, path.Height, 0, (MeshBuilder.Anchor)(int)Seat(path.Anchor), path.Caps, shift.x);
+                    break;
+                case StoneBlock stoneBlock:
+                    MasonryKit.Block(mb, Vector3.zero, Quaternion.identity, stoneBlock.DrawnSize, stoneBlock.Bevel, 0.03f, stoneBlock.DrawnVariant * 7919 + 13, 0);
                     break;
                 case TimberTurned turned:
                     if (turned.Profile.Count >= 2) mb.Lathe(Vector3.zero, Quaternion.identity, turned.Profile, turned.Sides, 0);

@@ -8,7 +8,7 @@ namespace HotPatata
     public enum TimberWear { New, Aged }
 
     /// <summary>What holds a piece of timber up (ARCHITECTURE §27): the kit's own choice, or one forced.</summary>
-    public enum TimberSupport { Auto, Posts, Tower, Braces, Hangers, None }
+    public enum TimberSupport { Auto, Posts, Tower, Braces, Hangers, None, StonePiers }
 
     /// <summary>
     /// A piece of an authored level (ARCHITECTURE §27): the data an editor tool draws its geometry from (points, sizes, choices),
