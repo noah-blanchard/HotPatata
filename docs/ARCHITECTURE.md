@@ -2385,7 +2385,10 @@ made from it (#125).
   scene uses them).
 - **The showcase.** `LevelToolsShowcase` (`Assets/Scenes/Dev/LevelToolsShowcase.unity`, menu **HotPatata/Level/Showcase**): a
   1024 m level made with New Level, never in the menu, where each phase of M21 fills its own area (`LevelToolsShowcase.Areas`),
-  each item labelled (`ShowcaseLabel`, dev only). L0's area is the palette tour: every code entry and look once.
+  each item labelled (`ShowcaseLabel`, dev only). L0's area is the palette tour: every code entry and look once. L6's (`Build
+  Course`, last) makes it a level Verify reads: the contracts, a checkpoint, the finish, the pieces no area holds cleared, and a timber
+  landing at each walk end `WalkProbe` finds in the air. `AuthoredLevelTests` has it as a fixture (Verify clean apart from "not in
+  the menu"); the wall kit it places is kept in each area's Kit group so a rebuild of the area clears it.
 
 Tests: `LevelPaletteTests` (the 80 old menu items are entries and create what they did in their group, at the same offsets; menus
 and catalogue one to one; burst off walks and water, Shift erase; favourites and recent; a walkway on a deck's edge attaches).
@@ -2582,3 +2585,7 @@ Tests: `LevelStoneTests` (a dry-stone wall freezes per stone, its stones share m
 Open Here cuts the wall under and over the hole; a long wall freezes only per segment; the stair, raised paving, stepping stones,
 the bridge and a pier walkway are walked or stood on; a broken column, a tower's floors, roof (ceiling) and kit door, an arch open
 under and found as ground on top).
+
+**L6 (the showcase).** Two checks learnt from the showcase: `CourseContractCheck` no longer reports a body screen as jumped onto
+when solid stands within a body's height over it (a screen in a wall's opening, the wall over it); and Verify's loose-rope check
+lets a plumb rope drop (from a pulley or a beam) hang free at its lower end.

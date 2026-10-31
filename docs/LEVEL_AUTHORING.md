@@ -486,7 +486,10 @@ The `GameObject > HotPatata Level` menus hold the same entries in the same order
   menus again; a test fails until it is done.
 
 The showcase (`Assets/Scenes/Dev/LevelToolsShowcase.unity`, `HotPatata/Level/Showcase`) shows every entry once, labelled: a dev
-scene, never in the menu.
+scene, never in the menu. Each phase of M21 has its area, built by its menu item (`Build Palette Tour (L0)` to `Build Masonry (L5)`);
+`Build Course (L6)` comes last: the start's contract (a showcase forces nothing), a checkpoint and the finish, a landing deck where a
+walk ends in the air. It passes Verify Level (apart from "not in the menu") and the route runner walks it (`AuthoredLevelTests`).
+In the palette tour a screen or a curtain stands in a wall's opening, as it would in a level.
 
 ## 26. The ground: layers, rules and paint
 

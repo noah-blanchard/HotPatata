@@ -33,6 +33,7 @@ namespace HotPatata.Editor
             ("L3 Rock", new Vector2(280f, -200f), new Vector2(200f, 450f)),
             ("L4 Caves", new Vector2(-250f, -480f), new Vector2(500f, 230f)),
             ("L5 Masonry", new Vector2(-480f, -200f), new Vector2(200f, 450f)),
+            ("L6 Course", new Vector2(-20f, -60f), new Vector2(40f, 50f)),
         };
 
         [MenuItem(Menu + "Create Showcase", priority = 0)]
@@ -284,7 +285,8 @@ namespace HotPatata.Editor
             var trail = Shape<TrailShape>("ground.trail", 0.03f, 0.12f, "Trail climbing the hill (held to 30 %)");
             var origin = trail.transform.position;
             trail.Points.Clear();
-            foreach (var (u, v) in new[] { (0.03f, 0.12f), (0.1f, 0.25f), (0.13f, 0.4f), (0.17f, 0.5f), (0.2f, 0.55f) })
+            // a switchback up the hill's flank, long enough to hold its grade
+            foreach (var (u, v) in new[] { (0.03f, 0.12f), (0.1f, 0.25f), (0.16f, 0.3f), (0.08f, 0.4f), (0.13f, 0.47f) })
                 trail.Points.Add(Local(a.At(u, v), origin));
 
             var river = Shape<RiverShape>("ground.river", 0.32f, 0.02f, "River (water over kill zones)");
@@ -412,6 +414,10 @@ namespace HotPatata.Editor
         static void MasonryArea(Area a)
         {
             StoneKitBuilder.EnsureBuilt();
+            // the kit the walls placed lives in the Kit group: what an earlier build left there (outside this area's group) goes
+            var kitRoot = a.Settings.Group(LevelGroup.Kit);
+            foreach (Transform old in kitRoot.Cast<Transform>().Where(t => t.name.Contains(" BombOnly") || t.name.Contains(" RunnersOnly") || t.name.Contains(" KitDoor")).ToList())
+                Object.DestroyImmediate(old.gameObject);
             var styles = new (string entry, string look, string label)[]
             {
                 ("masonry.stone-wall", null, "Dry stone"), ("masonry.stone-wall", "mortared", "Mortared"), ("masonry.stone-wall", "ruined", "Ruined"),
@@ -429,12 +435,14 @@ namespace HotPatata.Editor
                 var wall = a.Place(PaletteCatalog.Find(id), look, a.At(u, v), label + " wall").GetComponent<WallShape>();
                 wall.Points.Clear();
                 wall.Points.AddRange(new[] { new Vector3(-9f, 0f, 0f), new Vector3(0f, 0f, 2f), new Vector3(9f, 0f, 0f) });
-                float h = Mathf.Max(0.8f, wall.Height - 0.4f);
+                var passage = wall.Family == WallFamily.Fence ? OpeningPassage.KitDoor : passages[i % passages.Length];
+                // a screen or a curtain needs the wall over it (else the bomb flies over the wall, a player jumps onto the screen)
+                if (passage != OpeningPassage.KitDoor) wall.Height = Mathf.Max(wall.Height, 3.4f);
+                float h = passage == OpeningPassage.KitDoor ? Mathf.Max(0.8f, wall.Height - 0.4f) : wall.Height - 1f;
                 wall.Openings.Clear();
                 if (wall.Family != WallFamily.Fence)
                     wall.Openings.Add(new WallOpening(4.5f, 1.4f, Mathf.Min(2.4f, h), OpeningPassage.Free, OpeningShape.RoundArch)
                                       { frame = wall.Family == WallFamily.Stone ? OpeningFrame.Stone : OpeningFrame.Timber });
-                var passage = passages[i % passages.Length];
                 wall.Openings.Add(new WallOpening(12.5f, 2.6f, Mathf.Min(3f, h), passage)
                 {
                     frame = wall.Family == WallFamily.Stone || wall.Family == WallFamily.Mixed ? OpeningFrame.Stone : OpeningFrame.Timber,
@@ -447,6 +455,14 @@ namespace HotPatata.Editor
             made.Add(a.Place(PaletteCatalog.Find("masonry.gate-wall"), null, a.At(0.3f, 0.53f), "Gate wall (a kit door in it)").GetComponent<WallShape>());
             made.Add(a.Place(PaletteCatalog.Find("masonry.ruin"), null, a.At(0.72f, 0.52f), "Ruin fragment").GetComponent<WallShape>());
             LevelPieceBuilder.Rebuild(made);
+            // the kit in this area's group (a rebuild of the area clears it), each door wired to a plate before it
+            int plates = 0;
+            foreach (var wall in made.OfType<WallShape>())
+                foreach (var o in wall.Openings.Where(o => o.kit != null))
+                {
+                    o.kit.transform.SetParent(a.Group(LevelGroup.Kit), true);
+                    if (o.passage == OpeningPassage.KitDoor) WireToPlate(a, o.kit, -o.kit.transform.forward * 3f, ++plates);
+                }
 
             // L5b: the stone ways, arches, ruins and towers
             GameObject P(string id, string look, float u, float v, string label) => a.Place(PaletteCatalog.Find(id), look, a.At(u, v), label);
@@ -488,13 +504,98 @@ namespace HotPatata.Editor
             LevelPieceBuilder.Rebuild(piers);
             var door = PaletteCatalog.Find("kit.door");
             var sliding = PaletteCatalog.Find("kit.sliding-door");
-            a.Place(door, "portcullis", a.At(0.15f, 0.97f), "Iron portcullis");
-            a.Place(door, "slab", a.At(0.5f, 0.97f), "Stone slab");
-            a.Place(door, "plank", a.At(0.85f, 0.97f), "Plank door");
-            a.Place(sliding, "slab", a.At(0.15f, 0.99f), "Stone slab (slides)");
-            a.Place(sliding, "plank", a.At(0.85f, 0.99f), "Plank door (slides)");
+            foreach (var (entry, look, u, v, label) in new[]
+                     {
+                         (door, "portcullis", 0.15f, 0.96f, "Iron portcullis"), (door, "slab", 0.5f, 0.96f, "Stone slab"), (door, "plank", 0.85f, 0.96f, "Plank door"),
+                         (sliding, "slab", 0.3f, 0.99f, "Stone slab (slides)"), (sliding, "plank", 0.7f, 0.99f, "Plank door (slides)"),
+                     })
+            {
+                var go = a.Place(entry, look, a.At(u, v), label);
+                if (go != null) WireToPlate(a, go, Vector3.back * 4f, ++plates);
+            }
             var terrain = LevelTerrain.Terrains(a.Scene).FirstOrDefault();
             if (terrain != null && GroundBaker.IsLayered(terrain)) GroundBaker.Bake(terrain);
+        }
+
+        /// <summary>Sets a placed screen or curtain in the opening of a mortared wall built round it (the wall keeps it as its kit).</summary>
+        static void InWall(Area a, GameObject kit, Vector3 at)
+        {
+            var wall = a.Place(PaletteCatalog.Find("masonry.stone-wall"), "mortared", at, null).GetComponent<WallShape>();
+            wall.Height = 3.6f;
+            wall.Points.Clear();
+            wall.Points.AddRange(new[] { new Vector3(-5f, 0f, 0f), new Vector3(5f, 0f, 0f) });
+            string path = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(kit);
+            wall.Openings.Clear();
+            wall.Openings.Add(new WallOpening(5f, 2.6f, 2.6f, kit.GetComponentInChildren<BodyScreen>(true) != null ? OpeningPassage.BombOnly : OpeningPassage.RunnersOnly)
+            {
+                look = path.EndsWith(".prefab") ? path.Substring(0, path.Length - ".prefab".Length) : path,
+                kit = kit,
+                frame = OpeningFrame.Stone,
+            });
+            LevelPieceBuilder.Rebuild(wall);
+        }
+
+        /// <summary>A pressure plate <paramref name="offset"/> from <paramref name="door"/> on the floor, its source (one plate, one door).</summary>
+        static void WireToPlate(Area a, GameObject door, Vector3 offset, int n)
+        {
+            var actuator = door.GetComponent<SignalActuator>();
+            if (actuator == null) return;
+            var at = door.transform.position + offset;
+            float ground = LevelNature.GroundAt(a.Scene, new Vector2(at.x, at.z));
+            if (!float.IsNaN(ground)) at.y = ground;
+            var plate = CourseKit.Place(a.Group(LevelGroup.Kit), CourseKit.GameplayDir + "PressurePlate", $"Plate {n}", at, Quaternion.identity);
+            var so = new SerializedObject(actuator);
+            so.FindProperty("source").objectReferenceValue = plate.GetComponents<MonoBehaviour>().First(m => m is ISignalSource);
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        // ------------------------------------------------------------------ L6: the course
+
+        [MenuItem(Menu + "Build Course (L6)", priority = 16)]
+        public static void BuildCourse() => Build("L6 Course", CourseArea);
+
+        /// <summary>
+        /// What makes the showcase a level Verify reads (L6): the start's contract (a showcase forces nothing), a checkpoint (a campfire)
+        /// with its contract, and the finish, near the start.
+        /// </summary>
+        static void CourseArea(Area a)
+        {
+            const string Force = "Nothing: the level tools' showcase, walked by the route runner (no puzzle, no lock).";
+            // a piece straight under a level group belongs to no area: left by an earlier build
+            foreach (LevelGroup g in Enum.GetValues(typeof(LevelGroup)))
+                foreach (Transform t in a.Settings.Group(g).Cast<Transform>().Where(t => t.GetComponent<LevelPiece>() != null).ToList())
+                    Object.DestroyImmediate(t.gameObject);
+            foreach (var old in a.Settings.GetComponentsInChildren<SectionContract>(true).Where(c => c.GetComponentInParent<Checkpoint>() == null).ToList())
+                Object.DestroyImmediate(old.gameObject);
+            LevelCourse.AddContract(a.Settings.transform, a.Settings.MinPlayers).Configure(Force);
+            var checkpoint = LevelCourse.AddCheckpoint(a.Scene, a.Group(LevelGroup.Kit), a.At(0.5f, 0.3f));
+            LevelCourse.AddContract(checkpoint.transform, a.Settings.MinPlayers).Configure(Force);
+            Area.Label(checkpoint.gameObject, "Checkpoint (campfire)");
+            Area.Label(LevelCourse.AddFinish(a.Group(LevelGroup.Kit), a.At(0.5f, 0.8f)).gameObject, "Finish");
+            Landings(a);
+        }
+
+        /// <summary>A small timber deck where a walk ends in the air (a stair's top, a bridge's end): somewhere to step onto, as a level would have.</summary>
+        static void Landings(Area a)
+        {
+            Physics.SyncTransforms();
+            var walks = TimberLinks.Pieces(a.Scene).Select(p => (p, output: p.Output != null ? p.Output.GetComponent<LevelPieceOutput>() : null))
+                .Where(x => x.output != null && x.output.WalkLine.Length > 1).Select(x => (x.p.name, (IList<Vector3>)x.output.WalkLine)).ToList();
+            var deck = PaletteCatalog.Find("timber.deck");
+            int n = 0;
+            foreach (var problem in WalkProbe.Run(walks).Where(p => p.message.Contains("past its")))
+            {
+                var go = a.Place(deck, null, problem.at, $"Landing {++n}");
+                if (go == null) continue;
+                var d = go.GetComponent<TimberDeckShape>();
+                d.transform.position = problem.at;
+                d.Support = TimberSupport.Posts;
+                d.Outline.Clear();
+                d.Outline.AddRange(new[] { new Vector3(-1.4f, 0f, -1.4f), new Vector3(1.4f, 0f, -1.4f), new Vector3(1.4f, 0f, 1.4f), new Vector3(-1.4f, 0f, 1.4f) });
+                d.Rails = false;
+                LevelPieceBuilder.Rebuild(d);
+            }
+            Physics.SyncTransforms();
         }
 
         // ------------------------------------------------------------------ L0: every entry once
@@ -515,6 +616,32 @@ namespace HotPatata.Editor
                 var at = a.At(u, v);
                 var go = a.Place(entry, look, at);
                 if (go == null) continue;
+                // a screen or a curtain closes a passage: set in a wall's opening (alone, a player walks round it)
+                if (go.GetComponentInChildren<BodyScreen>(true) != null || go.GetComponentInChildren<BombBarrier>(true) != null) InWall(a, go, at);
+                // a trail or a river kept to its cell (the next cell's piece would stand across it)
+                if (go.TryGetComponent<TrailShape>(out var tourTrail))
+                {
+                    tourTrail.Points.Clear();
+                    tourTrail.Points.AddRange(new[] { new Vector3(0f, 0f, -6f), new Vector3(1f, 0f, 0f), new Vector3(0f, 0f, 6f) });
+                    LevelPieceBuilder.Rebuild(tourTrail);
+                }
+                if (go.TryGetComponent<RiverShape>(out var tourRiver))
+                {
+                    tourRiver.Points.Clear();
+                    tourRiver.Points.AddRange(new[] { new Vector3(0f, 0f, -8f), new Vector3(2f, 0f, 0f), new Vector3(0f, 0f, 8f) });
+                    LevelPieceBuilder.Rebuild(tourRiver);
+                }
+                // a wall's kit door is wired to a plate before it
+                if (go.TryGetComponent<WallShape>(out var gateWall))
+                    foreach (var o in gateWall.Openings.Where(o => o.kit != null && o.passage == OpeningPassage.KitDoor))
+                        WireToPlate(a, o.kit, -o.kit.transform.forward * 3f, 100 + i);
+                // a loose rope lies on the ground
+                if (go.TryGetComponent<TimberPath>(out var rope) && rope.Kind == TimberElementKind.Rope)
+                {
+                    rope.transform.position = at + Vector3.up * 0.03f;
+                    rope.Sag = 0f;
+                    TimberElementBuilder.Refresh(rope, true);
+                }
                 if (go.TryGetComponent<ForestArea>(out var forest))
                 {
                     forest.Outline.Clear();
